@@ -6,12 +6,15 @@
 
 #include <windows.h>
 
+#include "critical.hpp"
 #include "thread.hpp"
 
 using namespace paraos;
 struct PrintTestMessage1 : public ThreadBase {
   void Processing() override {
     Sleep(0);
+
+    CriticalSection critical;
     std::cout << "PrintTestMessage 1" << std::endl;
   }
 };
@@ -19,6 +22,7 @@ struct PrintTestMessage1 : public ThreadBase {
 struct PrintTestMessage2 : public ThreadBase {
   void Processing() override {
     Sleep(0);
+    CriticalSection critical;
     std::cout << "PrintTestMessage 2" << std::endl;
   }
 };
@@ -26,14 +30,16 @@ struct PrintTestMessage2 : public ThreadBase {
 struct PrintTestMessage3 : public ThreadBase {
   void Processing() override {
     Sleep(0);
+    CriticalSection critical;
     std::cout << "PrintTestMessage 3" << std::endl;
   }
 };
 
-struct PrintTestMessageSelt : public ThreadBase {
-  PrintTestMessageSelt() { ThreadFactory.Make(*this); }
+struct PrintTestMessageSelf : public ThreadBase {
+  PrintTestMessageSelf() { ThreadFactory.Make(*this); }
   void Processing() override {
     Sleep(0);
+    CriticalSection critical;
     std::cout << "PrintTestMessage Self" << std::endl;
   }
 };
@@ -41,7 +47,7 @@ struct PrintTestMessageSelt : public ThreadBase {
 PrintTestMessage1 print_test_message_1;
 PrintTestMessage2 print_test_message_2;
 PrintTestMessage3 print_test_message_3;
-PrintTestMessageSelt print_test_message_selt;
+PrintTestMessageSelf print_test_message_self;
 
 #define MAX_THREADS 3
 #define BUF_SIZE 255

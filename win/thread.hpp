@@ -39,6 +39,7 @@
 #include <iostream>
 #include <new>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 namespace paraos {
@@ -51,7 +52,7 @@ struct ThreadBase {
 
   virtual void Processing() = 0;
 
-  thread_handle handle_ = nullptr;
+  thread_handle handles_storage_ = nullptr;
 };
 
 class Thread {
@@ -59,134 +60,123 @@ class Thread {
   /// создаются в приостановленном состоянии. При вызове StartScheduler() с
   /// помощью записанных в вектор дескрипторов выполняется запуск всех
   /// созданных потоков.
-  static inline std::vector<thread_handle> handle_;
+  static inline std::vector<thread_handle> handles_storage_;
   static_assert(std::is_pointer_v<thread_handle> == true);
 
-  //   static inline std::vector<ThreadBase> thead_;
-
  public:
+  ~Thread() { CloseAllHandles(); }
+
   thread_handle Make(ThreadBase& threadable) {
     DWORD thread_id;
 
-    threadable.handle_ = CreateThread(nullptr, 0, CallPoint,
-                                      reinterpret_cast<void*>(&threadable),
-                                      CREATE_SUSPENDED, &thread_id);
+    threadable.handles_storage_ = CreateThread(
+        nullptr, 0, CallPoint, reinterpret_cast<void*>(&threadable),
+        CREATE_SUSPENDED, &thread_id);
 
-    if (threadable.handle_ != nullptr) {
-      try {
-        handle_.push_back(threadable.handle_);
-      } catch (std::bad_alloc& exception) {
-        std::cerr << "bad_alloc detected: " << exception.what();
+    auto handle = CreateThread(nullptr, 0, CallPoint,
+                               reinterpret_cast<void*>(&threadable),
+                               CREATE_SUSPENDED, &thread_id);
 
-        auto close_status = CloseHandle(threadable.handle_);
-        assert(close_status != 0);
+    if (threadable.handles_storage_ != nullptr) {
+      CriticalSection critical;
+
+      // Если условие ниже true, то полученный при вызове CreateThread()
+      // дескриптор является уникальным, т.е. не встречается в хранилище. В
+      // этом случае все корректно, необходимо лишь добавить полученный
+      // дескриптор в хранилище.
+      if (const int num_items =
+              std::count(handles_storage_.cbegin(), handles_storage_.cend(),
+                         threadable.handles_storage_);
+          num_items == 0) {
+        try {
+          handles_storage_.push_back(threadable.handles_storage_);
+
+        } catch (std::bad_alloc& exception) {
+          std::cerr << "Thead::Make() vector bad alloc: " << exception.what();
+          auto close_status = CloseHandle(threadable.handles_storage_);
+          assert(close_status != 0);
+        }
+      } else {
+        // Утверждение ниже сработает, если по каким-то причинам дескриптор
+        // созданного потока повторяется с тем значением, которое уже
+        // записано в буфер дескрипторов
+        assert(true == false);
       }
-    }
 
-    return threadable.handle_;
-  }
-
-  /// @brief Освобождает память, выделенную под поток только в том случае,
-  /// если поток завершил свое выполнение.
-  /// @details В многопоточном программировании неизвестно в какой точке
-  /// выполнения находится поток. Может случится такая ситуация, при которой
-  /// поток, который мы хотим уничтожить, запросил динамические ресурсы.
-  /// Тогда, перед его уничтожением, необходимо убедиться что поток освободил
-  /// ресурсы, иначе будет утечка памяти. Стандартизированных механизмов для
-  /// подобной проверки нет. По этой причине считаем, что поток готов к
-  /// уничтожению только в том случае, если он вызвал оператор return, т.е.
-  /// завершился штатным с точки зрения разработчика образом.
-  /// @param[in] threadable: Ссылка на класс, которой содержит поток, ресурсы
-  /// которого необходимо освободить.
-  /// @return Возвращает true в случае, если поток уже завершил свое
-  /// выполнение к моменту вызова IfThreadCompleteThenFree() и ресурсы,
-  /// выделенные под поток успешно освобождены.
-  /// @return false - в случае, если поток не завершил свою работу и его
-  /// ресурсы не освобождены.
-  bool IfThreadCompleteThenFree(ThreadBase& threadable) {
-#if 0
-    if (threadable.SetTerminateSignal() == true) {
-      // В win api необходимо вернуться из функции потока. Это будет
-      // эквивалентно его удалению. В деструкторе ThreadBase должен выдаваться
-      // семафор, сигнализирующий о том что поток завершил свое выполнение.
     } else {
-      // НПоток не освободил занимаемые им ресурсы. Или не переопределены
-      // SetTerminateSignal() и IsReadyToTerminate()
-      //   assert(true == false);
+      // поток не создан
+      assert(true == false);
     }
-#endif
 
-    return false;
+    return threadable.handles_storage_;
   }
-
-  /// @brief Ожидает завершение выполнения потока и затем освобождает
-  /// выделенные под него ресурсы.
-  /// @param[in] threadable: Ссылка на класс, которой содержит поток, ресурсы
-  /// которого необходимо освободить.
-  /// @return
-  bool WaitTheadCompleteThenFree(ThreadBase& threadable) { return false; }
 
   void StartScheduler() noexcept {
-    for (auto handle : handle_) {
+    for (auto handle : handles_storage_) {
       ResumeThread(handle);
     }
 
-    WaitForMultipleObjects(handle_.size(), handle_.data(), TRUE, INFINITE);
+    // В POSIX мы бы вызвали join для каждого потока
+    WaitForMultipleObjects(handles_storage_.size(), handles_storage_.data(),
+                           TRUE, INFINITE);
 
     // К данной точке выполнения программы все потоки завершили свое
     // выполнение.
-    for (auto handle : handle_) {
-      CloseHandle(handle);
-    };
-
-    handle_.clear();
+    CloseAllHandles();
   }
 
   /// @brief
-  /// @note Т.к. вектор handle_ содержит указатели, которые не могут выбросить
-  /// исключение, то операция handle_.erase() является noexcept. Других методов,
-  /// которые могли бы выбросить исключения нет. По этой причине CallPoint()
-  /// помечена noexcept.
+  /// @note После вызова Delete(), handle становиться невалидным.
+  /// @param handle
+  /// @return
+  bool Delete(const thread_handle handle) {
+    bool is_thread_deleted = false;
+    CriticalSection critical;
+
+    // Перед удалением потока необходимо убедиться что его дескриптор
+    // присутствует в хранилище
+    if (auto iter = std::find(handles_storage_.cbegin(),
+                              handles_storage_.cend(), handle);
+        iter != handles_storage_.cend()) {
+      if (CloseHandle(*iter) == TRUE) {
+        // Т.к повторный вызов CloseHandle() для закрытого дескриптора является
+        // ошибкой, то необходимо исключить возможность повторного вызова
+        // CloseHandle() для закрытого потока. Для этого удалим из хранилища
+        // дескриптор завершенного потока.
+        handles_storage_.erase(iter);
+
+        is_thread_deleted = true;
+      }
+    }
+
+    return is_thread_deleted;
+  }
+
+ private:
+  void CloseAllHandles() {
+    while (handles_storage_.size() != 0u) {
+      CriticalSection critical;
+
+      /// Т.к. вызов Delete() вызывает erase(), что инвалидирует итератор, то
+      /// используется цикл while() в котором на каждой итерации берется новый
+      /// итератор, содержащий указатель на дескриптор потока который нужно
+      /// удалить
+      auto iter_begin = handles_storage_.crbegin();
+      const bool is_thread_deleted = Delete(*iter_begin);
+      assert(is_thread_deleted == true);
+    }
+  }
+
+  /// @brief
   /// @param params
   /// @return
-  static DWORD WINAPI CallPoint(LPVOID params) noexcept {
+  static DWORD WINAPI CallPoint(LPVOID params) {
     auto ptr_this = reinterpret_cast<ThreadBase*>(params);
     ptr_this->Processing();
 
-    int return_code{0};
-    auto handle = ptr_this->handle_;
-    if (auto iter = std::find(handle_.cbegin(), handle_.cend(), handle);
-        iter != handle_.cend()) {
-      // todo Добавить критическую секцию
-      CloseHandle(*iter);
-      handle_.erase(iter);
-      ptr_this->handle_ = nullptr;
-    } else {
-      // По каким-то причинам, мы не нашли дескриптор потока в контейнере
-      // handle_
-      return_code = 1;
-    }
-
-    assert(return_code == 0);
-
     // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
-    return return_code;
+    return 0;
   }
-
-  template <class C, typename Ret, typename... Args>
-  Ret Invoke(Ret (C::*method)(Args...), C* instance, Args... args) {
-    return std::invoke(method, instance, std::forward<Args>(args)...);
-  }
-
-#if 0
-  hThreadArray[i] =
-      CreateThread(NULL,                  // default security attributes
-                   0,                     // use default stack size
-                   MyThreadFunction,      // thread function name
-                   pDataArray[i],         // argument to thread function
-                   0,                     // use default creation flags
-                   &dwThreadIdArray[i]);  // returns the thread identifier
-#endif
 };
 
 inline Thread ThreadFactory;
