@@ -80,32 +80,15 @@ class Thread {
     if (threadable.handles_storage_ != nullptr) {
       CriticalSection critical;
 
-      // Если условие ниже true, то полученный при вызове CreateThread()
-      // дескриптор является уникальным, т.е. не встречается в хранилище. В
-      // этом случае все корректно, необходимо лишь добавить полученный
-      // дескриптор в хранилище.
-      if (const int num_items =
-              std::count(handles_storage_.cbegin(), handles_storage_.cend(),
-                         threadable.handles_storage_);
-          num_items == 0) {
-        try {
-          handles_storage_.push_back(threadable.handles_storage_);
+      try {
+        handles_storage_.push_back(threadable.handles_storage_);
 
-        } catch (std::bad_alloc& exception) {
-          std::cerr << "Thead::Make() vector bad alloc: " << exception.what();
-          auto close_status = CloseHandle(threadable.handles_storage_);
-          assert(close_status != 0);
-        }
-      } else {
-        // Утверждение ниже сработает, если по каким-то причинам дескриптор
-        // созданного потока повторяется с тем значением, которое уже
-        // записано в буфер дескрипторов
-        assert(true == false);
+      } catch (std::bad_alloc& exception) {
+        std::cerr << "Thead::Make() vector bad alloc: " << exception.what();
+        auto close_status = CloseHandle(threadable.handles_storage_);
+        assert(close_status != 0);
+        threadable.handles_storage_ = nullptr;
       }
-
-    } else {
-      // поток не создан
-      assert(true == false);
     }
 
     return threadable.handles_storage_;
