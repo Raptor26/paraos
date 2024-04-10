@@ -8,9 +8,6 @@ TEST(Semaphore, CreateDefault) {
   SemaphoreAttr attr;
   auto sem_with_def_attr = Semaphore(attr);
   ASSERT_TRUE(sem_with_def_attr);
-
-  auto sem_default_ctor = Semaphore();
-  ASSERT_TRUE(sem_default_ctor);
 }
 
 TEST(Semaphore, GiveThanTakeTwice) {

@@ -26,7 +26,6 @@ class Semaphore {
     std::cout << "Semaphore Ctor" << std::endl;
 #endif
   }
-  Semaphore() : Semaphore{SemaphoreAttr{}} {}
 
   virtual ~Semaphore() {
     assert(handle_);
@@ -63,6 +62,9 @@ class Semaphore {
   }
 
   operator bool() const { return handle_ != nullptr ? true : false; }
+
+ protected:
+  Semaphore() : Semaphore{SemaphoreAttr{}} {}
 
  private:
   HANDLE handle_ = nullptr;

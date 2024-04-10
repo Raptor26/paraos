@@ -34,21 +34,28 @@
 #include <Windows.h>
 #include <assert.h>
 
+#ifdef paraosTRACE_ENABLE
 #include <iostream>
+#endif
 
 namespace paraos {
 
 class CriticalSectionFactory final {
  public:
   CriticalSectionFactory() noexcept {
+#ifdef paraosTRACE_ENABLE
     std::cout << "CriticalSectionFactory Ctor" << std::endl;
+#endif
     if (!InitializeCriticalSectionAndSpinCount(&critical_section_, 0x00000400))
       assert(true == false);
   }
 
   ~CriticalSectionFactory() {
-    std::cout << "CriticalSectionFactory Dtor" << std::endl;
     DeleteCriticalSection(&critical_section_);
+
+#ifdef paraosTRACE_ENABLE
+    std::cout << "CriticalSectionFactory Dtor" << std::endl;
+#endif
   }
 
   LPCRITICAL_SECTION GiveHandle() { return &critical_section_; }
