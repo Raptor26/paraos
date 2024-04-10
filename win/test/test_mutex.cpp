@@ -27,4 +27,6 @@ TEST(Mutex, LockThenUnlockWithRAII) {
   ASSERT_TRUE(default_ctor);
 
   { auto mutex_raii = MutexGuard(default_ctor); }
+
+  ASSERT_TRUE(default_ctor);
 }

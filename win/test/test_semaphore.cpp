@@ -24,19 +24,8 @@ TEST(Semaphore, GiveThanTakeTwice) {
 }
 
 TEST(Semaphore, GiveThanTakeTwiceButSemIsBinary) {
-  SemaphoreAttr attr;
-  attr.max_count = 1u;
-  auto sem = Semaphore(attr);
+  auto sem = SemaphoreBinary();
   ASSERT_TRUE(sem);
-
-  ASSERT_TRUE(sem.Give());
-  ASSERT_FALSE(sem.Give());
-  ASSERT_TRUE(sem.Take(0));
-  ASSERT_FALSE(sem.Take(0));
-}
-
-TEST(Semaphore, CreateBinary) {
-  SemaphoreBinary sem;
 
   ASSERT_TRUE(sem.Give());
   ASSERT_FALSE(sem.Give());
