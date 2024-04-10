@@ -29,7 +29,7 @@ class MutexGuard {
   }
 
  private:
-  const MutexBase &mutex_;
+  MutexBase &mutex_;
 };
 }  // namespace paraos
 

@@ -1,6 +1,9 @@
 #ifndef MUTEX_HPP
 #define MUTEX_HPP
 
+#include <cassert>
+
+#include "critical.hpp"
 #include "paraos_utils.hpp"
 
 #ifdef paraosTRACE_ENABLE
@@ -10,13 +13,13 @@
 namespace paraos {
 
 struct MutexAttr {
-  bool is_binary_ = true;
+  bool is_binary_ = false;
 };
 
 /// @brief
 /// @note Пример использования мьютексов можно найти по ссылке ниже
 /// https://learn.microsoft.com/ru-ru/windows/win32/sync/using-mutex-objects
-class MutexBase final {
+class MutexBase {
  public:
   MutexBase(const MutexAttr &attr)
       : handle_{CreateMutex(nullptr, false, nullptr)},
@@ -28,7 +31,7 @@ class MutexBase final {
 
   MutexBase() : MutexBase(MutexAttr{}) {}
 
-  ~MutexBase() {
+  virtual ~MutexBase() {
     assert(handle_);
     if (handle_) {
       CloseHandle(handle_);
@@ -44,21 +47,78 @@ class MutexBase final {
 
   operator bool() const { return handle_ != nullptr ? true : false; }
 
-  bool Lock(std::size_t timeout_ms = max_delay) const {
+  virtual bool Lock(std::size_t timeout_ms = max_delay) {
     bool is_mutex_taken = false;
-    DWORD signal_state =
-        WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms));
-    if (signal_state == WAIT_OBJECT_0) {
+
+    if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
+        WAIT_OBJECT_0) {
       is_mutex_taken = true;
     }
     return is_mutex_taken;
   }
 
-  bool Unlock() const { return static_cast<bool>(ReleaseMutex(handle_)); }
+  virtual bool Unlock() { return static_cast<bool>(ReleaseMutex(handle_)); }
 
  private:
   HANDLE handle_ = nullptr;
   bool is_binary_ = true;
+};
+
+class MutexIsLocked {
+ private:
+  bool is_locked_ = false;
+
+ protected:
+  /// @brief Safe thread setter status.
+  /// @param[in] new_state: New state for safe thread update status.
+  inline void SetLockedState(bool new_state) {
+    CriticalSection critical;  // RAII
+    is_locked_ = new_state;
+  }
+
+  /// @brief Safe thread getter status.
+  /// @return true or false.
+  inline bool Islocked() {
+    CriticalSection critical;  // RAII
+    return is_locked_;
+  }
+};
+
+class MutexBaseBinary : public MutexBase, private MutexIsLocked {
+ public:
+  MutexBaseBinary() : MutexBase(MutexAttr{true}) {}
+
+  ~MutexBaseBinary() {}
+
+  virtual bool Lock(std::size_t timeout_ms = max_delay) override {
+    bool is_current_operation_locked = false;
+    if (Islocked() == false) {
+      is_current_operation_locked = MutexBase::Lock(timeout_ms);
+      // We call MutexBase::Lock() if our current state "unlocked". If
+      // MutexBase::Lock() returned false (from unlocked state), i don't know
+      // what that mean. Try find race condition for "is_locked_" variable in
+      // "MutexBaseBinary" class.
+      assert(is_current_operation_locked == true);
+      SetLockedState(true);
+    }
+
+    return is_current_operation_locked;
+  }
+
+  virtual bool Unlock() override {
+    bool is_current_operation_unlocked = false;
+    if (Islocked() == true) {
+      is_current_operation_unlocked = MutexBase::Unlock();
+      // We call MutexBase::Unlock() if our current state "locked". If
+      // MutexBase::Unlock() returned false (from "locked" state), i don't know
+      // what that mean. Try find race condition for "is_locked_" variable in
+      // "MutexBaseBinary" class.
+      assert(is_current_operation_unlocked == true);
+      SetLockedState(false);
+    }
+
+    return is_current_operation_unlocked;
+  }
 };
 }  // namespace paraos
 
