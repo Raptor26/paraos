@@ -31,10 +31,10 @@
 #ifndef THREAD_HPP
 #define THREAD_HPP
 
-#include <assert.h>
 #include <windows.h>
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <new>
@@ -45,8 +45,6 @@
 namespace paraos {
 using thread_handle = HANDLE;
 
-constexpr DWORD max_thread{64};
-
 struct ThreadBase {
   virtual ~ThreadBase() = default;
 
@@ -55,8 +53,42 @@ struct ThreadBase {
   thread_handle handles_storage_ = nullptr;
 };
 
-// todo Создать класс, являющийся RAII оберткой над потоком с перемещающим
-// оператором присваивания и перемещающим конструктором.
+/// @brief
+class TheadStorage {
+ public:
+  TheadStorage(ThreadBase& threadable, bool is_create_suspended = true) {
+    DWORD thread_id;
+
+    DWORD dwCreationFlags = 0x00;
+    if (is_create_suspended == true) {
+      dwCreationFlags = CREATE_SUSPENDED;
+    }
+
+    handle_ = CreateThread(nullptr, 0, CallPoint,
+                           reinterpret_cast<void*>(&threadable),
+                           dwCreationFlags, &thread_id);
+  }
+
+  ~TheadStorage() {
+    if ((handle_) && (is_joined == true)) {
+      CloseHandle(handle_);
+    }
+  }
+
+  void Join() { is_joined = true; }
+
+ private:
+  thread_handle handle_ = nullptr;
+  bool is_joined = false;
+
+  static DWORD WINAPI CallPoint(LPVOID params) {
+    auto ptr_this = reinterpret_cast<ThreadBase*>(params);
+    ptr_this->Processing();
+
+    // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
+    return 0;
+  }
+};
 
 class Thread {
   /// @brief Буфер дескрипторов созданных потоков. По умолчанию, все потоки
@@ -65,6 +97,7 @@ class Thread {
   /// созданных потоков.
   static inline std::vector<thread_handle> handles_storage_;
   static_assert(std::is_pointer_v<thread_handle> == true);
+  bool is_scheduler_started = false;
 
  public:
   ~Thread() { CloseAllHandles(); }
@@ -75,10 +108,6 @@ class Thread {
     threadable.handles_storage_ = CreateThread(
         nullptr, 0, CallPoint, reinterpret_cast<void*>(&threadable),
         CREATE_SUSPENDED, &thread_id);
-
-    auto handle = CreateThread(nullptr, 0, CallPoint,
-                               reinterpret_cast<void*>(&threadable),
-                               CREATE_SUSPENDED, &thread_id);
 
     if (threadable.handles_storage_ != nullptr) {
       CriticalSection critical;
@@ -101,6 +130,8 @@ class Thread {
     for (auto handle : handles_storage_) {
       ResumeThread(handle);
     }
+
+    is_scheduler_started = true;
 
     // В POSIX мы бы вызвали join для каждого потока
     WaitForMultipleObjects(handles_storage_.size(), handles_storage_.data(),
