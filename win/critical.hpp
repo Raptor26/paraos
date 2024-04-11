@@ -70,11 +70,19 @@ class CriticalSection final {
   /// @param is_isr
   CriticalSection(bool is_isr = false) : is_isr_{is_isr} {
     EnterCriticalSection(critical_section_factory.GiveHandle());
+
+#ifdef paraosTRACE_ENABLE
+    std::cout << "Open critical section" << std::endl;
+#endif
   }
 
   /// @brief Деструктор обеспечивает автоматический выход из критической секции.
   ~CriticalSection() {
     LeaveCriticalSection(critical_section_factory.GiveHandle());
+
+#ifdef paraosTRACE_ENABLE
+    std::cout << "Close critical section" << std::endl;
+#endif
   }
 
  private:

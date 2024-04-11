@@ -64,11 +64,21 @@ class MutexBase {
   bool is_binary_ = true;
 };
 
-class MutexIsLocked {
+class BoolSafeThreadFlag {
  private:
   bool is_locked_ = false;
 
  public:
+  /// @brief Ctor.
+  /// @param
+  BoolSafeThreadFlag(bool new_status) { SetLocked(new_status); }
+
+  /// @brief Default Ctor
+  BoolSafeThreadFlag() : BoolSafeThreadFlag{false} {}
+
+  operator bool() { return Islocked(); }
+
+ private:
   /// @brief Safe thread setter status.
   /// @param[in] new_state: New state for safe thread update status.
   inline void SetLocked(bool new_state) {
@@ -92,16 +102,14 @@ class MutexBaseBinary : public MutexBase {
 
   virtual bool Lock(std::size_t timeout_ms = max_delay) override {
     bool is_current_operation_locked = false;
-    if (status_.Islocked() == false) {
+    if (is_locked_ == false) {
       is_current_operation_locked = MutexBase::Lock(timeout_ms);
       // We call MutexBase::Lock() if our current state "unlocked". If
       // MutexBase::Lock() returned false (from unlocked state), i don't know
       // what that mean. Try find race condition for "is_locked_" variable in
       // "MutexBaseBinary" class.
       assert(is_current_operation_locked == true);
-      status_.SetLocked(true);
-
-      status_.SetLocked(true);
+      is_locked_ = true;
     }
 
     return is_current_operation_locked;
@@ -109,21 +117,22 @@ class MutexBaseBinary : public MutexBase {
 
   virtual bool Unlock() override {
     bool is_current_operation_unlocked = false;
-    if (status_.Islocked() == true) {
+    if (is_locked_ == true) {
       is_current_operation_unlocked = MutexBase::Unlock();
       // We call MutexBase::Unlock() if our current state "locked". If
       // MutexBase::Unlock() returned false (from "locked" state), i don't know
       // what that mean. Try find race condition for "is_locked_" variable in
       // "MutexBaseBinary" class.
       assert(is_current_operation_unlocked == true);
-      status_.SetLocked(false);
+      is_locked_ = true;
     }
 
     return is_current_operation_unlocked;
   }
 
  private:
-  MutexIsLocked status_;
+  /// @brief Safe thread flag
+  BoolSafeThreadFlag is_locked_;
 };
 }  // namespace paraos
 
