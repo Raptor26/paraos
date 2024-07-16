@@ -21,7 +21,7 @@ struct MutexAttr {
 /// https://learn.microsoft.com/ru-ru/windows/win32/sync/using-mutex-objects
 class MutexBase {
  public:
-  MutexBase(const MutexAttr &attr)
+  MutexBase(const MutexAttr& attr)
       : handle_{CreateMutex(nullptr, false, nullptr)},
         is_binary_{attr.is_binary_} {
 #ifdef paraosTRACE_ENABLE
@@ -60,8 +60,8 @@ class MutexBase {
   virtual bool Unlock() { return static_cast<bool>(ReleaseMutex(handle_)); }
 
  private:
-  HANDLE handle_ = nullptr;
-  bool is_binary_ = true;
+  HANDLE handle_{nullptr};
+  bool is_binary_{true};
 };
 
 class BoolSafeThreadFlag {
@@ -71,12 +71,19 @@ class BoolSafeThreadFlag {
  public:
   /// @brief Ctor.
   /// @param
-  BoolSafeThreadFlag(bool new_status) { SetLocked(new_status); }
+  BoolSafeThreadFlag(bool new_status) : is_locked_{new_status} {}
 
   /// @brief Default Ctor
   BoolSafeThreadFlag() : BoolSafeThreadFlag{false} {}
 
-  operator bool() { return Islocked(); }
+  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& ohter) {
+    const CriticalSection critical;  // RAII
+    is_locked_ = ohter.is_locked_;
+
+    return *this;
+  }
+
+  operator bool() const { return Islocked(); }
 
  private:
   /// @brief Safe thread setter status.
@@ -88,7 +95,7 @@ class BoolSafeThreadFlag {
 
   /// @brief Safe thread getter status.
   /// @return true or false.
-  inline bool Islocked() {
+  inline bool Islocked() const {
     CriticalSection critical;  // RAII
     return is_locked_;
   }
@@ -101,7 +108,7 @@ class MutexBaseBinary : public MutexBase {
   ~MutexBaseBinary() {}
 
   virtual bool Lock(std::size_t timeout_ms = max_delay) override {
-    bool is_current_operation_locked = false;
+    bool is_current_operation_locked{false};
     if (is_locked_ == false) {
       is_current_operation_locked = MutexBase::Lock(timeout_ms);
       // We call MutexBase::Lock() if our current state "unlocked". If
@@ -116,7 +123,7 @@ class MutexBaseBinary : public MutexBase {
   }
 
   virtual bool Unlock() override {
-    bool is_current_operation_unlocked = false;
+    bool is_current_operation_unlocked{false};
     if (is_locked_ == true) {
       is_current_operation_unlocked = MutexBase::Unlock();
       // We call MutexBase::Unlock() if our current state "locked". If
@@ -124,7 +131,7 @@ class MutexBaseBinary : public MutexBase {
       // what that mean. Try find race condition for "is_locked_" variable in
       // "MutexBaseBinary" class.
       assert(is_current_operation_unlocked == true);
-      is_locked_ = true;
+      is_locked_ = false;
     }
 
     return is_current_operation_unlocked;
