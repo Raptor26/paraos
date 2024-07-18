@@ -14,7 +14,8 @@ RUN apt-get update && \
     libgmock-dev \
     wget \
     ninja-build \
-    clang
+    clang \
+    valgrind
 
 # Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная 
 # требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию 
@@ -53,7 +54,8 @@ RUN apt-get update && \
     wget \
     libgmock-dev \
     ninja-build \
-    clang
+    clang \
+    valgrind
 
 # Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная 
 # требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию 
@@ -71,13 +73,12 @@ RUN rm -rf /var/lib/apt/lists/* \
     mv ./lib/lib*.a /usr/lib
 
 # Установим рабочую директорию нашего приложения
-WORKDIR /app
+WORKDIR /app/src
 
 # Скопируем приложение со сборочного контейнера в рабочую директорию
-COPY --from=build /app/src ./src
-COPY --from=build /app/src/docker_tests_entrypoint.sh .
+COPY --from=build /app/src .
 
 RUN ["chmod", "+x", "./docker_tests_entrypoint.sh"]
 
 # Установим точку входа
-ENTRYPOINT ["/bin/sh", "./docker_tests_entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/bash", "./docker_tests_entrypoint.sh"]
