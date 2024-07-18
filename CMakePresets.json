@@ -17,6 +17,14 @@
                 "CMAKE_CXX_COMPILER": "clang++",
                 "UTEST": "true"
             }
+        },
+        {
+            "name": "win_api_clang_debug_trace",
+            "displayName": "PARAOS wrapper for Windows Debug Clang with trace",
+            "inherits": "win_api_clang_debug",
+            "cacheVariables": {
+                "TRACE": "true"
+            }
         }
     ],
     "testPresets": [

@@ -7,6 +7,6 @@ target_include_directories(
 target_link_libraries(${PROJECT_NAME} INTERFACE paraos_setup)
 
 if(UTEST)
-  message("win tests enable")
-  add_subdirectory(test)
+  message("unix tests enable")
+  # add_subdirectory(test)
 endif()

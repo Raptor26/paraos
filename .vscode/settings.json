@@ -8,9 +8,11 @@
         "PMYDATA",
         "ROSAL",
         "SUBLANG",
+        "threadable",
         "tmain",
         "UTEST",
-        "ZEROINIT"
+        "ZEROINIT",
+        "инвалидирует"
     ],
     "files.associations": {
         "array": "cpp",
@@ -77,6 +79,19 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "unordered_set": "cpp",
+        "any": "cpp",
+        "csignal": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "coroutine": "cpp",
+        "source_location": "cpp",
+        "future": "cpp",
+        "stdfloat": "cpp",
+        "text_encoding": "cpp",
+        "typeindex": "cpp",
+        "*.ipp": "cpp",
+        "queue": "cpp"
     }
 }
