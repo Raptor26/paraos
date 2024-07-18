@@ -7,7 +7,7 @@
     },
     "configurePresets": [
         {
-            "name": "win_api_clang_debug",
+            "name": "pc_debug_clang",
             "displayName": "PARAOS wrapper for Windows Debug Clang",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
@@ -19,9 +19,9 @@
             }
         },
         {
-            "name": "win_api_clang_debug_trace",
+            "name": "pc_debug_clang_trace",
             "displayName": "PARAOS wrapper for Windows Debug Clang with trace",
-            "inherits": "win_api_clang_debug",
+            "inherits": "pc_debug_clang",
             "cacheVariables": {
                 "TRACE": "true"
             }
@@ -29,8 +29,8 @@
     ],
     "testPresets": [
         {
-            "name": "test_win_api_debug",
-            "configurePreset": "win_api_clang_debug",
+            "name": "test_pc_debug_clang",
+            "configurePreset": "pc_debug_clang",
             "output": {
                 "outputOnFailure": true
             },
