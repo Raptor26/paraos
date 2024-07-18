@@ -38,8 +38,8 @@
  **************************************************************/
 
 /************************** INCLUDE ***************************/
-#ifndef LOCKFREE_QUEUE_HPP
-#define LOCKFREE_QUEUE_HPP
+#ifndef QUEUE_HPP
+#define QUEUE_HPP
 
 #include <atomic>
 #include <cstddef>
@@ -107,4 +107,4 @@ template <typename T, size_t size> class Queue {
 /* Include the implementation */
 #include "queue_impl.hpp"
 
-#endif /* LOCKFREE_QUEUE_HPP */
+#endif /* QUEUE_HPP */

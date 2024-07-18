@@ -110,7 +110,7 @@ class Thread {
         CREATE_SUSPENDED, &thread_id);
 
     if (threadable.handles_storage_ != nullptr) {
-      CriticalSection critical;
+      const CriticalSection critical;
 
       try {
         handles_storage_.push_back(threadable.handles_storage_);
