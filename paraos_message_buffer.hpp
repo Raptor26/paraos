@@ -4,73 +4,50 @@
 #include <queue>
 
 #include "critical.hpp"
+#include "paraos_config.hpp"
+#include "paraos_queue.hpp"
+#include "paraos_trace.hpp"
 
 #ifdef paraosTRACE_ENABLE
 #include <iostream>
 #endif
 
-#if defined(_WIN32) && defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include "win/critical.hpp"
 #endif
 
 namespace paraos {
 
-/// @brief Finally with no overhead for heap memory
-/// @tparam ActTy
-template <typename ActTy>
-struct Finally {
-  ActTy act_;
-  explicit Finally(ActTy act) : act_{std::move(act)} {}
-  ~Finally() { act_(); }
-};
-
-struct MessageBuffer;
-
-template <typename T>
-struct IQueue {
-  virtual bool Push(const T& element) { return false; }
-};
-
 struct Message {
-  Message(size_t size_in_bytes, std::queue<Message>* mother_buff_ptr)
-      : queue_buff_ptr_{mother_buff_ptr} {
+  Message(size_t size_in_bytes, paraos::IQueue<Message>* queue_ptr)
+      : queue_ptr_{queue_ptr} {
     if (size_in_bytes > 0) {
-      data_ptr_ = malloc(size_in_bytes);
+      data_ptr_ = new (std::nothrow) std::uint8_t[size_in_bytes];
 
       if (data_ptr_) {
         size_in_bytes_ = size_in_bytes;
       }
     }
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Message" << std::endl;
-#endif
+
+    paraosTRACE_MESSAGE("Message Ctor");
   }
 
-  Message() {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Message (Empty Ctor)" << std::endl;
-#endif
-  }
+  Message() { paraosTRACE_MESSAGE("Message (Empty Ctor)"); }
 
   virtual ~Message() {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "~Message" << std::endl;
-#endif
+    paraosTRACE_MESSAGE("~Message");
+
+    delete[] data_ptr_;
 
     if (data_ptr_) {
-#ifdef paraosTRACE_ENABLE
-      std::cout << "~Message free" << std::endl;
-#endif
-      free(data_ptr_);
+      paraosTRACE_MESSAGE("~Message free");
     }
   };
 
   Message(const Message& other) noexcept {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Message Copy Ctor" << std::endl;
-#endif
+    paraosTRACE_MESSAGE("Message Copy Ctor");
 
-    data_ptr_ = malloc(other.size_in_bytes_);
+    data_ptr_ = new (std::nothrow) std::uint8_t[other.size_in_bytes_];
     if (data_ptr_) {
       memcpy(data_ptr_, other.data_ptr_, other.size_in_bytes_);
       size_in_bytes_ = other.size_in_bytes_;
@@ -78,13 +55,11 @@ struct Message {
   }
 
   Message(Message&& other) noexcept {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Message Move Ctor" << std::endl;
-#endif
+    paraosTRACE_MESSAGE("Message Move Ctor");
 
     data_ptr_ = other.data_ptr_;
     size_in_bytes_ = other.size_in_bytes_;
-    queue_buff_ptr_ = other.queue_buff_ptr_;
+    queue_ptr_ = other.queue_ptr_;
 
     other.data_ptr_ = nullptr;
   }
@@ -92,20 +67,16 @@ struct Message {
   Message& operator=(const Message& other) = delete;
 
   Message& operator=(Message&& other) noexcept {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Message Move operator" << std::endl;
-#endif
+    paraosTRACE_MESSAGE("Message Move operator");
     if (this == &other) {
       return *this;
     }
 
-    if (data_ptr_) {
-      free(data_ptr_);
-    }
+    delete data_ptr_;
 
     data_ptr_ = other.data_ptr_;
     size_in_bytes_ = other.size_in_bytes_;
-    queue_buff_ptr_ = other.queue_buff_ptr_;
+    queue_ptr_ = other.queue_ptr_;
 
     other.data_ptr_ = nullptr;
 
@@ -119,36 +90,35 @@ struct Message {
     return false;
   }
 
-  auto GetAddr() const { return data_ptr_; }
-  auto GetSize() const { return size_in_bytes_; }
+  PARAOS_INLINE_TRIVIAL auto GetAddr() const {
+    return static_cast<void*>(data_ptr_);
+  }
 
- private:
-  void* data_ptr_{nullptr};
-  size_t size_in_bytes_{0};
+  PARAOS_INLINE_TRIVIAL auto GetSize() const { return size_in_bytes_; }
 
  protected:
-  std::queue<Message>* queue_buff_ptr_{nullptr};
+  paraos::IQueue<Message>* queue_ptr_{nullptr};
+
+ private:
+  std::uint8_t* data_ptr_{nullptr};
+  size_t size_in_bytes_{0};
 };
 
 struct MessageWritable final : public Message {
-  MessageWritable(size_t size_in_bytes, std::queue<Message>* mother_buff_ptr)
-      : Message{size_in_bytes, mother_buff_ptr} {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "MessageWritable" << std::endl;
-#endif
+  MessageWritable(size_t size_in_bytes, paraos::IQueue<Message>* queue_ptr)
+      : Message{size_in_bytes, queue_ptr} {
+    paraosTRACE_MESSAGE("MessageWritable Ctor");
   }
 
   ~MessageWritable() {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "~MessageWritable" << std::endl;
-#endif
+    paraosTRACE_MESSAGE("~MessageWritable Dtor");
 
-    if (GetAddr() && !is_message_pop && queue_buff_ptr_) {
-      queue_buff_ptr_->push(std::move(*this));
+    if (GetAddr() && !is_message_pop && queue_ptr_) {
+      queue_ptr_->Push(std::move(*this));
     }
   }
 
-  operator bool() const {
+  PARAOS_INLINE_TRIVIAL operator bool() const {
     if (GetAddr()) {
       return true;
     }
@@ -161,66 +131,73 @@ struct MessageWritable final : public Message {
   bool is_message_pop{false};
 };
 
-struct MessageBuffer {
-  MessageBuffer(size_t buff_max_message_numb = 10) {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "MessageBuffer Ctor" << std::endl;
-#endif
+struct QueueMessageBuffWrapper final : public IQueue<Message> {
+ private:
+  static_assert(std::has_virtual_destructor_v<IQueue<Message>>,
+                "IQueue<T> must has virtual destruction");
+
+ public:
+  QueueMessageBuffWrapper(const size_t len) : queue_{len} {}
+  ~QueueMessageBuffWrapper() = default;
+
+  PARAOS_INLINE_TRIVIAL auto Push(Message&& elem) -> bool override {
+    return queue_.Push(std::move(elem));
   }
 
-  ~MessageBuffer() {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "MessageBuffer Dtor" << std::endl;
-#endif
+  PARAOS_INLINE_TRIVIAL auto Push(const Message& elem) -> bool override {
+    return queue_.Push(elem);
   }
 
-  std::queue<Message> queue_;
-
-  auto Alloc(size_t size_in_bytes) -> MessageWritable {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "-- Alloc Message memory area" << std::endl;
-#endif
-
-    return MessageWritable{size_in_bytes, &queue_};
-  }
-
-  auto Pop() -> Message {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "-- Pop Message from buffer" << std::endl;
-#endif
-
-    const CriticalSection critical;
-    if (!queue_.empty()) {
-      auto& read = queue_.front();
-
-      // Нам необходимо вызвать queue_.pop(); после оператора return. Для
-      // решения поставленной задачи воспользуемся классом Finally и
-      // лямбда-выражением
-      Finally pop_from_queue{[&] {
-#ifdef paraosTRACE_ENABLE
-        std::cout << "Call pop() for queue" << std::endl;
-#endif
-        // Данный метод будет вызван в деструкторе переменной 'pop_from_queue'
-        queue_.pop();
-      }};
-
-      return std::move(read);
-
-      // Dtor 'pop_from_queue' call queue_.pop();
+  PARAOS_INLINE_TRIVIAL auto Pop() -> Message override {
+    if (!IsEmpty()) {
+      return queue_.Pop();
     }
 
     return Message{};
   }
 
-  auto IsBufferEmpty() { return queue_.empty(); }
-
-  auto Size() { return queue_.size(); }
-
-  void Erase() {
-    while (!queue_.empty()) {
-      queue_.pop();
-    }
+  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool override {
+    return queue_.IsEmpty();
   }
+
+  PARAOS_INLINE_TRIVIAL auto Size() -> size_t override { return queue_.Size(); }
+
+  PARAOS_INLINE_TRIVIAL void Erase() override { queue_.Erase(); }
+
+ private:
+  paraos::Queue<Message> queue_;
+};
+
+template <typename QUEUE = paraos::QueueMessageBuffWrapper>
+struct MessageBuffer {
+  MessageBuffer(size_t buff_max_message_numb = 10)
+      : queue_{buff_max_message_numb} {
+    paraosTRACE_MESSAGE("MessageBuffer Ctor");
+  }
+
+  ~MessageBuffer() { paraosTRACE_MESSAGE("MessageBuffer Dtor"); }
+
+  auto Alloc(size_t size_in_bytes) {
+    paraosTRACE_MESSAGE("-- Alloc Message memory area");
+
+    return MessageWritable{size_in_bytes, &queue_};
+  }
+
+  auto Pop() {
+    paraosTRACE_MESSAGE("-- Pop Message from buffer");
+
+    const CriticalSection critical;
+    return queue_.Pop();
+  }
+
+  auto IsEmpty() { return queue_.IsEmpty(); }
+
+  auto Size() { return queue_.Size(); }
+
+  void Erase() { queue_.Erase(); }
+
+ private:
+  QUEUE queue_;
 };
 
 }  // namespace paraos

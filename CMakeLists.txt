@@ -10,9 +10,6 @@ elseif(UNIX)
   add_subdirectory(unix)
 endif()
 
-add_subdirectory(lockfree)
-target_link_libraries(paraos INTERFACE lockfree)
-
 if(UTEST)
   include(CTest)
   enable_testing()

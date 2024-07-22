@@ -92,6 +92,10 @@
         "text_encoding": "cpp",
         "typeindex": "cpp",
         "*.ipp": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "strstream": "cpp",
+        "bitset": "cpp",
+        "regex": "cpp",
+        "fstream": "cpp"
     }
 }

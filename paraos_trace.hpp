@@ -3,7 +3,7 @@
 
 #ifdef paraosTRACE_ENABLE
 #include <iostream>
-#define paraosTRACE_MESSAGE(message) std::cout << (message) << std::endl
+#define paraosTRACE_MESSAGE(message) std::cout << message << std::endl
 #else
 #define paraosTRACE_MESSAGE(message)
 #endif
