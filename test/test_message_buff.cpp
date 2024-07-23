@@ -9,12 +9,17 @@
 
 using namespace paraos;
 
+#if 1
+using QueueRealization = paraos::QueueMessageBuffWrapper;
+
 class MessageBufferCreate : public ::testing::Test {
  public:
-  std::unique_ptr<MessageBuffer> buffer_;
+  std::unique_ptr<MessageBuffer<QueueRealization>> buffer_;
 
  protected:
-  virtual void SetUp() { buffer_ = std::make_unique<MessageBuffer>(); }
+  virtual void SetUp() {
+    buffer_ = std::make_unique<MessageBuffer<QueueRealization>>();
+  }
 
   virtual void TearDown() {}
 };
@@ -60,7 +65,6 @@ TEST_F(MessageBufferCreate, PushThenPop) {
   }
 }
 
-#if 1
 TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
   constexpr double start_value{10};
   constexpr size_t messages_numb{10};
@@ -79,8 +83,8 @@ TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
   }
 
   size_t i{0};
-  EXPECT_EQ(false, buffer_->IsBufferEmpty());
-  while (!buffer_->IsBufferEmpty()) {
+  EXPECT_EQ(false, buffer_->IsEmpty());
+  while (!buffer_->IsEmpty()) {
     auto readable = buffer_->Pop();
     auto float_ptr = static_cast<double *>(readable.GetAddr());
 
@@ -92,16 +96,15 @@ TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
 
   EXPECT_EQ(messages_numb, i);
 }
-#endif
 
 TEST_F(MessageBufferCreate, EraseEmptyBuff) {
-  EXPECT_EQ(true, buffer_->IsBufferEmpty());
+  EXPECT_EQ(true, buffer_->IsEmpty());
   buffer_->Erase();
-  EXPECT_EQ(true, buffer_->IsBufferEmpty());
+  EXPECT_EQ(true, buffer_->IsEmpty());
 }
 
 TEST_F(MessageBufferCreate, EraseFillBuff) {
-  EXPECT_EQ(true, buffer_->IsBufferEmpty());
+  EXPECT_EQ(true, buffer_->IsEmpty());
 
   constexpr double start_value{10};
   constexpr size_t messages_numb{5};
@@ -114,10 +117,10 @@ TEST_F(MessageBufferCreate, EraseFillBuff) {
       *float_ptr = start_value + static_cast<double>(i);
     }
   }
-  EXPECT_EQ(false, buffer_->IsBufferEmpty());
+  EXPECT_EQ(false, buffer_->IsEmpty());
 
   buffer_->Erase();
-  EXPECT_EQ(true, buffer_->IsBufferEmpty());
+  EXPECT_EQ(true, buffer_->IsEmpty());
 }
 
 TEST_F(MessageBufferCreate, WriteStrings) {
@@ -152,7 +155,7 @@ TEST_F(MessageBufferCreate, WriteStrings) {
 
   size_t read_cnt{0};
   // Чтение строк
-  while (!buffer_->IsBufferEmpty()) {
+  while (!buffer_->IsEmpty()) {
     auto read = buffer_->Pop();
 
     if (read) {
@@ -184,7 +187,7 @@ TEST_F(MessageBufferCreate, AllocThenUserPop) {
     // т.к. пользователь вызвал Pop()
   }
 
-  EXPECT_TRUE(buffer_->IsBufferEmpty());
+  EXPECT_TRUE(buffer_->IsEmpty());
 }
 
 TEST_F(MessageBufferCreate, AllocThenUserPopIfEmptyMessage) {
@@ -194,5 +197,7 @@ TEST_F(MessageBufferCreate, AllocThenUserPopIfEmptyMessage) {
   // память.
   write.Pop();
 
-  EXPECT_TRUE(buffer_->IsBufferEmpty());
+  EXPECT_TRUE(buffer_->IsEmpty());
 }
+
+#endif
