@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/bilke/cmake-modules.git
+	branch = master
+	commit = 1fcf7f4a2179a7b649be15473906882871ef5f0b
+	parent = c02679b16225551e4441ff2cfa049417d647d720
+	method = merge
+	cmdver = 0.4.6
