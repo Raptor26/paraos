@@ -10,7 +10,7 @@
 namespace paraos {
 
 /// @brief Finally with no overhead for heap memory
-/// @tparam ActTy
+/// @tparam ActTyfexplicit
 template <typename ActTy>
 struct Finally {
   ActTy act_;

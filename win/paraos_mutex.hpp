@@ -1,5 +1,5 @@
-#ifndef MUTEX_HPP
-#define MUTEX_HPP
+#ifndef PARAOS_MUTEX_HPP
+#define PARAOS_MUTEX_HPP
 
 #include <cassert>
 
@@ -77,12 +77,12 @@ class BoolSafeThreadFlag {
  public:
   /// @brief Ctor.
   /// @param
-  BoolSafeThreadFlag(bool new_status) : is_locked_{new_status} {}
+  BoolSafeThreadFlag(bool new_status) noexcept : is_locked_{new_status} {}
 
   /// @brief Default Ctor
-  BoolSafeThreadFlag() : BoolSafeThreadFlag{false} {}
+  BoolSafeThreadFlag() noexcept : BoolSafeThreadFlag{false} {}
 
-  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) {
+  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) noexcept {
     if (this != &other) {
       const CriticalSection critical;  // RAII
       is_locked_ = other.is_locked_;
@@ -91,20 +91,20 @@ class BoolSafeThreadFlag {
     return *this;
   }
 
-  operator bool() const { return Islocked(); }
+  operator bool() const noexcept { return Islocked(); }
 
  private:
   /// @brief Safe thread setter status.
   /// @param[in] new_state: New state for safe thread update status.
-  inline void SetLocked(bool new_state) {
-    CriticalSection critical;  // RAII
+  inline void SetLocked(bool new_state) noexcept {
+    const CriticalSection critical;  // RAII
     is_locked_ = new_state;
   }
 
   /// @brief Safe thread getter status.
   /// @return true or false.
-  inline bool Islocked() const {
-    CriticalSection critical;  // RAII
+  inline bool Islocked() const noexcept {
+    const CriticalSection critical;  // RAII
     return is_locked_;
   }
 };
@@ -151,4 +151,4 @@ class MutexBaseBinary : public MutexBase {
 };
 }  // namespace paraos
 
-#endif /* MUTEX_HPP */
+#endif /* PARAOS_MUTEX_HPP */
