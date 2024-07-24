@@ -35,8 +35,8 @@
 
 #include <windows.h>
 
-#include "critical.hpp"
-#include "thread.hpp"
+#include "paraos_critical.hpp"
+#include "paraos_thread.hpp"
 
 using namespace paraos;
 struct PrintTestMessage1 : public ThreadBase {

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "mutex.hpp"
+#include "paraos_mutex.hpp"
 #include "rtos_impl_mutex.hpp"
 
 using namespace paraos;

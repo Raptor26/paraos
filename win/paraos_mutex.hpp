@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#include "critical.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
 
 #ifdef paraosTRACE_ENABLE

@@ -3,8 +3,8 @@
 
 #include <queue>
 
-#include "critical.hpp"
 #include "paraos_config.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_queue.hpp"
 #include "paraos_trace.hpp"
 
@@ -13,7 +13,7 @@
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-#include "win/critical.hpp"
+#include "win/paraos_critical.hpp"
 #endif
 
 namespace paraos {
