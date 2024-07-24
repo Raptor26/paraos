@@ -2,6 +2,7 @@
 #define PARAOS_QUEUE_HPP
 
 #include <cassert>
+#include <memory>
 
 #include "paraos_config.hpp"
 #include "paraos_trace.hpp"
