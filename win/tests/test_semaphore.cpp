@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "semaphore.hpp"
+#include "paraos_semaphore.hpp"
 
 using namespace paraos;
 

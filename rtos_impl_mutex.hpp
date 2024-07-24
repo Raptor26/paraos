@@ -2,7 +2,7 @@
 #define RTOS_IMPL_MUTEX_HPP
 
 #if defined(WIN32)
-#include "win/mutex.hpp"
+#include "win/paraos_mutex.hpp"
 #endif
 
 #ifdef paraosTRACE_ENABLE

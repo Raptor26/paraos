@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#include "critical.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
 
 #ifdef paraosTRACE_ENABLE
@@ -45,6 +45,12 @@ class MutexBase {
 #endif
   }
 
+  MutexBase(const MutexBase& other) = delete;
+  MutexBase(MutexBase&& other) = delete;
+
+  MutexBase& operator=(const MutexBase& other) = delete;
+  MutexBase& operator=(MutexBase&& other) = delete;
+
   operator bool() const { return handle_ != nullptr ? true : false; }
 
   virtual bool Lock(std::size_t timeout_ms = max_delay) {
@@ -76,9 +82,11 @@ class BoolSafeThreadFlag {
   /// @brief Default Ctor
   BoolSafeThreadFlag() : BoolSafeThreadFlag{false} {}
 
-  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& ohter) {
-    const CriticalSection critical;  // RAII
-    is_locked_ = ohter.is_locked_;
+  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) {
+    if (this != &other) {
+      const CriticalSection critical;  // RAII
+      is_locked_ = other.is_locked_;
+    }
 
     return *this;
   }

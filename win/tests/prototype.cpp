@@ -35,20 +35,21 @@
 
 #include <windows.h>
 
-#include "critical.hpp"
-#include "thread.hpp"
+#include "paraos_critical.hpp"
+#include "paraos_thread.hpp"
 
 using namespace paraos;
 struct PrintTestMessage1 : public ThreadBase {
-  void Processing() override {
-    Sleep(0);
+  PrintTestMessage1() : ThreadBase{false} {}
 
+  void Processing() override {
     CriticalSection critical;
     std::cout << "PrintTestMessage 1" << std::endl;
   }
 };
 
 struct PrintTestMessage2 : public ThreadBase {
+  PrintTestMessage2() : ThreadBase{false} {}
   void Processing() override {
     Sleep(0);
     CriticalSection critical;
@@ -57,6 +58,8 @@ struct PrintTestMessage2 : public ThreadBase {
 };
 
 struct PrintTestMessage3 : public ThreadBase {
+  PrintTestMessage3() : ThreadBase{false} {}
+
   void Processing() override {
     Sleep(0);
     CriticalSection critical;
@@ -65,7 +68,7 @@ struct PrintTestMessage3 : public ThreadBase {
 };
 
 struct PrintTestMessageSelf : public ThreadBase {
-  PrintTestMessageSelf() { ThreadFactory.Make(*this); }
+  PrintTestMessageSelf() : ThreadBase{false} { ThreadFactory.Make(*this); }
   void Processing() override {
     Sleep(0);
     CriticalSection critical;
