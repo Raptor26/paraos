@@ -42,52 +42,34 @@
 #include <unordered_set>
 #include <vector>
 
+#include "paraos_config.hpp"
+
 namespace paraos {
 using thread_handle = HANDLE;
 
-struct ThreadBase {
+class ThreadBase {
+ public:
   virtual ~ThreadBase() = default;
 
   virtual void Processing() = 0;
 
-  thread_handle handles_storage_ = nullptr;
-};
+  PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
 
-/// @brief
-class TheadStorage {
- public:
-  TheadStorage(ThreadBase& threadable, bool is_create_suspended = true) {
-    DWORD thread_id;
+  thread_handle handles_storage_{nullptr};
 
-    DWORD dwCreationFlags = 0x00;
-    if (is_create_suspended == true) {
-      dwCreationFlags = CREATE_SUSPENDED;
-    }
-
-    handle_ = CreateThread(nullptr, 0, CallPoint,
-                           reinterpret_cast<void*>(&threadable),
-                           dwCreationFlags, &thread_id);
-  }
-
-  ~TheadStorage() {
-    if ((handle_) && (is_joined == true)) {
-      CloseHandle(handle_);
-    }
-  }
-
-  void Join() { is_joined = true; }
+ protected:
+  /// @brief Конструктор абстрактного класса потока. Задает параметры выполнения
+  /// потока.
+  /// @param[in] is_need_while: Необходимо указать 'true' если требуется
+  /// периодический вызов Processing() в теле бесконечного цикла, в противном
+  /// случае Processing() будет вызван единожды и поток прекратит свое
+  /// существование.
+  ThreadBase(const bool is_need_while) : is_need_while_{is_need_while} {}
 
  private:
-  thread_handle handle_ = nullptr;
-  bool is_joined = false;
-
-  static DWORD WINAPI CallPoint(LPVOID params) {
-    auto ptr_this = reinterpret_cast<ThreadBase*>(params);
-    ptr_this->Processing();
-
-    // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
-    return 0;
-  }
+  /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
+  /// в бесконечном цикле.
+  const bool is_need_while_{false};
 };
 
 class Thread {
@@ -189,7 +171,16 @@ class Thread {
   /// @return
   static DWORD WINAPI CallPoint(LPVOID params) {
     auto ptr_this = reinterpret_cast<ThreadBase*>(params);
-    ptr_this->Processing();
+
+    // Запишем в локальную переменную значение флага. Это позволит избежать
+    // операции разыменование указатели при работе в теле цикла do -> while()
+    const auto is_need_while = ptr_this->IsNeedWhile();
+
+    // Нужно ли выполнение в теле бесконечного цикла задается при создании
+    // потока в конструкторе ThreadBase()
+    do {
+      ptr_this->Processing();
+    } while (is_need_while);
 
     // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
     return 0;
