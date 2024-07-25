@@ -55,7 +55,9 @@ struct Queue : public IQueue<T> {
   virtual ~Queue() {
     Erase();
 
-    traits_t1::deallocate(allocator_, buff_ptr_, max_elements_numb_);
+    if (buff_ptr_) {
+      traits_t1::deallocate(allocator_, buff_ptr_, max_elements_numb_);
+    }
   };
 
   Queue(const Queue& other) = delete;

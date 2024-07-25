@@ -40,10 +40,9 @@ struct Message {
   virtual ~Message() {
     paraosTRACE_MESSAGE("~Message");
 
-    alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
-
     if (data_ptr_) {
       paraosTRACE_MESSAGE("~Message free");
+      alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
     }
   };
 
