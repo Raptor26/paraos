@@ -41,8 +41,8 @@ class Thread {
 
   virtual ~Thread() {
     const paraos::CriticalSection critical;
-    if (auto iter = std::find(queue_thread_obj_.cbegin(),
-                              queue_thread_obj_.cend(), this);
+    if (auto iter = std::find(
+            queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
         iter != queue_thread_obj_.cend()) {
       Thread *thread_ptr = *iter;
 
@@ -159,9 +159,10 @@ class Thread {
     // момент извлечения крайнего дескриптора потока из очереди, другой поток
     // поместил новый объект в очередь (критическая секция позволяет избежать
     // подобного состояния)
-    assert(queue_thread_obj_.empty() &&
-           "Container for pointers threadable objects must be empty, otherwise "
-           "some thread not deleted");
+    assert(
+        queue_thread_obj_.empty() &&
+        "Container for pointers threadable objects must be empty, otherwise "
+        "some thread not deleted");
   }
 
  private:

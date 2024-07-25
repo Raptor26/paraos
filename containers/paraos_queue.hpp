@@ -39,21 +39,27 @@ struct Queue : public IQueue<T> {
   ALLOCATOR allocator_;
   using traits_t1 = std::allocator_traits<decltype(allocator_)>;
 
-  static_assert(std::is_nothrow_move_constructible<T>::value,
-                "'T' move constructor must be annotated as noexcept");
+  static_assert(
+      std::is_nothrow_move_constructible<T>::value,
+      "'T' move constructor must be annotated as noexcept");
 
-  static_assert(std::is_same_v<T, typename traits_t1::value_type>,
-                "Queue item type and allocator type must be same type");
+  static_assert(
+      std::is_same_v<T, typename traits_t1::value_type>,
+      "Queue item type and allocator type must be same type");
 
  public:
   Queue(size_t max_elements_numb) : max_elements_numb_{max_elements_numb} {
-    buff_ptr_ = traits_t1::allocate(allocator_, max_elements_numb_);
+    if (max_elements_numb > 0) {
+      buff_ptr_ = traits_t1::allocate(allocator_, max_elements_numb_);
+    }
   }
 
   virtual ~Queue() {
     Erase();
 
-    traits_t1::deallocate(allocator_, buff_ptr_, max_elements_numb_);
+    if (buff_ptr_) {
+      traits_t1::deallocate(allocator_, buff_ptr_, max_elements_numb_);
+    }
   };
 
   Queue(const Queue& other) = delete;
@@ -61,12 +67,21 @@ struct Queue : public IQueue<T> {
   Queue& operator=(const Queue& other) = delete;
   Queue& operator=(Queue&& other) = delete;
 
+  operator bool() const {
+    bool is_queue_created{false};
+    if (buff_ptr_) {
+      is_queue_created = true;
+    }
+
+    return is_queue_created;
+  }
+
   template <typename... Args>
   auto EmplaceBack(Args&&... args) -> bool {
     bool is_pushed{false};
     if (!IsFull()) {
-      traits_t1::construct(allocator_, &buff_ptr_[w_idx_],
-                           std::forward<Args>(args)...);
+      traits_t1::construct(
+          allocator_, &buff_ptr_[w_idx_], std::forward<Args>(args)...);
       UpdateWriteIdx();
 
       is_pushed = true;
@@ -93,8 +108,9 @@ struct Queue : public IQueue<T> {
   }
 
   auto Pop() -> T override {
-    assert(!IsEmpty() &&
-           "if Pop() is called for an empty queue, the behavior is undefined");
+    assert(
+        !IsEmpty() &&
+        "if Pop() is called for an empty queue, the behavior is undefined");
 
     // Лямбда-функция ниже будет вызвана сразу после оператора return
     Finally pop_from_queue{[&] {

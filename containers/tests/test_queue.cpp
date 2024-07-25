@@ -62,12 +62,23 @@ class QueueCreator : public ::testing::Test {
  protected:
   virtual void SetUp() {
     queue_ = std::make_unique<paraos::Queue<user_data_type>>(10);
+    ASSERT_TRUE(*queue_);
   }
 
   virtual void TearDown() {}
 };
 
-TEST(Queue, Create) { Queue<user_data_type> queue{10}; }
+TEST(Queue, Create) {
+  Queue<user_data_type> queue{10};
+
+  ASSERT_TRUE(queue);
+}
+
+TEST(Queue, CreateEmptyQueue) {
+  Queue<user_data_type> queue{0};
+
+  ASSERT_FALSE(queue);
+}
 
 TEST_F(QueueCreator, PushThenPop) {
 #ifdef paraosTRACE_ENABLE

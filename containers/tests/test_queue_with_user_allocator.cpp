@@ -43,8 +43,9 @@ class MyAlloc {
   // allocate but don't initialize num elements of type T
   pointer allocate(size_type num, const void * = 0) {
     // print message and allocate memory with global new
-    paraosTRACE_MESSAGE("allocate " << num << " element(s)"
-                                    << " of size " << sizeof(T));
+    paraosTRACE_MESSAGE(
+        "allocate " << num << " element(s)"
+                    << " of size " << sizeof(T));
 
     pointer ret = (pointer)(::operator new(num * sizeof(T)));
     paraosTRACE_MESSAGE(" allocated at: " << (void *)ret);
@@ -75,9 +76,9 @@ class MyAlloc {
   // deallocate storage p of deleted elements
   void deallocate(pointer p, size_type num) noexcept {
     // print message and deallocate memory with global delete
-    paraosTRACE_MESSAGE("deallocate " << num << " element(s)"
-                                      << " of size " << sizeof(T)
-                                      << " at: " << (void *)p);
+    paraosTRACE_MESSAGE(
+        "deallocate " << num << " element(s)"
+                      << " of size " << sizeof(T) << " at: " << (void *)p);
     ::operator delete((void *)p);
   }
 };

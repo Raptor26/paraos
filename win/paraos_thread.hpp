@@ -132,8 +132,8 @@ class Thread {
     is_scheduler_started = true;
 
     // В POSIX мы бы вызвали join для каждого потока
-    WaitForMultipleObjects(handles_storage_.size(), handles_storage_.data(),
-                           TRUE, INFINITE);
+    WaitForMultipleObjects(
+        handles_storage_.size(), handles_storage_.data(), TRUE, INFINITE);
 
     // К данной точке выполнения программы все потоки завершили свое
     // выполнение.
@@ -150,8 +150,8 @@ class Thread {
 
     // Перед удалением потока необходимо убедиться что его дескриптор
     // присутствует в хранилище
-    if (auto iter = std::find(handles_storage_.cbegin(),
-                              handles_storage_.cend(), handle);
+    if (auto iter = std::find(
+            handles_storage_.cbegin(), handles_storage_.cend(), handle);
         iter != handles_storage_.cend()) {
       if (CloseHandle(*iter) == TRUE) {
         // Т.к повторный вызов CloseHandle() для закрытого дескриптора является

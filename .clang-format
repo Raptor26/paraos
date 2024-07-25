@@ -1,0 +1,6 @@
+﻿---
+Language: Cpp
+AlignAfterOpenBracket: AlwaysBreak
+
+BasedOnStyle: Google
+...

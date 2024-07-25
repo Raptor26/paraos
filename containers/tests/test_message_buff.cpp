@@ -9,23 +9,32 @@
 
 using namespace paraos;
 
-#if 1
-using QueueRealization = paraos::QueueMessageBuffWrapper;
+using MessageAllocator = std::allocator<std::uint8_t>;
+using QueueAllocator = std::allocator<Message<MessageAllocator>>;
 
 class MessageBufferCreate : public ::testing::Test {
  public:
-  std::unique_ptr<MessageBuffer<QueueRealization>> buffer_;
+  std::unique_ptr<MessageBuffer<MessageAllocator, QueueAllocator>> buffer_;
 
  protected:
   virtual void SetUp() {
-    buffer_ = std::make_unique<MessageBuffer<QueueRealization>>();
+    buffer_ =
+        std::make_unique<MessageBuffer<MessageAllocator, QueueAllocator>>();
+    ASSERT_TRUE(*buffer_);
   }
 
   virtual void TearDown() {}
 };
 
-#if 1
-TEST(MessageBuff, Create) { MessageBuffer buff; }
+TEST(MessageBuff, Create) {
+  MessageBuffer buff;
+  ASSERT_TRUE(buff);
+}
+
+TEST(MessageBuff, CreateEmpty) {
+  MessageBuffer buff{0};
+  ASSERT_FALSE(buff);
+}
 
 TEST_F(MessageBufferCreate, AllocZeroMemory) {
   auto message = buffer_->Alloc(0);
@@ -36,7 +45,6 @@ TEST_F(MessageBufferCreate, PopFromEmptyBuff) {
   auto message = buffer_->Pop();
   EXPECT_FALSE(message);
 }
-#endif
 
 TEST_F(MessageBufferCreate, PushThenPop) {
   constexpr float val{0.1234};
@@ -142,8 +150,9 @@ TEST_F(MessageBufferCreate, WriteStrings) {
     {
       auto write = buffer_->Alloc(str.length());
       if (write) {
-        memcpy(write.GetAddr(), static_cast<const void *>(str.c_str()),
-               write.GetSize());
+        memcpy(
+            write.GetAddr(), static_cast<const void *>(str.c_str()),
+            write.GetSize());
         ++write_cnt;
       }
 
@@ -159,8 +168,8 @@ TEST_F(MessageBufferCreate, WriteStrings) {
     auto read = buffer_->Pop();
 
     if (read) {
-      std::string_view str_view{static_cast<char *>(read.GetAddr()),
-                                read.GetSize()};
+      std::string_view str_view{
+          static_cast<char *>(read.GetAddr()), read.GetSize()};
 
       EXPECT_EQ(set_str[read_cnt], str_view);
       ++read_cnt;
@@ -176,15 +185,16 @@ TEST_F(MessageBufferCreate, AllocThenUserPop) {
     auto write = buffer_->Alloc(str.length());
 
     if (write) {
-      memcpy(write.GetAddr(), static_cast<const void *>(str.c_str()),
-             write.GetSize());
+      memcpy(
+          write.GetAddr(), static_cast<const void *>(str.c_str()),
+          write.GetSize());
 
       // Пользователь передумал записывать сообщение.
       write.Pop();
     }
 
-    // В деструкторе переменной 'write' сообщение не будет записано в 'buffer_'
-    // т.к. пользователь вызвал Pop()
+    // В деструкторе переменной 'write' сообщение не будет записано в
+    // 'buffer_' т.к. пользователь вызвал Pop()
   }
 
   EXPECT_TRUE(buffer_->IsEmpty());
@@ -199,5 +209,3 @@ TEST_F(MessageBufferCreate, AllocThenUserPopIfEmptyMessage) {
 
   EXPECT_TRUE(buffer_->IsEmpty());
 }
-
-#endif
