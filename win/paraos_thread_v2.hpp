@@ -22,9 +22,19 @@
 namespace paraos {
 namespace v2 {
 
+enum ThreadPriority : int {
+  kIdle = THREAD_PRIORITY_IDLE,
+  kAboveNormal = THREAD_PRIORITY_ABOVE_NORMAL,
+  kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
+  kHighest = THREAD_PRIORITY_HIGHEST,
+  kLowest = THREAD_PRIORITY_LOWEST,
+  kNormal = THREAD_PRIORITY_NORMAL,
+  kRealTime = THREAD_PRIORITY_TIME_CRITICAL,
+};
+
 class Thread {
  public:
-  Thread(const std::string name, size_t stack_depth, size_t priority)
+  Thread(const std::string name, size_t stack_depth, int priority)
       : name_{name}, stack_depth_{stack_depth}, priority_{priority} {
     Make();
   }
@@ -201,7 +211,7 @@ class Thread {
   HANDLE handle_{nullptr};
   DWORD thread_id_{0};
   BoolSafeThreadFlag is_joinable_{true};
-  size_t priority_{0};
+  int priority_{0};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.
