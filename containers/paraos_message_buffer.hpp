@@ -154,6 +154,8 @@ struct QueueMessageBuffWrapper final
   QueueMessageBuffWrapper(const size_t len) : queue_{len} {}
   ~QueueMessageBuffWrapper() = default;
 
+  operator bool() const { return static_cast<bool>(queue_); }
+
   PARAOS_INLINE_TRIVIAL auto Push(Message<MESSAGE_ALLOCATOR> &&elem)
       -> bool override {
     return queue_.Push(std::move(elem));
@@ -194,6 +196,8 @@ struct MessageBuffer {
   }
 
   ~MessageBuffer() { paraosTRACE_MESSAGE("MessageBuffer Dtor"); }
+
+  operator bool() const { return static_cast<bool>(queue_); }
 
   auto Alloc(size_t size_in_bytes) {
     paraosTRACE_MESSAGE("-- Alloc Message memory area");

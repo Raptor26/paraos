@@ -9,7 +9,6 @@
 
 using namespace paraos;
 
-#if 1
 using MessageAllocator = std::allocator<std::uint8_t>;
 using QueueAllocator = std::allocator<Message<MessageAllocator>>;
 
@@ -21,13 +20,21 @@ class MessageBufferCreate : public ::testing::Test {
   virtual void SetUp() {
     buffer_ =
         std::make_unique<MessageBuffer<MessageAllocator, QueueAllocator>>();
+    ASSERT_TRUE(*buffer_);
   }
 
   virtual void TearDown() {}
 };
 
-#if 1
-TEST(MessageBuff, Create) { MessageBuffer buff; }
+TEST(MessageBuff, Create) {
+  MessageBuffer buff;
+  ASSERT_TRUE(buff);
+}
+
+TEST(MessageBuff, CreateEmpty) {
+  MessageBuffer buff{0};
+  ASSERT_FALSE(buff);
+}
 
 TEST_F(MessageBufferCreate, AllocZeroMemory) {
   auto message = buffer_->Alloc(0);
@@ -38,7 +45,6 @@ TEST_F(MessageBufferCreate, PopFromEmptyBuff) {
   auto message = buffer_->Pop();
   EXPECT_FALSE(message);
 }
-#endif
 
 TEST_F(MessageBufferCreate, PushThenPop) {
   constexpr float val{0.1234};
@@ -203,5 +209,3 @@ TEST_F(MessageBufferCreate, AllocThenUserPopIfEmptyMessage) {
 
   EXPECT_TRUE(buffer_->IsEmpty());
 }
-
-#endif

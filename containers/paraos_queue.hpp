@@ -49,7 +49,9 @@ struct Queue : public IQueue<T> {
 
  public:
   Queue(size_t max_elements_numb) : max_elements_numb_{max_elements_numb} {
-    buff_ptr_ = traits_t1::allocate(allocator_, max_elements_numb_);
+    if (max_elements_numb > 0) {
+      buff_ptr_ = traits_t1::allocate(allocator_, max_elements_numb_);
+    }
   }
 
   virtual ~Queue() {
@@ -64,6 +66,15 @@ struct Queue : public IQueue<T> {
   Queue(Queue&& other) = delete;
   Queue& operator=(const Queue& other) = delete;
   Queue& operator=(Queue&& other) = delete;
+
+  operator bool() const {
+    bool is_queue_created{false};
+    if (buff_ptr_) {
+      is_queue_created = true;
+    }
+
+    return is_queue_created;
+  }
 
   template <typename... Args>
   auto EmplaceBack(Args&&... args) -> bool {
