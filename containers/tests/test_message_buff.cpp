@@ -10,15 +10,17 @@
 using namespace paraos;
 
 #if 1
-using QueueRealization = paraos::QueueMessageBuffWrapper;
+using MessageAllocator = std::allocator<std::uint8_t>;
+using QueueAllocator = std::allocator<Message<MessageAllocator>>;
 
 class MessageBufferCreate : public ::testing::Test {
- public:
-  std::unique_ptr<MessageBuffer<QueueRealization>> buffer_;
+public:
+  std::unique_ptr<MessageBuffer<MessageAllocator, QueueAllocator>> buffer_;
 
- protected:
+protected:
   virtual void SetUp() {
-    buffer_ = std::make_unique<MessageBuffer<QueueRealization>>();
+    buffer_ =
+        std::make_unique<MessageBuffer<MessageAllocator, QueueAllocator>>();
   }
 
   virtual void TearDown() {}
@@ -183,8 +185,8 @@ TEST_F(MessageBufferCreate, AllocThenUserPop) {
       write.Pop();
     }
 
-    // В деструкторе переменной 'write' сообщение не будет записано в 'buffer_'
-    // т.к. пользователь вызвал Pop()
+    // В деструкторе переменной 'write' сообщение не будет записано в
+    // 'buffer_' т.к. пользователь вызвал Pop()
   }
 
   EXPECT_TRUE(buffer_->IsEmpty());

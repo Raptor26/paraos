@@ -1,7 +1,10 @@
 #ifndef PARAOS_MESSAGE_BUFFER_HPP
 #define PARAOS_MESSAGE_BUFFER_HPP
 
+#include <cstdint>
+#include <cstring>
 #include <queue>
+
 
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
@@ -18,11 +21,11 @@
 
 namespace paraos {
 
-struct Message {
-  Message(size_t size_in_bytes, paraos::IQueue<Message>* queue_ptr)
+template <typename ALLOCATOR = std::allocator<std::uint8_t>> struct Message {
+  Message(size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
       : queue_ptr_{queue_ptr} {
     if (size_in_bytes > 0) {
-      data_ptr_ = new (std::nothrow) std::uint8_t[size_in_bytes];
+      data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes);
 
       if (data_ptr_) {
         size_in_bytes_ = size_in_bytes;
@@ -37,24 +40,25 @@ struct Message {
   virtual ~Message() {
     paraosTRACE_MESSAGE("~Message");
 
-    delete[] data_ptr_;
+    alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
 
     if (data_ptr_) {
       paraosTRACE_MESSAGE("~Message free");
     }
   };
 
-  Message(const Message& other) noexcept {
+  Message(const Message<ALLOCATOR> &other) noexcept {
     paraosTRACE_MESSAGE("Message Copy Ctor");
 
-    data_ptr_ = new (std::nothrow) std::uint8_t[other.size_in_bytes_];
+    data_ptr_ = alloc_traits::allocate(allocator_, other.size_in_bytes_);
+
     if (data_ptr_) {
       memcpy(data_ptr_, other.data_ptr_, other.size_in_bytes_);
       size_in_bytes_ = other.size_in_bytes_;
     }
   }
 
-  Message(Message&& other) noexcept {
+  Message(Message<ALLOCATOR> &&other) noexcept {
     paraosTRACE_MESSAGE("Message Move Ctor");
 
     data_ptr_ = other.data_ptr_;
@@ -64,15 +68,15 @@ struct Message {
     other.data_ptr_ = nullptr;
   }
 
-  Message& operator=(const Message& other) = delete;
+  Message &operator=(const Message<ALLOCATOR> &other) = delete;
 
-  Message& operator=(Message&& other) noexcept {
+  Message &operator=(Message<ALLOCATOR> &&other) noexcept {
     paraosTRACE_MESSAGE("Message Move operator");
     if (this == &other) {
       return *this;
     }
 
-    delete data_ptr_;
+    alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
 
     data_ptr_ = other.data_ptr_;
     size_in_bytes_ = other.size_in_bytes_;
@@ -91,35 +95,40 @@ struct Message {
   }
 
   PARAOS_INLINE_TRIVIAL auto GetAddr() const {
-    return static_cast<void*>(data_ptr_);
+    return static_cast<void *>(data_ptr_);
   }
 
   PARAOS_INLINE_TRIVIAL auto GetSize() const { return size_in_bytes_; }
 
- protected:
-  paraos::IQueue<Message>* queue_ptr_{nullptr};
+protected:
+  paraos::IQueue<Message<ALLOCATOR>> *queue_ptr_{nullptr};
 
- private:
-  std::uint8_t* data_ptr_{nullptr};
+private:
+  ALLOCATOR allocator_;
+  using alloc_traits = std::allocator_traits<decltype(allocator_)>;
+
+  std::uint8_t *data_ptr_{nullptr};
   size_t size_in_bytes_{0};
 };
 
-struct MessageWritable final : public Message {
-  MessageWritable(size_t size_in_bytes, paraos::IQueue<Message>* queue_ptr)
-      : Message{size_in_bytes, queue_ptr} {
+template <typename ALLOCATOR = std::allocator<std::uint8_t>>
+struct MessageWritable final : public Message<ALLOCATOR> {
+  MessageWritable(size_t size_in_bytes,
+                  paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
+      : Message<ALLOCATOR>{size_in_bytes, queue_ptr} {
     paraosTRACE_MESSAGE("MessageWritable Ctor");
   }
 
   ~MessageWritable() {
     paraosTRACE_MESSAGE("~MessageWritable Dtor");
 
-    if (GetAddr() && !is_message_pop && queue_ptr_) {
-      queue_ptr_->Push(std::move(*this));
+    if (this->GetAddr() && !is_message_pop && this->queue_ptr_) {
+      this->queue_ptr_->Push(std::move(*this));
     }
   }
 
   PARAOS_INLINE_TRIVIAL operator bool() const {
-    if (GetAddr()) {
+    if (this->GetAddr()) {
       return true;
     }
     return false;
@@ -127,33 +136,39 @@ struct MessageWritable final : public Message {
 
   void Pop() { is_message_pop = true; }
 
- private:
+private:
   bool is_message_pop{false};
 };
 
-struct QueueMessageBuffWrapper final : public IQueue<Message> {
- private:
-  static_assert(std::has_virtual_destructor_v<IQueue<Message>>,
-                "IQueue<T> must has virtual destruction");
+template <typename MESSAGE_ALLOCATOR = std::allocator<std::uint8_t>,
+          typename QUEUE_ALLOCATOR = std::allocator<Message<MESSAGE_ALLOCATOR>>>
+struct QueueMessageBuffWrapper final
+    : public IQueue<Message<MESSAGE_ALLOCATOR>> {
+private:
+  static_assert(
+      std::has_virtual_destructor_v<IQueue<Message<MESSAGE_ALLOCATOR>>>,
+      "IQueue<T> must have virtual destruction");
 
- public:
+public:
   QueueMessageBuffWrapper(const size_t len) : queue_{len} {}
   ~QueueMessageBuffWrapper() = default;
 
-  PARAOS_INLINE_TRIVIAL auto Push(Message&& elem) -> bool override {
+  PARAOS_INLINE_TRIVIAL auto
+  Push(Message<MESSAGE_ALLOCATOR> &&elem) -> bool override {
     return queue_.Push(std::move(elem));
   }
 
-  PARAOS_INLINE_TRIVIAL auto Push(const Message& elem) -> bool override {
+  PARAOS_INLINE_TRIVIAL auto
+  Push(const Message<MESSAGE_ALLOCATOR> &elem) -> bool override {
     return queue_.Push(elem);
   }
 
-  PARAOS_INLINE_TRIVIAL auto Pop() -> Message override {
+  PARAOS_INLINE_TRIVIAL auto Pop() -> Message<MESSAGE_ALLOCATOR> override {
     if (!IsEmpty()) {
       return queue_.Pop();
     }
 
-    return Message{};
+    return Message<MESSAGE_ALLOCATOR>{};
   }
 
   PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool override {
@@ -164,11 +179,12 @@ struct QueueMessageBuffWrapper final : public IQueue<Message> {
 
   PARAOS_INLINE_TRIVIAL void Erase() override { queue_.Erase(); }
 
- private:
-  paraos::Queue<Message> queue_;
+private:
+  paraos::Queue<Message<MESSAGE_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
 };
 
-template <typename QUEUE = paraos::QueueMessageBuffWrapper>
+template <typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>,
+          typename QUEUE_ALLOCATOR = std::allocator<Message<BUFFER_ALLOCATOR>>>
 struct MessageBuffer {
   MessageBuffer(size_t buff_max_message_numb = 10)
       : queue_{buff_max_message_numb} {
@@ -180,7 +196,7 @@ struct MessageBuffer {
   auto Alloc(size_t size_in_bytes) {
     paraosTRACE_MESSAGE("-- Alloc Message memory area");
 
-    return MessageWritable{size_in_bytes, &queue_};
+    return MessageWritable<BUFFER_ALLOCATOR>{size_in_bytes, &queue_};
   }
 
   auto Pop() {
@@ -196,10 +212,10 @@ struct MessageBuffer {
 
   void Erase() { queue_.Erase(); }
 
- private:
-  QUEUE queue_;
+private:
+  paraos::QueueMessageBuffWrapper<BUFFER_ALLOCATOR, QUEUE_ALLOCATOR> queue_;
 };
 
-}  // namespace paraos
+} // namespace paraos
 
 #endif /* PARAOS_MESSAGE_BUFFER_HPP */

@@ -4,9 +4,8 @@
 
 #include "paraos_queue.hpp"
 
-template <class T>
-class MyAlloc {
- public:
+template <class T> class MyAlloc {
+public:
   // type definitions
   typedef T value_type;
   typedef T *pointer;
@@ -17,8 +16,7 @@ class MyAlloc {
   typedef std::ptrdiff_t difference_type;
 
   // rebind allocator to type U
-  template <class U>
-  struct rebind {
+  template <class U> struct rebind {
     typedef MyAlloc<U> other;
   };
 
@@ -31,8 +29,7 @@ class MyAlloc {
    */
   MyAlloc() throw() {}
   MyAlloc(const MyAlloc &) throw() {}
-  template <class U>
-  MyAlloc(const MyAlloc<U> &) throw() {}
+  template <class U> MyAlloc(const MyAlloc<U> &) throw() {}
   ~MyAlloc() throw() {}
 
   // return maximum number of elements that can be allocated
@@ -66,8 +63,7 @@ class MyAlloc {
   }
 
   // destroy elements of initialized storage p
-  template <typename U>
-  void destroy(U *ptr) {
+  template <typename U> void destroy(U *ptr) {
     paraosTRACE_MESSAGE("Destroy objects by calling their destructor");
     ptr->~U();
   }
@@ -135,7 +131,7 @@ struct DataForHeapAlloc final {
 
   ~DataForHeapAlloc() { delete mem_; }
 
- private:
+private:
   int *mem_;
 };
 
