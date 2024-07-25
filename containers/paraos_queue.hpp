@@ -5,6 +5,8 @@
 #include <memory>
 
 #include "paraos_config.hpp"
+#include "paraos_mutex.hpp"
+#include "paraos_semaphore.hpp"
 #include "paraos_trace.hpp"
 
 namespace paraos {
@@ -195,6 +197,55 @@ struct Queue : public IQueue<T> {
 
   /// @brief Количество записанных в очередь объектов.
   size_t contained_cnt_{0};
+};
+
+template <typename T, typename ALLOCATOR = std::allocator<T>>
+class QueueBlocking : public Queue<T, ALLOCATOR> {
+ public:
+  QueueBlocking(size_t max_elements_numb)
+      : Queue<T, ALLOCATOR>(max_elements_numb),
+        sem_{SemaphoreAttr{max_elements_numb}} {}
+
+  virtual ~QueueBlocking() {}
+
+  template <typename... Args>
+  auto EmplaceBack(Args&&... args) -> bool {
+    bool is_pushed =
+        Queue<T, ALLOCATOR>::EmplaceBack(std::forward<Args>(args)...);
+
+    if (is_pushed) {
+      sem_.Give();
+    }
+
+    return is_pushed;
+  }
+
+  auto Push(T&& item) noexcept(std::is_nothrow_move_constructible<T>::value)
+      -> bool override {
+    return QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item));
+  }
+
+  auto Push(const T& item) noexcept(
+      std::is_nothrow_copy_constructible<T>::value) -> bool override {
+    auto is_pushed = Queue<T, ALLOCATOR>::Push(item);
+
+    if (is_pushed) {
+      sem_.Give();
+    }
+
+    return is_pushed;
+  }
+
+  auto Pop(std::size_t timeout_ms) {
+    if (sem_.Take(timeout_ms)) {
+      return Queue<T, ALLOCATOR>::Pop();
+    }
+
+    return T{};
+  }
+
+ private:
+  Semaphore sem_;
 };
 
 }  // namespace paraos

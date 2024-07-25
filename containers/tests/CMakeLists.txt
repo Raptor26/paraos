@@ -6,8 +6,8 @@ include(GoogleTest)
 # GTEST ------------------------------------------------------------------------
 add_executable(
   ${PROJECT_NAME}
-  test_message_buff.cpp test_queue.cpp test_queue_with_user_allocator.cpp
-  test_message_buff_with_user_allocator.cpp)
+  test_message_buff.cpp test_queue.cpp test_queue_blocking.cpp
+  test_queue_with_user_allocator.cpp test_message_buff_with_user_allocator.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos_containers
                                               GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
