@@ -96,6 +96,7 @@
         "strstream": "cpp",
         "bitset": "cpp",
         "regex": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "syncstream": "cpp"
     }
 }

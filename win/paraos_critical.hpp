@@ -68,7 +68,7 @@ class CriticalSection final {
  public:
   /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
   /// @param is_isr
-  CriticalSection(bool is_isr = false) : is_isr_{is_isr} {
+  CriticalSection(bool is_isr = false) noexcept : is_isr_{is_isr} {
     EnterCriticalSection(critical_section_factory.GiveHandle());
 
 #ifdef paraosTRACE_ENABLE

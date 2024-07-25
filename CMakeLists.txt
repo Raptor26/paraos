@@ -10,6 +10,7 @@ if(UTEST)
 endif()
 
 if(WIN32)
+  option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(win)
 elseif(UNIX)
   add_subdirectory(unix)

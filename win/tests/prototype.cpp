@@ -63,8 +63,12 @@ struct PrintTestMessage3 : public ThreadBase {
   void Processing() override {
     Sleep(0);
     CriticalSection critical;
-    std::cout << "PrintTestMessage 3" << std::endl;
+    std::cout << "PrintTestMessage 3 cnt: " << cnt << std::endl;
+    ++cnt;
   }
+
+ private:
+  size_t cnt{0};
 };
 
 struct PrintTestMessageSelf : public ThreadBase {
@@ -143,10 +147,22 @@ int _tmain() {
   Sleep(10);
   ThreadFactory.Make(print_test_message_1);
   ThreadFactory.Make(print_test_message_2);
-  ThreadFactory.Make(print_test_message_3);
-  ThreadFactory.Make(print_test_message_3);
-  ThreadFactory.Make(print_test_message_3);
-  ThreadFactory.Make(print_test_message_3);
+  {
+    auto handle = ThreadFactory.Make(print_test_message_3);
+    assert(handle);
+  }
+
+  // Повторное создание потоков для данного экземпляра класса не допускается
+  {
+    auto handle = ThreadFactory.Make(print_test_message_3);
+    assert(!handle);
+  }
+
+  // Повторное создание потоков для данного экземпляра класса не допускается
+  {
+    auto handle = ThreadFactory.Make(print_test_message_3);
+    assert(!handle);
+  }
 
   ThreadFactory.StartScheduler();
 

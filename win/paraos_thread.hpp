@@ -28,8 +28,8 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef THREAD_HPP
-#define THREAD_HPP
+#ifndef PARAOS_THREAD_HPP
+#define PARAOS_THREAD_HPP
 
 #include <windows.h>
 
@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "paraos_config.hpp"
+#include "paraos_critical.hpp"
 
 namespace paraos {
 using thread_handle = HANDLE;
@@ -54,6 +55,11 @@ class ThreadBase {
   virtual void Processing() = 0;
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
+
+  PARAOS_INLINE_TRIVIAL auto IsThreadable() const { return is_threadable_; }
+  PARAOS_INLINE_TRIVIAL void SetThreadable(bool is_threadable) {
+    is_threadable_ = is_threadable;
+  }
 
   thread_handle handles_storage_{nullptr};
 
@@ -70,6 +76,8 @@ class ThreadBase {
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.
   const bool is_need_while_{false};
+
+  bool is_threadable_{false};
 };
 
 class Thread {
@@ -85,27 +93,35 @@ class Thread {
   ~Thread() { CloseAllHandles(); }
 
   thread_handle Make(ThreadBase& threadable) {
-    DWORD thread_id;
+    if (!threadable.IsThreadable()) {
+      DWORD thread_id;
 
-    threadable.handles_storage_ = CreateThread(
-        nullptr, 0, CallPoint, reinterpret_cast<void*>(&threadable),
-        CREATE_SUSPENDED, &thread_id);
+      threadable.handles_storage_ = CreateThread(
+          nullptr, 0, CallPoint, reinterpret_cast<void*>(&threadable),
+          CREATE_SUSPENDED, &thread_id);
 
-    if (threadable.handles_storage_ != nullptr) {
-      const CriticalSection critical;
+      if (threadable.handles_storage_ != nullptr) {
+        const CriticalSection critical;
 
-      try {
-        handles_storage_.push_back(threadable.handles_storage_);
+        try {
+          handles_storage_.push_back(threadable.handles_storage_);
 
-      } catch (std::bad_alloc& exception) {
-        std::cerr << "Thead::Make() vector bad alloc: " << exception.what();
-        auto close_status = CloseHandle(threadable.handles_storage_);
-        assert(close_status != 0);
-        threadable.handles_storage_ = nullptr;
+          // Запрет создания еще одного потока с данным экземпляром класса.
+          threadable.SetThreadable(true);
+
+        } catch (std::bad_alloc& exception) {
+          std::cerr << "Thead::Make() vector bad alloc: " << exception.what();
+          auto close_status = CloseHandle(threadable.handles_storage_);
+          assert(close_status != 0);
+          threadable.handles_storage_ = nullptr;
+          threadable.SetThreadable(false);
+        }
       }
+
+      return threadable.handles_storage_;
     }
 
-    return threadable.handles_storage_;
+    return nullptr;
   }
 
   void StartScheduler() noexcept {
@@ -190,4 +206,4 @@ class Thread {
 inline Thread ThreadFactory;
 }  // namespace paraos
 
-#endif /* THREAD_HPP */
+#endif /* PARAOS_THREAD_HPP */
