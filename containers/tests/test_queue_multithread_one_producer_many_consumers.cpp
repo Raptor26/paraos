@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "paraos_queue.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_thread_v2.hpp"
 
 using namespace paraos;
 
@@ -35,13 +35,15 @@ Queue<std::string> queue{100};
 
 std::atomic<size_t> total_read_str_cnt{0};
 
-struct Producer : public ThreadBase {
-  Producer() : ThreadBase{false} {}
+struct Producer : public paraos::v2::Thread {
+  Producer(const std::string name = "Producer", size_t stack_depth = 1024,
+           int priority = THREAD_PRIORITY_IDLE)
+      : paraos::v2::Thread{name, stack_depth, priority} {}
 
-  void Processing() override {
+  void Run() override {
     while (song_cnt < song_str.size()) {
       const paraos::CriticalSection critical;
-      std::cout << song_str[song_cnt] << std::endl;
+      std::cout << Name() << " str:" << song_str[song_cnt] << std::endl;
 
       queue.Push(song_str[song_cnt]);
       ++song_cnt;
@@ -52,10 +54,12 @@ struct Producer : public ThreadBase {
   size_t song_cnt{0};
 };
 
-struct Consumer : public ThreadBase {
-  Consumer(size_t numb) : ThreadBase{false}, number_{numb} {}
+struct Consumer : public paraos::v2::Thread {
+  Consumer(const std::string name = "Consumer", size_t stack_depth = 1024,
+           int priority = THREAD_PRIORITY_IDLE)
+      : paraos::v2::Thread{name, stack_depth, priority} {}
 
-  void Processing() override {
+  void Run() override {
     using namespace std::chrono_literals;
 
     while (!is_read_str) {
@@ -74,8 +78,7 @@ struct Consumer : public ThreadBase {
             total_read_str_cnt.store(cnt);
             if (std::find(song_str.begin(), song_str.end(), str) !=
                 song_str.end()) {
-              std::cout << "Read consumer numb " << number_ << " str: " << str
-                        << std::endl;
+              std::cout << Name() << " str: " << str << std::endl;
             } else {
               assert(false);
             }
@@ -83,33 +86,30 @@ struct Consumer : public ThreadBase {
         }
       }  // out critical section
 
-      // Уступить ресурсы другим потребителям
+      // Уступить ресурсы другим потокам
       std::this_thread::sleep_for(1ms);
     }
   }
 
  private:
   bool is_read_str{false};
-  size_t number_;
 };
 
 int main() {
-  Consumer str_consumer_1{1};
-  Consumer str_consumer_2{2};
-  Consumer str_consumer_3{3};
-  Consumer str_consumer_4{4};
-  Consumer str_consumer_5{5};
-  Consumer str_consumer_6{6};
-  Producer str_producer;
+  Consumer str_consumer_1{"Consumer 1", 1024u,
+                          paraos::v2::ThreadPriority::kLowest};
+  Consumer str_consumer_2{"Consumer 2", 1024u,
+                          paraos::v2::ThreadPriority::kBelowNormal};
+  Consumer str_consumer_3{"Consumer 3", 1024u,
+                          paraos::v2::ThreadPriority::kNormal};
+  Consumer str_consumer_4{"Consumer 4", 1024u,
+                          paraos::v2::ThreadPriority::kAboveNormal};
+  Consumer str_consumer_5{"Consumer 5", 1024u,
+                          paraos::v2::ThreadPriority::kHighest};
 
-  ThreadFactory.Make(str_consumer_1);
-  ThreadFactory.Make(str_consumer_2);
-  ThreadFactory.Make(str_consumer_3);
-  ThreadFactory.Make(str_consumer_4);
-  ThreadFactory.Make(str_consumer_5);
-  ThreadFactory.Make(str_consumer_6);
-  ThreadFactory.Make(str_producer);
+  Producer str_producer{};
 
-  ThreadFactory.StartScheduler();
+  paraos::v2::Thread::StartScheduler();
+
   return 0;
 }
