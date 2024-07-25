@@ -14,15 +14,12 @@
 #include <iostream>
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
-#include "win/paraos_critical.hpp"
-#endif
-
 namespace paraos {
 
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 struct Message {
-  Message(size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
+  Message(
+      std::size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
       : queue_ptr_{queue_ptr} {
     if (size_in_bytes > 0) {
       data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes);
@@ -107,13 +104,13 @@ struct Message {
   using alloc_traits = std::allocator_traits<decltype(allocator_)>;
 
   std::uint8_t *data_ptr_{nullptr};
-  size_t size_in_bytes_{0};
+  std::size_t size_in_bytes_{0};
 };
 
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 struct MessageWritable final : public Message<ALLOCATOR> {
   MessageWritable(
-      size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
+      std::size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
       : Message<ALLOCATOR>{size_in_bytes, queue_ptr} {
     paraosTRACE_MESSAGE("MessageWritable Ctor");
   }
@@ -151,7 +148,7 @@ struct QueueMessageBuffWrapper final
       "IQueue<T> must have virtual destruction");
 
  public:
-  QueueMessageBuffWrapper(const size_t len) : queue_{len} {}
+  QueueMessageBuffWrapper(const std::size_t len) : queue_{len} {}
   ~QueueMessageBuffWrapper() = default;
 
   operator bool() const { return static_cast<bool>(queue_); }
@@ -178,7 +175,9 @@ struct QueueMessageBuffWrapper final
     return queue_.IsEmpty();
   }
 
-  PARAOS_INLINE_TRIVIAL auto Size() -> size_t override { return queue_.Size(); }
+  PARAOS_INLINE_TRIVIAL auto Size() -> std::size_t override {
+    return queue_.Size();
+  }
 
   PARAOS_INLINE_TRIVIAL void Erase() override { queue_.Erase(); }
 
@@ -190,7 +189,7 @@ template <
     typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>,
     typename QUEUE_ALLOCATOR = std::allocator<Message<BUFFER_ALLOCATOR>>>
 struct MessageBuffer {
-  MessageBuffer(size_t buff_max_message_numb = 10)
+  MessageBuffer(std::size_t buff_max_message_numb = 10)
       : queue_{buff_max_message_numb} {
     paraosTRACE_MESSAGE("MessageBuffer Ctor");
   }
@@ -199,7 +198,7 @@ struct MessageBuffer {
 
   operator bool() const { return static_cast<bool>(queue_); }
 
-  auto Alloc(size_t size_in_bytes) {
+  auto Alloc(std::size_t size_in_bytes) {
     paraosTRACE_MESSAGE("-- Alloc Message memory area");
 
     return MessageWritable<BUFFER_ALLOCATOR>{size_in_bytes, &queue_};

@@ -16,7 +16,14 @@ class MutexBase {
  public:
   MutexBase(const MutexAttr& attr) noexcept : is_binary_{attr.is_binary_} {
     if (!is_init_) {
-      auto status = pthread_mutex_init(&m_obj_, nullptr);
+      pthread_mutexattr_t pthread_mutex_attr;
+      pthread_mutexattr_init(&pthread_mutex_attr);
+
+      if (attr.is_binary_ == false) {
+        pthread_mutexattr_settype(&pthread_mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+      }
+
+      auto status = pthread_mutex_init(&m_obj_, &pthread_mutex_attr);
 
       if (status == 0) {
         paraosTRACE_MESSAGE("Mutex constructed");
@@ -54,6 +61,8 @@ class MutexBase {
     int result = -1;
     if (timeout_ms == 0) {
       result = pthread_mutex_trylock(&m_obj_);
+    } else if (timeout_ms == max_delay) {
+      result = pthread_mutex_lock(&m_obj_);
     } else {
       timespec delay{};
       delay.tv_nsec =

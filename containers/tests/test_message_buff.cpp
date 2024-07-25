@@ -75,11 +75,11 @@ TEST_F(MessageBufferCreate, PushThenPop) {
 
 TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
   constexpr double start_value{10};
-  constexpr size_t messages_numb{10};
+  constexpr std::size_t messages_numb{10};
 
   // Операции записи данных
-  size_t written_elem_numb{0};
-  for (size_t i = 0; i < messages_numb; ++i) {
+  std::size_t written_elem_numb{0};
+  for (std::size_t i = 0; i < messages_numb; ++i) {
     auto writable = buffer_->Alloc(sizeof(start_value));
     if (writable) {
       auto float_ptr = static_cast<double *>(writable.GetAddr());
@@ -90,7 +90,7 @@ TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
     // Сообщение writable будет отправлено в деструкторе автоматически
   }
 
-  size_t i{0};
+  std::size_t i{0};
   EXPECT_EQ(false, buffer_->IsEmpty());
   while (!buffer_->IsEmpty()) {
     auto readable = buffer_->Pop();
@@ -115,10 +115,10 @@ TEST_F(MessageBufferCreate, EraseFillBuff) {
   EXPECT_EQ(true, buffer_->IsEmpty());
 
   constexpr double start_value{10};
-  constexpr size_t messages_numb{5};
+  constexpr std::size_t messages_numb{5};
 
   // Операции записи данных
-  for (size_t i = 0; i < messages_numb; ++i) {
+  for (std::size_t i = 0; i < messages_numb; ++i) {
     auto writable = buffer_->Alloc(sizeof(start_value));
     if (writable) {
       auto float_ptr = static_cast<double *>(writable.GetAddr());
@@ -132,15 +132,15 @@ TEST_F(MessageBufferCreate, EraseFillBuff) {
 }
 
 TEST_F(MessageBufferCreate, WriteStrings) {
-  constexpr size_t str_array_size{5};
+  constexpr std::size_t str_array_size{5};
 
   // Количество строк в массиве без учета пустых строк
-  constexpr size_t usefull_str_array_size{str_array_size - 1};
+  constexpr std::size_t usefull_str_array_size{str_array_size - 1};
 
   std::array<std::string, str_array_size> set_str = {
       "Hello", "World", "Update me please", "Now!!!"};
 
-  size_t write_cnt{0};
+  std::size_t write_cnt{0};
   // Запись строк
   for (const auto &str : set_str) {
     // Фигурные скобки ниже необходимы в рамках теста для дополнительного
@@ -162,7 +162,7 @@ TEST_F(MessageBufferCreate, WriteStrings) {
     EXPECT_EQ(buffer_->Size(), write_cnt);
   }
 
-  size_t read_cnt{0};
+  std::size_t read_cnt{0};
   // Чтение строк
   while (!buffer_->IsEmpty()) {
     auto read = buffer_->Pop();

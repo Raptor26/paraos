@@ -5,7 +5,7 @@
 
 namespace paraos {
 
-constexpr std::size_t max_delay{1000};
+constexpr std::size_t max_delay{100000};
 // static_assert(sizeof(max_delay) >= sizeof(DWORD));
 
 #define MICROSECONDS_PER_SECOND (1000000LL)   /**< Microseconds per second. */
