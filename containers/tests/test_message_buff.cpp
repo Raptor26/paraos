@@ -14,10 +14,10 @@ using MessageAllocator = std::allocator<std::uint8_t>;
 using QueueAllocator = std::allocator<Message<MessageAllocator>>;
 
 class MessageBufferCreate : public ::testing::Test {
-public:
+ public:
   std::unique_ptr<MessageBuffer<MessageAllocator, QueueAllocator>> buffer_;
 
-protected:
+ protected:
   virtual void SetUp() {
     buffer_ =
         std::make_unique<MessageBuffer<MessageAllocator, QueueAllocator>>();
@@ -144,8 +144,9 @@ TEST_F(MessageBufferCreate, WriteStrings) {
     {
       auto write = buffer_->Alloc(str.length());
       if (write) {
-        memcpy(write.GetAddr(), static_cast<const void *>(str.c_str()),
-               write.GetSize());
+        memcpy(
+            write.GetAddr(), static_cast<const void *>(str.c_str()),
+            write.GetSize());
         ++write_cnt;
       }
 
@@ -161,8 +162,8 @@ TEST_F(MessageBufferCreate, WriteStrings) {
     auto read = buffer_->Pop();
 
     if (read) {
-      std::string_view str_view{static_cast<char *>(read.GetAddr()),
-                                read.GetSize()};
+      std::string_view str_view{
+          static_cast<char *>(read.GetAddr()), read.GetSize()};
 
       EXPECT_EQ(set_str[read_cnt], str_view);
       ++read_cnt;
@@ -178,8 +179,9 @@ TEST_F(MessageBufferCreate, AllocThenUserPop) {
     auto write = buffer_->Alloc(str.length());
 
     if (write) {
-      memcpy(write.GetAddr(), static_cast<const void *>(str.c_str()),
-             write.GetSize());
+      memcpy(
+          write.GetAddr(), static_cast<const void *>(str.c_str()),
+          write.GetSize());
 
       // Пользователь передумал записывать сообщение.
       write.Pop();

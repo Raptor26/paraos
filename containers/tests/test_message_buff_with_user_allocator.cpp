@@ -1,9 +1,12 @@
-#include "paraos_message_buffer.hpp"
 #include <gtest/gtest.h>
+
 #include <iostream>
 
-template <class T> class MyAllocBuffer {
-public:
+#include "paraos_message_buffer.hpp"
+
+template <class T>
+class MyAllocBuffer {
+ public:
   // type definitions
   typedef T value_type;
   typedef T *pointer;
@@ -14,7 +17,8 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   // rebind allocator to type U
-  template <class U> struct rebind {
+  template <class U>
+  struct rebind {
     typedef MyAllocBuffer<U> other;
   };
 
@@ -27,7 +31,8 @@ public:
    */
   MyAllocBuffer() throw() {}
   MyAllocBuffer(const MyAllocBuffer &) throw() {}
-  template <class U> MyAllocBuffer(const MyAllocBuffer<U> &) throw() {}
+  template <class U>
+  MyAllocBuffer(const MyAllocBuffer<U> &) throw() {}
   ~MyAllocBuffer() throw() {}
 
   // return maximum number of elements that can be allocated
@@ -38,9 +43,9 @@ public:
   // allocate but don't initialize num elements of type T
   pointer allocate(size_type num, const void * = 0) {
     // print message and allocate memory with global new
-    paraosTRACE_MESSAGE("Buffer allocator: allocate " << num << " element(s)"
-                                                      << " of size "
-                                                      << sizeof(T));
+    paraosTRACE_MESSAGE(
+        "Buffer allocator: allocate " << num << " element(s)"
+                                      << " of size " << sizeof(T));
 
     pointer ret = (pointer)(::operator new(num * sizeof(T)));
     paraosTRACE_MESSAGE(" Buffer allocator: allocated at: " << (void *)ret);
@@ -63,7 +68,8 @@ public:
   }
 
   // destroy elements of initialized storage p
-  template <typename U> void destroy(U *ptr) {
+  template <typename U>
+  void destroy(U *ptr) {
     paraosTRACE_MESSAGE(
         "Buffer allocator: Destroy objects by calling their destructor");
     ptr->~U();
@@ -72,15 +78,17 @@ public:
   // deallocate storage p of deleted elements
   void deallocate(pointer p, size_type num) noexcept {
     // print message and deallocate memory with global delete
-    paraosTRACE_MESSAGE("Buffer allocator: deallocate "
-                        << num << " element(s)"
-                        << " of size " << sizeof(T) << " at: " << (void *)p);
+    paraosTRACE_MESSAGE(
+        "Buffer allocator: deallocate " << num << " element(s)"
+                                        << " of size " << sizeof(T)
+                                        << " at: " << (void *)p);
     ::operator delete((void *)p);
   }
 };
 
-template <class T> class MyAllocQueue {
-public:
+template <class T>
+class MyAllocQueue {
+ public:
   // type definitions
   typedef T value_type;
   typedef T *pointer;
@@ -91,7 +99,8 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   // rebind allocator to type U
-  template <class U> struct rebind {
+  template <class U>
+  struct rebind {
     typedef MyAllocQueue<U> other;
   };
 
@@ -104,7 +113,8 @@ public:
    */
   MyAllocQueue() throw() {}
   MyAllocQueue(const MyAllocQueue &) throw() {}
-  template <class U> MyAllocQueue(const MyAllocQueue<U> &) throw() {}
+  template <class U>
+  MyAllocQueue(const MyAllocQueue<U> &) throw() {}
   ~MyAllocQueue() throw() {}
 
   // return maximum number of elements that can be allocated
@@ -115,9 +125,9 @@ public:
   // allocate but don't initialize num elements of type T
   pointer allocate(size_type num, const void * = 0) {
     // print message and allocate memory with global new
-    paraosTRACE_MESSAGE("Queue allocator: allocate " << num << " element(s)"
-                                                     << " of size "
-                                                     << sizeof(T));
+    paraosTRACE_MESSAGE(
+        "Queue allocator: allocate " << num << " element(s)"
+                                     << " of size " << sizeof(T));
 
     pointer ret = (pointer)(::operator new(num * sizeof(T)));
     paraosTRACE_MESSAGE(" Queue allocator: allocated at: " << (void *)ret);
@@ -140,7 +150,8 @@ public:
   }
 
   // destroy elements of initialized storage p
-  template <typename U> void destroy(U *ptr) {
+  template <typename U>
+  void destroy(U *ptr) {
     paraosTRACE_MESSAGE(
         "Queue allocator: Destroy objects by calling their destructor");
     ptr->~U();
@@ -149,9 +160,10 @@ public:
   // deallocate storage p of deleted elements
   void deallocate(pointer p, size_type num) noexcept {
     // print message and deallocate memory with global delete
-    paraosTRACE_MESSAGE("Queue allocator: deallocate "
-                        << num << " element(s)"
-                        << " of size " << sizeof(T) << " at: " << (void *)p);
+    paraosTRACE_MESSAGE(
+        "Queue allocator: deallocate " << num << " element(s)"
+                                       << " of size " << sizeof(T)
+                                       << " at: " << (void *)p);
     ::operator delete((void *)p);
   }
 };
@@ -178,11 +190,9 @@ bool operator!=(const MyAllocQueue<T1> &, const MyAllocQueue<T2> &) throw() {
 
 using buffer_allocator = MyAllocBuffer<std::uint8_t>;
 
-#if 1
 TEST(BufferUserAlloc, Create) {
-
-  paraos::MessageBuffer<buffer_allocator,
-                        MyAllocQueue<paraos::Message<buffer_allocator>>>
+  paraos::MessageBuffer<
+      buffer_allocator, MyAllocQueue<paraos::Message<buffer_allocator>>>
       buffer{7};
   constexpr float val{123.456};
 
@@ -209,5 +219,3 @@ TEST(BufferUserAlloc, Create) {
     // удалит занимаемые ресурсы.
   }
 }
-
-#endif
