@@ -55,7 +55,8 @@ RUN apt-get update && \
     libgmock-dev \
     ninja-build \
     clang \
-    valgrind
+    valgrind \
+    dos2unix
 
 # Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная 
 # требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию 
@@ -79,6 +80,8 @@ WORKDIR /app/src
 COPY --from=build /app/src .
 
 RUN ["chmod", "+x", "./docker_tests_entrypoint.sh"]
+
+RUN ["dos2unix", "./docker_tests_entrypoint.sh", "./memcheck.sh"]
 
 # Установим точку входа
 ENTRYPOINT ["/usr/bin/bash", "./docker_tests_entrypoint.sh"]
