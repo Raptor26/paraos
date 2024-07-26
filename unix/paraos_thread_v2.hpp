@@ -29,18 +29,26 @@ class Thread {
  public:
   Thread(
       const std::string name, std::size_t stack_depth, ThreadPriority priority)
-      : name_{name}, stack_depth_{stack_depth}, priority_{priority} {
+      : name_{std::move(name)}, stack_depth_{stack_depth}, priority_{priority} {
     Make();
   }
 
   virtual ~Thread() {
+#if 1
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
         iter != queue_thread_obj_.cend()) {
-      Thread *thread_ptr = *iter;
+      int result{0};
 
-      auto result = pthread_cancel(thread_ptr->handle_);
+      // Поток можно принудительно удалить только в том случае, если он не был
+      // удален ранее. Поток самостоятельно удаляет себя в конце тела функции
+      // perform_work()
+      if (!is_canceled_) {
+        Thread *thread_ptr = *iter;
+        result = pthread_cancel(thread_ptr->handle_);
+        is_canceled_ = true;
+      }
 
       assert(result == 0 && "Error when try canceled thread");
       if (result == 0) {
@@ -58,6 +66,7 @@ class Thread {
         assert(false && "We can't find 'this' for thread delete operation");
 #endif
     }
+#endif
   }
 
   Thread(const Thread &other) = delete;
@@ -164,11 +173,30 @@ class Thread {
     // Нужно ли выполнение в теле бесконечного цикла задается при создании
     // потока в конструкторе ThreadBase()
     do {
+      // Утверждение ниже сработает в том случае, если кто-то вызвал деструктор
+      // для объекта типа 'Thread' (или его наследника). Это означает что время
+      // жизни объекта меньше времени жизни потока, что является ошибкой.
+      assert(
+          !thread->is_canceled_ &&
+          "Somebody call destruction for thread object");
       thread->Run();
     } while (is_need_while);
 
-    // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
-    pthread_exit(0);
+    // Atomic thread exit ------------------------------------------------------
+    const paraos::CriticalSection critical;
+
+    assert(
+        !thread->is_canceled_ && "Somebody call destruction for thread object");
+
+    if (!thread->is_canceled_) {
+      // Необходимо пометить поток как отмененный чтобы деструктор объекта
+      // повторно не удалил объект
+      thread->is_canceled_ = true;
+    }
+
+    // Несмотря на состояние потока, при завершении его тела функции необходимо
+    // вызвать строку ниже
+    pthread_exit(PTHREAD_CANCELED);
   }
 
  private:
@@ -177,6 +205,10 @@ class Thread {
   pthread_t handle_;
   BoolSafeThreadFlag is_joinable_{true};
   ThreadPriority priority_{ThreadPriority::kIdle};
+
+  /// @brief Флаг отмены потока. Если флаг установлен в true, то поток помечен
+  /// как удаленный и в скором времени фактически будет удален.
+  bool is_canceled_{false};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.

@@ -2,11 +2,11 @@
 #define PARAOS_UTILS_HPP
 #include <cassert>
 #include <cstddef>
+#include <limits>
 
 namespace paraos {
 
-constexpr std::size_t max_delay{100000};
-// static_assert(sizeof(max_delay) >= sizeof(DWORD));
+constexpr std::size_t max_delay{std::numeric_limits<std::size_t>::max()};
 
 #define MICROSECONDS_PER_SECOND (1000000LL)   /**< Microseconds per second. */
 #define NANOSECONDS_PER_SECOND (1000000000LL) /**< Nanoseconds per second. */
