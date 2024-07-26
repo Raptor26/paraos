@@ -21,6 +21,11 @@ if(THREAD_ENABLE)
                  test_queue_multithread_one_producer_many_consumers.cpp)
   target_link_libraries(test_queue_multithread_one_producer_many_consumers
                         PRIVATE paraos_containers)
+
+  add_executable(test_blocking_queue_multithread_many_prod_and_cons
+                 test_blocking_queue_multithread_many_prod_and_cons.cpp)
+  target_link_libraries(test_blocking_queue_multithread_many_prod_and_cons
+                        PRIVATE paraos_containers)
 endif()
 
 add_test(NAME test_queue_multithread_one_producer_many_consumers
