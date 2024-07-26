@@ -22,3 +22,6 @@ if(THREAD_ENABLE)
   target_link_libraries(test_queue_multithread_one_producer_many_consumers
                         PRIVATE paraos_containers)
 endif()
+
+add_test(NAME test_queue_multithread_one_producer_many_consumers
+         COMMAND test_queue_multithread_one_producer_many_consumers)
