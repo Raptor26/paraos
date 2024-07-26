@@ -1,6 +1,4 @@
 
-#include <windows.h>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -33,12 +31,12 @@ std::vector<std::string> song_str{
 
 Queue<std::string> queue{100};
 
-std::atomic<size_t> total_read_str_cnt{0};
+std::atomic<std::size_t> total_read_str_cnt{0};
 
 struct Producer : public paraos::v2::Thread {
   Producer(
-      const std::string name = "Producer", size_t stack_depth = 1024,
-      int priority = THREAD_PRIORITY_IDLE)
+      const std::string name = "Producer", std::size_t stack_depth = 1024,
+      paraos::v2::ThreadPriority priority = paraos::v2::ThreadPriority::kIdle)
       : paraos::v2::Thread{name, stack_depth, priority} {}
 
   void Run() override {
@@ -52,14 +50,14 @@ struct Producer : public paraos::v2::Thread {
   }
 
  private:
-  size_t song_cnt{0};
+  std::size_t song_cnt{0};
 };
 
 struct Consumer : public paraos::v2::Thread {
   Consumer(
-      const std::string name = "Consumer", size_t stack_depth = 1024,
-      int priority = THREAD_PRIORITY_IDLE)
-      : paraos::v2::Thread{name, stack_depth, priority} {}
+      const std::string name = "Consumer", std::size_t stack_depth = 1024,
+      paraos::v2::ThreadPriority priority = paraos::v2::ThreadPriority::kIdle)
+      : paraos::v2::Thread{std::move(name), stack_depth, priority} {}
 
   void Run() override {
     using namespace std::chrono_literals;
@@ -112,6 +110,7 @@ int main() {
   Producer str_producer{};
 
   paraos::v2::Thread::StartScheduler();
+  paraos::v2::Thread::DeleteAll();
 
   return 0;
 }

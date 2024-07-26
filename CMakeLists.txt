@@ -13,6 +13,7 @@ if(WIN32)
   option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(win)
 elseif(UNIX)
+  option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(unix)
 endif()
 
