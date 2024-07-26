@@ -108,6 +108,52 @@ TEST_F(QueueCreator, PushCopy) {
   ASSERT_FALSE(queue_->IsEmpty());
 }
 
+TEST(Queue, PushMaxThenPopWhileNotEmpty) {
+  constexpr int queue_size{3};
+  Queue<int> queue{queue_size};
+  constexpr std::array<int, queue_size> arr{1, 2, 3};
+  ASSERT_TRUE(queue.IsEmpty());
+
+  ASSERT_TRUE(queue.Push(arr.at(0)));
+  ASSERT_FALSE(queue.IsFull());
+
+  ASSERT_TRUE(queue.Push(arr.at(1)));
+  ASSERT_FALSE(queue.IsFull());
+
+  ASSERT_TRUE(queue.Push(arr.at(2)));
+  ASSERT_TRUE(queue.IsFull());
+
+  ASSERT_FALSE(queue.Push(arr.at(2)));
+  ASSERT_TRUE(queue.IsFull());
+
+  {
+    auto val = queue.Pop();
+    ASSERT_EQ(arr.at(0), val);
+    ASSERT_FALSE(queue.IsEmpty());
+  }
+
+  {
+    auto val = queue.Pop();
+    ASSERT_EQ(arr.at(1), val);
+    ASSERT_FALSE(queue.IsEmpty());
+  }
+
+  {
+    auto val = queue.Pop();
+    ASSERT_EQ(arr.at(2), val);
+    ASSERT_TRUE(queue.IsEmpty());
+  }
+
+  {
+// Код ниже приведет к неопределенному поведению т.к. данных в очереди уже
+// нет.
+#if 0
+    auto val = queue.Pop();
+    ASSERT_EQ(0, val);
+#endif
+  }
+}
+
 TEST_F(QueueCreator, IsFullEmptyBuff) { ASSERT_FALSE(queue_->IsFull()); }
 
 TEST(Queue, FullThenCheck) {
