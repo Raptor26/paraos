@@ -17,11 +17,11 @@ namespace v2 {
 
 enum class ThreadPriority : int {
   kIdle = 0,
-  kAboveNormal = 1,
+  kLowest = 1,
   kBelowNormal = 2,
-  kHighest = 3,
-  kLowest = 4,
-  kNormal = 5,
+  kNormal = 3,
+  kAboveNormal = 4,
+  kHighest = 5,
   kRealTime = 6,
 };
 
@@ -34,7 +34,6 @@ class Thread {
   }
 
   virtual ~Thread() {
-#if 1
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
@@ -66,7 +65,6 @@ class Thread {
         assert(false && "We can't find 'this' for thread delete operation");
 #endif
     }
-#endif
   }
 
   Thread(const Thread &other) = delete;
