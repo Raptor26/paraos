@@ -2,6 +2,7 @@
 #define PARAOS_QUEUE_BLOCKING_HPP
 
 #include "paraos_config.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_queue.hpp"
 
 namespace paraos {
