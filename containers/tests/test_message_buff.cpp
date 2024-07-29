@@ -36,6 +36,29 @@ TEST(MessageBuff, CreateEmpty) {
   ASSERT_FALSE(buff);
 }
 
+TEST(MessageBuff, PushToFull) {
+  MessageBuffer buff{2};
+  ASSERT_TRUE(buff);
+
+  {
+    const float val{10.123};
+    auto message = buff.Alloc(sizeof(val));
+    ASSERT_TRUE(message);
+  }
+
+  {
+    const float val{10.123};
+    auto message = buff.Alloc(sizeof(val));
+    ASSERT_TRUE(message);
+  }
+
+  {
+    const float val{10.123};
+    auto message = buff.Alloc(sizeof(val));
+    ASSERT_FALSE(message);
+  }
+}
+
 TEST_F(MessageBufferCreate, AllocZeroMemory) {
   auto message = buffer_->Alloc(0);
   EXPECT_FALSE(message);

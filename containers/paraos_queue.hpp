@@ -28,6 +28,7 @@ struct IQueue {
   virtual auto Push(T&& element) -> bool = 0;
   virtual auto Pop() -> T = 0;
   virtual auto IsEmpty() -> bool = 0;
+  virtual auto IsFull() -> bool = 0;
   virtual auto Size() -> size_t = 0;
   virtual void Erase() = 0;
 
@@ -137,7 +138,7 @@ struct Queue : public IQueue<T> {
     return is_empty;
   };
 
-  PARAOS_INLINE_TRIVIAL auto IsFull() {
+  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
     if (contained_cnt_ >= max_elements_numb_) {
       return true;
     }

@@ -175,6 +175,10 @@ struct QueueMessageBuffWrapper final
     return queue_.IsEmpty();
   }
 
+  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
+    return queue_.IsFull();
+  }
+
   PARAOS_INLINE_TRIVIAL auto Size() -> std::size_t override {
     return queue_.Size();
   }
@@ -201,7 +205,11 @@ struct MessageBuffer {
   auto Alloc(std::size_t size_in_bytes) {
     paraosTRACE_MESSAGE("-- Alloc Message memory area");
 
-    return MessageWritable<BUFFER_ALLOCATOR>{size_in_bytes, &queue_};
+    if (!queue_.IsFull()) {
+      return MessageWritable<BUFFER_ALLOCATOR>{size_in_bytes, &queue_};
+    }
+
+    return MessageWritable<BUFFER_ALLOCATOR>{0u, &queue_};
   }
 
   auto Pop() {
