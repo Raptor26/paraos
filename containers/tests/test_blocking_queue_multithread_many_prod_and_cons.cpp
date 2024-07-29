@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-#include "paraos_queue.hpp"
+#include "paraos_queue_blocking.hpp"
 #include "paraos_thread.hpp"
 
 using namespace paraos;

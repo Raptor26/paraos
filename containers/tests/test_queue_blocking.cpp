@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "paraos_queue.hpp"
+#include "paraos_queue_blocking.hpp"
 
 using namespace paraos;
 
