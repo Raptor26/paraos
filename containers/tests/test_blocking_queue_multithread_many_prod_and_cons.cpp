@@ -45,7 +45,7 @@ struct Producer : public paraos::Thread {
           running_condition_ = false;
         }
       }
-      std::this_thread::sleep_for(30ms);
+      std::this_thread::sleep_for(1ms);
     }
     std::cout << Name() << " Exiting... " << std::endl;
   }
@@ -91,7 +91,7 @@ struct Consumer : public paraos::Thread {
       }
 
       // Уступить ресурсы другим потокам
-      std::this_thread::sleep_for(200ms);
+      std::this_thread::sleep_for(1ms);
     }
     std::cout << Name() << " Exiting... " << std::endl;
   }
