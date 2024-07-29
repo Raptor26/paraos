@@ -2,6 +2,8 @@
 #define PARAOS_THREAD_V2_HPP
 
 #include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <deque>
@@ -10,19 +12,20 @@
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
+#include "paraos_trace.hpp"
 
 namespace paraos {
 
 namespace v2 {
 
 enum class ThreadPriority : int {
-  kIdle = 0,
-  kAboveNormal = 1,
-  kBelowNormal = 2,
-  kHighest = 3,
-  kLowest = 4,
-  kNormal = 5,
-  kRealTime = 6,
+  kIdle = 1,
+  kLowest,
+  kBelowNormal,
+  kNormal,
+  kAboveNormal,
+  kHighest,
+  kRealTime,
 };
 
 class Thread {
@@ -34,7 +37,6 @@ class Thread {
   }
 
   virtual ~Thread() {
-#if 1
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
@@ -66,7 +68,6 @@ class Thread {
         assert(false && "We can't find 'this' for thread delete operation");
 #endif
     }
-#endif
   }
 
   Thread(const Thread &other) = delete;
@@ -77,6 +78,49 @@ class Thread {
   void Join() { auto result_code = pthread_join(handle_, nullptr); }
 
   std::string_view Name() { return name_; }
+
+  bool SetPriority(const ThreadPriority priority) {
+    bool is_priority_updated{false};
+
+    const paraos::CriticalSection critical;
+
+    assert(
+        IsPriorityInRange(priority) == true &&
+        "Priority out of range, use only ThreadPriority definitions for change "
+        "priority");
+
+    // Изменение приоритета потока возможно только в случае запуска программы от
+    // имени суперпользователя
+    if (IsRunAsRoot() == true) {
+      int policy{0};
+      sched_param sched{};
+      if (pthread_getschedparam(handle_, &policy, &sched) != 0) {
+        assert(false && "pthread_getschedparam() return error code");
+      }
+
+      sched.sched_priority = static_cast<int>(priority);
+      auto prior_update_status =
+          pthread_setschedparam(handle_, SCHED_RR, &sched);
+
+      paraosTRACE_MESSAGE(
+          "pthread_setschedparam return core: " << prior_update_status);
+
+      assert(
+          prior_update_status == 0 &&
+          "SetPriority() not set new thread priority");
+
+      if (prior_update_status == 0) {
+        is_priority_updated = true;
+      }
+    } else {
+      // Если запуск программы выполнен без прав суперпользователя, то мы не
+      // можем изменить приоритет потока. В этом случае мы вернем флаг true для
+      // обеспечения обратной совместимости
+      is_priority_updated = true;
+    }
+
+    return is_priority_updated;
+  }
 
   virtual void Run() {
     // Если сработал данный assert, то конструктор производного от Thread класса
@@ -155,19 +199,62 @@ class Thread {
 
     if (result_code == 0) {
       const paraos::CriticalSection critical;
+      auto is_priority_set = SetPriority(priority_);
+      assert(is_priority_set == true && "Priority not updated");
       queue_thread_obj_.push_back(this);
     }
   }
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
 
+  /// @brief Метод проверяет, выполнен ли запуск программны от имени
+  /// суперпользователя.
+  /// @note
+  /// https://stackoverflow.com/questions/3214297/how-can-my-c-c-application-determine-if-the-root-user-is-executing-the-command
+  /// @return
+  bool IsRunAsRoot() {
+    bool is_run_as_root{false};
+
+    auto user = getuid();
+    if (user == 0) {
+      paraosTRACE_MESSAGE("Program run as root");
+      is_run_as_root = true;
+    } else {
+      paraosTRACE_MESSAGE("No root");
+    }
+    return is_run_as_root;
+  }
+
+  bool IsPriorityInRange(ThreadPriority priority) {
+    bool is_in_range{false};
+
+    int policy;
+    sched_param sched;
+    pthread_getschedparam(handle_, &policy, &sched);
+
+    auto min = sched_get_priority_min(policy);
+    auto max = sched_get_priority_max(policy);
+    auto prior = static_cast<int>(priority);
+
+    if ((prior >= min) && (min <= max)) {
+      is_in_range = true;
+    }
+
+    return is_in_range;
+  }
+
   static void *perform_work(void *arguments) {
     Thread *thread = static_cast<Thread *>(arguments);
 
     thread->sem_.Take(max_delay);
 
+    auto is_priority_set = thread->SetPriority(thread->priority_);
+    assert(is_priority_set == true && "Priority not updated");
+    (void)is_priority_set;
+
     // Запишем в локальную переменную значение флага. Это позволит избежать
-    // операции разыменование указатели при работе в теле цикла do -> while()
+    // операции разыменование указатели при работе в теле цикла do ->
+    // while()
     const auto is_need_while = thread->IsNeedWhile();
 
     // Нужно ли выполнение в теле бесконечного цикла задается при создании
@@ -202,7 +289,7 @@ class Thread {
  private:
   std::string name_;
   std::size_t stack_depth_{0};
-  pthread_t handle_;
+  pthread_t handle_{0};
   BoolSafeThreadFlag is_joinable_{true};
   ThreadPriority priority_{ThreadPriority::kIdle};
 

@@ -24,11 +24,11 @@ namespace v2 {
 
 enum ThreadPriority : int {
   kIdle = THREAD_PRIORITY_IDLE,
-  kAboveNormal = THREAD_PRIORITY_ABOVE_NORMAL,
-  kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
-  kHighest = THREAD_PRIORITY_HIGHEST,
   kLowest = THREAD_PRIORITY_LOWEST,
+  kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
   kNormal = THREAD_PRIORITY_NORMAL,
+  kAboveNormal = THREAD_PRIORITY_ABOVE_NORMAL,
+  kHighest = THREAD_PRIORITY_HIGHEST,
   kRealTime = THREAD_PRIORITY_TIME_CRITICAL,
 };
 
@@ -91,6 +91,10 @@ class Thread {
   }
 
   std::string_view Name() { return name_; }
+
+  bool SetPriority(const ThreadPriority priority) {
+    return SetThreadPriority(handle_, static_cast<int>(priority));
+  }
 
   virtual void Run() {
     // Если сработал данный assert, то конструктор производного от Thread класса
@@ -183,6 +187,8 @@ class Thread {
         creation_flags,                  // use default creation flags
         &thread_id_);                    // returns the thread identifier
 
+    assert(handle_ && "Thread not created");
+
     const paraos::CriticalSection critical;
     queue_thread_obj_.push_back(this);
   }
@@ -191,6 +197,10 @@ class Thread {
 
   static DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
     Thread *thread = static_cast<Thread *>(lpParam);
+
+    auto is_priority_set = thread->SetPriority(thread->priority_);
+    assert(is_priority_set == true && "Priority not updated");
+    (void)is_priority_set;
 
     // Запишем в локальную переменную значение флага. Это позволит избежать
     // операции разыменование указатели при работе в теле цикла do -> while()
@@ -212,7 +222,7 @@ class Thread {
   HANDLE handle_{nullptr};
   DWORD thread_id_{0};
   BoolSafeThreadFlag is_joinable_{true};
-  int priority_{0};
+  ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.
