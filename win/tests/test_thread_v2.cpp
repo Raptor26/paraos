@@ -6,7 +6,7 @@
 
 struct PrintTestMessage : public paraos::v2::Thread {
   PrintTestMessage(const std::string name = "default thread name")
-      : paraos::v2::Thread{name, 1024, 4} {}
+      : paraos::v2::Thread{name, 1024, paraos::v2::ThreadPriority::kLowest} {}
   void Run() override {
     const paraos::CriticalSection critical;
     std::cout << Name() << " Cnt is " << cnt_ << std::endl;
