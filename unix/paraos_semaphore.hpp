@@ -18,7 +18,9 @@ constexpr std::size_t initial_count = 0u;
 class Semaphore {
  public:
   Semaphore(const SemaphoreAttr attr) {
-    sem_init(&handle_, 0, attr.initial_value);
+    if (sem_init(&handle_, 0, attr.initial_value) == 0) {
+      is_sem_created = true;
+    }
   }
 
   Semaphore() : Semaphore{SemaphoreAttr{}} {}
@@ -61,10 +63,11 @@ class Semaphore {
     return is_sem_given;
   }
 
-  operator bool() const { return false; }
+  operator bool() const { return is_sem_created; }
 
  private:
   sem_t handle_;
+  bool is_sem_created{false};
 };
 
 struct SemaphoreBinary final : public Semaphore {
