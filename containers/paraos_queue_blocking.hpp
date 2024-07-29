@@ -6,8 +6,25 @@
 
 namespace paraos {
 
+template <typename T>
+struct IQueueBlocking {
+  virtual ~IQueueBlocking() = default;
+
+  virtual auto Push(const T& element, std::size_t timeout_ms) -> bool = 0;
+  virtual auto Push(T&& element, std::size_t timeout_ms) -> bool = 0;
+  virtual auto Pop(std::size_t timeout_ms) -> T = 0;
+  virtual auto IsEmpty() -> bool = 0;
+  virtual auto IsFull() -> bool = 0;
+  virtual auto Size() -> size_t = 0;
+  virtual void Erase() = 0;
+
+ protected:
+  IQueueBlocking() = default;
+};
+
 template <typename T, typename ALLOCATOR = std::allocator<T>>
-class QueueBlocking final : public Queue<T, ALLOCATOR> {
+class QueueBlocking final : public Queue<T, ALLOCATOR>,
+                            public IQueueBlocking<T> {
  public:
   QueueBlocking(size_t max_elements_numb)
       : Queue<T, ALLOCATOR>(max_elements_numb),
@@ -30,8 +47,9 @@ class QueueBlocking final : public Queue<T, ALLOCATOR> {
     return is_pushed;
   }
 
-  auto Push(T&& item, std::size_t timeout_ms) noexcept(noexcept(
-      QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item)))) -> bool {
+  auto Push(T&& item, std::size_t timeout_ms) noexcept(
+      noexcept(QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item))))
+      -> bool override {
     if (Queue<T, ALLOCATOR>::IsFull()) {
       paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
 
@@ -49,7 +67,7 @@ class QueueBlocking final : public Queue<T, ALLOCATOR> {
   }
 
   auto Push(const T& item, std::size_t timeout_ms) noexcept(
-      noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool {
+      noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool override {
     bool is_pushed{false};
 
     if (IsFull()) {
@@ -76,7 +94,7 @@ class QueueBlocking final : public Queue<T, ALLOCATOR> {
   }
 
   auto Pop(std::size_t timeout_ms) noexcept(
-      noexcept(Queue<T, ALLOCATOR>::Pop())) {
+      noexcept(Queue<T, ALLOCATOR>::Pop())) -> T override {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
     if (push_sem_.Take(timeout_ms)) {
@@ -110,6 +128,11 @@ class QueueBlocking final : public Queue<T, ALLOCATOR> {
   PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
     const paraos::CriticalSection critical;
     return Queue<T, ALLOCATOR>::IsFull();
+  }
+
+  virtual auto Size() -> size_t override {
+    const paraos::CriticalSection critical;
+    return Queue<T, ALLOCATOR>::Size();
   }
 
  private:
