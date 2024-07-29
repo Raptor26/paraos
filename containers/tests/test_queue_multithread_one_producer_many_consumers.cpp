@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "paraos_queue.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
 using namespace paraos;
 
@@ -33,11 +33,11 @@ Queue<std::string> queue{100};
 
 std::atomic<std::size_t> total_read_str_cnt{0};
 
-struct Producer : public paraos::v2::Thread {
+struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", std::size_t stack_depth = 1024,
-      paraos::v2::ThreadPriority priority = paraos::v2::ThreadPriority::kIdle)
-      : paraos::v2::Thread{name, stack_depth, priority} {}
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      : paraos::Thread{name, stack_depth, priority} {}
 
   void Run() override {
     while (song_cnt < song_str.size()) {
@@ -53,11 +53,11 @@ struct Producer : public paraos::v2::Thread {
   std::size_t song_cnt{0};
 };
 
-struct Consumer : public paraos::v2::Thread {
+struct Consumer : public paraos::Thread {
   Consumer(
       const std::string name = "Consumer", std::size_t stack_depth = 1024,
-      paraos::v2::ThreadPriority priority = paraos::v2::ThreadPriority::kIdle)
-      : paraos::v2::Thread{std::move(name), stack_depth, priority} {}
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      : paraos::Thread{std::move(name), stack_depth, priority} {}
 
   void Run() override {
     using namespace std::chrono_literals;
@@ -96,21 +96,19 @@ struct Consumer : public paraos::v2::Thread {
 };
 
 int main() {
-  Consumer str_consumer_1{
-      "Consumer 1", 1024u, paraos::v2::ThreadPriority::kLowest};
+  Consumer str_consumer_1{"Consumer 1", 1024u, paraos::ThreadPriority::kLowest};
   Consumer str_consumer_2{
-      "Consumer 2", 1024u, paraos::v2::ThreadPriority::kBelowNormal};
-  Consumer str_consumer_3{
-      "Consumer 3", 1024u, paraos::v2::ThreadPriority::kNormal};
+      "Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
+  Consumer str_consumer_3{"Consumer 3", 1024u, paraos::ThreadPriority::kNormal};
   Consumer str_consumer_4{
-      "Consumer 4", 1024u, paraos::v2::ThreadPriority::kAboveNormal};
+      "Consumer 4", 1024u, paraos::ThreadPriority::kAboveNormal};
   Consumer str_consumer_5{
-      "Consumer 5", 1024u, paraos::v2::ThreadPriority::kHighest};
+      "Consumer 5", 1024u, paraos::ThreadPriority::kHighest};
 
   Producer str_producer{};
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
 }
