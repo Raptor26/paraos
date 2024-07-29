@@ -1,209 +1,238 @@
-/// @file thread.hpp
-/// @author Mickle Isaev (mrraptor26@gmail.com)
-///
-/// @brief
-///
-/// @version 0.1.0
-/// @date 2024-04-06
-///
-/// @copyright Copyright (c) 2024 Mickle Isaev
-///
-/// MIT License:
-///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-/// IN THE SOFTWARE.
-
-#ifndef PARAOS_THREAD_HPP
-#define PARAOS_THREAD_HPP
+#ifndef paraos_thread_HPP
+#define paraos_thread_HPP
 
 #include <windows.h>
 
 #include <algorithm>
 #include <cassert>
+#include <deque>
 #include <functional>
 #include <iostream>
 #include <new>
+#include <queue>
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
 
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_mutex.hpp"
+#include "paraos_trace.hpp"
 
 namespace paraos {
-using thread_handle = HANDLE;
 
-class ThreadBase {
- public:
-  virtual ~ThreadBase() = default;
-
-  virtual void Processing() = 0;
-
-  PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
-
-  PARAOS_INLINE_TRIVIAL auto IsThreadable() const { return is_threadable_; }
-  PARAOS_INLINE_TRIVIAL void SetThreadable(bool is_threadable) {
-    is_threadable_ = is_threadable;
-  }
-
-  thread_handle handles_storage_{nullptr};
-
- protected:
-  /// @brief Конструктор абстрактного класса потока. Задает параметры выполнения
-  /// потока.
-  /// @param[in] is_need_while: Необходимо указать 'true' если требуется
-  /// периодический вызов Processing() в теле бесконечного цикла, в противном
-  /// случае Processing() будет вызван единожды и поток прекратит свое
-  /// существование.
-  ThreadBase(const bool is_need_while) : is_need_while_{is_need_while} {}
-
- private:
-  /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
-  /// в бесконечном цикле.
-  const bool is_need_while_{false};
-
-  bool is_threadable_{false};
+enum ThreadPriority : int {
+  kIdle = THREAD_PRIORITY_IDLE,
+  kLowest = THREAD_PRIORITY_LOWEST,
+  kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
+  kNormal = THREAD_PRIORITY_NORMAL,
+  kAboveNormal = THREAD_PRIORITY_ABOVE_NORMAL,
+  kHighest = THREAD_PRIORITY_HIGHEST,
+  kRealTime = THREAD_PRIORITY_TIME_CRITICAL,
 };
 
 class Thread {
-  /// @brief Буфер дескрипторов созданных потоков. По умолчанию, все потоки
-  /// создаются в приостановленном состоянии. При вызове StartScheduler() с
-  /// помощью записанных в вектор дескрипторов выполняется запуск всех
-  /// созданных потоков.
-  static inline std::vector<thread_handle> handles_storage_;
-  static_assert(std::is_pointer_v<thread_handle> == true);
-  bool is_scheduler_started = false;
-
  public:
-  ~Thread() { CloseAllHandles(); }
+  Thread(const std::string name, size_t stack_depth, int priority)
+      : name_{name}, stack_depth_{stack_depth}, priority_{priority} {
+    Make();
+  }
 
-  thread_handle Make(ThreadBase& threadable) {
-    if (!threadable.IsThreadable()) {
-      DWORD thread_id;
+  virtual ~Thread() {
+    const paraos::CriticalSection critical;
+    if (auto iter = std::find(
+            queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
+        iter != queue_thread_obj_.cend()) {
+      Thread *thread_ptr = *iter;
 
-      threadable.handles_storage_ = CreateThread(
-          nullptr, 0, CallPoint, reinterpret_cast<void*>(&threadable),
-          CREATE_SUSPENDED, &thread_id);
+      if (thread_ptr->handle_) {
+        if (CloseHandle(thread_ptr->handle_) == true) {
+          // Необходимо удалить дескриптор из очереди
+          queue_thread_obj_.erase(iter);
 
-      if (threadable.handles_storage_ != nullptr) {
-        const CriticalSection critical;
+          // Необходимо сбросить дескриптор потока с целью избежать повторного
+          // удаления потока
+          thread_ptr->handle_ = nullptr;
 
-        try {
-          handles_storage_.push_back(threadable.handles_storage_);
-
-          // Запрет создания еще одного потока с данным экземпляром класса.
-          threadable.SetThreadable(true);
-
-        } catch (std::bad_alloc& exception) {
-          std::cerr << "Thead::Make() vector bad alloc: " << exception.what();
-          auto close_status = CloseHandle(threadable.handles_storage_);
-          assert(close_status != 0);
-          threadable.handles_storage_ = nullptr;
-          threadable.SetThreadable(false);
+          paraosTRACE_MESSAGE("Thread deleted: " << name_);
         }
       }
-
-      return threadable.handles_storage_;
+    } else {
+// Повторное удаление уже удаленного потока. Данная ситуация может
+// возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков вышли
+// из области видимости. В целом это не является ошибкой т.к. присутствует
+// защита от повторного удаления потока
+#if 0
+        assert(false && "We can't find 'this' for thread delete operation");
+#endif
     }
-
-    return nullptr;
   }
 
-  void StartScheduler() noexcept {
-    for (auto handle : handles_storage_) {
-      ResumeThread(handle);
-    }
+  Thread(const Thread &other) = delete;
+  Thread(Thread &&other) = delete;
+  Thread &operator=(const Thread &other) = delete;
+  Thread &operator=(Thread &&other) = delete;
 
-    is_scheduler_started = true;
+  void Join() {
+    // Поток можно присоединить только в том случае, если он не был присоединен
+    // ранее
+    if (is_joinable_ == true) {
+      is_joinable_ = false;
 
-    // В POSIX мы бы вызвали join для каждого потока
-    WaitForMultipleObjects(
-        handles_storage_.size(), handles_storage_.data(), TRUE, INFINITE);
+      auto status = WaitForSingleObject(handle_, INFINITE);
 
-    // К данной точке выполнения программы все потоки завершили свое
-    // выполнение.
-    CloseAllHandles();
-  }
-
-  /// @brief
-  /// @note После вызова Delete(), handle становиться невалидным.
-  /// @param handle
-  /// @return
-  bool Delete(const thread_handle handle) {
-    bool is_thread_deleted = false;
-    CriticalSection critical;
-
-    // Перед удалением потока необходимо убедиться что его дескриптор
-    // присутствует в хранилище
-    if (auto iter = std::find(
-            handles_storage_.cbegin(), handles_storage_.cend(), handle);
-        iter != handles_storage_.cend()) {
-      if (CloseHandle(*iter) == TRUE) {
-        // Т.к повторный вызов CloseHandle() для закрытого дескриптора является
-        // ошибкой, то необходимо исключить возможность повторного вызова
-        // CloseHandle() для закрытого потока. Для этого удалим из хранилища
-        // дескриптор завершенного потока.
-        handles_storage_.erase(iter);
-
-        is_thread_deleted = true;
+      /// @see
+      /// https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
+      if (status == WAIT_OBJECT_0) {
+        paraosTRACE_MESSAGE("Thread join: " << name_);
       }
     }
+  }
 
-    return is_thread_deleted;
+  std::string_view Name() { return name_; }
+
+  bool SetPriority(const ThreadPriority priority) {
+    return SetThreadPriority(handle_, static_cast<int>(priority));
+  }
+
+  virtual void Run() {
+    // Если сработал данный assert, то конструктор производного от Thread класса
+    // не успел завершить конструирование объекта до того момента когда
+    // планировщик ОС вызвал метод Run() (производные классы всегда должны
+    // переопределять метод Run()). Одним из возможных способов решения
+    // являются:
+    // - Переопределите в производном классе метод Run(). Это самый тривиальный
+    //   случай. Возможно вы просто забыли определить тело вашего потока в
+    //   методе Run().
+    //
+    // Пункты ниже рассматривайте только в том случае, если в производном классе
+    // определен метод Run() с аннотацией override:
+    //
+    // - Вызов метода Make() в теле конструктора производного класса. Это
+    //   гарантирует, что поток создается после того, как компилятор подставил
+    //   указатель на метод Run() из производного класса.
+    //
+    // - Создание потока в приостановленном состоянии, затем его запуск в теле
+    //   конструктора производного класса. Для данного сценария рассуждения
+    //   аналогичны пункту выше.
+    //
+    // - Временное повышение приоритета потока, который создает новый поток. Это
+    //   гарантирует, что создающий поток завершит работу конструкторов до того
+    //   как планировщик ОС выполнит переключение на выполнение потока
+    //   созданного объекта. После завершения создания объекта и его потока,
+    //   создающий поток вновь может понизить свой приоритет до исходного
+    //   значения.
+    assert(
+        false &&
+        "If windows scheduler call this instance, constructor of derived class "
+        "not complete its work before scheduler call Run() method");
+  };
+
+  static void StartScheduler() {
+    paraosTRACE_MESSAGE("Start Scheduler");
+
+    is_scheduler_started_ = true;
+
+    // Потоки создаются в приостановленном состоянии. Необходимо возобновить
+    // выполнение созданных потоков, а затем вызвать Join()
+    for (auto &thread : queue_thread_obj_) {
+      ResumeThread(thread->handle_);
+    }
+
+    for (auto &thread : queue_thread_obj_) {
+      thread->Join();
+    }
+  }
+
+  static void DeleteAll() {
+    const paraos::CriticalSection critical;
+    while (!queue_thread_obj_.empty()) {
+      // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
+      // элемент из очереди не удаляется
+      auto &thread_ptr = queue_thread_obj_.front();
+
+      thread_ptr->~Thread();
+
+      // нет необходимости вызывать pop() с целью удаления объекта потока из
+      // очереди для queue_thread_obj_. Деструктор ~Thread() самостоятельно
+      // удалит ссылку на себя из очереди
+    }
+
+    // Если сработало утверждение ниже, то возможно это связано с тем, что в
+    // момент извлечения крайнего дескриптора потока из очереди, другой поток
+    // поместил новый объект в очередь (критическая секция позволяет избежать
+    // подобного состояния)
+    assert(
+        queue_thread_obj_.empty() &&
+        "Container for pointers threadable objects must be empty, otherwise "
+        "some thread not deleted");
   }
 
  private:
-  void CloseAllHandles() {
-    while (handles_storage_.size() != 0u) {
-      CriticalSection critical;
+  void Make() {
+    DWORD creation_flags{CREATE_SUSPENDED};
 
-      /// Т.к. вызов Delete() вызывает erase(), что инвалидирует итератор, то
-      /// используется цикл while() в котором на каждой итерации берется новый
-      /// итератор, содержащий указатель на дескриптор потока который нужно
-      /// удалить
-      auto iter_begin = handles_storage_.crbegin();
-      const bool is_thread_deleted = Delete(*iter_begin);
-      assert(is_thread_deleted == true);
+    // После запуска планировщика нет необходимости создавать потоки в
+    // приостановленном состоянии
+    if (is_scheduler_started_) {
+      creation_flags = 0;
     }
+
+    handle_ = CreateThread(
+        NULL,                            // default security attributes
+        stack_depth_,                    // use default stack size
+        MyThreadFunction,                // thread function name
+        reinterpret_cast<LPVOID>(this),  // argument to thread function
+        creation_flags,                  // use default creation flags
+        &thread_id_);                    // returns the thread identifier
+
+    assert(handle_ && "Thread not created");
+
+    const paraos::CriticalSection critical;
+    queue_thread_obj_.push_back(this);
   }
 
-  /// @brief
-  /// @param params
-  /// @return
-  static DWORD WINAPI CallPoint(LPVOID params) {
-    auto ptr_this = reinterpret_cast<ThreadBase*>(params);
+  PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
+
+  static DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
+    Thread *thread = static_cast<Thread *>(lpParam);
+
+    auto is_priority_set = thread->SetPriority(thread->priority_);
+    assert(is_priority_set == true && "Priority not updated");
+    (void)is_priority_set;
 
     // Запишем в локальную переменную значение флага. Это позволит избежать
     // операции разыменование указатели при работе в теле цикла do -> while()
-    const auto is_need_while = ptr_this->IsNeedWhile();
+    const auto is_need_while = thread->IsNeedWhile();
 
     // Нужно ли выполнение в теле бесконечного цикла задается при создании
     // потока в конструкторе ThreadBase()
     do {
-      ptr_this->Processing();
+      thread->Run();
     } while (is_need_while);
 
     // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
     return 0;
   }
+
+ private:
+  std::string name_;
+  size_t stack_depth_{0};
+  HANDLE handle_{nullptr};
+  DWORD thread_id_{0};
+  BoolSafeThreadFlag is_joinable_{true};
+  ThreadPriority priority_{ThreadPriority::kIdle};
+
+  /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
+  /// в бесконечном цикле.
+  bool is_need_while_{false};
+
+  /// Global objects
+ private:
+  static inline std::deque<paraos::Thread *> queue_thread_obj_;
+  static inline BoolSafeThreadFlag is_scheduler_started_{false};
 };
 
-inline Thread ThreadFactory;
 }  // namespace paraos
 
-#endif /* PARAOS_THREAD_HPP */
+#endif /* paraos_thread_HPP */

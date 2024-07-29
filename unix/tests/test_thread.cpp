@@ -2,12 +2,11 @@
 #include <iostream>
 
 #include "paraos_critical.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
-struct PrintTestMessage : public paraos::v2::Thread {
+struct PrintTestMessage : public paraos::Thread {
   PrintTestMessage(const std::string name = "default thread name")
-      : paraos::v2::Thread{
-            name, 1024, paraos::v2::ThreadPriority::kBelowNormal} {}
+      : paraos::Thread{name, 1024, paraos::ThreadPriority::kBelowNormal} {}
   void Run() override {
     const paraos::CriticalSection critical;
     std::cout << Name() << " Cnt is " << cnt_ << std::endl;
@@ -33,7 +32,7 @@ int main() {
   PrintTestMessage print55{"Thread 55"};
   PrintTestMessage print66{"Thread 66"};
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
   return 0;
 }

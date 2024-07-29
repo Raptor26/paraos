@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "paraos_queue.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
 using namespace paraos;
 
@@ -22,11 +22,11 @@ std::size_t waiting_timeout_ms = 120;
 std::atomic<size_t> total_read_elems_cnt{0};
 std::atomic<size_t> total_written_elems_cnt{0};
 
-struct Producer : public paraos::v2::Thread {
+struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", size_t stack_depth = 1024,
-      paraos::v2::ThreadPriority priority = paraos::v2::ThreadPriority::kIdle)
-      : paraos::v2::Thread{name, stack_depth, priority} {}
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      : paraos::Thread{name, stack_depth, priority} {}
 
   void Run() override {
     using namespace std::chrono_literals;
@@ -54,11 +54,11 @@ struct Producer : public paraos::v2::Thread {
   bool running_condition_{true};
 };
 
-struct Consumer : public paraos::v2::Thread {
+struct Consumer : public paraos::Thread {
   Consumer(
       const std::string name = "Consumer", size_t stack_depth = 1024,
-      paraos::v2::ThreadPriority priority = paraos::v2::ThreadPriority::kIdle)
-      : paraos::v2::Thread{name, stack_depth, priority} {}
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      : paraos::Thread{name, stack_depth, priority} {}
 
   void Run() override {
     using namespace std::chrono_literals;
@@ -102,22 +102,22 @@ struct Consumer : public paraos::v2::Thread {
 
 int main() {
   Consumer elem_consumer_1{
-      "Consumer 1", 1024u, paraos::v2::ThreadPriority::kLowest};
+      "Consumer 1", 1024u, paraos::ThreadPriority::kLowest};
   Consumer elem_consumer_2{
-      "Consumer 2", 1024u, paraos::v2::ThreadPriority::kBelowNormal};
+      "Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
   Consumer elem_consumer_3{
-      "Consumer 3", 1024u, paraos::v2::ThreadPriority::kNormal};
+      "Consumer 3", 1024u, paraos::ThreadPriority::kNormal};
 
   Producer elem_producer_1{
-      "Producer 1", 1024u, paraos::v2::ThreadPriority::kLowest};
+      "Producer 1", 1024u, paraos::ThreadPriority::kLowest};
   Producer elem_producer_2{
-      "Producer 2", 1024u, paraos::v2::ThreadPriority::kNormal};
+      "Producer 2", 1024u, paraos::ThreadPriority::kNormal};
   Producer elem_producer_3{
-      "Producer 3", 1024u, paraos::v2::ThreadPriority::kNormal};
+      "Producer 3", 1024u, paraos::ThreadPriority::kNormal};
   Producer elem_producer_4{
-      "Producer 4", 1024u, paraos::v2::ThreadPriority::kBelowNormal};
+      "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
 
-  paraos::v2::Thread::StartScheduler();
+  paraos::Thread::StartScheduler();
 
   return 0;
 }

@@ -1,5 +1,5 @@
-#ifndef PARAOS_THREAD_V2_HPP
-#define PARAOS_THREAD_V2_HPP
+#ifndef paraos_thread_HPP
+#define paraos_thread_HPP
 
 #include <pthread.h>
 #include <sys/types.h>
@@ -15,8 +15,6 @@
 #include "paraos_trace.hpp"
 
 namespace paraos {
-
-namespace v2 {
 
 enum class ThreadPriority : int {
   kIdle = 1,
@@ -305,11 +303,10 @@ class Thread {
 
   /// Global objects
  private:
-  static inline std::deque<paraos::v2::Thread *> queue_thread_obj_;
+  static inline std::deque<paraos::Thread *> queue_thread_obj_;
   static inline BoolSafeThreadFlag is_scheduler_started_{false};
 };
 
-}  // namespace v2
 }  // namespace paraos
 
-#endif /* PARAOS_THREAD_V2_HPP */
+#endif /* paraos_thread_HPP */
