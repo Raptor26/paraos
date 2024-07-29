@@ -27,11 +27,21 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
                             public IQueueBlocking<T> {
  public:
   QueueBlocking(size_t max_elements_numb)
-      : Queue<T, ALLOCATOR>(max_elements_numb),
+      : Queue<T, ALLOCATOR>{max_elements_numb},
         push_sem_{SemaphoreAttr{max_elements_numb}},
         pop_sem_{SemaphoreAttr{max_elements_numb}} {}
 
   virtual ~QueueBlocking() {}
+
+  operator bool() const {
+    bool queue_ready{false};
+
+    if (push_sem_ && pop_sem_ && Queue<T, ALLOCATOR>::IsQueueReady()) {
+      queue_ready = true;
+    }
+
+    return queue_ready;
+  }
 
   template <typename... Args>
   auto EmplaceBack(Args&&... args) -> bool {

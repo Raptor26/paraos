@@ -8,6 +8,7 @@
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_queue.hpp"
+#include "paraos_queue_blocking.hpp"
 #include "paraos_trace.hpp"
 
 #ifdef paraosTRACE_ENABLE
@@ -19,7 +20,8 @@ namespace paraos {
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 struct Message {
   Message(
-      std::size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
+      std::size_t size_in_bytes,
+      paraos::IQueueBlocking<Message<ALLOCATOR>> *queue_ptr)
       : queue_ptr_{queue_ptr} {
     if (size_in_bytes > 0) {
       data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes);
@@ -97,7 +99,7 @@ struct Message {
   PARAOS_INLINE_TRIVIAL auto GetSize() const { return size_in_bytes_; }
 
  protected:
-  paraos::IQueue<Message<ALLOCATOR>> *queue_ptr_{nullptr};
+  paraos::IQueueBlocking<Message<ALLOCATOR>> *queue_ptr_{nullptr};
 
  private:
   ALLOCATOR allocator_;
@@ -110,8 +112,11 @@ struct Message {
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 struct MessageWritable final : public Message<ALLOCATOR> {
   MessageWritable(
-      std::size_t size_in_bytes, paraos::IQueue<Message<ALLOCATOR>> *queue_ptr)
-      : Message<ALLOCATOR>{size_in_bytes, queue_ptr} {
+      std::size_t size_in_bytes,
+      paraos::IQueueBlocking<Message<ALLOCATOR>> *queue_ptr,
+      std::size_t timeout_to_push_ms)
+      : Message<ALLOCATOR>{size_in_bytes, queue_ptr},
+        timeout_to_push_ms_{timeout_to_push_ms} {
     paraosTRACE_MESSAGE("MessageWritable Ctor");
   }
 
@@ -119,7 +124,7 @@ struct MessageWritable final : public Message<ALLOCATOR> {
     paraosTRACE_MESSAGE("~MessageWritable Dtor");
 
     if (this->GetAddr() && !is_message_pop && this->queue_ptr_) {
-      this->queue_ptr_->Push(std::move(*this));
+      this->queue_ptr_->Push(std::move(*this), timeout_to_push_ms_);
     }
   }
 
@@ -135,37 +140,36 @@ struct MessageWritable final : public Message<ALLOCATOR> {
 
  private:
   bool is_message_pop{false};
+  std::size_t timeout_to_push_ms_{0};
 };
 
 template <
     typename MESSAGE_ALLOCATOR = std::allocator<std::uint8_t>,
     typename QUEUE_ALLOCATOR = std::allocator<Message<MESSAGE_ALLOCATOR>>>
 struct QueueMessageBuffWrapper final
-    : public IQueue<Message<MESSAGE_ALLOCATOR>> {
- private:
-  static_assert(
-      std::has_virtual_destructor_v<IQueue<Message<MESSAGE_ALLOCATOR>>>,
-      "IQueue<T> must have virtual destruction");
-
+    : public IQueueBlocking<Message<MESSAGE_ALLOCATOR>> {
  public:
   QueueMessageBuffWrapper(const std::size_t len) : queue_{len} {}
   ~QueueMessageBuffWrapper() = default;
 
   operator bool() const { return static_cast<bool>(queue_); }
 
-  PARAOS_INLINE_TRIVIAL auto Push(Message<MESSAGE_ALLOCATOR> &&elem)
-      -> bool override {
-    return queue_.Push(std::move(elem));
+  PARAOS_INLINE_TRIVIAL auto Push(
+      Message<MESSAGE_ALLOCATOR> &&elem,
+      std::size_t timeout_ms = 0u) -> bool override {
+    return queue_.Push(std::move(elem), timeout_ms);
   }
 
-  PARAOS_INLINE_TRIVIAL auto Push(const Message<MESSAGE_ALLOCATOR> &elem)
-      -> bool override {
-    return queue_.Push(elem);
+  PARAOS_INLINE_TRIVIAL auto Push(
+      const Message<MESSAGE_ALLOCATOR> &elem,
+      std::size_t timeout_ms = 0u) -> bool override {
+    return queue_.Push(elem, timeout_ms);
   }
 
-  PARAOS_INLINE_TRIVIAL auto Pop() -> Message<MESSAGE_ALLOCATOR> override {
+  PARAOS_INLINE_TRIVIAL auto Pop(std::size_t timeout_ms = 0u)
+      -> Message<MESSAGE_ALLOCATOR> override {
     if (!IsEmpty()) {
-      return queue_.Pop();
+      return queue_.Pop(timeout_ms);
     }
 
     return Message<MESSAGE_ALLOCATOR>{};
@@ -186,7 +190,7 @@ struct QueueMessageBuffWrapper final
   PARAOS_INLINE_TRIVIAL void Erase() override { queue_.Erase(); }
 
  private:
-  paraos::Queue<Message<MESSAGE_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
+  paraos::QueueBlocking<Message<MESSAGE_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
 };
 
 template <
@@ -202,17 +206,18 @@ struct MessageBuffer {
 
   operator bool() const { return static_cast<bool>(queue_); }
 
-  auto Alloc(std::size_t size_in_bytes) {
+  auto Alloc(std::size_t size_in_bytes, std::size_t timeout_ms = 0) {
     paraosTRACE_MESSAGE("-- Alloc Message memory area");
 
     if (!queue_.IsFull()) {
-      return MessageWritable<BUFFER_ALLOCATOR>{size_in_bytes, &queue_};
+      return MessageWritable<BUFFER_ALLOCATOR>{
+          size_in_bytes, &queue_, timeout_ms};
     }
 
-    return MessageWritable<BUFFER_ALLOCATOR>{0u, &queue_};
+    return MessageWritable<BUFFER_ALLOCATOR>{0u, &queue_, 0u};
   }
 
-  auto Pop() {
+  auto Pop(std::size_t timeout_ms = 0) {
     paraosTRACE_MESSAGE("-- Pop Message from buffer");
 
     const CriticalSection critical;

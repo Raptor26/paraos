@@ -155,6 +155,9 @@ struct Queue : public IQueue<T> {
     }
   };
 
+ protected:
+  auto IsQueueReady() const -> bool { return *this; }
+
  private:
   PARAOS_INLINE_TRIVIAL auto Front() -> T& { return buff_ptr_[r_idx_]; }
 
