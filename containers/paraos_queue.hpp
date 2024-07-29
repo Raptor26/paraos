@@ -224,8 +224,8 @@ class QueueBlocking : public Queue<T, ALLOCATOR> {
     return is_pushed;
   }
 
-  auto Push(T&& item, std::size_t timeout_ms) noexcept(
-      std::is_nothrow_move_constructible<T>::value) -> bool {
+  auto Push(T&& item, std::size_t timeout_ms) noexcept(noexcept(
+      QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item)))) -> bool {
     if (Queue<T, ALLOCATOR>::IsFull()) {
       paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
 
@@ -243,8 +243,9 @@ class QueueBlocking : public Queue<T, ALLOCATOR> {
   }
 
   auto Push(const T& item, std::size_t timeout_ms) noexcept(
-      std::is_nothrow_copy_constructible<T>::value) -> bool {
+      noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool {
     bool is_pushed{false};
+
     if (Queue<T, ALLOCATOR>::IsFull()) {
       paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
 
@@ -268,7 +269,8 @@ class QueueBlocking : public Queue<T, ALLOCATOR> {
     return is_pushed;
   }
 
-  auto Pop(std::size_t timeout_ms) {
+  auto Pop(std::size_t timeout_ms) noexcept(
+      noexcept(Queue<T, ALLOCATOR>::Pop())) {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
     if (push_sem_.Take(timeout_ms)) {
