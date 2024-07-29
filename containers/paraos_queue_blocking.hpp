@@ -1,12 +1,13 @@
 #ifndef PARAOS_QUEUE_BLOCKING_HPP
 #define PARAOS_QUEUE_BLOCKING_HPP
 
+#include "paraos_config.hpp"
 #include "paraos_queue.hpp"
 
 namespace paraos {
 
 template <typename T, typename ALLOCATOR = std::allocator<T>>
-class QueueBlocking : public Queue<T, ALLOCATOR> {
+class QueueBlocking final : public Queue<T, ALLOCATOR> {
  public:
   QueueBlocking(size_t max_elements_numb)
       : Queue<T, ALLOCATOR>(max_elements_numb),
@@ -51,7 +52,7 @@ class QueueBlocking : public Queue<T, ALLOCATOR> {
       noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool {
     bool is_pushed{false};
 
-    if (Queue<T, ALLOCATOR>::IsFull()) {
+    if (IsFull()) {
       paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
 
       if (pop_sem_.Take(timeout_ms)) {
@@ -94,6 +95,21 @@ class QueueBlocking : public Queue<T, ALLOCATOR> {
 
       return T{};
     }
+  }
+
+  PARAOS_INLINE_TRIVIAL void Erase() override {
+    const paraos::CriticalSection critical;
+    Queue<T, ALLOCATOR>::Erase();
+  }
+
+  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool override {
+    const paraos::CriticalSection critical;
+    return Queue<T, ALLOCATOR>::IsEmpty();
+  }
+
+  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
+    const paraos::CriticalSection critical;
+    return Queue<T, ALLOCATOR>::IsFull();
   }
 
  private:

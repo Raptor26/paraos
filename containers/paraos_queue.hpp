@@ -129,7 +129,7 @@ struct Queue : public IQueue<T> {
     return std::move(Front());
   }
 
-  auto IsEmpty() -> bool override {
+  virtual auto IsEmpty() -> bool override {
     bool is_empty{false};
     if (contained_cnt_ == 0) {
       is_empty = true;
@@ -138,18 +138,18 @@ struct Queue : public IQueue<T> {
     return is_empty;
   };
 
-  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
+  virtual PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
     if (contained_cnt_ >= max_elements_numb_) {
       return true;
     }
     return false;
   }
 
-  PARAOS_INLINE_TRIVIAL auto Size() -> size_t override {
+  virtual PARAOS_INLINE_TRIVIAL auto Size() -> size_t override {
     return contained_cnt_;
   };
 
-  void Erase() override {
+  virtual void Erase() override {
     while (!IsEmpty()) {
       Pop();
     }
