@@ -42,17 +42,7 @@ class Message {
   }
 
   Message &operator=(const Message &other) = delete;
-
-  Message &operator=(Message &&other) {
-    SafeDeallocate();
-
-    data_ptr_ = other.data_ptr_;
-    size_in_bytes_ = other.size_in_bytes_;
-
-    other.data_ptr_ = nullptr;
-
-    return *this;
-  }
+  Message &operator=(Message &&other) = delete;
 
   operator bool() const {
     bool is_ready{false};
