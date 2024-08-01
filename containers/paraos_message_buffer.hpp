@@ -1,5 +1,5 @@
-#ifndef PARAOS_MESSAGE_BUFFER_V2_HPP
-#define PARAOS_MESSAGE_BUFFER_V2_HPP
+#ifndef PARAOS_MESSAGE_BUFFER_HPP
+#define PARAOS_MESSAGE_BUFFER_HPP
 
 #include <cinttypes>
 #include <vector>
@@ -157,4 +157,4 @@ class MessageBuffer final {
 
 }  // namespace paraos
 
-#endif /* PARAOS_MESSAGE_BUFFER_V2_HPP */
+#endif /* PARAOS_MESSAGE_BUFFER_HPP */
