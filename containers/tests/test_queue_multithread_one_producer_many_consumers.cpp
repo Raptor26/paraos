@@ -67,7 +67,7 @@ struct Consumer : public paraos::Thread {
       if (total_read_str_cnt.load() >= song_str.size()) {
         is_read_str = true;
       } else {
-        // todo Удалить строку ниже, ароматность должна обеспечиваться очередью
+        // todo Удалить строку ниже, атомарность должна обеспечиваться очередью
         const paraos::CriticalSection critical;
 
         if (!queue.IsEmpty()) {

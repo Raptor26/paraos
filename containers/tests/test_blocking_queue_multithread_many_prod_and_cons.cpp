@@ -13,11 +13,12 @@
 
 using namespace paraos;
 
-std::vector<int> elems_vector{345, 8924, 1314, 43141, 111,
-                              222, 333,  444,  555,   2131};
+const std::vector<std::string> elems_vector{"1)", "2)", "3)", "4)", "5)",
+                                            "6)", "7)", "8)", "9)", "10)"};
 
-QueueBlocking<int> queue{7};
-std::size_t waiting_timeout_ms = 120;
+QueueBlocking<std::string> queue{2};
+std::size_t producer_waiting_timeout_ms{5000};
+std::size_t consumer_waiting_timeout_ms{50};
 
 std::atomic<size_t> total_read_elems_cnt{0};
 std::atomic<size_t> total_written_elems_cnt{0};
@@ -29,29 +30,45 @@ struct Producer : public paraos::Thread {
       : paraos::Thread{name, stack_depth, priority} {}
 
   void Run() override {
+    bool is_message_pushed{true};
+    std::size_t str_cnt{0};
     using namespace std::chrono_literals;
-    while (running_condition_) {
-      {  // Без критической секции вывод в консоли становится трудным для
-        // восприятия...
-        const paraos::CriticalSection critical;
-        auto vec_idx = total_written_elems_cnt.load();
-        if (vec_idx < elems_vector.size()) {
-          auto elem = elems_vector[vec_idx];
-          std::cout << Name() << " inserting elem:" << elem << std::endl;
-          queue.Push(elem, waiting_timeout_ms);
-          ++vec_idx;
-          total_written_elems_cnt.store(vec_idx);
-        } else {
-          running_condition_ = false;
+    while (true) {
+      if (is_message_pushed) {
+        const CriticalSection critical;
+        // Мы должны атомарно определить строку, которую будем записывать в
+        // буфер сообщений на данной итерации цикла while текущего потока.
+        // После, несколько потоков могут параллельно записывать разные строки
+        // в буфер сообщений без состояния гонки.
+
+        str_cnt = total_written_elems_cnt.load();
+        if (str_cnt < elems_vector.size()) {
+          // Инкрементируем счетчик чтобы другой поток (или данный, но уже на
+          // следующей итерации цикла while) "взял" следующую строку для
+          // записи в буфер.
+          ++total_written_elems_cnt;
         }
       }
+
+      if (str_cnt < elems_vector.size()) {
+        auto elem = elems_vector[str_cnt];
+
+        if (queue.Push(elem, producer_waiting_timeout_ms)) {
+          const CriticalSection critical;
+          std::cout << Name() << " inserting elem: " << elem << std::endl;
+        } else {
+          assert(false && "Can't push element in queue");
+        }
+        is_message_pushed = true;
+      } else {
+        break;
+      }
+
       std::this_thread::sleep_for(1ms);
     }
+    const CriticalSection critical;
     std::cout << Name() << " Exiting... " << std::endl;
   }
-
- private:
-  bool running_condition_{true};
 };
 
 struct Consumer : public paraos::Thread {
@@ -63,36 +80,28 @@ struct Consumer : public paraos::Thread {
   void Run() override {
     using namespace std::chrono_literals;
 
-    while (running_condition_) {
-      auto cnt = 0;
-      {
-        const paraos::CriticalSection critical;
-        cnt = total_read_elems_cnt.load();
-      }
-      if (cnt < elems_vector.size()) {
-        std::cout << Name() << " Popping " << cnt << std::endl;
-        auto elem = queue.Pop(waiting_timeout_ms);
-        if (elem != 0) {
-          if (std::find(elems_vector.begin(), elems_vector.end(), elem) !=
-              elems_vector.end()) {
-            std::cout << Name() << " Got elem from queue: " << elem
-                      << std::endl;
-
-            auto cnt = total_read_elems_cnt.load();
-            ++cnt;
-            total_read_elems_cnt.store(cnt);
-            std::cout << Name() << " Update read counter: " << cnt << std::endl;
-          } else {
-            assert(false);
-          }
+    while (true) {
+      auto elem = queue.Pop(consumer_waiting_timeout_ms);
+      const CriticalSection critical;
+      if (elem.size() != 0) {
+        ++total_read_elems_cnt;
+        if (std::find(elems_vector.begin(), elems_vector.end(), elem) !=
+            elems_vector.end()) {
+          std::cout << "-- " << Name() << " Got elem from queue: " << elem
+                    << std::endl;
+        } else {
+          assert(false);
         }
-      } else {
-        running_condition_ = false;
+      }
+
+      if (total_read_elems_cnt.load() >= elems_vector.size()) {
+        break;
       }
 
       // Уступить ресурсы другим потокам
       std::this_thread::sleep_for(1ms);
     }
+    const CriticalSection critical;
     std::cout << Name() << " Exiting... " << std::endl;
   }
 
@@ -118,6 +127,18 @@ int main() {
       "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
 
   paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
+
+  const CriticalSection critical;
+  std::cout << "Total write elements is " << total_written_elems_cnt
+            << std::endl;
+  assert(
+      elems_vector.size() == total_written_elems_cnt &&
+      "Miss some writable element");
+
+  assert(
+      elems_vector.size() == total_read_elems_cnt &&
+      "Miss some readable element");
 
   return 0;
 }
