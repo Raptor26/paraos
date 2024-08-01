@@ -69,7 +69,6 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
 
     bool is_pushed{false};
 
-    MutexGuard(mutex_push_, timeout_ms);
     if (pop_sem_.Take(timeout_ms)) {
       {
         const paraos::CriticalSection critical;
@@ -87,7 +86,6 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
       noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool override {
     bool is_pushed{false};
 
-    // MutexGuard(mutex_push_, timeout_ms);
     if (pop_sem_.Take(timeout_ms)) {
       {
         const paraos::CriticalSection critical;
@@ -105,7 +103,6 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
       noexcept(Queue<T, ALLOCATOR>::Pop())) -> T override {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
-    // MutexGuard(mutex_pop_, paraos::max_delay);
     if (push_sem_.Take(timeout_ms)) {
       decltype(Queue<T, ALLOCATOR>::Pop()) popped_value{};
 
@@ -153,8 +150,6 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
  private:
   Semaphore push_sem_;
   Semaphore pop_sem_;
-  MutexBase mutex_push_;
-  MutexBase mutex_pop_;
 };
 
 }  // namespace paraos
