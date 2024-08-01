@@ -195,7 +195,7 @@ using buffer_allocator = MyAllocBuffer<std::uint8_t>;
 
 TEST(BufferUserAlloc, Create) {
   paraos::MessageBuffer<
-      buffer_allocator, MyAllocQueue<paraos::MessageBase<buffer_allocator>>>
+      buffer_allocator, MyAllocQueue<paraos::Message<buffer_allocator>>>
       buffer{7};
   constexpr float val{123.456};
 

@@ -11,11 +11,8 @@
 
 namespace paraos {
 
-template <typename ALLOCATOR>
-class MessageWritable;
-
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
-class MessageBase {
+class Message {
   ALLOCATOR allocator_;
   using alloc_traits = std::allocator_traits<decltype(allocator_)>;
 
@@ -23,30 +20,30 @@ class MessageBase {
   /// @brief Запрашивает из кучи размер памяти, указанный в size_in_bytes
   /// @param[in] size_in_bytes: Размер области памяти в байтах, который
   /// необходимо выделить из аллокатора памяти.
-  MessageBase(const std::size_t size_in_bytes)
+  Message(const std::size_t size_in_bytes)
       : data_ptr_{nullptr}, size_in_bytes_{size_in_bytes} {
     SafeAllocate();
   }
 
-  MessageBase() : data_ptr_{nullptr}, size_in_bytes_{0} {}
+  Message() : data_ptr_{nullptr}, size_in_bytes_{0} {}
 
-  virtual ~MessageBase() { SafeDeallocate(); }
+  virtual ~Message() { SafeDeallocate(); }
 
-  MessageBase(const MessageBase &other) {
+  Message(const Message &other) {
     SafeAllocate();
     size_in_bytes_ = other.size_in_bytes_;
   }
 
-  MessageBase(MessageBase &&other) noexcept {
+  Message(Message &&other) noexcept {
     data_ptr_ = other.data_ptr_;
     size_in_bytes_ = other.size_in_bytes_;
 
     other.data_ptr_ = nullptr;
   }
 
-  MessageBase &operator=(const MessageBase &other) = delete;
+  Message &operator=(const Message &other) = delete;
 
-  MessageBase &operator=(MessageBase &&other) {
+  Message &operator=(Message &&other) {
     SafeDeallocate();
 
     data_ptr_ = other.data_ptr_;
@@ -106,7 +103,7 @@ class MessageWritable final {
  public:
   MessageWritable(
       const std::size_t size_in_bytes,
-      paraos::IQueueBlocking<MessageBase<ALLOCATOR>> &queue,
+      paraos::IQueueBlocking<Message<ALLOCATOR>> &queue,
       const std::size_t timeout_ms)
       : message_{size_in_bytes}, queue_{queue}, timeout_ms_{timeout_ms} {}
 
@@ -138,14 +135,14 @@ class MessageWritable final {
   PARAOS_INLINE_TRIVIAL void Free() { message_.Free(); }
 
  private:
-  MessageBase<ALLOCATOR> message_;
-  paraos::IQueueBlocking<MessageBase<ALLOCATOR>> &queue_;
+  Message<ALLOCATOR> message_;
+  paraos::IQueueBlocking<Message<ALLOCATOR>> &queue_;
   const std::size_t timeout_ms_;
 };
 
 template <
     typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>,
-    typename QUEUE_ALLOCATOR = std::allocator<MessageBase<BUFFER_ALLOCATOR>>>
+    typename QUEUE_ALLOCATOR = std::allocator<Message<BUFFER_ALLOCATOR>>>
 class MessageBuffer final {
  public:
   MessageBuffer(const std::size_t queue_len = 10u) : queue_{queue_len} {}
@@ -165,7 +162,7 @@ class MessageBuffer final {
   PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
 
  private:
-  paraos::QueueBlocking<MessageBase<BUFFER_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
+  paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
 };
 
 }  // namespace paraos
