@@ -12,6 +12,8 @@ using namespace paraos;
 using MessageAllocator = std::allocator<std::uint8_t>;
 using QueueAllocator = std::allocator<Message<MessageAllocator>>;
 
+constexpr size_t delay_buff_operations{0};
+
 class MessageBufferCreate : public ::testing::Test {
  public:
   std::unique_ptr<MessageBuffer<MessageAllocator, QueueAllocator>> buffer_;
@@ -42,30 +44,31 @@ TEST(MessageBuff, PushToFull) {
 
   {
     const float val{10.123};
-    auto message = buff.Alloc(sizeof(val));
+    auto message = buff.Alloc(sizeof(val), delay_buff_operations);
     ASSERT_TRUE(message);
   }
 
   {
     const float val{10.123};
-    auto message = buff.Alloc(sizeof(val));
+    auto message = buff.Alloc(sizeof(val), delay_buff_operations);
     ASSERT_TRUE(message);
   }
 
   {
     const float val{10.123};
-    auto message = buff.Alloc(sizeof(val));
+    auto message = buff.Alloc(sizeof(val), delay_buff_operations);
+
     ASSERT_FALSE(message);
   }
 }
 
 TEST_F(MessageBufferCreate, AllocZeroMemory) {
-  auto message = buffer_->Alloc(0);
+  auto message = buffer_->Alloc(0, delay_buff_operations);
   EXPECT_FALSE(message);
 }
 
 TEST_F(MessageBufferCreate, PopFromEmptyBuff) {
-  auto message = buffer_->Pop();
+  auto message = buffer_->Pop(delay_buff_operations);
   EXPECT_FALSE(message);
 }
 
@@ -73,7 +76,7 @@ TEST_F(MessageBufferCreate, PushThenPop) {
   constexpr float val{0.1234};
 
   {
-    auto message_area = buffer_->Alloc(sizeof(val));
+    auto message_area = buffer_->Alloc(sizeof(val), delay_buff_operations);
     EXPECT_TRUE(message_area);
     EXPECT_EQ(sizeof(val), message_area.GetSize());
 
@@ -84,7 +87,7 @@ TEST_F(MessageBufferCreate, PushThenPop) {
   }
 
   {
-    auto read = buffer_->Pop();
+    auto read = buffer_->Pop(delay_buff_operations);
     EXPECT_TRUE(read);
 
     auto float_ptr = static_cast<float *>(read.GetAddr());
@@ -103,7 +106,7 @@ TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
   // Операции записи данных
   std::size_t written_elem_numb{0};
   for (std::size_t i = 0; i < messages_numb; ++i) {
-    auto writable = buffer_->Alloc(sizeof(start_value));
+    auto writable = buffer_->Alloc(sizeof(start_value), delay_buff_operations);
     if (writable) {
       auto float_ptr = static_cast<double *>(writable.GetAddr());
       *float_ptr = start_value + static_cast<double>(i);
@@ -116,7 +119,7 @@ TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
   std::size_t i{0};
   EXPECT_EQ(false, buffer_->IsEmpty());
   while (!buffer_->IsEmpty()) {
-    auto readable = buffer_->Pop();
+    auto readable = buffer_->Pop(delay_buff_operations);
     auto float_ptr = static_cast<double *>(readable.GetAddr());
 
     EXPECT_NEAR(start_value + static_cast<double>(i), *float_ptr, 0.001);
@@ -142,7 +145,7 @@ TEST_F(MessageBufferCreate, EraseFillBuff) {
 
   // Операции записи данных
   for (std::size_t i = 0; i < messages_numb; ++i) {
-    auto writable = buffer_->Alloc(sizeof(start_value));
+    auto writable = buffer_->Alloc(sizeof(start_value), delay_buff_operations);
     if (writable) {
       auto float_ptr = static_cast<double *>(writable.GetAddr());
       *float_ptr = start_value + static_cast<double>(i);
@@ -171,7 +174,7 @@ TEST_F(MessageBufferCreate, WriteStrings) {
     // 'for (const auto &str : set_str)' проверять количество записанных
     // сообщений в 'buffer_' (при вызове деструктора переменной `write`).
     {
-      auto write = buffer_->Alloc(str.length());
+      auto write = buffer_->Alloc(str.length(), delay_buff_operations);
       if (write) {
         memcpy(
             write.GetAddr(), static_cast<const void *>(str.c_str()),
@@ -188,7 +191,7 @@ TEST_F(MessageBufferCreate, WriteStrings) {
   std::size_t read_cnt{0};
   // Чтение строк
   while (!buffer_->IsEmpty()) {
-    auto read = buffer_->Pop();
+    auto read = buffer_->Pop(delay_buff_operations);
 
     if (read) {
       std::string_view str_view{
@@ -205,7 +208,7 @@ TEST_F(MessageBufferCreate, WriteStrings) {
 TEST_F(MessageBufferCreate, AllocThenUserPop) {
   std::string str = {"Hello World"};
   {
-    auto write = buffer_->Alloc(str.length());
+    auto write = buffer_->Alloc(str.length(), delay_buff_operations);
 
     if (write) {
       memcpy(
@@ -224,11 +227,18 @@ TEST_F(MessageBufferCreate, AllocThenUserPop) {
 }
 
 TEST_F(MessageBufferCreate, AllocThenUserPopIfEmptyMessage) {
-  auto write = buffer_->Alloc(0);
+  auto write = buffer_->Alloc(0u, delay_buff_operations);
 
   // Пользователь передумал записывать сообщение, под которое не выделена
   // память.
   write.Pop();
 
   EXPECT_TRUE(buffer_->IsEmpty());
+}
+
+TEST_F(MessageBufferCreate, AllocTwoMessages) {
+  auto write1 = buffer_->Alloc(1u, delay_buff_operations);
+  EXPECT_TRUE(write1);
+  auto write2 = buffer_->Alloc(1u, delay_buff_operations);
+  EXPECT_TRUE(write1);
 }

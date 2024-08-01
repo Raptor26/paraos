@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "paraos_message_buffer.hpp"
+#include "paraos_thread.hpp"
 
 template <class T>
 class MyAllocBuffer {
@@ -197,7 +198,7 @@ TEST(BufferUserAlloc, Create) {
   constexpr float val{123.456};
 
   {
-    auto message_area = buffer.Alloc(sizeof(val));
+    auto message_area = buffer.Alloc(sizeof(val), paraos::max_delay);
     EXPECT_TRUE(message_area);
     EXPECT_EQ(sizeof(val), message_area.GetSize());
 
@@ -208,7 +209,7 @@ TEST(BufferUserAlloc, Create) {
   }
 
   {
-    auto read = buffer.Pop();
+    auto read = buffer.Pop(paraos::max_delay);
     EXPECT_TRUE(read);
 
     auto float_ptr = static_cast<float *>(read.GetAddr());
