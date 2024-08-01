@@ -3,7 +3,9 @@
 
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_mutex.hpp"
 #include "paraos_queue.hpp"
+#include "rtos_impl_mutex.hpp"
 
 namespace paraos {
 
@@ -30,7 +32,16 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
   QueueBlocking(size_t max_elements_numb)
       : Queue<T, ALLOCATOR>{max_elements_numb},
         push_sem_{SemaphoreAttr{max_elements_numb}},
-        pop_sem_{SemaphoreAttr{max_elements_numb}} {}
+        pop_sem_{SemaphoreAttr{max_elements_numb}} {
+    while (max_elements_numb > 0) {
+      // необходимо отдать семафор pop_sem_ столько раз, сколько элементов может
+      // хранить очередь. Иначе при вызове Push() семафор не будет получен
+      // никогда.
+      pop_sem_.Give();
+      push_sem_.Take(0u);
+      --max_elements_numb;
+    }
+  }
 
   virtual ~QueueBlocking() {}
 
@@ -46,11 +57,25 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
 
   template <typename... Args>
   auto EmplaceBack(Args&&... args) -> bool {
-    bool is_pushed =
-        Queue<T, ALLOCATOR>::EmplaceBack(std::forward<Args>(args)...);
+    assert(false && "Don't use EmplaceBack for blocking queue version");
 
-    if (is_pushed) {
-      paraosTRACE_MESSAGE("BlockingQueue giving PUSH semaphore");
+    return false;
+  }
+
+  auto Push(T&& item, std::size_t timeout_ms) noexcept(
+      noexcept(QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item))))
+      -> bool override {
+    paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
+
+    bool is_pushed{false};
+
+    MutexGuard(mutex_push_, timeout_ms);
+    if (pop_sem_.Take(timeout_ms)) {
+      {
+        const paraos::CriticalSection critical;
+        paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
+        is_pushed = Queue<T, ALLOCATOR>::Push(std::move(item));
+      }
 
       push_sem_.Give();
     }
@@ -58,45 +83,17 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
     return is_pushed;
   }
 
-  auto Push(T&& item, std::size_t timeout_ms) noexcept(
-      noexcept(QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item))))
-      -> bool override {
-    if (Queue<T, ALLOCATOR>::IsFull()) {
-      paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
-
-      if (pop_sem_.Take(timeout_ms)) {
-        paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-
-        return QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item));
-      }
-    } else {
-      paraosTRACE_MESSAGE("BlockingQueue not full, pushing...");
-
-      return QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item));
-    }
-    return false;
-  }
-
   auto Push(const T& item, std::size_t timeout_ms) noexcept(
       noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool override {
     bool is_pushed{false};
 
-    if (IsFull()) {
-      paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
-
-      if (pop_sem_.Take(timeout_ms)) {
+    // MutexGuard(mutex_push_, timeout_ms);
+    if (pop_sem_.Take(timeout_ms)) {
+      {
+        const paraos::CriticalSection critical;
         paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-
         is_pushed = Queue<T, ALLOCATOR>::Push(item);
       }
-    } else {
-      paraosTRACE_MESSAGE("BlockingQueue not full, pushing...");
-
-      is_pushed = Queue<T, ALLOCATOR>::Push(item);
-    }
-
-    if (is_pushed) {
-      paraosTRACE_MESSAGE("BlockingQueue giving PUSH semaphore");
 
       push_sem_.Give();
     }
@@ -108,15 +105,22 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
       noexcept(Queue<T, ALLOCATOR>::Pop())) -> T override {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
+    // MutexGuard(mutex_pop_, paraos::max_delay);
     if (push_sem_.Take(timeout_ms)) {
-      paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
+      decltype(Queue<T, ALLOCATOR>::Pop()) popped_value{};
 
-      auto popped_value = Queue<T, ALLOCATOR>::Pop();
+      {
+        const paraos::CriticalSection critical;
+        paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
+
+        if (!Queue<T, ALLOCATOR>::IsEmpty()) {
+          popped_value = Queue<T, ALLOCATOR>::Pop();
+        }
+      }
+
       pop_sem_.Give();
-
       paraosTRACE_MESSAGE("BlockingQueue giving POP semaphore");
-
-      return popped_value;
+      return std::move(popped_value);
     } else {
       paraosTRACE_MESSAGE(
           "BlockingQueue PUSH semaphore take failed returning default "
@@ -149,6 +153,8 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
  private:
   Semaphore push_sem_;
   Semaphore pop_sem_;
+  MutexBase mutex_push_;
+  MutexBase mutex_pop_;
 };
 
 }  // namespace paraos
