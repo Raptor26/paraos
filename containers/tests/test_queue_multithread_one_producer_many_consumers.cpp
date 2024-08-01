@@ -67,23 +67,22 @@ struct Consumer : public paraos::Thread {
       if (total_read_str_cnt.load() >= song_str.size()) {
         is_read_str = true;
       } else {
-        // todo Удалить строку ниже, ароматность должна обеспечиваться очередью
+        // todo Удалить строку ниже, атомарность должна обеспечиваться очередью
         const paraos::CriticalSection critical;
 
-        if (!queue.IsEmpty()) {
-          auto str = queue.Pop();
-          if (!str.empty()) {
-            auto cnt = total_read_str_cnt.load();
-            ++cnt;
-            total_read_str_cnt.store(cnt);
-            if (std::find(song_str.begin(), song_str.end(), str) !=
-                song_str.end()) {
-              std::cout << Name() << " str: " << str << std::endl;
-            } else {
-              assert(false);
-            }
+        auto str = queue.Pop();
+        if (str) {
+          auto cnt = total_read_str_cnt.load();
+          ++cnt;
+          total_read_str_cnt.store(cnt);
+          if (std::find(song_str.begin(), song_str.end(), *str) !=
+              song_str.end()) {
+            std::cout << Name() << " str: " << *str << std::endl;
+          } else {
+            assert(false);
           }
         }
+
       }  // out critical section
 
       // Уступить ресурсы другим потокам

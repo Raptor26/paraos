@@ -28,7 +28,6 @@ class Semaphore {
   }
 
   virtual ~Semaphore() {
-    assert(handle_);
     if (handle_) {
       CloseHandle(handle_);
 
@@ -41,7 +40,10 @@ class Semaphore {
 #endif
   }
 
+  operator bool() const { return handle_ != nullptr ? true : false; }
+
   bool Take(std::size_t timeout_ms = max_delay) {
+    assert(handle_);
     bool is_sem_taken = false;
     if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
         WAIT_OBJECT_0) {
@@ -55,19 +57,18 @@ class Semaphore {
   /// https://learn.microsoft.com/ru-ru/windows/win32/api/synchapi/nf-synchapi-releasesemaphore
   /// @return
   bool Give(bool from_isr = false) {
+    assert(handle_);
     constexpr LONG increment_sem_cnt{1u};
 
     return static_cast<bool>(
         ReleaseSemaphore(handle_, increment_sem_cnt, nullptr));
   }
 
-  operator bool() const { return handle_ != nullptr ? true : false; }
-
  protected:
   Semaphore() : Semaphore{SemaphoreAttr{}} {}
 
  private:
-  HANDLE handle_ = nullptr;
+  HANDLE handle_{nullptr};
 };
 
 struct SemaphoreBinary final : public Semaphore {

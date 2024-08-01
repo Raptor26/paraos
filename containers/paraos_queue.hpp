@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
@@ -26,8 +27,9 @@ struct IQueue {
 
   virtual auto Push(const T& element) -> bool = 0;
   virtual auto Push(T&& element) -> bool = 0;
-  virtual auto Pop() -> T = 0;
+  virtual auto Pop() -> std::optional<T> = 0;
   virtual auto IsEmpty() -> bool = 0;
+  virtual auto IsFull() -> bool = 0;
   virtual auto Size() -> size_t = 0;
   virtual void Erase() = 0;
 
@@ -109,10 +111,10 @@ struct Queue : public IQueue<T> {
     return false;
   }
 
-  auto Pop() -> T override {
-    assert(
-        !IsEmpty() &&
-        "if Pop() is called for an empty queue, the behavior is undefined");
+  auto Pop() -> std::optional<T> override {
+    if (IsEmpty()) {
+      return std::nullopt;
+    }
 
     // Лямбда-функция ниже будет вызвана сразу после оператора return
     Finally pop_from_queue{[&] {
@@ -128,7 +130,7 @@ struct Queue : public IQueue<T> {
     return std::move(Front());
   }
 
-  auto IsEmpty() -> bool override {
+  virtual auto IsEmpty() -> bool override {
     bool is_empty{false};
     if (contained_cnt_ == 0) {
       is_empty = true;
@@ -137,22 +139,25 @@ struct Queue : public IQueue<T> {
     return is_empty;
   };
 
-  PARAOS_INLINE_TRIVIAL auto IsFull() {
+  virtual PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
     if (contained_cnt_ >= max_elements_numb_) {
       return true;
     }
     return false;
   }
 
-  PARAOS_INLINE_TRIVIAL auto Size() -> size_t override {
+  virtual PARAOS_INLINE_TRIVIAL auto Size() -> size_t override {
     return contained_cnt_;
   };
 
-  void Erase() override {
+  virtual void Erase() override {
     while (!IsEmpty()) {
       Pop();
     }
   };
+
+ protected:
+  auto IsQueueReady() const -> bool { return *this; }
 
  private:
   PARAOS_INLINE_TRIVIAL auto Front() -> T& { return buff_ptr_[r_idx_]; }
@@ -197,100 +202,6 @@ struct Queue : public IQueue<T> {
 
   /// @brief Количество записанных в очередь объектов.
   size_t contained_cnt_{0};
-};
-
-template <typename T, typename ALLOCATOR = std::allocator<T>>
-class QueueBlocking : public Queue<T, ALLOCATOR> {
- public:
-  QueueBlocking(size_t max_elements_numb)
-      : Queue<T, ALLOCATOR>(max_elements_numb),
-        push_sem_{SemaphoreAttr{max_elements_numb}},
-        pop_sem_{SemaphoreAttr{max_elements_numb}} {}
-
-  virtual ~QueueBlocking() {}
-
-  template <typename... Args>
-  auto EmplaceBack(Args&&... args) -> bool {
-    bool is_pushed =
-        Queue<T, ALLOCATOR>::EmplaceBack(std::forward<Args>(args)...);
-
-    if (is_pushed) {
-      paraosTRACE_MESSAGE("BlockingQueue giving PUSH semaphore");
-
-      push_sem_.Give();
-    }
-
-    return is_pushed;
-  }
-
-  auto Push(T&& item, std::size_t timeout_ms) noexcept(
-      std::is_nothrow_move_constructible<T>::value) -> bool {
-    if (Queue<T, ALLOCATOR>::IsFull()) {
-      paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
-
-      if (pop_sem_.Take(timeout_ms)) {
-        paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-
-        return QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item));
-      }
-    } else {
-      paraosTRACE_MESSAGE("BlockingQueue not full, pushing...");
-
-      return QueueBlocking<T, ALLOCATOR>::EmplaceBack(std::move(item));
-    }
-    return false;
-  }
-
-  auto Push(const T& item, std::size_t timeout_ms) noexcept(
-      std::is_nothrow_copy_constructible<T>::value) -> bool {
-    bool is_pushed{false};
-    if (Queue<T, ALLOCATOR>::IsFull()) {
-      paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
-
-      if (pop_sem_.Take(timeout_ms)) {
-        paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-
-        is_pushed = Queue<T, ALLOCATOR>::Push(item);
-      }
-    } else {
-      paraosTRACE_MESSAGE("BlockingQueue not full, pushing...");
-
-      is_pushed = Queue<T, ALLOCATOR>::Push(item);
-    }
-
-    if (is_pushed) {
-      paraosTRACE_MESSAGE("BlockingQueue giving PUSH semaphore");
-
-      push_sem_.Give();
-    }
-
-    return is_pushed;
-  }
-
-  auto Pop(std::size_t timeout_ms) {
-    paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
-
-    if (push_sem_.Take(timeout_ms)) {
-      paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
-
-      auto popped_value = Queue<T, ALLOCATOR>::Pop();
-      pop_sem_.Give();
-
-      paraosTRACE_MESSAGE("BlockingQueue giving POP semaphore");
-
-      return popped_value;
-    } else {
-      paraosTRACE_MESSAGE(
-          "BlockingQueue PUSH semaphore take failed returning default "
-          "object...");
-
-      return T{};
-    }
-  }
-
- private:
-  Semaphore push_sem_;
-  Semaphore pop_sem_;
 };
 
 }  // namespace paraos

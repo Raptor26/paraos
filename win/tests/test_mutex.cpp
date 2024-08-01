@@ -27,7 +27,7 @@ TEST(Mutex, LockThenUnlockTwice) {
   ASSERT_TRUE(default_ctor);
 
   ASSERT_TRUE(default_ctor.Lock(0));
-  ASSERT_TRUE(default_ctor.Lock(0));
+  ASSERT_TRUE(default_ctor.Lock(5000));
   ASSERT_TRUE(default_ctor.Unlock());
   ASSERT_TRUE(default_ctor.Unlock());
 }

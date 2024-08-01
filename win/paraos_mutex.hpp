@@ -115,6 +115,12 @@ class MutexBaseBinary : public MutexBase {
 
   ~MutexBaseBinary() {}
 
+  MutexBaseBinary(const MutexBaseBinary& other) = delete;
+  MutexBaseBinary(MutexBaseBinary&& other) = delete;
+
+  MutexBaseBinary& operator=(const MutexBaseBinary& other) = delete;
+  MutexBaseBinary& operator=(MutexBaseBinary&& other) = delete;
+
   virtual bool Lock(std::size_t timeout_ms = max_delay) override {
     bool is_current_operation_locked{false};
     if (is_locked_ == false) {

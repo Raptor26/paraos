@@ -3,6 +3,9 @@
 #include <iostream>
 
 #include "paraos_message_buffer.hpp"
+#include "paraos_thread.hpp"
+
+constexpr std::size_t thread_delay{0};
 
 template <class T>
 class MyAllocBuffer {
@@ -197,24 +200,24 @@ TEST(BufferUserAlloc, Create) {
   constexpr float val{123.456};
 
   {
-    auto message_area = buffer.Alloc(sizeof(val));
+    auto message_area = buffer.Alloc(sizeof(val), thread_delay);
     EXPECT_TRUE(message_area);
-    EXPECT_EQ(sizeof(val), message_area.GetSize());
+    EXPECT_EQ(sizeof(val), message_area.Size());
 
-    auto float_ptr = static_cast<float *>(message_area.GetAddr());
+    auto float_ptr = static_cast<float *>(message_area.Addr());
     *float_ptr = val;
 
     // деструктор "message_area' автоматически отправит сообщение в буфер.
   }
 
   {
-    auto read = buffer.Pop();
+    auto read = buffer.Pop(thread_delay);
     EXPECT_TRUE(read);
 
-    auto float_ptr = static_cast<float *>(read.GetAddr());
+    auto float_ptr = static_cast<float *>(read->Addr());
 
     EXPECT_NEAR(val, *float_ptr, 0.001);
-    EXPECT_EQ(sizeof(val), read.GetSize());
+    EXPECT_EQ(sizeof(val), read->Size());
     // После выхода read из области видимости, деструктор автоматически
     // удалит занимаемые ресурсы.
   }

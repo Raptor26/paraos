@@ -21,12 +21,20 @@ if(THREAD_ENABLE)
                  test_queue_multithread_one_producer_many_consumers.cpp)
   target_link_libraries(test_queue_multithread_one_producer_many_consumers
                         PRIVATE paraos_containers)
+  add_test(NAME test_queue_multithread_one_producer_many_consumers
+           COMMAND test_queue_multithread_one_producer_many_consumers)
 
   add_executable(test_blocking_queue_multithread_many_prod_and_cons
                  test_blocking_queue_multithread_many_prod_and_cons.cpp)
   target_link_libraries(test_blocking_queue_multithread_many_prod_and_cons
                         PRIVATE paraos_containers)
-endif()
+  add_test(NAME test_blocking_queue_multithread_many_prod_and_cons
+           COMMAND test_blocking_queue_multithread_many_prod_and_cons)
 
-add_test(NAME test_queue_multithread_one_producer_many_consumers
-         COMMAND test_queue_multithread_one_producer_many_consumers)
+  add_executable(test_message_multithread_one_producer_many_consumers
+                 test_message_multithread_one_producer_many_consumers.cpp)
+  target_link_libraries(test_message_multithread_one_producer_many_consumers
+                        PRIVATE paraos_containers)
+  add_test(NAME test_message_multithread_one_producer_many_consumers
+           COMMAND test_message_multithread_one_producer_many_consumers)
+endif()
