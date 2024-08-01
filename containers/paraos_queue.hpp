@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
@@ -26,7 +27,7 @@ struct IQueue {
 
   virtual auto Push(const T& element) -> bool = 0;
   virtual auto Push(T&& element) -> bool = 0;
-  virtual auto Pop() -> T = 0;
+  virtual auto Pop() -> std::optional<T> = 0;
   virtual auto IsEmpty() -> bool = 0;
   virtual auto IsFull() -> bool = 0;
   virtual auto Size() -> size_t = 0;
@@ -110,10 +111,10 @@ struct Queue : public IQueue<T> {
     return false;
   }
 
-  auto Pop() -> T override {
-    assert(
-        !IsEmpty() &&
-        "if Pop() is called for an empty queue, the behavior is undefined");
+  auto Pop() -> std::optional<T> override {
+    if (IsEmpty()) {
+      return std::nullopt;
+    }
 
     // Лямбда-функция ниже будет вызвана сразу после оператора return
     Finally pop_from_queue{[&] {

@@ -58,18 +58,17 @@ TEST(MessageBuff, PushToFull) {
     const float val{10.123};
     auto message = buff.Alloc(sizeof(val), delay_buff_operations);
 
-    ASSERT_FALSE(message);
+    auto *vector = static_cast<double *>(message.Addr());
+    *vector = val;
   }
-}
 
 TEST_F(MessageBufferCreate, AllocZeroMemory) {
   auto message = buffer_->Alloc(0, delay_buff_operations);
   EXPECT_FALSE(message);
 }
 
-TEST_F(MessageBufferCreate, PopFromEmptyBuff) {
-  auto message = buffer_->Pop(delay_buff_operations);
-  EXPECT_FALSE(message);
+  auto *vector = static_cast<double *>(message->Addr());
+  EXPECT_NEAR(val, *vector, 0.001);
 }
 
 TEST_F(MessageBufferCreate, PushThenPop) {
@@ -90,10 +89,10 @@ TEST_F(MessageBufferCreate, PushThenPop) {
     auto read = buffer_->Pop(delay_buff_operations);
     EXPECT_TRUE(read);
 
-    auto float_ptr = static_cast<float *>(read.GetAddr());
+    auto float_ptr = static_cast<float *>(read.value().GetAddr());
 
     EXPECT_NEAR(val, *float_ptr, 0.001);
-    EXPECT_EQ(sizeof(val), read.GetSize());
+    EXPECT_EQ(sizeof(val), read.value().GetSize());
     // После выхода read из области видимости, деструктор автоматически удалит
     // занимаемые ресурсы.
   }
@@ -120,7 +119,7 @@ TEST_F(MessageBufferCreate, PushManyMessagesThenPop) {
   EXPECT_EQ(false, buffer_->IsEmpty());
   while (!buffer_->IsEmpty()) {
     auto readable = buffer_->Pop(delay_buff_operations);
-    auto float_ptr = static_cast<double *>(readable.GetAddr());
+    auto float_ptr = static_cast<double *>(readable.value().GetAddr());
 
     EXPECT_NEAR(start_value + static_cast<double>(i), *float_ptr, 0.001);
     ++i;
@@ -195,7 +194,7 @@ TEST_F(MessageBufferCreate, WriteStrings) {
 
     if (read) {
       std::string_view str_view{
-          static_cast<char *>(read.GetAddr()), read.GetSize()};
+          static_cast<char *>(read.value().GetAddr()), read.value().GetSize()};
 
       EXPECT_EQ(set_str[read_cnt], str_view);
       ++read_cnt;

@@ -212,10 +212,10 @@ TEST(BufferUserAlloc, Create) {
     auto read = buffer.Pop(paraos::max_delay);
     EXPECT_TRUE(read);
 
-    auto float_ptr = static_cast<float *>(read.GetAddr());
+    auto float_ptr = static_cast<float *>(read->Addr());
 
     EXPECT_NEAR(val, *float_ptr, 0.001);
-    EXPECT_EQ(sizeof(val), read.GetSize());
+    EXPECT_EQ(sizeof(val), read->Size());
     // После выхода read из области видимости, деструктор автоматически
     // удалит занимаемые ресурсы.
   }

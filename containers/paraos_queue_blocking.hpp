@@ -15,7 +15,7 @@ struct IQueueBlocking {
 
   virtual auto Push(const T& element, std::size_t timeout_ms) -> bool = 0;
   virtual auto Push(T&& element, std::size_t timeout_ms) -> bool = 0;
-  virtual auto Pop(std::size_t timeout_ms) -> T = 0;
+  virtual auto Pop(std::size_t timeout_ms) -> std::optional<T> = 0;
   virtual auto IsEmpty() -> bool = 0;
   virtual auto IsFull() -> bool = 0;
   virtual auto Size() -> size_t = 0;
@@ -100,31 +100,19 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
   }
 
   auto Pop(std::size_t timeout_ms) noexcept(
-      noexcept(Queue<T, ALLOCATOR>::Pop())) -> T override {
+      noexcept(Queue<T, ALLOCATOR>::Pop())) -> std::optional<T> override {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
     if (push_sem_.Take(timeout_ms)) {
-      decltype(Queue<T, ALLOCATOR>::Pop()) popped_value{};
+      // Лямбда-функция ниже будет вызвана сразу после оператора return
+      Finally pop_from_queue{[&] { pop_sem_.Give(); }};
 
-      {
-        const paraos::CriticalSection critical;
-        paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
-
-        if (!Queue<T, ALLOCATOR>::IsEmpty()) {
-          popped_value = Queue<T, ALLOCATOR>::Pop();
-        }
-      }
-
-      pop_sem_.Give();
-      paraosTRACE_MESSAGE("BlockingQueue giving POP semaphore");
-      return std::move(popped_value);
-    } else {
-      paraosTRACE_MESSAGE(
-          "BlockingQueue PUSH semaphore take failed returning default "
-          "object...");
-
-      return T{};
+      const paraos::CriticalSection critical;
+      paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
+      return Queue<T, ALLOCATOR>::Pop();
     }
+
+    return std::nullopt;
   }
 
   PARAOS_INLINE_TRIVIAL void Erase() override {

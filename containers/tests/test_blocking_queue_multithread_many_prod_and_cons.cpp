@@ -83,11 +83,11 @@ struct Consumer : public paraos::Thread {
     while (true) {
       auto elem = queue.Pop(consumer_waiting_timeout_ms);
       const CriticalSection critical;
-      if (elem.size() != 0) {
+      if (elem) {
         ++total_read_elems_cnt;
-        if (std::find(elems_vector.begin(), elems_vector.end(), elem) !=
+        if (std::find(elems_vector.begin(), elems_vector.end(), *elem) !=
             elems_vector.end()) {
-          std::cout << "-- " << Name() << " Got elem from queue: " << elem
+          std::cout << "-- " << Name() << " Got elem from queue: " << *elem
                     << std::endl;
         } else {
           assert(false);

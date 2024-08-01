@@ -186,8 +186,19 @@ class MessageConsumer final : public Thread {
         break;
       }
 
-      if (try_cnt >= try_cnt_wax) {
-        break;
+      auto elem = message_buff.Pop(consumer_waiting_timeout_ms);
+      if (elem) {
+        const CriticalSection critical;
+        ++total_read_elems_cnt;
+
+        // Отправить считанную из буфера строку в контейнер чтобы в конце
+        // работы программы можно было проверить, что все строки считаны и
+        // соответствуют тем данным, которые планировалось
+        // записать в буфер из 'elems_vector'.
+        consumers_str_container.push_back(
+            std::string(static_cast<char *>(elem->Addr())));
+        std::cout << "-- " << Name() << " Got elem from message_buff: "
+                  << static_cast<char *>(elem->Addr()) << std::endl;
       }
 
       // Уступить ресурсы другим потокам

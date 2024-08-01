@@ -32,7 +32,8 @@ TEST(Message, PushThenPop) {
   }
 
   auto message = buff.Pop(thread_delay);
-  auto *vector = static_cast<double *>(message.Addr());
+
+  auto *vector = static_cast<double *>(message.value().Addr());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 

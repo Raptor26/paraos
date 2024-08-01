@@ -134,9 +134,9 @@ struct Consumer : public paraos::Thread {
         // соответствуют тем данным, которые планировалось
         // записать в буфер из 'elems_vector'.
         consumers_str_container.push_back(
-            std::string(static_cast<char *>(elem.Addr())));
+            std::string(static_cast<char *>(elem.value().Addr())));
         std::cout << "-- " << Name() << " Got elem from message_buff: "
-                  << static_cast<char *>(elem.Addr()) << std::endl;
+                  << static_cast<char *>(elem.value().Addr()) << std::endl;
       }
     }
     const CriticalSection critical;
