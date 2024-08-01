@@ -5,6 +5,8 @@
 #include "paraos_message_buffer.hpp"
 #include "paraos_thread.hpp"
 
+constexpr std::size_t thread_delay{0};
+
 template <class T>
 class MyAllocBuffer {
  public:
@@ -193,23 +195,23 @@ using buffer_allocator = MyAllocBuffer<std::uint8_t>;
 
 TEST(BufferUserAlloc, Create) {
   paraos::MessageBuffer<
-      buffer_allocator, MyAllocQueue<paraos::Message<buffer_allocator>>>
+      buffer_allocator, MyAllocQueue<paraos::MessageBase<buffer_allocator>>>
       buffer{7};
   constexpr float val{123.456};
 
   {
-    auto message_area = buffer.Alloc(sizeof(val), paraos::max_delay);
+    auto message_area = buffer.Alloc(sizeof(val), thread_delay);
     EXPECT_TRUE(message_area);
-    EXPECT_EQ(sizeof(val), message_area.GetSize());
+    EXPECT_EQ(sizeof(val), message_area.Size());
 
-    auto float_ptr = static_cast<float *>(message_area.GetAddr());
+    auto float_ptr = static_cast<float *>(message_area.Addr());
     *float_ptr = val;
 
     // деструктор "message_area' автоматически отправит сообщение в буфер.
   }
 
   {
-    auto read = buffer.Pop(paraos::max_delay);
+    auto read = buffer.Pop(thread_delay);
     EXPECT_TRUE(read);
 
     auto float_ptr = static_cast<float *>(read->Addr());

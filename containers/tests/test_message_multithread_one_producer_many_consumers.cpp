@@ -1,10 +1,10 @@
 
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
+#include <cstring>
 #include <iostream>
-#include <mutex>
 #include <string>
 #include <syncstream>
 #include <thread>
@@ -12,12 +12,11 @@
 
 #include "paraos_message_buffer.hpp"
 #include "paraos_thread.hpp"
-#include "paraos_trace.hpp"
 
 using namespace paraos;
 
 /// @brief Burning Heart
-const std::vector<std::string> song_str{
+const std::vector<std::string> elems_vector{
     "1)  Two worlds collide",
     "2)  Rival nations",
     "3)  It's a primitive clash",
@@ -31,158 +30,97 @@ const std::vector<std::string> song_str{
     "11) Is it East versus West",
     "12) Or man against man?",
     "13) Can any nation stand alone?",
-    "14) -----------------------------"};
+    "14) In the burning Heart",
+    "15) Just about to burst",
+    "16) There's a quest for answers",
+    "17) An unquenchable thirst",
+    "18) In the darkest night",
+    "19) Rising like a spire",
+    "20) In the burning heart",
+    "21) The unmistakable fire",
+    "22) -----------------------------"};
 
-using namespace std;
+/// @brief Контейнер в который записываются строки, считанные потоками
+/// 'Consumer'.
+std::vector<std::string> consumers_str_container;
 
-// mutex to block threads
-mutex mtx;
-mutex mtx_consumer;
-condition_variable cv;
+paraos::MessageBuffer message_buff{3};
+std::size_t producer_waiting_timeout_ms{1000};
+std::size_t consumer_waiting_timeout_ms{10};
 
-constexpr std::size_t message_buff_capacity{1};
+std::atomic<size_t> total_read_elems_cnt{0};
+std::atomic<size_t> total_written_elems_cnt{0};
 
-MessageBuffer message_buff{message_buff_capacity};
-
-std::atomic<std::size_t> consumer_str_cnt{0};
-std::atomic<std::size_t> producer_str_cnt{0};
-std::size_t total_write_str_cnt{0};
-
-class MessageProducer final : public Thread {
- public:
-  MessageProducer(
-      const std::string name = "Message producer thread",
-      std::size_t stack_depth = 1024,
-      ThreadPriority priority = ThreadPriority::kLowest)
-      : Thread{name, stack_depth, priority} {}
-
-  ~MessageProducer() = default;
+struct Producer : public paraos::Thread {
+  Producer(
+      const std::string name = "Producer", size_t stack_depth = 1024,
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      : paraos::Thread{name, stack_depth, priority} {}
 
   void Run() override {
-    using namespace std::chrono_literals;
-
-    std::size_t str_cnt{0};
-    std::size_t write_str_cnt{0};
-    std::size_t delay_ms{1000};
-    std::size_t try_cnt{0};
-    constexpr std::size_t try_cnt_wax{10};
     bool is_message_pushed{true};
+    std::size_t str_cnt{0};
+    using namespace std::chrono_literals;
     while (true) {
       if (is_message_pushed) {
+        const CriticalSection critical;
         // Мы должны атомарно определить строку, которую будем записывать в
         // буфер сообщений на данной итерации цикла while текущего потока.
         // После, несколько потоков могут параллельно записывать разные строки
         // в буфер сообщений без состояния гонки.
-        const CriticalSection critical;
-        str_cnt = producer_str_cnt.load();
-        if (str_cnt < song_str.size()) {
+
+        str_cnt = total_written_elems_cnt.load();
+        if (str_cnt < elems_vector.size()) {
           // Инкрементируем счетчик чтобы другой поток (или данный, но уже на
           // следующей итерации цикла while) "взял" следующую строку для
           // записи в буфер.
-          ++producer_str_cnt;
+          ++total_written_elems_cnt;
         }
       }
 
       is_message_pushed = false;
-      if (str_cnt < song_str.size()) {
-        // lock_guard<mutex> lock(mtx);
+      if (str_cnt < elems_vector.size()) {
+        auto elem = elems_vector[str_cnt];
 
-        auto str_len_with_terminate_symbol = song_str.at(str_cnt).length() + 1u;
         auto message =
-            message_buff.Alloc(str_len_with_terminate_symbol, delay_ms);
+            message_buff.Alloc(elem.size() + 1u, producer_waiting_timeout_ms);
 
         if (message) {
-          {
-            const CriticalSection critical;
-            auto addr = static_cast<char*>(message.GetAddr());
+          memcpy(
+              message.Addr(), static_cast<const void *>(elem.c_str()),
+              message.Size());
 
-            strncpy(addr, song_str.at(str_cnt).c_str(), message.GetSize());
-          }
-
-          //   std::cout << "Buffer size before push is " <<
-          //   message_buff.Size()
-          //             << std::endl;
-          is_message_pushed = message.Push(delay_ms);
+          // Принудительно отправить сообщение в очередь, не дожидаясь вызова
+          // деструктора
+          is_message_pushed = message.Push();
           if (is_message_pushed) {
-            // const CriticalSection critical;
-            std::cout << Name() << " str: " << song_str.at(str_cnt).c_str()
-                      << std::endl;
-
-            ++write_str_cnt;
-          } else {
-            ++try_cnt;
-            std::cout << "!!! " << Name() << ": "
-                      << "Can't push in buffer this string: "
-                      << song_str.at(str_cnt) << std::endl;
+            const CriticalSection critical;
+            std::cout << Name() << " inserting elem: " << elem << std::endl;
           }
-        } else {
-          ++try_cnt;
-        }
-
-        if (try_cnt > try_cnt_wax) {
-          const CriticalSection critical;
-          total_write_str_cnt += write_str_cnt;
-          break;
         }
       } else {
-        const CriticalSection critical;
-        total_write_str_cnt += write_str_cnt;
-        // Все строки уже записаны, необходимо выйти из цикла while
+        // Все данные записаны, необходимо выйти из цикла while
         break;
       }
-
-      // Принудительно уступить ресурсы другим потокам
-      std::this_thread::sleep_for(1ms);
-    }  // while (true)
-
-    paraosTRACE_MESSAGE("Producer exit thread ...");
+    }
+    const CriticalSection critical;
+    std::cout << Name() << " Exiting... " << std::endl;
   }
 };
 
-class MessageConsumer final : public Thread {
- public:
-  MessageConsumer(
-      const std::string name = "Message consumer thread",
-      std::size_t stack_depth = 1024,
-      ThreadPriority priority = ThreadPriority::kLowest)
-      : Thread{name, stack_depth, priority} {}
-
-  ~MessageConsumer() = default;
+struct Consumer : public paraos::Thread {
+  Consumer(
+      const std::string name = "Consumer", size_t stack_depth = 1024,
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      : paraos::Thread{name, stack_depth, priority} {}
 
   void Run() override {
-    std::size_t delay_ms{10};
-    std::size_t try_cnt{0};
-    std::size_t read_str_cnt{0};
-    constexpr std::size_t try_cnt_wax{5};
+    using namespace std::chrono_literals;
+
     while (true) {
-      {
-        // lock_guard<mutex> lock(mtx_consumer);
-        auto message = message_buff.Pop(delay_ms);
-
-        if (message) {
-          const CriticalSection critical;
-
-          auto str = static_cast<char*>(message.GetAddr());
-
-          if (std::find(song_str.begin(), song_str.end(), str) !=
-              song_str.end()) {
-            ++read_str_cnt;
-            std::cout << "-- " << Name() << " str: " << str << std::endl;
-            // std::cout << "-- Consumers read string numb is "
-            //           << consumer_str_cnt.load() << std::endl;
-          } else {
-            assert(false && "Can't find string in array");
-          }
-        } else {
-          ++try_cnt;
-
-          // no data in buffer
-          break;
-        }
-      }
-
-      const CriticalSection critical;
-      if (consumer_str_cnt >= song_str.size()) {
+      // Если все данные уже считаны, то необходимо выйти из цикла while и
+      // завершить работу
+      if (total_read_elems_cnt.load() >= elems_vector.size()) {
         break;
       }
 
@@ -200,42 +138,46 @@ class MessageConsumer final : public Thread {
         std::cout << "-- " << Name() << " Got elem from message_buff: "
                   << static_cast<char *>(elem->Addr()) << std::endl;
       }
-
-      // Уступить ресурсы другим потокам
-      using namespace std::chrono_literals;
-      std::this_thread::sleep_for(10ms);
     }
-
     const CriticalSection critical;
-    consumer_str_cnt += read_str_cnt;
-
-    paraosTRACE_MESSAGE("Consumer exit thread ...");
+    std::cout << Name() << " Exiting... " << std::endl;
   }
+
+ private:
+  bool running_condition_{true};
 };
 
 int main() {
-  MessageProducer producer1{"Producer 1"};
-  //   MessageProducer producer2{"Producer 2"};
+  Consumer elem_consumer_1{
+      "Consumer 1", 1024u, paraos::ThreadPriority::kLowest};
+  Consumer elem_consumer_2{
+      "Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
+  Consumer elem_consumer_3{
+      "Consumer 3", 1024u, paraos::ThreadPriority::kNormal};
 
-  MessageConsumer consumer1{"Consumer 1"};
-  //   MessageConsumer consumer2{"Consumer 2"};
-  //   MessageConsumer consumer3{"Consumer 3"};
-  //   MessageConsumer consumer4{"Consumer 4"};
+  Producer elem_producer_1{
+      "Producer 1", 1024u, paraos::ThreadPriority::kLowest};
+  Producer elem_producer_2{
+      "Producer 2", 1024u, paraos::ThreadPriority::kNormal};
+  Producer elem_producer_3{
+      "Producer 3", 1024u, paraos::ThreadPriority::kNormal};
+  Producer elem_producer_4{
+      "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
 
-  Thread::StartScheduler();
-  Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
-#if 1
-  std::cout << "Total write string numb is " << total_write_str_cnt
+  const CriticalSection critical;
+  std::cout << "Total write elements is " << total_written_elems_cnt
             << std::endl;
-  assert(
-      total_write_str_cnt == song_str.size() &&
-      "Producer don't write all strings");
 
-  std::cout << "Total read string numb is " << consumer_str_cnt << std::endl;
-  assert(
-      consumer_str_cnt == song_str.size() && "Consumer don't read all strings");
-#endif
+  for (auto &str : consumers_str_container) {
+    assert(
+        std::find(elems_vector.begin(), elems_vector.end(), str) !=
+            elems_vector.end() &&
+        "We don't write all strings from 'elems_vector' to "
+        "'consumers_str_container'");
+  }
 
   return 0;
 }

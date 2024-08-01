@@ -1,102 +1,56 @@
-#ifndef PARAOS_MESSAGE_BUFFER_HPP
-#define PARAOS_MESSAGE_BUFFER_HPP
+#ifndef PARAOS_MESSAGE_BUFFER_V2_HPP
+#define PARAOS_MESSAGE_BUFFER_V2_HPP
 
-#include <cstdint>
-#include <cstring>
-#include <queue>
+#include <cinttypes>
+#include <vector>
 
 #include "paraos_config.hpp"
-#include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
-#include "paraos_queue.hpp"
 #include "paraos_queue_blocking.hpp"
-#include "paraos_trace.hpp"
-#include "rtos_impl_mutex.hpp"
-
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
+#include "paraos_thread.hpp"
 
 namespace paraos {
 
+template <typename ALLOCATOR>
+class MessageWritable;
+
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
-struct Message {
-  Message(
-      std::size_t size_in_bytes,
-      paraos::IQueueBlocking<Message<ALLOCATOR>> *queue_ptr)
-      : queue_ptr_{queue_ptr} {
-    if (size_in_bytes > 0) {
-      data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes);
+class MessageBase {
+  ALLOCATOR allocator_;
+  using alloc_traits = std::allocator_traits<decltype(allocator_)>;
 
-      if (data_ptr_) {
-        size_in_bytes_ = size_in_bytes;
-      }
-    }
-
-    paraosTRACE_MESSAGE("Message Ctor");
+ public:
+  /// @brief Запрашивает из кучи размер памяти, указанный в size_in_bytes
+  /// @param[in] size_in_bytes: Размер области памяти в байтах, который
+  /// необходимо выделить из аллокатора памяти.
+  MessageBase(const std::size_t size_in_bytes)
+      : data_ptr_{nullptr}, size_in_bytes_{size_in_bytes} {
+    SafeAllocate();
   }
 
-  Message() { paraosTRACE_MESSAGE("Message (Empty Ctor)"); }
+  MessageBase() : data_ptr_{nullptr}, size_in_bytes_{0} {}
 
-  virtual ~Message() {
-    paraosTRACE_MESSAGE("~Message");
+  virtual ~MessageBase() { SafeDeallocate(); }
 
-    if (data_ptr_) {
-      paraosTRACE_MESSAGE("~Message free");
-      alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
-
-      // debug only
-      data_ptr_ = nullptr;
-    }
-  };
-
-  Message(const Message<ALLOCATOR> &other) noexcept {
-    paraosTRACE_MESSAGE("Message Copy Ctor");
-
-    data_ptr_ = alloc_traits::allocate(allocator_, other.size_in_bytes_);
-
-    if (data_ptr_) {
-      memcpy(data_ptr_, other.data_ptr_, other.size_in_bytes_);
-      size_in_bytes_ = other.size_in_bytes_;
-    }
+  MessageBase(const MessageBase &other) {
+    SafeAllocate();
+    size_in_bytes_ = other.size_in_bytes_;
   }
 
-  Message(Message<ALLOCATOR> &&other) noexcept {
-    paraosTRACE_MESSAGE("Message Move Ctor");
-
+  MessageBase(MessageBase &&other) noexcept {
     data_ptr_ = other.data_ptr_;
     size_in_bytes_ = other.size_in_bytes_;
-    queue_ptr_ = other.queue_ptr_;
 
     other.data_ptr_ = nullptr;
   }
 
-  Message &operator=(const Message<ALLOCATOR> &other) {
-    if (this == &other) {
-      return *this;
-    }
+  MessageBase &operator=(const MessageBase &other) = delete;
 
-    alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
-
-    data_ptr_ = alloc_traits::allocate(allocator_, other.size_in_bytes_);
-
-    if (data_ptr_) {
-      memcpy(data_ptr_, other.data_ptr_, other.size_in_bytes_);
-      size_in_bytes_ = other.size_in_bytes_;
-    }
-  }
-
-  Message &operator=(Message<ALLOCATOR> &&other) noexcept {
-    paraosTRACE_MESSAGE("Message Move operator");
-    if (this == &other) {
-      return *this;
-    }
-
-    alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
+  MessageBase &operator=(MessageBase &&other) {
+    SafeDeallocate();
 
     data_ptr_ = other.data_ptr_;
     size_in_bytes_ = other.size_in_bytes_;
-    queue_ptr_ = other.queue_ptr_;
 
     other.data_ptr_ = nullptr;
 
@@ -104,220 +58,116 @@ struct Message {
   }
 
   operator bool() const {
+    bool is_ready{false};
+
     if (data_ptr_) {
-      return true;
+      is_ready = true;
     }
-    return false;
+
+    return is_ready;
   }
 
-  PARAOS_INLINE_TRIVIAL auto GetAddr() const {
-    return static_cast<void *>(data_ptr_);
-  }
+  /// @brief Возвращает адрес выделенной области памяти.
+  /// @return Указатель типа void.
+  PARAOS_INLINE_TRIVIAL void *Addr() { return static_cast<void *>(data_ptr_); }
 
-  PARAOS_INLINE_TRIVIAL auto GetSize() const { return size_in_bytes_; }
+  /// @brief Возвращает размер выделенной области памяти в байтах.
+  /// @return Количество байт, выделенные по адресу, который возвращает метод
+  /// Addr().
+  PARAOS_INLINE_TRIVIAL size_t Size() { return size_in_bytes_; }
 
- protected:
-  paraos::IQueueBlocking<Message<ALLOCATOR>> *queue_ptr_{nullptr};
-  paraos::MutexBase *mutex_ptr_{nullptr};
-  std::uint8_t *data_ptr_{nullptr};
-  std::size_t size_in_bytes_{0};
+  /// @brief Принудительно освобождает область памяти, выделенную под сообщение.
+  /// После вызова данного метода, объект становиться не валидным.
+  PARAOS_INLINE_TRIVIAL void Free() { SafeDeallocate(); }
 
  private:
-  ALLOCATOR allocator_;
-  using alloc_traits = std::allocator_traits<decltype(allocator_)>;
+  PARAOS_INLINE_TRIVIAL void SafeAllocate() {
+    if (size_in_bytes_ > 0u) {
+      data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes_);
+    }
+  }
+
+  PARAOS_INLINE_TRIVIAL void SafeDeallocate() {
+    if (data_ptr_) {
+      alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
+      data_ptr_ = nullptr;
+    }
+  }
+
+  /// @brief Указатель на выделенную область памяти под хранение сообщения.
+  std::uint8_t *data_ptr_;
+
+  /// @brief Размер выделенной области памяти в байтах.
+  std::size_t size_in_bytes_;
 };
 
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
-struct MessageWritable final : public Message<ALLOCATOR> {
-  MessageWritable(
-      std::size_t size_in_bytes,
-      paraos::IQueueBlocking<Message<ALLOCATOR>> *queue_ptr,
-      paraos::MutexBase *mutex_ptr, paraos::SemaphoreBinary *sem_ptr,
-      std::size_t timeout_to_push_ms)
-      : Message<ALLOCATOR>{size_in_bytes, queue_ptr},
-        timeout_to_push_ms_{timeout_to_push_ms},
-        mutex_ptr_{mutex_ptr},
-        sem_ptr_{sem_ptr} {
-    paraosTRACE_MESSAGE("MessageWritable Ctor");
-  }
-
-  ~MessageWritable() {
-    paraosTRACE_MESSAGE("~MessageWritable Dtor");
-
-    Push();
-  }
-
-  MessageWritable(MessageWritable &&other) {
-    paraosTRACE_MESSAGE("MessageWritable Move Ctor");
-
-    this->data_ptr_ = other.data_ptr_;
-    this->size_in_bytes_ = other.size_in_bytes_;
-    this->queue_ptr_ = other.queue_ptr_;
-    mutex_ptr_ = other.mutex_ptr_;
-    sem_ptr_ = other.sem_ptr_;
-
-    other.data_ptr_ = nullptr;
-    is_message_pop = false;
-  }
-
-  PARAOS_INLINE_TRIVIAL
-  operator bool() const {
-    if (this->GetAddr()) {
-      return true;
-    }
-    return false;
-  }
-
-  auto Push(std::size_t timeout_ms) -> bool {
-    bool is_message_pushed_in_buff{false};
-    if (this->GetAddr() && !is_message_pop && this->queue_ptr_ && mutex_ptr_ &&
-        sem_ptr_) {
-      const paraos::CriticalSection critical;  // todo delete me
-      paraosTRACE_MESSAGE("MessageWritable Push in buffer");
-      is_message_pushed_in_buff =
-          this->queue_ptr_->Push(std::move(*this), timeout_ms);
-
-      //   sem_ptr_->Give();
-    }
-
-    if (mutex_ptr_) {
-      mutex_ptr_->Unlock();
-    }
-
-    return is_message_pushed_in_buff;
-  }
-
-  auto Push() -> bool { return Push(timeout_to_push_ms_); }
-
-  void Pop() { is_message_pop = true; }
-
- private:
-  bool is_message_pop{false};
-  std::size_t timeout_to_push_ms_{0};
-  paraos::MutexBase *mutex_ptr_{nullptr};
-  paraos::SemaphoreBinary *sem_ptr_{nullptr};
-};
-
-template <
-    typename MESSAGE_ALLOCATOR = std::allocator<std::uint8_t>,
-    typename QUEUE_ALLOCATOR = std::allocator<Message<MESSAGE_ALLOCATOR>>>
-struct QueueMessageBuffWrapper final
-    : public IQueueBlocking<Message<MESSAGE_ALLOCATOR>> {
+class MessageWritable final {
  public:
-  QueueMessageBuffWrapper(const std::size_t len) : queue_{len} {}
-  ~QueueMessageBuffWrapper() = default;
+  MessageWritable(
+      const std::size_t size_in_bytes,
+      paraos::IQueueBlocking<MessageBase<ALLOCATOR>> &queue,
+      const std::size_t timeout_ms)
+      : message_{size_in_bytes}, queue_{queue}, timeout_ms_{timeout_ms} {}
 
-  operator bool() const { return static_cast<bool>(queue_); }
+  ~MessageWritable() { Push(timeout_ms_); }
 
-  PARAOS_INLINE_TRIVIAL auto Push(
-      Message<MESSAGE_ALLOCATOR> &&elem,
-      std::size_t timeout_ms) -> bool override {
-    return queue_.Push(std::move(elem), timeout_ms);
+  MessageWritable(const MessageWritable &other) = delete;
+  MessageWritable(MessageWritable &&other) = delete;
+  MessageWritable &operator=(const MessageWritable &other) = delete;
+  MessageWritable &operator=(MessageWritable &&other) = delete;
+
+  operator bool() const { return message_; }
+
+  PARAOS_INLINE_TRIVIAL void *Addr() { return message_.Addr(); }
+  PARAOS_INLINE_TRIVIAL size_t Size() { return message_.Size(); }
+
+  PARAOS_INLINE_OPERATIONS bool Push(std::size_t timeout_ms) {
+    bool is_message_pushed{false};
+    if (message_) {
+      is_message_pushed = queue_.Push(std::move(message_), timeout_ms);
+    }
+
+    return is_message_pushed;
   }
 
-  PARAOS_INLINE_TRIVIAL auto Push(
-      const Message<MESSAGE_ALLOCATOR> &elem,
-      std::size_t timeout_ms) -> bool override {
-    return queue_.Push(elem, timeout_ms);
-  }
+  PARAOS_INLINE_TRIVIAL bool Push() { return Push(timeout_ms_); }
 
-  PARAOS_INLINE_TRIVIAL auto Pop(std::size_t timeout_ms)
-      -> Message<MESSAGE_ALLOCATOR> override {
-    return queue_.Pop(timeout_ms);
-  }
-
-  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool override {
-    return queue_.IsEmpty();
-  }
-
-  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
-    return queue_.IsFull();
-  }
-
-  PARAOS_INLINE_TRIVIAL auto Size() -> std::size_t override {
-    return queue_.Size();
-  }
-
-  PARAOS_INLINE_TRIVIAL void Erase() override { queue_.Erase(); }
+  /// @brief Пользователь может вызвать данный метод если передумал отправлять
+  /// сообщение в буфер.
+  PARAOS_INLINE_TRIVIAL void Free() { message_.Free(); }
 
  private:
-  paraos::QueueBlocking<Message<MESSAGE_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
+  MessageBase<ALLOCATOR> message_;
+  paraos::IQueueBlocking<MessageBase<ALLOCATOR>> &queue_;
+  const std::size_t timeout_ms_;
 };
 
 template <
     typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>,
-    typename QUEUE_ALLOCATOR = std::allocator<Message<BUFFER_ALLOCATOR>>>
-struct MessageBuffer {
-  MessageBuffer(std::size_t buff_max_message_numb = 10)
-      : queue_{buff_max_message_numb} {
-    paraosTRACE_MESSAGE("MessageBuffer Ctor");
+    typename QUEUE_ALLOCATOR = std::allocator<MessageBase<BUFFER_ALLOCATOR>>>
+class MessageBuffer final {
+ public:
+  MessageBuffer(const std::size_t queue_len = 10u) : queue_{queue_len} {}
 
-    // while (buff_max_message_numb > 0u) {
-    // sem_.Give();
-    //   --buff_max_message_numb;
-    // }
+  operator bool() const { return queue_; }
+
+  PARAOS_INLINE_TRIVIAL auto Alloc(
+      const std::size_t size_in_bytes, const std::size_t timeout_ms) {
+    return MessageWritable(size_in_bytes, queue_, timeout_ms);
   }
 
-  ~MessageBuffer() { paraosTRACE_MESSAGE("MessageBuffer Dtor"); }
-
-  operator bool() const { return static_cast<bool>(queue_); }
-
-  auto Alloc(std::size_t size_in_bytes, std::size_t timeout_ms) {
-    paraosTRACE_MESSAGE("-- Alloc Message memory area");
-
-    if (mutex_.Lock(timeout_ms)) {
-      // Берем мьютекс до тех пор, пока сообщение не будет записано в очередь
-      bool is_sem_taken{true};
-      if (IsFull()) {
-        is_sem_taken = sem_.Take(timeout_ms);
-      }
-      if (is_sem_taken) {
-        // assert(!IsFull() && "Buffer can't be full, we successfully take
-        // sem");
-        auto message = MessageWritable<BUFFER_ALLOCATOR>{
-            size_in_bytes, &queue_, &mutex_, &sem_, timeout_ms};
-
-        if (!message) {
-          return MessageWritable<BUFFER_ALLOCATOR>{
-              0u, nullptr, &mutex_, nullptr, 0u};
-        }
-        return std::move(message);
-      }
-    }
-    return MessageWritable<BUFFER_ALLOCATOR>{0u, nullptr, &mutex_, nullptr, 0u};
-  }
-
-  auto Pop(std::size_t timeout_ms) {
-    paraosTRACE_MESSAGE("-- Pop Message from buffer");
-
-    // Лямбда-функция ниже будет вызвана сразу после оператора return
-    Finally pop_from_queue{[&] {
-      // Кода извлекается элемент из очереди, это означает что в буфере
-      // появиться свободное место. Тогда необходимо 'отдать'
-      // соответствующий семафор.
-      sem_.Give();
-    }};
-
+  PARAOS_INLINE_TRIVIAL auto Pop(std::size_t timeout_ms) {
     return queue_.Pop(timeout_ms);
   }
 
-  auto IsEmpty() { return queue_.IsEmpty(); }
-  auto IsFull() { return queue_.IsFull(); }
-
-  auto Size() { return queue_.Size(); }
-
-  void Erase() { queue_.Erase(); }
+  PARAOS_INLINE_TRIVIAL bool IsFull() { return queue_.IsFull(); }
+  PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
 
  private:
-  paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
-  paraos::MutexBase mutex_;
-  paraos::MutexBase mutex_pop_;
-
-  /// @brief Семафор можно взять только в том случае, если в очереди есть хотя
-  /// бы одна свободная ячейка.
-  paraos::SemaphoreBinary sem_;
+  paraos::QueueBlocking<MessageBase<BUFFER_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
 };
 
 }  // namespace paraos
 
-#endif /* PARAOS_MESSAGE_BUFFER_HPP */
+#endif /* PARAOS_MESSAGE_BUFFER_V2_HPP */
