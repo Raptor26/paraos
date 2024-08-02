@@ -8,7 +8,7 @@
     "configurePresets": [
         {
             "name": "pc_debug_clang",
-            "displayName": "PARAOS wrapper for Windows Debug Clang",
+            "displayName": "PC Debug Clang",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
@@ -19,8 +19,16 @@
             }
         },
         {
+            "name": "pc_debug_clang_docker",
+            "displayName": "Docker with clang and without sudo",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "NOSUDO": "true"
+            }
+        },
+        {
             "name": "pc_debug_clang_trace",
-            "displayName": "PARAOS wrapper for Windows Debug Clang with trace",
+            "displayName": "PC Debug Clang with trace",
             "inherits": "pc_debug_clang",
             "cacheVariables": {
                 "TRACE": "true"

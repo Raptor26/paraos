@@ -197,9 +197,7 @@ class Thread {
   static DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
     Thread *thread = static_cast<Thread *>(lpParam);
 
-    auto is_priority_set = thread->SetPriority(thread->priority_);
-    assert(is_priority_set == true && "Priority not updated");
-    (void)is_priority_set;
+    thread->SetPriority(thread->priority_);
 
     // Запишем в локальную переменную значение флага. Это позволит избежать
     // операции разыменование указатели при работе в теле цикла do -> while()

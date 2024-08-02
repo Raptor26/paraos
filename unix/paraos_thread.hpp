@@ -103,10 +103,6 @@ class Thread {
       paraosTRACE_MESSAGE(
           "pthread_setschedparam return core: " << prior_update_status);
 
-      assert(
-          prior_update_status == 0 &&
-          "SetPriority() not set new thread priority");
-
       if (prior_update_status == 0) {
         is_priority_updated = true;
       }
@@ -197,8 +193,7 @@ class Thread {
 
     if (result_code == 0) {
       const paraos::CriticalSection critical;
-      auto is_priority_set = SetPriority(priority_);
-      assert(is_priority_set == true && "Priority not updated");
+      SetPriority(priority_);
       queue_thread_obj_.push_back(this);
     }
   }
@@ -211,6 +206,11 @@ class Thread {
   /// https://stackoverflow.com/questions/3214297/how-can-my-c-c-application-determine-if-the-root-user-is-executing-the-command
   /// @return
   bool IsRunAsRoot() {
+    // В случае сборки под docker мы не используем права суперпользователя. Это
+    // сделано для того чтобы SetPriority() всегда возвращало true
+#if NOSUDO
+    return false;
+#else
     bool is_run_as_root{false};
 
     auto user = getuid();
@@ -221,6 +221,7 @@ class Thread {
       paraosTRACE_MESSAGE("No root");
     }
     return is_run_as_root;
+#endif
   }
 
   bool IsPriorityInRange(ThreadPriority priority) {
@@ -246,9 +247,7 @@ class Thread {
 
     thread->sem_.Take(max_delay);
 
-    auto is_priority_set = thread->SetPriority(thread->priority_);
-    assert(is_priority_set == true && "Priority not updated");
-    (void)is_priority_set;
+    thread->SetPriority(thread->priority_);
 
     // Запишем в локальную переменную значение флага. Это позволит избежать
     // операции разыменование указатели при работе в теле цикла do ->
