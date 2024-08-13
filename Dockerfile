@@ -40,7 +40,9 @@ WORKDIR /app/src
 
 # Сборка всех доступных конфигураций проекта
 RUN cmake . --preset pc_debug_clang && \
-    cmake --build ./build/pc_debug_clang/
+    cmake --build ./build/pc_debug_clang/ && \
+    cmake . --preset pc_debug_clang_docker && \
+    cmake --build ./build/pc_debug_clang_docker/
 
 # Запуск ---------------------------------------
 # В качестве базового образа используем ubuntu:latest
