@@ -97,6 +97,12 @@
         "bitset": "cpp",
         "regex": "cpp",
         "fstream": "cpp",
-        "syncstream": "cpp"
+        "syncstream": "cpp",
+        "gsl": "cpp",
+        "util": "cpp",
+        "assert": "cpp",
+        "csetjmp": "cpp",
+        "cfenv": "cpp",
+        "pointers": "cpp"
     }
 }

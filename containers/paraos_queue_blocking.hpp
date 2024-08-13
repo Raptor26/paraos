@@ -1,6 +1,7 @@
 #ifndef PARAOS_QUEUE_BLOCKING_HPP
 #define PARAOS_QUEUE_BLOCKING_HPP
 
+#include "gsl/gsl"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
@@ -105,7 +106,7 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
 
     if (push_sem_.Take(timeout_ms)) {
       // Лямбда-функция ниже будет вызвана сразу после оператора return
-      Finally pop_from_queue{[&] { pop_sem_.Give(); }};
+      auto pop_from_queue = gsl::finally([&] { pop_sem_.Give(); });
 
       const paraos::CriticalSection critical;
       paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
