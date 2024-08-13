@@ -9,6 +9,8 @@ if(UTEST)
   enable_testing()
 endif()
 
+add_subdirectory(leaf)
+
 if(WIN32)
   option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(win)
