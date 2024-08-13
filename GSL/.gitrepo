@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/microsoft/GSL.git
+	branch = main
+	commit = b39e7e4b0987859f5b19ff7686b149c916588658
+	parent = 8f16a8cf43b3dcd8533789a5df67e9f66da666fd
+	method = merge
+	cmdver = 0.4.6
