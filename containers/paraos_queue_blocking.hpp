@@ -5,8 +5,8 @@
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
 #include "paraos_queue.hpp"
-#include "rtos_impl_mutex.hpp"
 
 namespace paraos {
 
