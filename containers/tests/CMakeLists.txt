@@ -38,3 +38,12 @@ if(THREAD_ENABLE)
   add_test(NAME test_message_multithread_one_producer_many_consumers
            COMMAND test_message_multithread_one_producer_many_consumers)
 endif()
+
+# Benchmark --------------------------------------------------------------------
+find_package(benchmark)
+if(benchmark_FOUND)
+  set(project_name_bench bench_paraos_containers)
+  add_executable(${project_name_bench} bench_paraos_containers.cpp)
+  target_link_libraries(${project_name_bench} PRIVATE benchmark::benchmark
+                                                      paraos_containers)
+endif()
