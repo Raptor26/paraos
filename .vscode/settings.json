@@ -100,6 +100,9 @@
         "syncstream": "cpp",
         "gsl": "cpp",
         "util": "cpp",
-        "assert": "cpp"
+        "assert": "cpp",
+        "csetjmp": "cpp",
+        "cfenv": "cpp",
+        "pointers": "cpp"
     }
 }

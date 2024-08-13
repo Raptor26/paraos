@@ -25,6 +25,9 @@
 
 #include <benchmark/benchmark.h>
 
+#include <string>
+
+#include "paraos_message_buffer.hpp"
 #include "paraos_queue_blocking.hpp"
 
 namespace bm = benchmark;
@@ -32,12 +35,29 @@ using namespace paraos;
 
 BENCHMARK_MAIN();
 
-static void PushThenPop(bm::State &state) {
-  QueueBlocking<int> queue{10};
+static void QueueBlockingPushThenPop(bm::State &state) {
+  std::string str{"Hello world"};
+  QueueBlocking<std::string> queue{10};
   assert(queue);
   for (auto _ : state) {
-    benchmark::DoNotOptimize(queue.Push(10, 0));
+    benchmark::DoNotOptimize(queue.Push(str, 0));
     benchmark::DoNotOptimize(queue.Pop(0));
   }
 }
-BENCHMARK(PushThenPop);
+BENCHMARK(QueueBlockingPushThenPop);
+
+static void MessageBufferPushThenPop(bm::State &state) {
+  std::string str{"Hello world"};
+  paraos::MessageBuffer buff{10};
+  assert(buff);
+  for (auto _ : state) {
+    auto write = buff.Alloc(str.size(), 0u);
+    assert(write);
+    memcpy(write.Addr(), static_cast<const void *>(str.data()), str.size());
+    write.Push();
+
+    auto read = buff.Pop(0);
+    assert(read);
+  }
+}
+BENCHMARK(MessageBufferPushThenPop);
