@@ -5,21 +5,13 @@
 #include <memory>
 #include <optional>
 
+#include "gsl/gsl"
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_trace.hpp"
 
 namespace paraos {
-
-/// @brief Finally with no overhead for heap memory
-/// @tparam ActTyfexplicit
-template <typename ActTy>
-struct Finally {
-  ActTy act_;
-  explicit Finally(ActTy act) : act_{std::move(act)} {}
-  ~Finally() { act_(); }
-};
 
 template <typename T>
 struct IQueue {
@@ -117,13 +109,13 @@ struct Queue : public IQueue<T> {
     }
 
     // Лямбда-функция ниже будет вызвана сразу после оператора return
-    Finally pop_from_queue{[&] {
+    auto pop_from_queue = gsl::finally([&] {
       paraosTRACE_MESSAGE("Call pop() for queue");
 
       traits_t1::destroy(allocator_, &buff_ptr_[r_idx_]);
 
       UpdateReadIdx();
-    }};
+    });
 
     // После оператора return будет вызвана лямбда-функция выше, которая
     // освободит память в очереди
