@@ -20,6 +20,7 @@ elseif(UNIX)
 endif()
 
 add_subdirectory(containers)
+add_subdirectory(GSL)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE paraos_containers)

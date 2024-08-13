@@ -4,7 +4,7 @@ project(paraos_setup)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
-target_link_libraries(${PROJECT_NAME} INTERFACE Boost::leaf)
+target_link_libraries(${PROJECT_NAME} INTERFACE Boost::leaf Microsoft.GSL::GSL)
 
 if(TRACE)
   message("paraos trace enable")
