@@ -86,6 +86,10 @@ class Thread {
 
   std::string_view Name() { return name_; }
 
+  void DelayMs(std::size_t sleep_ms) {
+    usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
+  }
+
   bool SetPriority(const ThreadPriority priority) {
     bool is_priority_updated{false};
 

@@ -106,6 +106,8 @@ class Thread {
     return SetThreadPriority(handle_, static_cast<int>(priority));
   }
 
+  void DelayMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
+
   virtual void Run() {
     // Если сработал данный assert, то конструктор производного от Thread класса
     // не успел завершить конструирование объекта до того момента когда

@@ -13,6 +13,8 @@ constexpr std::size_t max_delay{std::numeric_limits<std::size_t>::max()};
 #define NANOSECONDS_PER_MILISECONDS \
   (1000000LL) /**< Nanoseconds per microseconds. */
 
+#define MICROSECONDS_PER_MILISECONDS (1000LL)
+
 inline int TimespecAdd(
     const struct timespec* const x, const struct timespec* const y,
     struct timespec* const pxResult) {
