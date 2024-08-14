@@ -195,6 +195,8 @@ class Thread {
 #endif
   }
 
+  static auto IsSchedulerStarted() { return is_scheduler_started_; }
+
  private:
   void Make() {
     if (!is_thread_created) {
