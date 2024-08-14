@@ -72,15 +72,7 @@ class Thread {
   /// @brief After "Thread' Ctor complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
-  void Start() {
-    Make();
-
-    // if scheduler started, we forced join this thread for modeling RTOS thread
-    // behavior.
-    if (is_scheduler_started_) {
-      Join();
-    }
-  }
+  void Start() { Make(); }
 
   void Join() { auto result_code = pthread_join(handle_, nullptr); }
 
