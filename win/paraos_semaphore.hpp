@@ -19,7 +19,7 @@ constexpr std::size_t initial_count = 0u;
 
 class Semaphore {
  public:
-  Semaphore(const SemaphoreAttr attr)
+  Semaphore(const SemaphoreAttr attr) noexcept
       : handle_{
             CreateSemaphore(nullptr, initial_count, attr.max_count, nullptr)} {
 #ifdef paraosTRACE_ENABLE
@@ -72,7 +72,7 @@ class Semaphore {
 };
 
 struct SemaphoreBinary final : public Semaphore {
-  SemaphoreBinary() : Semaphore{} {}
+  SemaphoreBinary() noexcept : Semaphore{} {}
 
   ~SemaphoreBinary() = default;
 };

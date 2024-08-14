@@ -17,13 +17,13 @@ constexpr std::size_t initial_count = 0u;
 
 class Semaphore {
  public:
-  Semaphore(const SemaphoreAttr attr) {
+  Semaphore(const SemaphoreAttr attr) noexcept {
     if (sem_init(&handle_, 0, attr.initial_value) == 0) {
       is_sem_created = true;
     }
   }
 
-  Semaphore() : Semaphore{SemaphoreAttr{}} {}
+  Semaphore() noexcept : Semaphore{SemaphoreAttr{}} {}
 
   virtual ~Semaphore() { sem_destroy(&handle_); }
 
@@ -71,7 +71,7 @@ class Semaphore {
 };
 
 struct SemaphoreBinary final : public Semaphore {
-  SemaphoreBinary() : Semaphore{} {}
+  SemaphoreBinary() noexcept : Semaphore{} {}
 
   ~SemaphoreBinary() = default;
 };
