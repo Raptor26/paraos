@@ -34,9 +34,7 @@ enum ThreadPriority : int {
 class Thread {
  public:
   Thread(const std::string name, size_t stack_depth, int priority)
-      : name_{name}, stack_depth_{stack_depth}, priority_{priority} {
-    Make();
-  }
+      : name_{name}, stack_depth_{stack_depth}, priority_{priority} {}
 
   virtual ~Thread() {
     const paraos::CriticalSection critical;
@@ -72,6 +70,19 @@ class Thread {
   Thread(Thread &&other) = delete;
   Thread &operator=(const Thread &other) = delete;
   Thread &operator=(Thread &&other) = delete;
+
+  /// @brief After "Thread' Ctor complete construct object, user's inheritance
+  /// class must call 'Start()' for create thread and scheduling this thread
+  /// instance.
+  void Start() {
+    Make();
+
+    // if scheduler started, we forced join this thread for modeling RTOS thread
+    // behavior.
+    if (is_scheduler_started_) {
+      Join();
+    }
+  }
 
   void Join() {
     // Поток можно присоединить только в том случае, если он не был присоединен
@@ -170,26 +181,30 @@ class Thread {
 
  private:
   void Make() {
-    DWORD creation_flags{CREATE_SUSPENDED};
+    // Guard to prevent double thread creation for single 'Thread' object.
+    if (!is_thread_created) {
+      DWORD creation_flags{CREATE_SUSPENDED};
 
-    // После запуска планировщика нет необходимости создавать потоки в
-    // приостановленном состоянии
-    if (is_scheduler_started_) {
-      creation_flags = 0;
+      // После запуска планировщика нет необходимости создавать потоки в
+      // приостановленном состоянии
+      if (is_scheduler_started_) {
+        creation_flags = 0;
+      }
+
+      handle_ = CreateThread(
+          NULL,                            // default security attributes
+          stack_depth_,                    // use default stack size
+          MyThreadFunction,                // thread function name
+          reinterpret_cast<LPVOID>(this),  // argument to thread function
+          creation_flags,                  // use default creation flags
+          &thread_id_);                    // returns the thread identifier
+
+      assert(handle_ && "Thread not created");
+      is_thread_created = true;
+
+      const paraos::CriticalSection critical;
+      queue_thread_obj_.push_back(this);
     }
-
-    handle_ = CreateThread(
-        NULL,                            // default security attributes
-        stack_depth_,                    // use default stack size
-        MyThreadFunction,                // thread function name
-        reinterpret_cast<LPVOID>(this),  // argument to thread function
-        creation_flags,                  // use default creation flags
-        &thread_id_);                    // returns the thread identifier
-
-    assert(handle_ && "Thread not created");
-
-    const paraos::CriticalSection critical;
-    queue_thread_obj_.push_back(this);
   }
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
@@ -229,6 +244,9 @@ class Thread {
  private:
   static inline std::deque<paraos::Thread *> queue_thread_obj_;
   static inline BoolSafeThreadFlag is_scheduler_started_{false};
+
+  /// @brief Set true after thread creation.
+  BoolSafeThreadFlag is_thread_created{false};
 };
 
 }  // namespace paraos

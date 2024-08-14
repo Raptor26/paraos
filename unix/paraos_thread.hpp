@@ -30,9 +30,9 @@ class Thread {
  public:
   Thread(
       const std::string name, std::size_t stack_depth, ThreadPriority priority)
-      : name_{std::move(name)}, stack_depth_{stack_depth}, priority_{priority} {
-    Make();
-  }
+      : name_{std::move(name)},
+        stack_depth_{stack_depth},
+        priority_{priority} {}
 
   virtual ~Thread() {
     const paraos::CriticalSection critical;
@@ -72,6 +72,19 @@ class Thread {
   Thread(Thread &&other) = delete;
   Thread &operator=(const Thread &other) = delete;
   Thread &operator=(Thread &&other) = delete;
+
+  /// @brief After "Thread' Ctor complete construct object, user's inheritance
+  /// class must call 'Start()' for create thread and scheduling this thread
+  /// instance.
+  void Start() {
+    Make();
+
+    // if scheduler started, we forced join this thread for modeling RTOS thread
+    // behavior.
+    if (is_scheduler_started_) {
+      Join();
+    }
+  }
 
   void Join() { auto result_code = pthread_join(handle_, nullptr); }
 
@@ -189,12 +202,18 @@ class Thread {
 
  private:
   void Make() {
-    auto result_code = pthread_create(&handle_, nullptr, perform_work, this);
+    if (!is_thread_created) {
+      auto result_code = pthread_create(&handle_, nullptr, perform_work, this);
 
-    if (result_code == 0) {
-      const paraos::CriticalSection critical;
-      SetPriority(priority_);
-      queue_thread_obj_.push_back(this);
+      assert(result_code == 0 && "Thread not created");
+
+      if (result_code == 0) {
+        const paraos::CriticalSection critical;
+        SetPriority(priority_);
+        queue_thread_obj_.push_back(this);
+
+        is_thread_created = true;
+      }
     }
   }
 
@@ -304,6 +323,9 @@ class Thread {
  private:
   static inline std::deque<paraos::Thread *> queue_thread_obj_;
   static inline BoolSafeThreadFlag is_scheduler_started_{false};
+
+  /// @brief Set true after thread creation.
+  BoolSafeThreadFlag is_thread_created{false};
 };
 
 }  // namespace paraos
