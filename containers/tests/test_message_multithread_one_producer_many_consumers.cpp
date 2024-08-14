@@ -55,7 +55,9 @@ struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", size_t stack_depth = 1024,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{name, stack_depth, priority} {}
+      : paraos::Thread{name, stack_depth, priority} {
+    Start();
+  }
 
   void Run() override {
     bool is_message_pushed{true};
@@ -112,7 +114,9 @@ struct Consumer : public paraos::Thread {
   Consumer(
       const std::string name = "Consumer", size_t stack_depth = 1024,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{name, stack_depth, priority} {}
+      : paraos::Thread{name, stack_depth, priority} {
+    Start();
+  }
 
   void Run() override {
     using namespace std::chrono_literals;
@@ -171,12 +175,16 @@ int main() {
   std::cout << "Total write elements is " << total_written_elems_cnt
             << std::endl;
 
+  assert(
+      elems_vector.size() == consumers_str_container.size() &&
+      "We don't write all strings from 'elems_vector' to "
+      "'consumers_str_container'");
+
   for (auto &str : consumers_str_container) {
     assert(
         std::find(elems_vector.begin(), elems_vector.end(), str) !=
             elems_vector.end() &&
-        "We don't write all strings from 'elems_vector' to "
-        "'consumers_str_container'");
+        "Can't find consumer string in source container");
   }
 
   return 0;

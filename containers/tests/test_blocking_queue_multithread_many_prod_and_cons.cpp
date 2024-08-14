@@ -27,7 +27,9 @@ struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", size_t stack_depth = 1024,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{name, stack_depth, priority} {}
+      : paraos::Thread{name, stack_depth, priority} {
+    Start();
+  }
 
   void Run() override {
     bool is_message_pushed{true};
@@ -75,7 +77,9 @@ struct Consumer : public paraos::Thread {
   Consumer(
       const std::string name = "Consumer", size_t stack_depth = 1024,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{name, stack_depth, priority} {}
+      : paraos::Thread{name, stack_depth, priority} {
+    Start();
+  }
 
   void Run() override {
     using namespace std::chrono_literals;
