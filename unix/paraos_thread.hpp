@@ -52,6 +52,8 @@ class Thread {
         queue_thread_obj_.erase(iter);
 
         paraosTRACE_MESSAGE("Thread deleted: " << name_);
+
+        is_thread_created = false;
       }
     } else {
 // Повторное удаление уже удаленного потока. Данная ситуация может

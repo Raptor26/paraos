@@ -53,6 +53,8 @@ class Thread {
           thread_ptr->handle_ = nullptr;
 
           paraosTRACE_MESSAGE("Thread deleted: " << name_);
+
+          is_thread_created = false;
         }
       }
     } else {
