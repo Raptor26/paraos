@@ -109,5 +109,9 @@ int main() {
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
+  assert(
+      total_read_str_cnt == song_str.size() &&
+      "Consumers don't read all strings from source container");
+
   return 0;
 }
