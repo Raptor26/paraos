@@ -25,6 +25,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <cstring>
 #include <string>
 
 #include "paraos_message_buffer.hpp"

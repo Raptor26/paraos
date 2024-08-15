@@ -297,9 +297,7 @@ class Thread {
       thread->is_canceled_ = true;
     }
 
-    // Несмотря на состояние потока, при завершении его тела функции необходимо
-    // вызвать строку ниже
-    pthread_exit(PTHREAD_CANCELED);
+    return nullptr;
   }
 
  private:
