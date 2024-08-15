@@ -9,6 +9,7 @@
 #include <deque>
 #include <string>
 
+#include "gsl/gsl"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
@@ -35,20 +36,15 @@ class Thread {
         priority_{priority} {}
 
   virtual ~Thread() {
+    // Dtor start free resources only after thread body in perform_work()
+    // complete execute.
+    is_thread_complete_sem_.Take();
+
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
         iter != queue_thread_obj_.cend()) {
       int result{0};
-
-      // Поток можно принудительно удалить только в том случае, если он не был
-      // удален ранее. Поток самостоятельно удаляет себя в конце тела функции
-      // perform_work()
-      if (!is_canceled_) {
-        Thread *thread_ptr = *iter;
-        result = pthread_cancel(thread_ptr->handle_);
-        is_canceled_ = true;
-      }
 
       assert(result == 0 && "Error when try canceled thread");
       if (result == 0) {
@@ -177,6 +173,8 @@ class Thread {
   }
 
   static void DeleteAll() {
+    // Thread deleted in Dtor only.
+#if 0
     const paraos::CriticalSection critical;
     while (!queue_thread_obj_.empty()) {
       // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
@@ -198,6 +196,7 @@ class Thread {
         queue_thread_obj_.empty() &&
         "Container for pointers threadable objects must be empty, otherwise "
         "some thread not deleted");
+#endif
   }
 
  private:
@@ -264,6 +263,7 @@ class Thread {
   static void *perform_work(void *arguments) {
     Thread *thread = static_cast<Thread *>(arguments);
 
+    // Need call StartScheduler() for give this semaphore.
     thread->sem_.Take(max_delay);
 
     thread->SetPriority(thread->priority_);
@@ -286,16 +286,23 @@ class Thread {
     } while (is_need_while);
 
     // Atomic thread exit ------------------------------------------------------
-    const paraos::CriticalSection critical;
+    {
+      const paraos::CriticalSection critical;
 
-    assert(
-        !thread->is_canceled_ && "Somebody call destruction for thread object");
+      assert(
+          !thread->is_canceled_ &&
+          "Somebody call destruction for thread object");
 
-    if (!thread->is_canceled_) {
-      // Необходимо пометить поток как отмененный чтобы деструктор объекта
-      // повторно не удалил объект
-      thread->is_canceled_ = true;
+      if (!thread->is_canceled_) {
+        // Необходимо пометить поток как отмененный чтобы деструктор объекта
+        // повторно не удалил объект
+        thread->is_canceled_ = true;
+      }
     }
+
+    // Give semaphore after perform_work() complete.
+    auto after_return =
+        gsl::finally([&] { thread->is_thread_complete_sem_.Give(); });
 
     return nullptr;
   }
@@ -324,6 +331,10 @@ class Thread {
 
   /// @brief Set true after thread creation.
   BoolSafeThreadFlag is_thread_created{false};
+
+  /// @brief If semaphore given, that's mean perform_work() complete execute and
+  /// Dtor can safely free resources.
+  SemaphoreBinary is_thread_complete_sem_;
 };
 
 }  // namespace paraos
