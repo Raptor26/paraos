@@ -25,7 +25,7 @@ class Semaphore {
 
   Semaphore() : Semaphore{SemaphoreAttr{}} {}
 
-  virtual ~Semaphore() { sem_close(&handle_); }
+  virtual ~Semaphore() { sem_destroy(&handle_); }
 
   bool Take(std::size_t timeout_ms = max_delay) {
     bool is_sem_taken = false;
