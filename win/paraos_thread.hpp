@@ -1,5 +1,5 @@
-#ifndef paraos_thread_HPP
-#define paraos_thread_HPP
+#ifndef PARAOS_THREAD_HPP
+#define PARAOS_THREAD_HPP
 
 #include <windows.h>
 
@@ -14,9 +14,11 @@
 #include <unordered_set>
 #include <vector>
 
+#include "gsl/gsl"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
+#include "paraos_semaphore.hpp"
 #include "paraos_trace.hpp"
 
 namespace paraos {
@@ -33,10 +35,28 @@ enum ThreadPriority : int {
 
 class Thread {
  public:
-  Thread(const std::string name, size_t stack_depth, int priority)
-      : name_{name}, stack_depth_{stack_depth}, priority_{priority} {}
+  Thread(
+      const std::string name, size_t stack_depth, int priority,
+      bool is_joinable = true)
+      : name_{name},
+        stack_depth_{stack_depth},
+        priority_{priority},
+        is_joinable_{is_joinable} {
+    // Now Dtor can delete thread.
+    is_thread_complete_sem_.Give();
+  }
 
   virtual ~Thread() {
+    // Dtor free resources only after thread body in perform_work()
+    // complete execute.
+    std::size_t delay_ms{4000};
+    auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+
+    assert(
+        is_sem_taken &&
+        "If you create thread, you must call Thread::StartScheduler() in "
+        "main(), otherwise, destructor can't safely delete thread");
+
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
@@ -78,7 +98,8 @@ class Thread {
   /// instance.
   void Start() { Make(); }
 
-  void Join() {
+  auto Join() -> bool {
+    bool is_joined{false};
     // Поток можно присоединить только в том случае, если он не был присоединен
     // ранее
     if (is_joinable_ == true) {
@@ -89,9 +110,12 @@ class Thread {
       /// @see
       /// https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
       if (status == WAIT_OBJECT_0) {
+        is_joined = true;
         paraosTRACE_MESSAGE("Thread join: " << name_);
       }
     }
+
+    return is_joined;
   }
 
   std::string_view Name() { return name_; }
@@ -153,6 +177,7 @@ class Thread {
   }
 
   static void DeleteAll() {
+#if 0
     const paraos::CriticalSection critical;
     while (!queue_thread_obj_.empty()) {
       // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
@@ -174,12 +199,21 @@ class Thread {
         queue_thread_obj_.empty() &&
         "Container for pointers threadable objects must be empty, otherwise "
         "some thread not deleted");
+#endif
   }
 
  private:
   void Make() {
     // Guard to prevent double thread creation for single 'Thread' object.
     if (!is_thread_created) {
+      // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
+      // object only after perform_work() complete.
+      constexpr std::size_t delay_ms{0u};
+      auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+
+      // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
+      assert(is_sem_taken && "Sem always must taken");
+
       DWORD creation_flags{CREATE_SUSPENDED};
 
       // После запуска планировщика нет необходимости создавать потоки в
@@ -221,6 +255,10 @@ class Thread {
       thread->Run();
     } while (is_need_while);
 
+    // Give semaphore after perform_work() complete.
+    auto after_return =
+        gsl::finally([&] { thread->is_thread_complete_sem_.Give(); });
+
     // Если бы использовался freeRTOS, то вызвали "vTaskDelete(nullptr)"
     return 0;
   }
@@ -244,8 +282,12 @@ class Thread {
 
   /// @brief Set true after thread creation.
   BoolSafeThreadFlag is_thread_created{false};
+
+  /// @brief If semaphore given, that's mean perform_work() complete execute and
+  /// Dtor can safely free resources.
+  SemaphoreBinary is_thread_complete_sem_;
 };
 
 }  // namespace paraos
 
-#endif /* paraos_thread_HPP */
+#endif /* PARAOS_THREAD_HPP */
