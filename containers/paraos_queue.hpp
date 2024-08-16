@@ -13,23 +13,8 @@
 
 namespace paraos {
 
-template <typename T>
-struct IQueue {
-  virtual ~IQueue() = default;
-
-  virtual auto Push(T&& element) -> bool = 0;
-  virtual auto Pop() -> std::optional<T> = 0;
-  virtual auto IsEmpty() -> bool = 0;
-  virtual auto IsFull() -> bool = 0;
-  virtual auto Size() -> size_t = 0;
-  virtual void Erase() = 0;
-
- protected:
-  IQueue() = default;
-};
-
 template <typename T, typename ALLOCATOR = std::allocator<T>>
-struct Queue : public IQueue<T> {
+struct Queue {
  private:
   ALLOCATOR allocator_;
   using traits_t1 = std::allocator_traits<decltype(allocator_)>;
@@ -85,7 +70,7 @@ struct Queue : public IQueue<T> {
   }
 
   auto Push(T&& item) noexcept(std::is_nothrow_move_constructible<T>::value)
-      -> bool override {
+      -> bool {
     return EmplaceBack(std::move(item));
   }
 
@@ -102,7 +87,7 @@ struct Queue : public IQueue<T> {
     return false;
   }
 
-  auto Pop() -> std::optional<T> override {
+  auto Pop() -> std::optional<T> {
     if (IsEmpty()) {
       return std::nullopt;
     }
@@ -121,7 +106,7 @@ struct Queue : public IQueue<T> {
     return std::move(Front());
   }
 
-  virtual auto IsEmpty() -> bool override {
+  virtual auto IsEmpty() -> bool {
     bool is_empty{false};
     if (contained_cnt_ == 0) {
       is_empty = true;
@@ -130,18 +115,18 @@ struct Queue : public IQueue<T> {
     return is_empty;
   };
 
-  virtual PARAOS_INLINE_TRIVIAL auto IsFull() -> bool override {
+  virtual PARAOS_INLINE_TRIVIAL auto IsFull() -> bool {
     if (contained_cnt_ >= max_elements_numb_) {
       return true;
     }
     return false;
   }
 
-  virtual PARAOS_INLINE_TRIVIAL auto Size() -> size_t override {
+  virtual PARAOS_INLINE_TRIVIAL auto Size() -> size_t {
     return contained_cnt_;
   };
 
-  virtual void Erase() override {
+  virtual void Erase() {
     while (!IsEmpty()) {
       Pop();
     }
