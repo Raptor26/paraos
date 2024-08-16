@@ -36,7 +36,7 @@ enum ThreadPriority : int {
 class Thread {
  public:
   Thread(
-      const std::string name, size_t stack_depth, int priority,
+      const std::string name, std::size_t stack_depth, int priority,
       bool is_joinable = true)
       : name_{name},
         stack_depth_{stack_depth},
@@ -106,8 +106,6 @@ class Thread {
     // Поток можно присоединить только в том случае, если он не был присоединен
     // ранее
     if (is_joinable_ == true) {
-      is_joinable_ = false;
-
       auto status = WaitForSingleObject(handle_, INFINITE);
 
       assert(status == WAIT_OBJECT_0 && "Can't join thread");
@@ -116,6 +114,9 @@ class Thread {
       /// https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
       if (status == WAIT_OBJECT_0) {
         is_joined = true;
+
+        // After join, thread can't be joinable later.
+        is_joinable_ = false;
         paraosTRACE_MESSAGE("Thread join: " << name_);
       }
     }
@@ -213,8 +214,8 @@ class Thread {
   void Make() {
     // Guard to prevent double thread creation for single 'Thread' object.
     if (!is_thread_created) {
-      // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
-      // object only after perform_work() complete.
+      // Sem was given in Ctor. Now we take sem. That's mean, Dtor can delete
+      // object only after MyThreadFunction() complete.
       constexpr std::size_t delay_ms{0u};
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
@@ -262,7 +263,7 @@ class Thread {
       thread->Run();
     } while (is_need_while);
 
-    // Give semaphore after perform_work() complete.
+    // Give semaphore after MyThreadFunction() complete.
     auto after_return =
         gsl::finally([&] { thread->is_thread_complete_sem_.Give(); });
 
@@ -275,7 +276,7 @@ class Thread {
   size_t stack_depth_{0};
   HANDLE handle_{nullptr};
   DWORD thread_id_{0};
-  BoolSafeThreadFlag is_joinable_{true};
+  BoolSafeThreadFlag is_joinable_;
   ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()

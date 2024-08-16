@@ -56,13 +56,6 @@ class BoolSafeThreadFlag {
   operator bool() const noexcept { return Islocked(); }
 
  private:
-  /// @brief Safe thread setter status.
-  /// @param[in] new_state: New state for safe thread update status.
-  inline void SetLocked(bool new_state) noexcept {
-    const CriticalSection critical;  // RAII
-    is_locked_ = new_state;
-  }
-
   /// @brief Safe thread getter status.
   /// @return true or false.
   inline bool Islocked() const noexcept {
