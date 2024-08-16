@@ -5,8 +5,8 @@
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
 #include "paraos_queue.hpp"
-#include "rtos_impl_mutex.hpp"
 
 namespace paraos {
 
@@ -14,7 +14,6 @@ template <typename T>
 struct IQueueBlocking {
   virtual ~IQueueBlocking() = default;
 
-  virtual auto Push(const T& element, std::size_t timeout_ms) -> bool = 0;
   virtual auto Push(T&& element, std::size_t timeout_ms) -> bool = 0;
   virtual auto Pop(std::size_t timeout_ms) -> std::optional<T> = 0;
   virtual auto IsEmpty() -> bool = 0;
@@ -84,7 +83,7 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
   }
 
   auto Push(const T& item, std::size_t timeout_ms) noexcept(
-      noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool override {
+      noexcept(Queue<T, ALLOCATOR>::Push(item))) -> bool {
     bool is_pushed{false};
 
     if (pop_sem_.Take(timeout_ms)) {

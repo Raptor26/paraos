@@ -9,6 +9,7 @@
 #include <deque>
 #include <string>
 
+#include "gsl/gsl"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
@@ -29,26 +30,33 @@ enum class ThreadPriority : int {
 class Thread {
  public:
   Thread(
-      const std::string name, std::size_t stack_depth, ThreadPriority priority)
+      const std::string name, std::size_t stack_depth, ThreadPriority priority,
+      bool is_joinable = true)
       : name_{std::move(name)},
         stack_depth_{stack_depth},
-        priority_{priority} {}
+        priority_{priority},
+        is_joinable_{is_joinable} {
+    queue_thread_obj_.push_back(this);
+    // Now Dtor can delete thread.
+    is_thread_complete_sem_.Give();
+  }
 
   virtual ~Thread() {
+    // Dtor free resources only after thread body in perform_work()
+    // complete execute.
+    std::size_t delay_ms{4000};
+    auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+
+    assert(
+        is_sem_taken &&
+        "If you create thread, you must call Thread::StartScheduler() in "
+        "main(), otherwise, destructor can't safely delete thread");
+
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
         iter != queue_thread_obj_.cend()) {
       int result{0};
-
-      // Поток можно принудительно удалить только в том случае, если он не был
-      // удален ранее. Поток самостоятельно удаляет себя в конце тела функции
-      // perform_work()
-      if (!is_canceled_) {
-        Thread *thread_ptr = *iter;
-        result = pthread_cancel(thread_ptr->handle_);
-        is_canceled_ = true;
-      }
 
       assert(result == 0 && "Error when try canceled thread");
       if (result == 0) {
@@ -56,14 +64,16 @@ class Thread {
         queue_thread_obj_.erase(iter);
 
         paraosTRACE_MESSAGE("Thread deleted: " << name_);
+
+        is_thread_created = false;
       }
     } else {
 // Повторное удаление уже удаленного потока. Данная ситуация может
 // возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков вышли
 // из области видимости. В целом это не является ошибкой т.к. присутствует
 // защита от повторного удаления потока
-#if 0
-        assert(false && "We can't find 'this' for thread delete operation");
+#if 1
+      assert(false && "We can't find 'this' for thread delete operation");
 #endif
     }
   }
@@ -76,19 +86,23 @@ class Thread {
   /// @brief After "Thread' Ctor complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
-  void Start() {
-    Make();
+  void Start() { Make(); }
 
-    // if scheduler started, we forced join this thread for modeling RTOS thread
-    // behavior.
-    if (is_scheduler_started_) {
-      Join();
+  auto Join() -> bool {
+    int result_code{-1};
+    if (is_joinable_) {
+      result_code = pthread_join(handle_, nullptr);
+      assert(result_code == 0 && "Can't join the thread");
     }
+
+    return result_code == 0 ? true : false;
   }
 
-  void Join() { auto result_code = pthread_join(handle_, nullptr); }
-
   std::string_view Name() { return name_; }
+
+  void DelayMs(std::size_t sleep_ms) {
+    usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
+  }
 
   bool SetPriority(const ThreadPriority priority) {
     bool is_priority_updated{false};
@@ -177,6 +191,8 @@ class Thread {
   }
 
   static void DeleteAll() {
+    // Thread deleted in Dtor only.
+#if 0
     const paraos::CriticalSection critical;
     while (!queue_thread_obj_.empty()) {
       // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
@@ -198,21 +214,38 @@ class Thread {
         queue_thread_obj_.empty() &&
         "Container for pointers threadable objects must be empty, otherwise "
         "some thread not deleted");
+#endif
   }
+
+  static auto IsSchedulerStarted() { return is_scheduler_started_; }
 
  private:
   void Make() {
     if (!is_thread_created) {
+      const paraos::CriticalSection critical;
+
+      // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
+      // object only after perform_work() complete.
+      constexpr std::size_t delay_ms{0u};
+      auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+
+      // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
+      assert(is_sem_taken && "Sem always must taken");
+
       auto result_code = pthread_create(&handle_, nullptr, perform_work, this);
 
       assert(result_code == 0 && "Thread not created");
 
       if (result_code == 0) {
-        const paraos::CriticalSection critical;
         SetPriority(priority_);
-        queue_thread_obj_.push_back(this);
 
         is_thread_created = true;
+
+        if (IsSchedulerStarted()) {
+          // Give semaphore, because scheduler already started. In this case
+          // thread started after call Make().
+          sem_.Give();
+        }
       }
     }
   }
@@ -264,6 +297,7 @@ class Thread {
   static void *perform_work(void *arguments) {
     Thread *thread = static_cast<Thread *>(arguments);
 
+    // Need call StartScheduler() for give this semaphore.
     thread->sem_.Take(max_delay);
 
     thread->SetPriority(thread->priority_);
@@ -286,27 +320,32 @@ class Thread {
     } while (is_need_while);
 
     // Atomic thread exit ------------------------------------------------------
-    const paraos::CriticalSection critical;
+    {
+      const paraos::CriticalSection critical;
 
-    assert(
-        !thread->is_canceled_ && "Somebody call destruction for thread object");
+      //   assert(
+      //       !thread->is_canceled_ &&
+      //       "Somebody call destruction for thread object");
 
-    if (!thread->is_canceled_) {
-      // Необходимо пометить поток как отмененный чтобы деструктор объекта
-      // повторно не удалил объект
-      thread->is_canceled_ = true;
+      if (!thread->is_canceled_) {
+        // Необходимо пометить поток как отмененный чтобы деструктор объекта
+        // повторно не удалил объект
+        thread->is_canceled_ = true;
+      }
     }
 
-    // Несмотря на состояние потока, при завершении его тела функции необходимо
-    // вызвать строку ниже
-    pthread_exit(PTHREAD_CANCELED);
+    // Give semaphore after perform_work() complete.
+    auto after_return =
+        gsl::finally([&] { thread->is_thread_complete_sem_.Give(); });
+
+    return nullptr;
   }
 
  private:
   std::string name_;
   std::size_t stack_depth_{0};
   pthread_t handle_{0};
-  BoolSafeThreadFlag is_joinable_{true};
+  BoolSafeThreadFlag is_joinable_;
   ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Флаг отмены потока. Если флаг установлен в true, то поток помечен
@@ -317,7 +356,8 @@ class Thread {
   /// в бесконечном цикле.
   bool is_need_while_{false};
 
-  Semaphore sem_;
+  /// @brief Sem for suspend thread if not call StartScheduler().
+  SemaphoreBinary sem_;
 
   /// Global objects
  private:
@@ -326,6 +366,10 @@ class Thread {
 
   /// @brief Set true after thread creation.
   BoolSafeThreadFlag is_thread_created{false};
+
+  /// @brief If semaphore given, that's mean perform_work() complete execute and
+  /// Dtor can safely free resources.
+  SemaphoreBinary is_thread_complete_sem_;
 };
 
 }  // namespace paraos

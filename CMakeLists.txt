@@ -20,6 +20,7 @@ elseif(UNIX)
 endif()
 
 add_subdirectory(containers)
+add_subdirectory(extra)
 add_subdirectory(GSL)
 
 add_library(${PROJECT_NAME} INTERFACE)

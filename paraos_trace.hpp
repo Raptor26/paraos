@@ -3,7 +3,15 @@
 
 #ifdef paraosTRACE_ENABLE
 #include <iostream>
-#define paraosTRACE_MESSAGE(message) std::cout << message << std::endl
+
+#include "paraos_critical.hpp"
+
+#define paraosTRACE_MESSAGE(__message__)    \
+  {                                         \
+    const paraos::CriticalSection critical; \
+    std::cout << __message__ << std::endl;  \
+  }
+
 #else
 #define paraosTRACE_MESSAGE(message)
 #endif
