@@ -36,12 +36,13 @@ class Thread {
         stack_depth_{stack_depth},
         priority_{priority},
         is_joinable_{is_joinable} {
+    queue_thread_obj_.push_back(this);
     // Now Dtor can delete thread.
     is_thread_complete_sem_.Give();
   }
 
   virtual ~Thread() {
-    // Dtor start free resources only after thread body in perform_work()
+    // Dtor free resources only after thread body in perform_work()
     // complete execute.
     std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
@@ -71,8 +72,8 @@ class Thread {
 // возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков вышли
 // из области видимости. В целом это не является ошибкой т.к. присутствует
 // защита от повторного удаления потока
-#if 0
-        assert(false && "We can't find 'this' for thread delete operation");
+#if 1
+      assert(false && "We can't find 'this' for thread delete operation");
 #endif
     }
   }
@@ -237,9 +238,14 @@ class Thread {
 
       if (result_code == 0) {
         SetPriority(priority_);
-        queue_thread_obj_.push_back(this);
 
         is_thread_created = true;
+
+        if (IsSchedulerStarted()) {
+          // Give semaphore, because scheduler already started. In this case
+          // thread started after call Make().
+          sem_.Give();
+        }
       }
     }
   }
@@ -317,9 +323,9 @@ class Thread {
     {
       const paraos::CriticalSection critical;
 
-      assert(
-          !thread->is_canceled_ &&
-          "Somebody call destruction for thread object");
+      //   assert(
+      //       !thread->is_canceled_ &&
+      //       "Somebody call destruction for thread object");
 
       if (!thread->is_canceled_) {
         // Необходимо пометить поток как отмененный чтобы деструктор объекта
@@ -350,7 +356,8 @@ class Thread {
   /// в бесконечном цикле.
   bool is_need_while_{false};
 
-  Semaphore sem_;
+  /// @brief Sem for suspend thread if not call StartScheduler().
+  SemaphoreBinary sem_;
 
   /// Global objects
  private:

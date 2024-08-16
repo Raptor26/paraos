@@ -93,10 +93,13 @@ class Thread {
   Thread &operator=(const Thread &other) = delete;
   Thread &operator=(Thread &&other) = delete;
 
-  /// @brief After "Thread' Ctor complete construct object, user's inheritance
+  /// @brief After "Thread' complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
-  void Start() { Make(); }
+  void Start() {
+    // if scheduler already started, thread will be created in running state.
+    Make();
+  }
 
   auto Join() -> bool {
     bool is_joined{false};
@@ -106,6 +109,8 @@ class Thread {
       is_joinable_ = false;
 
       auto status = WaitForSingleObject(handle_, INFINITE);
+
+      assert(status == WAIT_OBJECT_0 && "Can't join thread");
 
       /// @see
       /// https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
@@ -201,6 +206,8 @@ class Thread {
         "some thread not deleted");
 #endif
   }
+
+  static auto IsSchedulerStarted() { return is_scheduler_started_; }
 
  private:
   void Make() {
