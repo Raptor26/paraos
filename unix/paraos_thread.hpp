@@ -208,12 +208,21 @@ class Thread {
  private:
   void Make() {
     if (!is_thread_created) {
+      const paraos::CriticalSection critical;
+
+      // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
+      // object only after perform_work() complete.
+      constexpr std::size_t delay_ms{0u};
+      auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+
+      // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
+      assert(is_sem_taken && "Sem always must taken");
+
       auto result_code = pthread_create(&handle_, nullptr, perform_work, this);
 
       assert(result_code == 0 && "Thread not created");
 
       if (result_code == 0) {
-        const paraos::CriticalSection critical;
         SetPriority(priority_);
         queue_thread_obj_.push_back(this);
 
