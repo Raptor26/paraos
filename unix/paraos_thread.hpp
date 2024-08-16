@@ -30,10 +30,15 @@ enum class ThreadPriority : int {
 class Thread {
  public:
   Thread(
-      const std::string name, std::size_t stack_depth, ThreadPriority priority)
+      const std::string name, std::size_t stack_depth, ThreadPriority priority,
+      bool is_joinable = true)
       : name_{std::move(name)},
         stack_depth_{stack_depth},
-        priority_{priority} {}
+        priority_{priority},
+        is_joinable_{is_joinable} {
+    // Now Dtor can delete thread.
+    is_thread_complete_sem_.Give();
+  }
 
   virtual ~Thread() {
     // Dtor start free resources only after thread body in perform_work()
@@ -82,7 +87,15 @@ class Thread {
   /// instance.
   void Start() { Make(); }
 
-  void Join() { auto result_code = pthread_join(handle_, nullptr); }
+  auto Join() -> bool {
+    int result_code{-1};
+    if (is_joinable_) {
+      result_code = pthread_join(handle_, nullptr);
+      assert(result_code == 0 && "Can't join the thread");
+    }
+
+    return result_code == 0 ? true : false;
+  }
 
   std::string_view Name() { return name_; }
 
@@ -326,7 +339,7 @@ class Thread {
   std::string name_;
   std::size_t stack_depth_{0};
   pthread_t handle_{0};
-  BoolSafeThreadFlag is_joinable_{true};
+  BoolSafeThreadFlag is_joinable_;
   ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Флаг отмены потока. Если флаг установлен в true, то поток помечен
