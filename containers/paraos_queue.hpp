@@ -17,7 +17,6 @@ template <typename T>
 struct IQueue {
   virtual ~IQueue() = default;
 
-  virtual auto Push(const T& element) -> bool = 0;
   virtual auto Push(T&& element) -> bool = 0;
   virtual auto Pop() -> std::optional<T> = 0;
   virtual auto IsEmpty() -> bool = 0;
@@ -91,7 +90,7 @@ struct Queue : public IQueue<T> {
   }
 
   auto Push(const T& item) noexcept(
-      std::is_nothrow_copy_constructible<T>::value) -> bool override {
+      std::is_nothrow_copy_constructible<T>::value) -> bool {
     if (!IsFull()) {
       traits_t1::construct(allocator_, &buff_ptr_[w_idx_], item);
 
