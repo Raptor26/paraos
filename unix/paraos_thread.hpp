@@ -38,7 +38,13 @@ class Thread {
   virtual ~Thread() {
     // Dtor start free resources only after thread body in perform_work()
     // complete execute.
-    is_thread_complete_sem_.Take();
+    std::size_t delay_ms{4000};
+    auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+
+    assert(
+        is_sem_taken &&
+        "If you create thread, you must call Thread::StartScheduler() in "
+        "main(), otherwise, destructor can't safely delete thread");
 
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
