@@ -32,38 +32,6 @@ class CriticalSection final {
   static inline MutexBase mutex_;
 };
 
-class BoolSafeThreadFlag {
- private:
-  bool is_locked_ = false;
-
- public:
-  /// @brief Ctor.
-  /// @param
-  BoolSafeThreadFlag(bool new_status) noexcept : is_locked_{new_status} {}
-
-  /// @brief Default Ctor
-  BoolSafeThreadFlag() noexcept : BoolSafeThreadFlag{false} {}
-
-  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) noexcept {
-    if (this != &other) {
-      const CriticalSection critical;  // RAII
-      is_locked_ = other.is_locked_;
-    }
-
-    return *this;
-  }
-
-  operator bool() const noexcept { return Islocked(); }
-
- private:
-  /// @brief Safe thread getter status.
-  /// @return true or false.
-  inline bool Islocked() const noexcept {
-    const CriticalSection critical;  // RAII
-    return is_locked_;
-  }
-};
-
 }  // namespace paraos
 
 #endif /* CRITICAL_HPP */

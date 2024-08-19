@@ -3,6 +3,7 @@
 
 #include <cassert>
 
+#include "paraos_bool_atomic.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
 
@@ -70,45 +71,6 @@ class MutexBase {
   bool is_binary_{true};
 };
 
-class BoolSafeThreadFlag {
- private:
-  bool is_locked_ = false;
-
- public:
-  /// @brief Ctor.
-  /// @param
-  BoolSafeThreadFlag(bool new_status) noexcept : is_locked_{new_status} {}
-
-  /// @brief Default Ctor
-  BoolSafeThreadFlag() noexcept : BoolSafeThreadFlag{false} {}
-
-  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) noexcept {
-    if (this != &other) {
-      const CriticalSection critical;  // RAII
-      is_locked_ = other.is_locked_;
-    }
-
-    return *this;
-  }
-
-  operator bool() const noexcept { return Islocked(); }
-
- private:
-  /// @brief Safe thread setter status.
-  /// @param[in] new_state: New state for safe thread update status.
-  inline void SetLocked(bool new_state) noexcept {
-    const CriticalSection critical;  // RAII
-    is_locked_ = new_state;
-  }
-
-  /// @brief Safe thread getter status.
-  /// @return true or false.
-  inline bool Islocked() const noexcept {
-    const CriticalSection critical;  // RAII
-    return is_locked_;
-  }
-};
-
 class MutexBaseBinary : public MutexBase {
  public:
   MutexBaseBinary() : MutexBase(MutexAttr{true}) {}
@@ -153,7 +115,7 @@ class MutexBaseBinary : public MutexBase {
 
  private:
   /// @brief Safe thread flag
-  BoolSafeThreadFlag is_locked_;
+  BoolAtomic is_locked_{false};
 };
 }  // namespace paraos
 

@@ -1,5 +1,5 @@
-#ifndef paraos_thread_HPP
-#define paraos_thread_HPP
+#ifndef PARAOS_THREAD_HPP
+#define PARAOS_THREAD_HPP
 
 #include <pthread.h>
 #include <sys/types.h>
@@ -10,6 +10,7 @@
 #include <string>
 
 #include "gsl/gsl"
+#include "paraos_bool_atomic.hpp"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
@@ -65,7 +66,7 @@ class Thread {
 
         paraosTRACE_MESSAGE("Thread deleted: " << name_);
 
-        is_thread_created = false;
+        is_thread_created_ = false;
       }
     } else {
 // Повторное удаление уже удаленного потока. Данная ситуация может
@@ -86,7 +87,7 @@ class Thread {
   /// @brief After "Thread' Ctor complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
-  void Start() { Make(); }
+  auto Start() { return Make(); }
 
   auto Join() -> bool {
     int result_code{-1};
@@ -220,8 +221,8 @@ class Thread {
   static auto IsSchedulerStarted() { return is_scheduler_started_; }
 
  private:
-  void Make() {
-    if (!is_thread_created) {
+  auto Make() -> bool {
+    if (!is_thread_created_) {
       const paraos::CriticalSection critical;
 
       // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
@@ -239,7 +240,7 @@ class Thread {
       if (result_code == 0) {
         SetPriority(priority_);
 
-        is_thread_created = true;
+        is_thread_created_ = true;
 
         if (IsSchedulerStarted()) {
           // Give semaphore, because scheduler already started. In this case
@@ -248,6 +249,8 @@ class Thread {
         }
       }
     }
+
+    return is_thread_created_;
   }
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
@@ -345,7 +348,7 @@ class Thread {
   std::string name_;
   std::size_t stack_depth_{0};
   pthread_t handle_{0};
-  BoolSafeThreadFlag is_joinable_;
+  BoolAtomic is_joinable_;
   ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Флаг отмены потока. Если флаг установлен в true, то поток помечен
@@ -362,10 +365,10 @@ class Thread {
   /// Global objects
  private:
   static inline std::deque<paraos::Thread *> queue_thread_obj_;
-  static inline BoolSafeThreadFlag is_scheduler_started_{false};
+  static inline BoolAtomic is_scheduler_started_{false};
 
   /// @brief Set true after thread creation.
-  BoolSafeThreadFlag is_thread_created{false};
+  BoolAtomic is_thread_created_{false};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.
@@ -374,4 +377,4 @@ class Thread {
 
 }  // namespace paraos
 
-#endif /* paraos_thread_HPP */
+#endif /* PARAOS_THREAD_HPP */
