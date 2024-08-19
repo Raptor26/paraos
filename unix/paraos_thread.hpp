@@ -65,7 +65,7 @@ class Thread {
 
         paraosTRACE_MESSAGE("Thread deleted: " << name_);
 
-        is_thread_created = false;
+        is_thread_created_ = false;
       }
     } else {
 // Повторное удаление уже удаленного потока. Данная ситуация может
@@ -86,7 +86,7 @@ class Thread {
   /// @brief After "Thread' Ctor complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
-  void Start() { Make(); }
+  auto Start() { return Make(); }
 
   auto Join() -> bool {
     int result_code{-1};
@@ -220,8 +220,8 @@ class Thread {
   static auto IsSchedulerStarted() { return is_scheduler_started_; }
 
  private:
-  void Make() {
-    if (!is_thread_created) {
+  auto Make() -> bool {
+    if (!is_thread_created_) {
       const paraos::CriticalSection critical;
 
       // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
@@ -239,7 +239,7 @@ class Thread {
       if (result_code == 0) {
         SetPriority(priority_);
 
-        is_thread_created = true;
+        is_thread_created_ = true;
 
         if (IsSchedulerStarted()) {
           // Give semaphore, because scheduler already started. In this case
@@ -248,6 +248,8 @@ class Thread {
         }
       }
     }
+
+    return is_thread_created_;
   }
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
@@ -365,7 +367,7 @@ class Thread {
   static inline BoolSafeThreadFlag is_scheduler_started_{false};
 
   /// @brief Set true after thread creation.
-  BoolSafeThreadFlag is_thread_created{false};
+  BoolSafeThreadFlag is_thread_created_{false};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.

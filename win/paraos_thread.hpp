@@ -74,7 +74,7 @@ class Thread {
 
           paraosTRACE_MESSAGE("Thread deleted: " << name_);
 
-          is_thread_created = false;
+          is_thread_created_ = false;
         }
       }
     } else {
@@ -96,9 +96,9 @@ class Thread {
   /// @brief After "Thread' complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
-  void Start() {
+  auto Start() {
     // if scheduler already started, thread will be created in running state.
-    Make();
+    return Make();
   }
 
   auto Join() -> bool {
@@ -211,9 +211,9 @@ class Thread {
   static auto IsSchedulerStarted() { return is_scheduler_started_; }
 
  private:
-  void Make() {
+  auto Make() -> bool {
     // Guard to prevent double thread creation for single 'Thread' object.
-    if (!is_thread_created) {
+    if (!is_thread_created_) {
       // Sem was given in Ctor. Now we take sem. That's mean, Dtor can delete
       // object only after MyThreadFunction() complete.
       constexpr std::size_t delay_ms{0u};
@@ -239,11 +239,13 @@ class Thread {
           &thread_id_);                    // returns the thread identifier
 
       assert(handle_ && "Thread not created");
-      is_thread_created = true;
+      is_thread_created_ = true;
 
       const paraos::CriticalSection critical;
       queue_thread_obj_.push_back(this);
     }
+
+    return bool{is_thread_created_};
   }
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
@@ -289,7 +291,7 @@ class Thread {
   static inline BoolSafeThreadFlag is_scheduler_started_{false};
 
   /// @brief Set true after thread creation.
-  BoolSafeThreadFlag is_thread_created{false};
+  BoolSafeThreadFlag is_thread_created_{false};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.
