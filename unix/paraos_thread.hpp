@@ -1,5 +1,5 @@
-#ifndef paraos_thread_HPP
-#define paraos_thread_HPP
+#ifndef PARAOS_THREAD_HPP
+#define PARAOS_THREAD_HPP
 
 #include <pthread.h>
 #include <sys/types.h>
@@ -10,6 +10,7 @@
 #include <string>
 
 #include "gsl/gsl"
+#include "paraos_bool_atomic.hpp"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
@@ -376,4 +377,4 @@ class Thread {
 
 }  // namespace paraos
 
-#endif /* paraos_thread_HPP */
+#endif /* PARAOS_THREAD_HPP */
