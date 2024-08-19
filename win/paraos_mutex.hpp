@@ -115,7 +115,7 @@ class MutexBaseBinary : public MutexBase {
 
  private:
   /// @brief Safe thread flag
-  BoolSafeThreadFlag is_locked_;
+  BoolAtomic is_locked_;
 };
 }  // namespace paraos
 

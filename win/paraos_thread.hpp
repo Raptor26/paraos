@@ -278,7 +278,7 @@ class Thread {
   size_t stack_depth_{0};
   HANDLE handle_{nullptr};
   DWORD thread_id_{0};
-  BoolSafeThreadFlag is_joinable_;
+  BoolAtomic is_joinable_;
   ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
@@ -288,10 +288,10 @@ class Thread {
   /// Global objects
  private:
   static inline std::deque<paraos::Thread *> queue_thread_obj_;
-  static inline BoolSafeThreadFlag is_scheduler_started_{false};
+  static inline BoolAtomic is_scheduler_started_{false};
 
   /// @brief Set true after thread creation.
-  BoolSafeThreadFlag is_thread_created_{false};
+  BoolAtomic is_thread_created_{false};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.
