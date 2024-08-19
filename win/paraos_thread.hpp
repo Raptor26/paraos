@@ -245,7 +245,7 @@ class Thread {
       queue_thread_obj_.push_back(this);
     }
 
-    return bool{is_thread_created_};
+    return is_thread_created_;
   }
 
   PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
