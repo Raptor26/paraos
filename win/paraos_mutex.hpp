@@ -82,11 +82,28 @@ class BoolSafeThreadFlag {
   /// @brief Default Ctor
   BoolSafeThreadFlag() noexcept : BoolSafeThreadFlag{false} {}
 
+  BoolSafeThreadFlag(const BoolSafeThreadFlag& other) noexcept {
+    const CriticalSection critical;  // RAII
+    is_locked_ = other.is_locked_;
+  }
+
+  BoolSafeThreadFlag(BoolSafeThreadFlag&& other) noexcept {
+    const CriticalSection critical;  // RAII
+    is_locked_ = other.is_locked_;
+  }
+
   BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) noexcept {
     if (this != &other) {
       const CriticalSection critical;  // RAII
       is_locked_ = other.is_locked_;
     }
+
+    return *this;
+  }
+
+  BoolSafeThreadFlag& operator=(BoolSafeThreadFlag&& other) {
+    const CriticalSection critical;  // RAII
+    is_locked_ = other.is_locked_;
 
     return *this;
   }
