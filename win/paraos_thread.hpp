@@ -130,7 +130,7 @@ class Thread {
     bool is_joined{false};
     // Поток можно присоединить только в том случае, если он не был присоединен
     // ранее
-    if (is_joinable_ == true) {
+    if (is_joinable_ && is_thread_created_) {
       auto status = WaitForSingleObject(handle_, INFINITE);
 
       assert(status == WAIT_OBJECT_0 && "Can't join thread");

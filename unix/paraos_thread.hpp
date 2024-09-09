@@ -116,7 +116,7 @@ class Thread {
 
   auto Join() -> bool {
     int result_code{-1};
-    if (is_joinable_) {
+    if (is_joinable_ && is_thread_created_) {
       result_code = pthread_join(handle_, nullptr);
       assert(result_code == 0 && "Can't join the thread");
     }
