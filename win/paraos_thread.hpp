@@ -127,7 +127,13 @@ class Thread {
   std::string_view Name() { return name_; }
 
   bool SetPriority(const ThreadPriority priority) {
-    return SetThreadPriority(handle_, static_cast<int>(priority));
+    const paraos::CriticalSection critical;
+
+    // Update buffer priority value ...
+    priority_ = priority;
+
+    // ... then set buffer value as windows thread priority.
+    return SetThreadPriority(handle_, static_cast<int>(priority_));
   }
 
   void DelayMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
@@ -279,6 +285,9 @@ class Thread {
   HANDLE handle_{nullptr};
   DWORD thread_id_{0};
   BoolAtomic is_joinable_;
+
+  /// @brief Since thread priority set outside the construction, it's necessary
+  /// to buffer priority value when user call constructor.
   ThreadPriority priority_{ThreadPriority::kIdle};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
