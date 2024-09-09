@@ -127,13 +127,13 @@ class Thread {
   std::string_view Name() { return name_; }
 
   bool SetPriority(const ThreadPriority priority) {
-    const paraos::CriticalSection critical;
+    auto is_priority_updated =
+        SetThreadPriority(handle_, static_cast<int>(priority));
 
-    // Update buffer priority value ...
-    priority_ = priority;
-
-    // ... then set buffer value as windows thread priority.
-    return SetThreadPriority(handle_, static_cast<int>(priority_));
+    if (is_priority_updated) {
+      priority_ = priority;
+    }
+    return is_priority_updated;
   }
 
   void DelayMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
