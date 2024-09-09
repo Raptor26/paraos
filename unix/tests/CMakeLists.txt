@@ -1,3 +1,9 @@
+# Copyright (c) 2024 Stilsoft
+
+# Autor Mickle Isaev
+
+# Distributed under the MIT License
+
 project(test_paraos_osal VERSION 0.1.0)
 
 # Thread v2 --------------------------------------------------------------------

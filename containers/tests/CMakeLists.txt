@@ -1,3 +1,9 @@
+# Copyright (c) 2024 Stilsoft
+
+# Autor Mickle Isaev
+
+# Distributed under the MIT License
+
 project(test_paraos_containers VERSION 0.1.0)
 
 find_package(GTest REQUIRED)

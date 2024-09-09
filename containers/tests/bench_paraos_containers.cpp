@@ -1,7 +1,7 @@
 /// @file bench_queue_blocking.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright Copyright (c) 2024 Stilsoft
+/// @copyright (c) 2024 Stilsoft
 ///
 /// MIT License:
 ///
