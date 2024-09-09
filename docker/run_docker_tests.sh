@@ -1,3 +1,7 @@
+# Copyright (c) 2024 Stilsoft
+# Distributed under the MIT License
+# Author Vyhodcev Egor
+
 #!/bin/bash
 
 RED=$(tput setaf 1)

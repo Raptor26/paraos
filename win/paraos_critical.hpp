@@ -1,12 +1,7 @@
-/// @file critical.hpp
+/// @file paraos_critical.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @brief
-///
-/// @version 0.1.0
-/// @date 2024-04-09
-///
-/// @copyright Copyright (c) 2024 Mickle Isaev
+/// @copyright (c) 2024 Stilsoft
 ///
 /// MIT License:
 ///

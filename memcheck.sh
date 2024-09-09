@@ -1,3 +1,7 @@
+# Copyright (c) 2024 Stilsoft
+# Distributed under the MIT License
+# Author Mickle Isaev
+
 #!/bin/bash
 
 cmake --preset pc_debug_clang_docker \
