@@ -18,6 +18,7 @@ TEST(Semaphore, GiveThanTakeTwice) {
 
   ASSERT_TRUE(sem.Give());
   ASSERT_TRUE(sem.Take(0));
+  ASSERT_FALSE(sem.Take(0));
 }
 
 TEST(Semaphore, GiveThanTakeTwiceButSemIsBinary) {
