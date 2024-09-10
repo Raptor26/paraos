@@ -130,6 +130,10 @@ class Thread {
     usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
   }
 
+  PARAOS_INLINE_TRIVIAL void SetNeedWhile(bool is_need_while) {
+    is_need_while_ = is_need_while;
+  }
+
   bool SetPriority(const ThreadPriority priority) {
     bool is_priority_updated{false};
 
@@ -330,11 +334,6 @@ class Thread {
 
     thread->SetPriority(thread->priority_);
 
-    // Запишем в локальную переменную значение флага. Это позволит избежать
-    // операции разыменование указатели при работе в теле цикла do ->
-    // while()
-    const auto is_need_while = thread->IsNeedWhile();
-
     // Нужно ли выполнение в теле бесконечного цикла задается при создании
     // потока в конструкторе ThreadBase()
     do {
@@ -345,7 +344,7 @@ class Thread {
           !thread->is_canceled_ &&
           "Somebody call destruction for thread object");
       thread->Run();
-    } while (is_need_while);
+    } while (thread->IsNeedWhile());
 
     // Atomic thread exit ------------------------------------------------------
     {
@@ -382,7 +381,7 @@ class Thread {
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.
-  bool is_need_while_{false};
+  BoolAtomic is_need_while_{false};
 
   /// @brief Sem for suspend thread if not call StartScheduler().
   SemaphoreBinary sem_;

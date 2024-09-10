@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "gsl/gsl"
+#include "paraos_bool_atomic.hpp"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
@@ -162,6 +163,13 @@ class Thread {
   }
 
   void DelayMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
+
+  /// @brief Enable or disable loop calling Run() method.
+  /// @param[in] is_need_while: if `is_need_while == true`, Run() calling in
+  /// infinite loop. If set `is_need_while == false`, Run() calling at once.
+  PARAOS_INLINE_TRIVIAL void SetNeedWhile(bool is_need_while) {
+    is_need_while_ = is_need_while;
+  }
 
   virtual void Run() {
     // Если сработал данный assert, то конструктор производного от Thread класса
@@ -286,15 +294,11 @@ class Thread {
 
     thread->SetPriority(thread->priority_);
 
-    // Запишем в локальную переменную значение флага. Это позволит избежать
-    // операции разыменование указатели при работе в теле цикла do -> while()
-    const auto is_need_while = thread->IsNeedWhile();
-
     // Нужно ли выполнение в теле бесконечного цикла задается при создании
     // потока в конструкторе ThreadBase()
     do {
       thread->Run();
-    } while (is_need_while);
+    } while (thread->IsNeedWhile());
 
     // Give semaphore after MyThreadFunction() complete.
     auto after_return =
@@ -317,7 +321,7 @@ class Thread {
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.
-  bool is_need_while_{false};
+  BoolAtomic is_need_while_{false};
 
   /// Global objects
  private:
