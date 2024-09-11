@@ -23,8 +23,8 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef SEMAPHORE_HPP
-#define SEMAPHORE_HPP
+#ifndef PARAOS_SEMAPHORE_HPP
+#define PARAOS_SEMAPHORE_HPP
 
 #include <stdio.h>
 
@@ -104,4 +104,4 @@ struct SemaphoreBinary final : public Semaphore {
 
 }  // namespace paraos
 
-#endif /* SEMAPHORE_HPP */
+#endif /* PARAOS_SEMAPHORE_HPP */

@@ -63,6 +63,27 @@ volatile int WorkItemCount = 0;
 std::unique_ptr<WorkQueue> wq_low_ptr{nullptr};
 std::unique_ptr<WorkQueue> wq_high_ptr{nullptr};
 
+#if defined(__linux__) && defined(freeRTOS)
+#define configUSE_IDLE_HOOK 1
+#include <stdlib.h>
+static bool program_closing_flag = false;
+/// @brief The idle task runs at the very lowest priority, so such an idle hook
+/// function will only get executed when there are no tasks of higher priority
+/// that are able to run.
+extern "C" void vApplicationIdleHook(void) {
+  if (program_closing_flag) {
+    std::cout << "Exiting program..." << std::endl;
+    _Exit(0);
+  }
+  if (str_src.size() == str_dst.size()) {
+    std::cout << "str_src == str_dst" << std::endl;
+    str_src.~vector();
+    str_dst.~vector();
+    program_closing_flag = true;
+  }
+}
+#endif
+
 class MyWorkItem final : public WorkItem {
  public:
   MyWorkItem(std::string str) : str_{str} {}
@@ -86,7 +107,7 @@ class MyWorkItem final : public WorkItem {
 class TestThread final : public Thread {
  public:
   TestThread(int i, std::size_t delayInSeconds)
-      : Thread("TestThread", 100, ThreadPriority::kIdle),
+      : Thread("TestThread", 100, ThreadPriority::kLowest),
         id(i),
         DelayInSeconds(delayInSeconds) {
     Start();

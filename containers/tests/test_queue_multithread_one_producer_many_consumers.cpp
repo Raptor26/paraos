@@ -57,20 +57,45 @@ Queue<std::string> queue{100};
 
 std::atomic<std::size_t> total_read_str_cnt{0};
 
+#if defined(__linux__) && defined(freeRTOS)
+#define configUSE_IDLE_HOOK 1
+#include <stdlib.h>
+static bool threads_deleted_flag = false;
+/// @brief The idle task runs at the very lowest priority, so such an idle hook
+/// function will only get executed when there are no tasks of higher priority
+/// that are able to run.
+extern "C" void vApplicationIdleHook(void) {
+  if (threads_deleted_flag) {
+    std::cout << "Exiting program..." << std::endl;
+    _Exit(0);
+  }
+  if (total_read_str_cnt == song_str.size()) {
+    std::cout << "total_read_str_cnt == song_str.size()" << std::endl;
+    // paraos::Thread::DeleteAll();
+    // queue.~Queue();
+    song_str.~vector();
+    total_read_str_cnt.~atomic();
+    threads_deleted_flag = true;
+  }
+}
+#endif
+
 struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", std::size_t stack_depth = 1024,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kLowest)
       : paraos::Thread{name, stack_depth, priority} {
     Start();
   }
 
   void Run() override {
     while (song_cnt < song_str.size()) {
-      const paraos::CriticalSection critical;
       std::cout << Name() << " str:" << song_str[song_cnt] << std::endl;
 
-      queue.Push(song_str[song_cnt]);
+      {
+        const paraos::CriticalSection critical;
+        queue.Push(song_str[song_cnt]);
+      }
       ++song_cnt;
     }
   }
@@ -82,8 +107,8 @@ struct Producer : public paraos::Thread {
 struct Consumer : public paraos::Thread {
   Consumer(
       const std::string name = "Consumer", std::size_t stack_depth = 1024,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{std::move(name), stack_depth, priority} {
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kLowest)
+      : paraos::Thread{name, stack_depth, priority} {
     Start();
   }
 
@@ -96,9 +121,13 @@ struct Consumer : public paraos::Thread {
         is_read_str = true;
       } else {
         // todo Удалить строку ниже, атомарность должна обеспечиваться очередью
-        const paraos::CriticalSection critical;
 
-        auto str = queue.Pop();
+        std::optional<std::string> str;
+        {
+          const paraos::CriticalSection critical;
+
+          str = queue.Pop();
+        }
         if (str) {
           auto cnt = total_read_str_cnt.load();
           ++cnt;
@@ -126,13 +155,12 @@ int main() {
   Consumer str_consumer_1{"Consumer 1", 1024u, paraos::ThreadPriority::kLowest};
   Consumer str_consumer_2{
       "Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
-  Consumer str_consumer_3{"Consumer 3", 1024u, paraos::ThreadPriority::kNormal};
-  Consumer str_consumer_4{
-      "Consumer 4", 1024u, paraos::ThreadPriority::kAboveNormal};
-  Consumer str_consumer_5{
-      "Consumer 5", 1024u, paraos::ThreadPriority::kHighest};
+  Consumer str_consumer_3{
+      "Consumer 3", 1024u, paraos::ThreadPriority::kBelowNormal};
+  Consumer str_consumer_4{"Consumer 4", 1024u, paraos::ThreadPriority::kNormal};
+  Consumer str_consumer_5{"Consumer 5", 1024u, paraos::ThreadPriority::kNormal};
 
-  Producer str_producer{};
+  Producer str_producer{"Producer 1", 1024u, paraos::ThreadPriority::kNormal};
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();

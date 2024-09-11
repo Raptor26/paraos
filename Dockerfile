@@ -42,8 +42,9 @@ WORKDIR /app/src
 RUN cmake . --preset pc_debug_clang && \
     cmake --build ./build/pc_debug_clang/ && \
     cmake . --preset pc_debug_clang_docker && \
-    cmake --build ./build/pc_debug_clang_docker/
-
+    cmake --build ./build/pc_debug_clang_docker/ &&\
+    cmake . --preset freertos_debug_clang && \
+    cmake --build ./build/freertos_debug_clang/
 # Запуск ---------------------------------------
 # В качестве базового образа используем ubuntu:latest
 FROM ubuntu:latest
