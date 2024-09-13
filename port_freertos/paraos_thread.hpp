@@ -10,11 +10,9 @@
 #include <string>
 
 #include "FreeRTOS.h"
-#include "gsl/gsl"
 #include "paraos_mutex.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_trace.hpp"
-#include "paraos_utils.hpp"
+#include "task.h"
 
 namespace paraos {
 

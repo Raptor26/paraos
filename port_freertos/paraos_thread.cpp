@@ -1,6 +1,12 @@
 #include "paraos_thread.hpp"
 
+#include "gsl/gsl"
+#include "paraos_trace.hpp"
+#include "paraos_utils.hpp"
+
+
 namespace paraos {
+
 Thread::Thread(
     const std::string name, std::size_t stack_depth, ThreadPriority priority,
     bool is_joinable)

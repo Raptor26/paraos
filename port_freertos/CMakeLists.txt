@@ -80,8 +80,9 @@ target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel freertos_config
 target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Werror
                                                  -Wpedantic)
 
-target_sources(${PROJECT_NAME}
-               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp)
+target_sources(
+  ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp)
 
 if(UTEST)
   add_subdirectory(tests)
