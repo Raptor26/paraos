@@ -6,13 +6,13 @@ message("Using freeRTOS implementation")
 
 if(NOT TARGET freertos_config)
   add_library(freertos_config INTERFACE)
-  target_compile_definitions(freertos_config INTERFACE -DfreeRTOS)
   target_include_directories(
     freertos_config SYSTEM
     INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_port/"
               "${CMAKE_SOURCE_DIR}")
-
 endif()
+
+target_compile_definitions(freertos_config INTERFACE -DfreeRTOS)
 
 if(FREERTOS_USER_CONFIG)
   # in case when user want use freeRTOS with mcu port, user must define
@@ -65,25 +65,24 @@ target_compile_options(
           -Wno-covered-switch-default
           -Wno-cast-align)
 
-target_sources(freertos_kernel
-               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_freertos_hooks.cpp)
 target_include_directories(
   freertos_kernel PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/"
                          "${CMAKE_CURRENT_SOURCE_DIR}/../")
 set_property(TARGET freertos_kernel PROPERTY C_STANDARD 90)
 
-# paraos_osal ------------------------------------------------------------------
-add_library(${PROJECT_NAME} INTERFACE)
-target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel freertos_config
-                                                Microsoft.GSL::GSL)
+target_sources(freertos_kernel
+               PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_freertos_hooks.cpp)
 
-target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Werror
-                                                 -Wpedantic)
+# paraos_thread ----------------------------------------------------------------
+add_library(${PROJECT_NAME} STATIC)
+target_link_libraries(${PROJECT_NAME} PUBLIC freertos_kernel freertos_config
+                                             Microsoft.GSL::GSL paraos_setup)
 
 target_sources(
-  ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
+  ${PROJECT_NAME}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
 
 if(UTEST)
   add_subdirectory(tests)
