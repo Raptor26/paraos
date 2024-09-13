@@ -6,8 +6,7 @@ message("Using freeRTOS implementation")
 
 if(NOT TARGET freertos_config)
   add_library(freertos_config INTERFACE)
-  target_compile_definitions(freertos_config INTERFACE -DfreeRTOS
-                                                       -Dicore_checkLOOP_ENABLE)
+  target_compile_definitions(freertos_config INTERFACE -DfreeRTOS)
   target_include_directories(
     freertos_config SYSTEM
     INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_port/"
@@ -52,12 +51,6 @@ elseif(UNIX)
     INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_configs/unix/")
 endif()
 
-add_library(${PROJECT_NAME} INTERFACE)
-target_include_directories(
-  ${PROJECT_NAME}
-  INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/" "${CMAKE_CURRENT_SOURCE_DIR}/../"
-            "${CMAKE_CURRENT_SOURCE_DIR}/interfaces/")
-
 # FreeRTOS-Kernel --------------------------------------------------------------
 set(FREERTOS_KERNEL_PATH "FreeRTOS-Kernel")
 add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
@@ -75,12 +68,12 @@ target_compile_options(
 target_sources(freertos_kernel
                PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_freertos_hooks.cpp)
 target_include_directories(
-  freertos_kernel
-  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/" "${CMAKE_CURRENT_SOURCE_DIR}/../"
-         "${CMAKE_CURRENT_SOURCE_DIR}/interfaces/")
+  freertos_kernel PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/"
+                         "${CMAKE_CURRENT_SOURCE_DIR}/../")
 set_property(TARGET freertos_kernel PROPERTY C_STANDARD 90)
 
 # paraos_osal ------------------------------------------------------------------
+add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel freertos_config
                                                 Microsoft.GSL::GSL)
 
