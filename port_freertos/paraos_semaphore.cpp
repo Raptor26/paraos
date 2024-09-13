@@ -35,7 +35,7 @@ Semaphore::operator bool() const { return handle_ != nullptr ? true : false; }
 bool Semaphore::Take(std::size_t timeout_ms) {
   PARAOS_CHECK_ASSERT(handle_ != nullptr);
   return static_cast<bool>(
-      xSemaphoreTake(handle_, RTOS_THREAD_ConvertMsToTicks(timeout_ms)));
+      xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms)));
 }
 
 bool Semaphore::Give(bool from_isr) {

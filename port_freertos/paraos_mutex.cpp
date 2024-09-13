@@ -29,7 +29,7 @@ MutexBase::operator bool() const { return handle_ != nullptr ? true : false; }
 
 bool MutexBase::Lock(std::size_t timeout_ms) {
   auto result = xSemaphoreTake(
-      handle_, (TickType_t)RTOS_THREAD_ConvertMsToTicks(timeout_ms));
+      handle_, static_cast<TickType_t>(PARAOS_ConvertMsToTicks(timeout_ms)));
   return static_cast<bool>(result);
 }
 
@@ -99,7 +99,7 @@ RecursiveMutex::operator bool() const {
 
 bool RecursiveMutex::Lock(std::size_t timeout_ms) {
   return static_cast<bool>(xSemaphoreTakeRecursive(
-      handle_, (TickType_t)RTOS_THREAD_ConvertMsToTicks(timeout_ms)));
+      handle_, static_cast<TickType_t>(PARAOS_ConvertMsToTicks(timeout_ms))));
 }
 
 bool RecursiveMutex::Unlock() {

@@ -4,7 +4,6 @@
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
-
 namespace paraos {
 
 Thread::Thread(
@@ -54,7 +53,7 @@ std::string_view Thread::Name() { return name_; }
 TaskHandle_t Thread::Handle() { return handle_; }
 
 void Thread::DelayMs(std::size_t sleep_ms) {
-  vTaskDelay(static_cast<TickType_t>(RTOS_THREAD_ConvertMsToTicks(sleep_ms)));
+  vTaskDelay(static_cast<TickType_t>(PARAOS_ConvertMsToTicks(sleep_ms)));
 }
 
 void Thread::Start() {

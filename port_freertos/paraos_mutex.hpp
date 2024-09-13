@@ -17,8 +17,6 @@
 
 namespace paraos {
 
-extern "C" std::size_t RTOS_THREAD_ConvertMsToTicks(std::size_t uDelayInMs);
-
 /// @brief Атрибуты мьютекса, используемые при его создании.
 struct MutexAttr {
   bool is_binary_ = false;

@@ -29,7 +29,7 @@ elseif(WIN32)
       CACHE STRING \"\")
 
   set(FREERTOS_HEAP
-      "4"
+      "3"
       CACHE STRING "" FORCE)
 
   target_include_directories(
