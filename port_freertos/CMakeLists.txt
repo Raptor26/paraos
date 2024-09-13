@@ -19,7 +19,7 @@ if(FREERTOS_USER_CONFIG)
   # in case when user want use freeRTOS with mcu port, user must define
   # `FREERTOS_USER_CONFIG` (in cmakePresets.txt, for example) and next
   # definitions: - FREERTOS_PORT; - freertos_config; In this case,
-  # FreeRTOS-Kernel lined with user definitions FREERTOS_PORT and
+  # FreeRTOS-Kernel linked with user definitions FREERTOS_PORT and
   # freertos_config. For example, user can define: set(FREERTOS_PORT
   # `GCC_ARM_CM4F CACHE STRING \"\")` and `set(FREERTOS_HEAP "4" CACHE STRING ""
   # FORCE)`
@@ -58,6 +58,8 @@ target_include_directories(
   INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/" "${CMAKE_CURRENT_SOURCE_DIR}/../"
             "${CMAKE_CURRENT_SOURCE_DIR}/interfaces/")
 target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel)
+
+add_subdirectory(FreeRTOS-Kernel)
 
 if(UTEST)
   target_sources(freertos_config

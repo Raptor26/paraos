@@ -29,7 +29,7 @@
 #if defined(WIN32) && !defined(freeRTOS)
 #include "win/paraos_mutex.hpp"
 #elif defined(freeRTOS)
-#include "freertos_port/paraos_mutex.hpp"
+#include "port_freertos/paraos_mutex.hpp"
 #endif
 
 #include "paraos_mutex.hpp"
