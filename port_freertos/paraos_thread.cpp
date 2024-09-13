@@ -88,37 +88,16 @@ void Thread::Start() {
 }
 
 auto Thread::Join() -> bool {
-  bool join_result = true;
+  bool join_result{false};
 
-  /* Make sure pthread is joinable. Otherwise, this function would block
-   * forever waiting for an unjoinable thread. */
-  if (!is_joinable_ || !is_thread_created_) {
-    join_result = false;
-  }
+  if (is_joinable_ && handle_) {
+    join_result = true;
 
-  /* Only one thread may attempt to join another. Lock the join mutex
-   * to prevent other threads from calling pthread_join on the same thread. */
-  if (join_result == true) {
-    if (join_mutex_.Lock(0) != true) {
-      /* Another thread has already joined the requested thread, which would
-       * cause this thread to wait forever. */
-      join_result = false;
-    }
-  }
-
-  if (join_result == true) {
     /* Wait for the joining thread to finish. Because this call waits forever,
      * it should never fail. */
-    is_thread_complete_sem_.Take();
-
-    /* Create a critical section to clean up the joined thread. */
-    const paraos::CriticalSection critical;
+    is_thread_complete_sem_.Take(max_delay);
 
     is_thread_complete_sem_.Give();
-
-    join_mutex_.Unlock();
-
-    /* End the critical section. */
   }
 
   return join_result;
