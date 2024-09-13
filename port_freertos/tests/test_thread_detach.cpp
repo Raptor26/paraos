@@ -24,6 +24,7 @@
 /// IN THE SOFTWARE.
 
 #include <iostream>
+#include <vector>
 
 #include "paraos_critical.hpp"
 #include "paraos_freertos_hooks.hpp"
@@ -31,11 +32,18 @@
 
 static std::size_t cnt{0};
 
+std::vector<paraos::Thread*> thread_ptr;
+
 void ExitAfterTestComplete() {
   std::cout << uxTaskGetNumberOfTasks() << std::endl;
   if (cnt == 3) {
     std::cout << "Exiting program..." << std::endl;
     paraos::Thread::DeleteAll();
+
+    for (auto thread : thread_ptr) {
+      //   thread->~Thread();
+    }
+
     exit(EXIT_SUCCESS);
   }
 }
@@ -60,8 +68,14 @@ int main() {
 #endif
 
   TestMessage print1{"Thread 1"};
+  thread_ptr.push_back(&print1);
+
   TestMessage print2{"Thread 2"};
+  thread_ptr.push_back(&print2);
+
   TestMessage print3{"Thread 3"};
+  thread_ptr.push_back(&print3);
+
   paraos::Thread::StartScheduler();
 
   return 0;

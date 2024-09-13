@@ -105,9 +105,6 @@ class Thread {
   ///@note Планировщик должен запускаться в главном потоке.
   static void StartScheduler();
 
-  /// @brief Метод выполняет остановку планировщика.
-  static void StopScheduler();
-
   /// @brief Метод выполняет удаление потоков и остановку планировщика.
   /// @note Используется в тестах.
   static void DeleteAll();
@@ -139,6 +136,9 @@ class Thread {
 
   void ExitThread();
 
+  /// @brief Метод выполняет остановку планировщика.
+  static void StopScheduler();
+
   static void MyThreadFunction(void *lpParam);
 
  private:
@@ -153,11 +153,11 @@ class Thread {
   [[maybe_unused]] BoolAtomic is_need_while_{false};
 
  private:
-  static inline std::deque<paraos::Thread *> queue_thread_obj_;
   static inline BoolAtomic is_scheduler_started_{false};
 
-  /// @brief Set true after thread creation.
-  [[maybe_unused]] BoolAtomic is_thread_created_{false};
+  /// @brief If true, call Start() make thread, otherwise, destructor was called
+  /// for class and will not create the tread.
+  BoolAtomic is_thread_makeable_{true};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.

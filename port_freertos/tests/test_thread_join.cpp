@@ -25,12 +25,21 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
 #include "paraos_critical.hpp"
 #include "paraos_freertos_hooks.hpp"
 #include "paraos_thread.hpp"
 
 static std::size_t cnt{0};
+
+/// @brief Hack for unit test. When used freeRTOS, we can't return from main
+/// regular way after  paraos::Thread::StartScheduler() called. For finish test
+/// program, we need call exit(). But in this case, sanitizer print warning with
+/// `Potential Memory Leak`. For reduced sanitizer warnings, forced call dtor
+/// for complete threads. Container below needed to force Dtor call for threads
+/// that have complete their execution in ExitAfterTestComplete().
+std::vector<paraos::Thread*> thread_ptr;
 
 static bool threads_deleted_flag = false;
 void ExitAfterTestComplete() {
@@ -41,7 +50,12 @@ void ExitAfterTestComplete() {
 
   if (cnt == 3) {
     std::cout << "Deleting all threads..." << std::endl;
-    paraos::Thread::DeleteAll();
+
+    for (auto thread : thread_ptr) {
+      // Force call Dtor for registered threads befor call exit(EXIT_SUCCESS);
+      thread->~Thread();
+    }
+
     threads_deleted_flag = true;
     cnt++;
   }
@@ -67,9 +81,16 @@ int main() {
 #endif
 
   TestMessage print1{"Thread 1"};
+  thread_ptr.push_back(&print1);
+
   TestMessage print2{"Thread 2"};
+  thread_ptr.push_back(&print2);
+
   TestMessage print3{"Thread 3"};
+  thread_ptr.push_back(&print3);
+
   paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
 }

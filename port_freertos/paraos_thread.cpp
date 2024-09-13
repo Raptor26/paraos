@@ -44,34 +44,31 @@ Thread::Thread(
 }
 
 Thread::~Thread() {
-  // Dtor free resources only after thread body in perform_work() complete
-  // execute.
-  std::size_t delay_ms{4000};
-  auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
-  PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
-
-  PARAOS_CHECK_ASSERT(
-      is_sem_taken &&
-      "If you create thread, you must call Thread::StartScheduler() in "
-      "main(), otherwise, destructor can't safely delete thread");
-
-  const paraos::CriticalSection critical;
-
+  is_thread_makeable_ = false;
   if (handle_) {
-    // Если поток не удалял себя из планировщика, будучи откреплённым от
-    // основного потока.
-    if (is_thread_created_) {
-      vTaskDelete(handle_);
-    }
+    // Dtor free resources only after thread body in MyThreadFunction() complete
+    // execute.
+    std::size_t delay_ms{4000};
 
-    // Необходимо сбросить дескриптор потока с целью избежать повторного
-    // удаления потока
-    handle_ = nullptr;
+    // Destructor restore execute ony if  MyThreadFunction() complete
+    auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+    PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
 
-    paraosTRACE_MESSAGE("Thread deleted: " << name_);
+    PARAOS_CHECK_ASSERT(
+        is_sem_taken &&
+        "If you create thread, you must call Thread::StartScheduler() in "
+        "main(), otherwise, destructor can't safely delete thread");
 
-    is_thread_created_ = false;
+#if 1
+    // If we ended up here, that's mean MyThreadFunction() complete and
+    // ExitThread() was called. That's mean thread already destroyed and handle_
+    // == nullptr.
+    // If handle_ != nullptr, that's mean user code don't call Thread::Start()
+    // and thread don't was created. In this case nothing thread for delete.
+    PARAOS_CHECK_ASSERT(handle_ || !handle_);
+#endif
   }
+  paraosTRACE_MESSAGE("Thread deleted: " << name_);
 }
 
 std::string_view Thread::Name() { return name_; }
@@ -83,8 +80,12 @@ void Thread::DelayMs(std::size_t sleep_ms) {
 }
 
 void Thread::Start() {
-  // if scheduler already started, thread will be created in running state.
-  Make();
+  // if condition below true, destructor not called and we cal make thread.
+  if (is_thread_makeable_) {
+    // if scheduler already started, thread will be created in running state.
+    const paraos::CriticalSection critical;
+    Make();
+  }
 }
 
 auto Thread::Join() -> bool {
@@ -97,12 +98,16 @@ auto Thread::Join() -> bool {
      * it should never fail. */
     is_thread_complete_sem_.Take(max_delay);
 
+    // Give semaphore for destructor, otherwise destructor will be wait this sem
+    // forever and can't delete class object which is the heir of the
+    // Thread class.
     is_thread_complete_sem_.Give();
   }
 
   return join_result;
 }
 
+#if 0
 auto Thread::Detach() -> bool {
   bool detach_result = false;
   if (is_joinable_ == true && is_thread_created_ == true) {
@@ -122,6 +127,7 @@ auto Thread::Detach() -> bool {
 
   return detach_result;
 }
+#endif
 
 void Thread::Run() {
   // Если сработал данный PARAOS_CHECK_ASSERT, то конструктор производного от
@@ -158,9 +164,7 @@ void Thread::Run() {
 
 void Thread::StartScheduler() {
   paraosTRACE_MESSAGE("Start Scheduler");
-
   is_scheduler_started_ = true;
-
   vTaskStartScheduler();
 }
 
@@ -171,29 +175,8 @@ void Thread::StopScheduler() {
 }
 
 void Thread::DeleteAll() {
-  const paraos::CriticalSection critical;
-  while (!queue_thread_obj_.empty()) {
-    // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
-    // элемент из очереди не удаляется
-    auto &thread_ptr = queue_thread_obj_.front();
-
-    thread_ptr->~Thread();
-
-    queue_thread_obj_.pop_front();
-
-    // нет необходимости вызывать pop() с целью удаления объекта потока из
-    // очереди для queue_thread_obj_. Деструктор ~Thread() самостоятельно
-    // удалит ссылку на себя из очереди
-  }
-
-  // Если сработало утверждение ниже, то возможно это связано с тем, что в
-  // момент извлечения крайнего дескриптора потока из очереди, другой поток
-  // поместил новый объект в очередь (критическая секция позволяет избежать
-  // подобного состояния)
-  PARAOS_CHECK_ASSERT(
-      queue_thread_obj_.empty() &&
-      "Container for pointers threadable objects must be empty, otherwise "
-      "some thread not deleted");
+  // In freeRTOS this method is placebo. Need for consistence API with windows
+  // and unix ports.
 }
 
 bool Thread::SetPriority(const ThreadPriority priority) {
@@ -217,8 +200,10 @@ auto Thread::SetNeedWhile(bool status) -> bool {
 auto Thread::IsSchedulerStarted() -> bool { return is_scheduler_started_; }
 
 void Thread::Make() {
+  const paraos::CriticalSection critical;
+
   // Guard to prevent double thread creation for single 'Thread' object.
-  if (!is_thread_created_) {
+  if (!handle_) {
     // Sem was given in Ctor. Now we take sem. That's mean, Dtor can delete
     // object only after MyThreadFunction() complete.
     constexpr std::size_t delay_ms{0u};
@@ -233,10 +218,6 @@ void Thread::Make() {
         static_cast<UBaseType_t>(priority_), &handle_);
 
     PARAOS_CHECK_ASSERT(handle_ && "Thread not created");
-    is_thread_created_ = true;
-
-    const paraos::CriticalSection critical;
-    queue_thread_obj_.push_back(this);
   }
 }
 
@@ -244,8 +225,8 @@ auto Thread::IsNeedWhile() const -> bool { return is_need_while_; }
 
 void Thread::ExitThread() {
   is_thread_complete_sem_.Give();
-  is_thread_created_ = false;
   vTaskDelete(nullptr);
+  handle_ = nullptr;
 }
 
 void Thread::MyThreadFunction(void *lpParam) {
