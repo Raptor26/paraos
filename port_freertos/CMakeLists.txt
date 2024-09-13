@@ -59,7 +59,18 @@ target_include_directories(
             "${CMAKE_CURRENT_SOURCE_DIR}/interfaces/")
 target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel)
 
-add_subdirectory(FreeRTOS-Kernel)
+# FreeRTOS-Kernel --------------------------------------------------------------
+set(FREERTOS_KERNEL_PATH "FreeRTOS-Kernel")
+add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
+target_compile_options(
+  freertos_kernel
+  PRIVATE -Wno-unused-variable
+          # Suppressions required to build clean with clang.
+          -Wno-unused-macros
+          -Wno-padded
+          -Wno-missing-variable-declarations
+          -Wno-covered-switch-default
+          -Wno-cast-align)
 
 if(UTEST)
   target_sources(freertos_config
