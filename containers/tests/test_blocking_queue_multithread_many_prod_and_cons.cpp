@@ -33,6 +33,7 @@
 #include <thread>
 #include <vector>
 
+#include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_thread.hpp"
 

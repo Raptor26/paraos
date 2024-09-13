@@ -39,7 +39,7 @@
             "displayName": "freeRTOS debug Clang",
             "inherits": "pc_debug_clang",
             "cacheVariables": {
-                "RTOS": "true"
+                "FREERTOS": "true"
             }
         },
         {

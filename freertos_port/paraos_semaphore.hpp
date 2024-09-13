@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 #include "FreeRTOS.h"
-#include "irtos_check.h"
+#include "paraos_check.h"
 #include "paraos_utils.hpp"
 #include "semphr.h"
 
@@ -56,7 +56,7 @@ class Semaphore {
   /// @param[in] timeout_ms: Время ожидания счётчика семафора в мс.
   /// @return Возвращает результат ожидания счётчика семафора.
   bool Take(std::size_t timeout_ms = max_delay) {
-    __icore_checkASSERT(handle_ != nullptr);
+    PARAOS_CHECK_ASSERT(handle_ != nullptr);
     return static_cast<bool>(
         xSemaphoreTake(handle_, RTOS_THREAD_ConvertMsToTicks(timeout_ms)));
   }
@@ -65,7 +65,7 @@ class Semaphore {
   /// @param[in] from_isr: Флаг вызова метода более приоритетным потоком.
   /// @return Возвращает результат выполнения операции.
   bool Give(bool from_isr = false) {
-    __icore_checkASSERT(handle_ != nullptr);
+    PARAOS_CHECK_ASSERT(handle_ != nullptr);
 
     auto success = pdTRUE;
     if (from_isr == true) {

@@ -2,7 +2,8 @@
 #define PARAOS_CRITICAL_HPP
 
 #include "FreeRTOS.h"
-#include "irtos_attr.h"
+#include "paraos_attr.h"
+#include "paraos_config.hpp"
 #include "task.h"
 
 namespace paraos {
@@ -12,7 +13,7 @@ class CriticalSection final {
  public:
   /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
   /// @param is_isr
-  ICORE_INLINE_CRITICAL CriticalSection(bool is_isr = false) noexcept
+  PARAOS_INLINE_CRITICAL CriticalSection(bool is_isr = false) noexcept
       : is_isr_{is_isr} {
     if (is_isr_ == false) {
       taskENTER_CRITICAL();

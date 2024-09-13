@@ -93,7 +93,7 @@ class MutexBase {
 
  private:
   HANDLE handle_{nullptr};
-  bool is_binary_{true};
+  [[maybe_unused]] bool is_binary_{true};
 };
 
 class MutexBaseBinary : public MutexBase {

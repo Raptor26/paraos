@@ -29,6 +29,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#include "paraos_attr.h"
 #include "paraos_utils.hpp"
 
 namespace paraos {
@@ -79,6 +80,7 @@ class Semaphore {
   }
 
   bool Give(bool from_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(from_isr);
     bool is_sem_given{false};
     auto result = sem_post(&handle_);
 

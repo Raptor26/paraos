@@ -78,7 +78,7 @@ class Thread {
     std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
-    assert(
+    PARAOS_CHECK_ASSERT(
         is_sem_taken &&
         "If you create thread, you must call Thread::StartScheduler() in "
         "main(), otherwise, destructor can't safely delete thread");
@@ -109,7 +109,7 @@ class Thread {
 // из области видимости. В целом это не является ошибкой т.к. присутствует
 // защита от повторного удаления потока
 #if 0
-        assert(false && "We can't find 'this' for thread delete operation");
+        PARAOS_CHECK_ASSERT(false && "We can't find 'this' for thread delete operation");
 #endif
     }
   }
@@ -134,7 +134,7 @@ class Thread {
     if (is_joinable_ && is_thread_created_) {
       auto status = WaitForSingleObject(handle_, INFINITE);
 
-      assert(status == WAIT_OBJECT_0 && "Can't join thread");
+      PARAOS_CHECK_ASSERT(status == WAIT_OBJECT_0 && "Can't join thread");
 
       /// @see
       /// https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
@@ -172,9 +172,9 @@ class Thread {
   }
 
   virtual void Run() {
-    // Если сработал данный assert, то конструктор производного от Thread класса
-    // не успел завершить конструирование объекта до того момента когда
-    // планировщик ОС вызвал метод Run() (производные классы всегда должны
+    // Если сработал данный PARAOS_CHECK_ASSERT, то конструктор производного от
+    // Thread класса не успел завершить конструирование объекта до того момента
+    // когда планировщик ОС вызвал метод Run() (производные классы всегда должны
     // переопределять метод Run()). Одним из возможных способов решения
     // являются:
     // - Переопределите в производном классе метод Run(). Это самый тривиальный
@@ -198,7 +198,7 @@ class Thread {
     //   созданного объекта. После завершения создания объекта и его потока,
     //   создающий поток вновь может понизить свой приоритет до исходного
     //   значения.
-    assert(
+    PARAOS_CHECK_ASSERT(
         false &&
         "If windows scheduler call this instance, constructor of derived class "
         "not complete its work before scheduler call Run() method");
@@ -240,7 +240,7 @@ class Thread {
     // момент извлечения крайнего дескриптора потока из очереди, другой поток
     // поместил новый объект в очередь (критическая секция позволяет избежать
     // подобного состояния)
-    assert(
+    PARAOS_CHECK_ASSERT(
         queue_thread_obj_.empty() &&
         "Container for pointers threadable objects must be empty, otherwise "
         "some thread not deleted");
@@ -259,7 +259,7 @@ class Thread {
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
       // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
-      assert(is_sem_taken && "Sem always must taken");
+      PARAOS_CHECK_ASSERT(is_sem_taken && "Sem always must taken");
 
       DWORD creation_flags{CREATE_SUSPENDED};
 
@@ -277,7 +277,7 @@ class Thread {
           creation_flags,                  // use default creation flags
           &thread_id_);                    // returns the thread identifier
 
-      assert(handle_ && "Thread not created");
+      PARAOS_CHECK_ASSERT(handle_ && "Thread not created");
       is_thread_created_ = true;
 
       const paraos::CriticalSection critical;
@@ -313,11 +313,12 @@ class Thread {
   size_t stack_depth_{0};
   HANDLE handle_{nullptr};
   DWORD thread_id_{0};
-  BoolAtomic is_joinable_;
 
   /// @brief Since thread priority set outside the construction, it's necessary
   /// to buffer priority value when user call constructor.
   ThreadPriority priority_{ThreadPriority::kIdle};
+
+  BoolAtomic is_joinable_;
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать Processing()
   /// в бесконечном цикле.

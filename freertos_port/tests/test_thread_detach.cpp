@@ -10,7 +10,7 @@ static std::size_t cnt{0};
 /// @brief The idle task runs at the very lowest priority, so such an idle hook
 /// function will only get executed when there are no tasks of higher priority
 /// that are able to run.
-extern "C" void __ICORE_ATTR_WEAK vApplicationIdleHook(void) {
+extern "C" void PARAOS_ATTR_WEAK vApplicationIdleHook(void) {
   std::cout << uxTaskGetNumberOfTasks() << std::endl;
   if (cnt == 3) {
     std::cout << "Exiting program..." << std::endl;

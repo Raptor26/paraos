@@ -5,7 +5,8 @@
 #include <stdio.h>
 
 #include "FreeRTOS.h"
-#include "irtos_check.h"
+#include "paraos_bool_atomic.hpp"
+#include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
 #include "semphr.h"
@@ -29,8 +30,8 @@ class MutexBase {
  public:
   /// @brief Конструктор MutexBase.
   /// @param[in] attr: Атрибуты мьютекса.
-  MutexBase(const MutexAttr& attr)
-      : handle_{xSemaphoreCreateMutex()}, is_binary_{attr.is_binary_} {
+  MutexBase(const MutexAttr& attr) : handle_{xSemaphoreCreateMutex()} {
+    (void)attr;
 #ifdef paraosTRACE_ENABLE
     std::cout << "RTOS MutexBase Ctor" << std::endl;
 #endif
@@ -40,7 +41,7 @@ class MutexBase {
   MutexBase() : MutexBase(MutexAttr{}) {}
 
   virtual ~MutexBase() {
-    __icore_checkASSERT(handle_ != nullptr);
+    PARAOS_CHECK_ASSERT(handle_ != nullptr);
     if (handle_) {
       vSemaphoreDelete(handle_);
 
@@ -78,50 +79,6 @@ class MutexBase {
 
  private:
   SemaphoreHandle_t handle_{nullptr};
-  bool is_binary_{true};
-};
-
-/// @brief Класс, предоставляющий реализацию потокобезопасного флага.
-class BoolSafeThreadFlag {
- private:
-  bool is_locked_ = false;
-
- public:
-  /// @brief Конструктор потокобезопасного флага.
-  /// @param[in] new_status: Начальное значение флага.
-  BoolSafeThreadFlag(bool new_status) noexcept : is_locked_{new_status} {}
-
-  /// @brief Конструктор по умолчанию.
-  BoolSafeThreadFlag() noexcept : BoolSafeThreadFlag{false} {}
-
-  /// @brief Оператор присваивания для потокобезопасного флага.
-  /// @param[in] other: Значение bool для другого флага.
-  /// @return Возвращает разыменованный указатель на объект данного класса.
-  BoolSafeThreadFlag& operator=(const BoolSafeThreadFlag& other) noexcept {
-    if (this != &other) {
-      const CriticalSection critical;  // RAII
-      is_locked_ = other.is_locked_;
-    }
-
-    return *this;
-  }
-
-  operator bool() const noexcept { return Islocked(); }
-
- private:
-  /// @brief Safe thread setter status.
-  /// @param[in] new_state: New state for safe thread update status.
-  inline void SetLocked(bool new_state) noexcept {
-    const CriticalSection critical;  // RAII
-    is_locked_ = new_state;
-  }
-
-  /// @brief Safe thread getter status.
-  /// @return true or false.
-  inline bool Islocked() const noexcept {
-    const CriticalSection critical;  // RAII
-    return is_locked_;
-  }
 };
 
 /// @brief Класс-реализация бинарного мьютекса.
@@ -151,7 +108,7 @@ class MutexBaseBinary : public MutexBase {
       // MutexBase::Lock() returned false (from unlocked state), i don't know
       // what that mean. Try find race condition for "is_locked_" variable in
       // "MutexBaseBinary" class.
-      assert(is_current_operation_locked == true);
+      PARAOS_CHECK_ASSERT(is_current_operation_locked == true);
       is_locked_ = true;
     }
 
@@ -168,7 +125,7 @@ class MutexBaseBinary : public MutexBase {
       // MutexBase::Unlock() returned false (from "locked" state), i don't know
       // what that mean. Try find race condition for "is_locked_" variable in
       // "MutexBaseBinary" class.
-      assert(is_current_operation_unlocked == true);
+      PARAOS_CHECK_ASSERT(is_current_operation_unlocked == true);
       is_locked_ = false;
     }
 
@@ -177,7 +134,7 @@ class MutexBaseBinary : public MutexBase {
 
  private:
   /// @brief Safe thread flag
-  BoolSafeThreadFlag is_locked_;
+  BoolAtomic is_locked_{false};
 };
 
 /// @brief Класс рекурсивного мьютекса.
@@ -188,7 +145,8 @@ class RecursiveMutex {
   /// @brief Конструктор класса рекурсивного мьютекса.
   /// @param[in] attr: Атрибуты мьютекса.
   RecursiveMutex(const MutexAttr& attr)
-      : handle_{xSemaphoreCreateRecursiveMutex()}, is_binary_{attr.is_binary_} {
+      : handle_{xSemaphoreCreateRecursiveMutex()} {
+    (void)attr;
 #ifdef paraosTRACE_ENABLE
     std::cout << "RecursiveMutex Ctor" << std::endl;
 #endif
@@ -197,7 +155,7 @@ class RecursiveMutex {
   RecursiveMutex() : RecursiveMutex(MutexAttr{}) {}
 
   virtual ~RecursiveMutex() {
-    __icore_checkASSERT(handle_ != nullptr);
+    PARAOS_CHECK_ASSERT(handle_ != nullptr);
     if (handle_) {
       vSemaphoreDelete(handle_);
 
@@ -236,7 +194,6 @@ class RecursiveMutex {
 
  private:
   SemaphoreHandle_t handle_{nullptr};
-  bool is_binary_{true};
 };
 
 }  // namespace paraos

@@ -57,7 +57,7 @@ class Thread {
     std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
-    assert(
+    PARAOS_CHECK_ASSERT(
         is_sem_taken &&
         "If you create thread, you must call Thread::StartScheduler() in "
         "main(), otherwise, destructor can't safely delete thread");
@@ -168,9 +168,9 @@ class Thread {
   /// @brief Метод run необходимо переопределять в классах, наследниках для
   /// реализации логики работы потока.
   virtual void Run() {
-    // Если сработал данный assert, то конструктор производного от Thread класса
-    // не успел завершить конструирование объекта до того момента когда
-    // планировщик ОС вызвал метод Run() (производные классы всегда должны
+    // Если сработал данный PARAOS_CHECK_ASSERT, то конструктор производного от
+    // Thread класса не успел завершить конструирование объекта до того момента
+    // когда планировщик ОС вызвал метод Run() (производные классы всегда должны
     // переопределять метод Run()). Одним из возможных способов решения
     // являются:
     // - Переопределите в производном классе метод Run(). Это самый тривиальный
@@ -194,7 +194,7 @@ class Thread {
     //   созданного объекта. После завершения создания объекта и его потока,
     //   создающий поток вновь может понизить свой приоритет до исходного
     //   значения.
-    __icore_checkASSERT(
+    PARAOS_CHECK_ASSERT(
         false &&
         "If windows scheduler call this instance, constructor of derived class "
         "not complete its work before scheduler call Run() method");
@@ -239,7 +239,7 @@ class Thread {
     // момент извлечения крайнего дескриптора потока из очереди, другой поток
     // поместил новый объект в очередь (критическая секция позволяет избежать
     // подобного состояния)
-    assert(
+    PARAOS_CHECK_ASSERT(
         queue_thread_obj_.empty() &&
         "Container for pointers threadable objects must be empty, otherwise "
         "some thread not deleted");
@@ -289,13 +289,13 @@ class Thread {
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
       // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
-      assert(is_sem_taken && "Sem always must taken");
+      PARAOS_CHECK_ASSERT(is_sem_taken && "Sem always must taken");
 
       xTaskCreate(
           MyThreadFunction, name_.c_str(), stack_depth_, this,
           static_cast<UBaseType_t>(priority_), &handle_);
 
-      assert(handle_ && "Thread not created");
+      PARAOS_CHECK_ASSERT(handle_ && "Thread not created");
       is_thread_created_ = true;
 
       const paraos::CriticalSection critical;
@@ -327,19 +327,19 @@ class Thread {
   std::string name_;
   std::size_t stack_depth_{0};
   TaskHandle_t handle_{nullptr};
-  BoolSafeThreadFlag is_joinable_{false};
   ThreadPriority priority_{ThreadPriority::kIdle};
+  [[maybe_unused]] BoolAtomic is_joinable_{false};
 
   /// @brief Данный флаг устанавливается в true если нужно вызывать
   /// Processing() в бесконечном цикле.
-  BoolSafeThreadFlag is_need_while_{false};
+  [[maybe_unused]] BoolAtomic is_need_while_{false};
 
  private:
   static inline std::deque<paraos::Thread *> queue_thread_obj_;
-  static inline BoolSafeThreadFlag is_scheduler_started_{false};
+  static inline BoolAtomic is_scheduler_started_{false};
 
   /// @brief Set true after thread creation.
-  BoolSafeThreadFlag is_thread_created_{false};
+  [[maybe_unused]] BoolAtomic is_thread_created_{false};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.

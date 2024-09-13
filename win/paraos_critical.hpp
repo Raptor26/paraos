@@ -81,7 +81,7 @@ class CriticalSection final {
   }
 
  private:
-  const bool is_isr_;
+  [[maybe_unused]] const bool is_isr_;
   static inline CriticalSectionFactory critical_section_factory;
 };
 

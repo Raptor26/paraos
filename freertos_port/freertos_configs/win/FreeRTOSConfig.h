@@ -168,8 +168,8 @@ it is not intended to asserts() to fail, some some code is intended not to
 run if no errors are present. */
 /* Normal assert() semantics without relying on the provision of an assert.h
 header file. */
-// #ifdef icore_checkLOOP_ENABLE
-//     #define configASSERT(x) __icore_checkASSERT(x)
+// #ifdef PARAOS_CHECK_LOOP_ENABLE
+//     #define configASSERT(x) PARAOS_CHECK_ASSERT(x)
 // #endif
 
 #define configUSE_MALLOC_FAILED_HOOK 1

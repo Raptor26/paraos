@@ -4,7 +4,7 @@
 #include <cstddef>
 
 #include "FreeRTOS.h"
-#include "irtos_attr.h"
+#include "paraos_attr.h"
 
 namespace paraos {
 
