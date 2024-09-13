@@ -1,3 +1,5 @@
+#include "paraos_freertos_hooks.hpp"
+
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "paraos_attr.h"
@@ -10,8 +12,13 @@ extern "C" PARAOS_ATTR_WEAK void vApplicationMallocFailedHook(void) {
 #endif
 
 #if (configUSE_IDLE_HOOK == 1)
-#include <stdlib.h>
-extern "C" PARAOS_ATTR_WEAK void vApplicationIdleHook(void) { exit(0); }
+
+extern "C" PARAOS_ATTR_WEAK void vApplicationIdleHook(void) {
+  using namespace paraos;
+  if (freertos_idle_fnc_ptr) {
+    freertos_idle_fnc_ptr();
+  }
+}
 #endif
 
 #if (configUSE_TICK_HOOK == 1)

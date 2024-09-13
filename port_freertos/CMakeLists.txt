@@ -6,12 +6,12 @@ message("Using freeRTOS implementation")
 
 if(NOT TARGET freertos_config)
   add_library(freertos_config INTERFACE)
-  target_compile_definitions(
-    freertos_config INTERFACE -DprojCOVERAGE_TEST=0 -DfreeRTOS
-                              -Dicore_checkLOOP_ENABLE)
+  target_compile_definitions(freertos_config INTERFACE -DfreeRTOS
+                                                       -Dicore_checkLOOP_ENABLE)
   target_include_directories(
-    freertos_config INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_port/"
-                              "${CMAKE_SOURCE_DIR}")
+    freertos_config SYSTEM
+    INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_port/"
+              "${CMAKE_SOURCE_DIR}")
   target_link_libraries(freertos_config INTERFACE paraos_setup)
 endif()
 
@@ -57,7 +57,6 @@ target_include_directories(
   ${PROJECT_NAME}
   INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/" "${CMAKE_CURRENT_SOURCE_DIR}/../"
             "${CMAKE_CURRENT_SOURCE_DIR}/interfaces/")
-target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel)
 
 # FreeRTOS-Kernel --------------------------------------------------------------
 set(FREERTOS_KERNEL_PATH "FreeRTOS-Kernel")
@@ -72,15 +71,20 @@ target_compile_options(
           -Wno-covered-switch-default
           -Wno-cast-align)
 
+target_sources(freertos_kernel
+               PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_freertos_hooks.cpp)
+target_include_directories(
+  freertos_kernel
+  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/" "${CMAKE_CURRENT_SOURCE_DIR}/../"
+         "${CMAKE_CURRENT_SOURCE_DIR}/interfaces/")
+set_property(TARGET freertos_kernel PROPERTY C_STANDARD 90)
+
+# paraos_osal ------------------------------------------------------------------
+target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel freertos_config)
+
+target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Werror
+                                                 -Wpedantic)
+
 if(UTEST)
-  target_sources(freertos_config
-                 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rtos_test_hooks.cpp)
-  target_sources(freertos_config
-                 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/rtos_test_hooks.cpp)
   add_subdirectory(tests)
-else()
-  target_sources(${PROJECT_NAME}
-                 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rtos_hooks.cpp)
-  target_sources(freertos_kernel
-                 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rtos_hooks.cpp)
 endif()

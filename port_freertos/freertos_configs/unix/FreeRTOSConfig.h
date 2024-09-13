@@ -134,13 +134,6 @@ extern void vGenerateCoreBInterrupt(void *xUpdatedMessageBuffer);
 #define sbSEND_COMPLETED(pxStreamBuffer) vGenerateCoreBInterrupt(pxStreamBuffer)
 #endif /* configINCLUDE_MESSAGE_BUFFER_AMP_DEMO */
 
-/* projCOVERAGE_TEST should be defined on the command line so this file can
- * be used with multiple project configurations.  If it is
- */
-#ifndef projCOVERAGE_TEST
-#error projCOVERAGE_TEST should be defined to 1 or 0 on the command line.
-#endif
-
 #if (projCOVERAGE_TEST == 1)
 
 /* Insert NOPs in empty decision paths to ensure both true and false
