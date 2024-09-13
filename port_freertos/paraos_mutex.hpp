@@ -1,3 +1,29 @@
+/// @file paraos_mutex.hpp
+/// @author Mickle Isaev (mrraptor26@gmail.com)
+/// @author VyhodcevEgor <vyhodcev@internet.ru>
+///
+/// @copyright (c) 2024 Stilsoft
+///
+/// MIT License:
+///
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the 'Software'), to
+/// deal in the Software without restriction, including without limitation the
+/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
+///
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
+///
+/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+/// IN THE SOFTWARE.
+
 #ifndef PARAOS_MUTEX_HPP
 #define PARAOS_MUTEX_HPP
 
@@ -17,8 +43,6 @@
 
 namespace paraos {
 
-extern "C" std::size_t RTOS_THREAD_ConvertMsToTicks(std::size_t uDelayInMs);
-
 /// @brief Атрибуты мьютекса, используемые при его создании.
 struct MutexAttr {
   bool is_binary_ = false;
@@ -30,29 +54,12 @@ class MutexBase {
  public:
   /// @brief Конструктор MutexBase.
   /// @param[in] attr: Атрибуты мьютекса.
-  MutexBase(const MutexAttr& attr) : handle_{xSemaphoreCreateMutex()} {
-    (void)attr;
-#ifdef paraosTRACE_ENABLE
-    std::cout << "RTOS MutexBase Ctor" << std::endl;
-#endif
-  }
+  MutexBase(const MutexAttr& attr);
 
   /// @brief Конструктор MutexBase по умолчанию.
-  MutexBase() : MutexBase(MutexAttr{}) {}
+  MutexBase();
 
-  virtual ~MutexBase() {
-    PARAOS_CHECK_ASSERT(handle_ != nullptr);
-    if (handle_) {
-      vSemaphoreDelete(handle_);
-
-      // need for debug only
-      handle_ = nullptr;
-    }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "RTOS MutexBase Dtor" << std::endl;
-#endif
-  }
+  virtual ~MutexBase();
 
   MutexBase(const MutexBase& other) = delete;
   MutexBase(MutexBase&& other) = delete;
@@ -60,22 +67,18 @@ class MutexBase {
   MutexBase& operator=(const MutexBase& other) = delete;
   MutexBase& operator=(MutexBase&& other) = delete;
 
-  operator bool() const { return handle_ != nullptr ? true : false; }
+  operator bool() const;
 
   /// @brief Метод блокирует вызывающий поток до тех пор, пока
   /// этот поток не получит права владения мьютексом.
   /// @param[in] timeout_ms: Время ожидания получения права владения мьютексом в
   /// мс.
   /// @return Возвращает результат ожидания получения права владения мьютексом.
-  virtual bool Lock(std::size_t timeout_ms = max_delay) {
-    auto result = xSemaphoreTake(
-        handle_, (TickType_t)RTOS_THREAD_ConvertMsToTicks(timeout_ms));
-    return static_cast<bool>(result);
-  }
+  virtual bool Lock(std::size_t timeout_ms = max_delay);
 
   /// @brief Метод выпускает права владения мьютексом из вызывающего потока.
   /// @return Возвращает результат операции выпуска прав владения мьютексом.
-  virtual bool Unlock() { return static_cast<bool>(xSemaphoreGive(handle_)); }
+  virtual bool Unlock();
 
  private:
   SemaphoreHandle_t handle_{nullptr};
@@ -85,9 +88,9 @@ class MutexBase {
 class MutexBaseBinary : public MutexBase {
  public:
   /// @brief Конструктор по умолчанию.
-  MutexBaseBinary() : MutexBase(MutexAttr{true}) {}
+  MutexBaseBinary();
 
-  ~MutexBaseBinary() {}
+  virtual ~MutexBaseBinary();
 
   MutexBaseBinary(const MutexBaseBinary& other) = delete;
   MutexBaseBinary(MutexBaseBinary&& other) = delete;
@@ -100,37 +103,11 @@ class MutexBaseBinary : public MutexBase {
   /// @param[in] timeout_ms: Время ожидания получения права владения мьютексом в
   /// мс.
   /// @return Возвращает результат ожидания получения права владения мьютексом.
-  virtual bool Lock(std::size_t timeout_ms = max_delay) override {
-    bool is_current_operation_locked{false};
-    if (is_locked_ == false) {
-      is_current_operation_locked = MutexBase::Lock(timeout_ms);
-      // We call MutexBase::Lock() if our current state "unlocked". If
-      // MutexBase::Lock() returned false (from unlocked state), i don't know
-      // what that mean. Try find race condition for "is_locked_" variable in
-      // "MutexBaseBinary" class.
-      PARAOS_CHECK_ASSERT(is_current_operation_locked == true);
-      is_locked_ = true;
-    }
-
-    return is_current_operation_locked;
-  }
+  virtual bool Lock(std::size_t timeout_ms = max_delay) override;
 
   /// @brief Метод выпускает права владения мьютексом из вызывающего потока.
   /// @return Возвращает результат операции выпуска прав владения мьютексом.
-  virtual bool Unlock() override {
-    bool is_current_operation_unlocked{false};
-    if (is_locked_ == true) {
-      is_current_operation_unlocked = MutexBase::Unlock();
-      // We call MutexBase::Unlock() if our current state "locked". If
-      // MutexBase::Unlock() returned false (from "locked" state), i don't know
-      // what that mean. Try find race condition for "is_locked_" variable in
-      // "MutexBaseBinary" class.
-      PARAOS_CHECK_ASSERT(is_current_operation_unlocked == true);
-      is_locked_ = false;
-    }
-
-    return is_current_operation_unlocked;
-  }
+  virtual bool Unlock() override;
 
  private:
   /// @brief Safe thread flag
@@ -144,29 +121,11 @@ class RecursiveMutex {
  public:
   /// @brief Конструктор класса рекурсивного мьютекса.
   /// @param[in] attr: Атрибуты мьютекса.
-  RecursiveMutex(const MutexAttr& attr)
-      : handle_{xSemaphoreCreateRecursiveMutex()} {
-    (void)attr;
-#ifdef paraosTRACE_ENABLE
-    std::cout << "RecursiveMutex Ctor" << std::endl;
-#endif
-  }
+  RecursiveMutex(const MutexAttr& attr);
 
-  RecursiveMutex() : RecursiveMutex(MutexAttr{}) {}
+  RecursiveMutex();
 
-  virtual ~RecursiveMutex() {
-    PARAOS_CHECK_ASSERT(handle_ != nullptr);
-    if (handle_) {
-      vSemaphoreDelete(handle_);
-
-      // need for debug only
-      handle_ = nullptr;
-    }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "RecursiveMutex Dtor" << std::endl;
-#endif
-  }
+  virtual ~RecursiveMutex();
 
   RecursiveMutex(const RecursiveMutex& other) = delete;
   RecursiveMutex(RecursiveMutex&& other) = delete;
@@ -174,23 +133,18 @@ class RecursiveMutex {
   RecursiveMutex& operator=(const RecursiveMutex& other) = delete;
   RecursiveMutex& operator=(RecursiveMutex&& other) = delete;
 
-  operator bool() const { return handle_ != nullptr ? true : false; }
+  operator bool() const;
 
   /// @brief Метод блокирует вызывающий поток до тех пор, пока
   /// этот поток не получит права владения мьютексом.
   /// @param[in] timeout_ms: Время ожидания получения права владения мьютексом в
   /// мс.
   /// @return Возвращает результат ожидания получения права владения мьютексом.
-  virtual bool Lock(std::size_t timeout_ms = max_delay) {
-    return static_cast<bool>(xSemaphoreTakeRecursive(
-        handle_, (TickType_t)RTOS_THREAD_ConvertMsToTicks(timeout_ms)));
-  }
+  virtual bool Lock(std::size_t timeout_ms = max_delay);
 
   /// @brief Метод выпускает права владения мьютексом из вызывающего потока.
   /// @return Возвращает результат операции выпуска прав владения мьютексом.
-  virtual bool Unlock() {
-    return static_cast<bool>(xSemaphoreGiveRecursive(handle_));
-  }
+  virtual bool Unlock();
 
  private:
   SemaphoreHandle_t handle_{nullptr};
