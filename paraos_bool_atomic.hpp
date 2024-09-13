@@ -26,8 +26,7 @@
 #ifndef PARAOS_BOOL_ATOMIC_HPP
 #define PARAOS_BOOL_ATOMIC_HPP
 
-#include <cassert>
-#include <type_traits>
+#include <utility>
 
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"

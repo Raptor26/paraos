@@ -82,7 +82,8 @@ target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Werror
 
 target_sources(
   ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp)
+                         ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
 
 if(UTEST)
   add_subdirectory(tests)
