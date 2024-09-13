@@ -6,11 +6,7 @@
 
 project(test_freertos_paraos_osal VERSION 0.1.0)
 
-# Thread --------------------------------------------------------------------
-# add_executable(test_rtos_thread_detached test_thread_detach.cpp)
-# target_link_libraries(test_rtos_thread_detached PRIVATE paraos_osal)
-# add_test(NAME test_rtos_thread_detached COMMAND test_rtos_thread_detached)
-
+# Thread -----------------------------------------------------------------------
 add_executable(test_rtos_thread_joined test_thread_join.cpp)
 target_link_libraries(test_rtos_thread_joined PRIVATE paraos_osal)
 add_test(NAME test_rtos_thread_joined COMMAND test_rtos_thread_joined)

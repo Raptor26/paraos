@@ -43,11 +43,6 @@ std::vector<paraos::Thread*> thread_ptr;
 
 static bool threads_deleted_flag = false;
 void ExitAfterTestComplete() {
-  if (cnt == 4 && threads_deleted_flag == true) {
-    std::cout << "Exiting program..." << std::endl;
-    exit(EXIT_SUCCESS);
-  }
-
   if (cnt == 3) {
     std::cout << "Deleting all threads..." << std::endl;
 
@@ -58,6 +53,11 @@ void ExitAfterTestComplete() {
 
     threads_deleted_flag = true;
     cnt++;
+  }
+
+  if (cnt == 4 && threads_deleted_flag == true) {
+    std::cout << "Exiting program..." << std::endl;
+    exit(EXIT_SUCCESS);
   }
 }
 

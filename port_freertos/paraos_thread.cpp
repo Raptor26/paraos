@@ -225,6 +225,8 @@ auto Thread::IsNeedWhile() const -> bool { return is_need_while_; }
 
 void Thread::ExitThread() {
   is_thread_complete_sem_.Give();
+
+  const paraos::CriticalSection critical;
   vTaskDelete(nullptr);
   handle_ = nullptr;
 }
