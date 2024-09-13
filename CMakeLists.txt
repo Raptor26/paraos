@@ -10,7 +10,7 @@ include(setup.cmake)
 
 project(paraos VERSION 0.1.0)
 
-# Is paraos stand alone project?
+# Is paraos standalone project?
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(paraos_setup
