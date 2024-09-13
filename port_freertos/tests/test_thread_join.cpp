@@ -11,11 +11,7 @@ static bool threads_deleted_flag = false;
 void ExitAfterTestComplete() {
   if (cnt == 4 && threads_deleted_flag == true) {
     std::cout << "Exiting program..." << std::endl;
-    vPortEndScheduler();
-    // exit(EXIT_SUCCESS);
-    // WM_CLOSE();
-    // PostQuitMessage(EXIT_SUCCESS);
-    // ::SendMessage(nullptr, WM_CLOSE, NULL, NULL);
+    exit(EXIT_SUCCESS);
   }
 
   if (cnt == 3) {
@@ -24,9 +20,6 @@ void ExitAfterTestComplete() {
     threads_deleted_flag = true;
     cnt++;
   }
-
-  // yeld processor resources.
-  //   vTaskDelay(0);
 }
 
 struct TestMessage : public paraos::Thread {

@@ -12,7 +12,7 @@ if(NOT TARGET freertos_config)
     freertos_config SYSTEM
     INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_port/"
               "${CMAKE_SOURCE_DIR}")
-  target_link_libraries(freertos_config INTERFACE paraos_setup)
+
 endif()
 
 if(FREERTOS_USER_CONFIG)
@@ -61,6 +61,7 @@ target_include_directories(
 # FreeRTOS-Kernel --------------------------------------------------------------
 set(FREERTOS_KERNEL_PATH "FreeRTOS-Kernel")
 add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
+target_link_libraries(freertos_kernel INTERFACE paraos_setup)
 target_compile_options(
   freertos_kernel
   PRIVATE -Wno-unused-variable
@@ -80,7 +81,8 @@ target_include_directories(
 set_property(TARGET freertos_kernel PROPERTY C_STANDARD 90)
 
 # paraos_osal ------------------------------------------------------------------
-target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel freertos_config)
+target_link_libraries(${PROJECT_NAME} INTERFACE freertos_kernel freertos_config
+                                                Microsoft.GSL::GSL)
 
 target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Werror
                                                  -Wpedantic)

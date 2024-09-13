@@ -56,6 +56,7 @@ class Thread {
     // complete execute.
     std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+    PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
 
     PARAOS_CHECK_ASSERT(
         is_sem_taken &&
@@ -287,6 +288,7 @@ class Thread {
       // object only after MyThreadFunction() complete.
       constexpr std::size_t delay_ms{0u};
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
+      PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
 
       // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
       PARAOS_CHECK_ASSERT(is_sem_taken && "Sem always must taken");
