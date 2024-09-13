@@ -1,3 +1,11 @@
+# Copyright (c) 2024 Stilsoft
+
+# Autor Mickle Isaev
+
+# Autor Vyhodcev Egor
+
+# Distributed under the MIT License
+
 cmake_minimum_required(VERSION 3.28)
 
 project(paraos_osal VERSION 0.1.0)
