@@ -28,6 +28,7 @@
 
 #include <iostream>
 
+#include "paraos_attr.h"
 #include "paraos_queue.hpp"
 
 template <class T>
@@ -101,6 +102,7 @@ class MyAlloc {
 
   // deallocate storage p of deleted elements
   void deallocate(pointer p, size_type num) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(num);
     // print message and deallocate memory with global delete
     paraosTRACE_MESSAGE(
         "deallocate " << num << " element(s)"

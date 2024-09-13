@@ -53,7 +53,7 @@ class CriticalSection final {
   ~CriticalSection() { mutex_.Unlock(); }
 
  private:
-  const bool is_isr_;
+  [[maybe_unused]] const bool is_isr_;
   static inline MutexBase mutex_;
 };
 

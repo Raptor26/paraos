@@ -33,6 +33,22 @@
             "cacheVariables": {
                 "TRACE": "true"
             }
+        },
+        {
+            "name": "freertos_debug_clang",
+            "displayName": "freeRTOS debug Clang",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "FREERTOS": "true"
+            }
+        },
+        {
+            "name": "freertos_debug_clang_trace",
+            "displayName": "freeRTOS Debug Clang with trace",
+            "inherits": "freertos_debug_clang",
+            "cacheVariables": {
+                "TRACE": "true"
+            }
         }
     ],
     "testPresets": [

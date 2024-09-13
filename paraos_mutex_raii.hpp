@@ -26,8 +26,10 @@
 #ifndef PARAOS_MUTEX_RAII_HPP
 #define PARAOS_MUTEX_RAII_HPP
 
-#if defined(WIN32)
+#if defined(WIN32) && !defined(freeRTOS)
 #include "win/paraos_mutex.hpp"
+#elif defined(freeRTOS)
+#include "port_freertos/paraos_mutex.hpp"
 #endif
 
 #include "paraos_mutex.hpp"

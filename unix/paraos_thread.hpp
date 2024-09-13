@@ -36,6 +36,7 @@
 
 #include "gsl/gsl"
 #include "paraos_bool_atomic.hpp"
+#include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
@@ -73,7 +74,7 @@ class Thread {
     std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
-    assert(
+    PARAOS_CHECK_ASSERT(
         is_sem_taken &&
         "If you create thread, you must call Thread::StartScheduler() in "
         "main(), otherwise, destructor can't safely delete thread");
@@ -84,7 +85,7 @@ class Thread {
         iter != queue_thread_obj_.cend()) {
       int result{0};
 
-      assert(result == 0 && "Error when try canceled thread");
+      PARAOS_CHECK_ASSERT(result == 0 && "Error when try canceled thread");
       if (result == 0) {
         // Необходимо удалить дескриптор из очереди
         queue_thread_obj_.erase(iter);
@@ -99,7 +100,8 @@ class Thread {
 // из области видимости. В целом это не является ошибкой т.к. присутствует
 // защита от повторного удаления потока
 #if 1
-      assert(false && "We can't find 'this' for thread delete operation");
+      PARAOS_CHECK_ASSERT(
+          false && "We can't find 'this' for thread delete operation");
 #endif
     }
   }
@@ -118,7 +120,7 @@ class Thread {
     int result_code{-1};
     if (is_joinable_ && is_thread_created_) {
       result_code = pthread_join(handle_, nullptr);
-      assert(result_code == 0 && "Can't join the thread");
+      PARAOS_CHECK_ASSERT(result_code == 0 && "Can't join the thread");
     }
 
     return result_code == 0 ? true : false;
@@ -139,7 +141,7 @@ class Thread {
 
     const paraos::CriticalSection critical;
 
-    assert(
+    PARAOS_CHECK_ASSERT(
         IsPriorityInRange(priority) == true &&
         "Priority out of range, use only ThreadPriority definitions for change "
         "priority");
@@ -150,7 +152,8 @@ class Thread {
       int policy{0};
       sched_param sched{};
       if (pthread_getschedparam(handle_, &policy, &sched) != 0) {
-        assert(false && "pthread_getschedparam() return error code");
+        PARAOS_CHECK_ASSERT(
+            false && "pthread_getschedparam() return error code");
       }
 
       sched.sched_priority = static_cast<int>(priority);
@@ -174,9 +177,9 @@ class Thread {
   }
 
   virtual void Run() {
-    // Если сработал данный assert, то конструктор производного от Thread класса
-    // не успел завершить конструирование объекта до того момента когда
-    // планировщик ОС вызвал метод Run() (производные классы всегда должны
+    // Если сработал данный PARAOS_CHECK_ASSERT, то конструктор производного от
+    // Thread класса не успел завершить конструирование объекта до того момента
+    // когда планировщик ОС вызвал метод Run() (производные классы всегда должны
     // переопределять метод Run()). Одним из возможных способов решения
     // являются:
     // - Переопределите в производном классе метод Run(). Это самый тривиальный
@@ -200,7 +203,7 @@ class Thread {
     //   созданного объекта. После завершения создания объекта и его потока,
     //   создающий поток вновь может понизить свой приоритет до исходного
     //   значения.
-    assert(
+    PARAOS_CHECK_ASSERT(
         false &&
         "If windows scheduler call this instance, constructor of derived class "
         "not complete its work before scheduler call Run() method");
@@ -240,7 +243,7 @@ class Thread {
     // момент извлечения крайнего дескриптора потока из очереди, другой поток
     // поместил новый объект в очередь (критическая секция позволяет избежать
     // подобного состояния)
-    assert(
+    PARAOS_CHECK_ASSERT(
         queue_thread_obj_.empty() &&
         "Container for pointers threadable objects must be empty, otherwise "
         "some thread not deleted");
@@ -260,11 +263,11 @@ class Thread {
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
       // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
-      assert(is_sem_taken && "Sem always must taken");
+      PARAOS_CHECK_ASSERT(is_sem_taken && "Sem always must taken");
 
       auto result_code = pthread_create(&handle_, nullptr, perform_work, this);
 
-      assert(result_code == 0 && "Thread not created");
+      PARAOS_CHECK_ASSERT(result_code == 0 && "Thread not created");
 
       if (result_code == 0) {
         SetPriority(priority_);
@@ -340,7 +343,7 @@ class Thread {
       // Утверждение ниже сработает в том случае, если кто-то вызвал деструктор
       // для объекта типа 'Thread' (или его наследника). Это означает что время
       // жизни объекта меньше времени жизни потока, что является ошибкой.
-      assert(
+      PARAOS_CHECK_ASSERT(
           !thread->is_canceled_ &&
           "Somebody call destruction for thread object");
       thread->Run();
@@ -349,10 +352,6 @@ class Thread {
     // Atomic thread exit ------------------------------------------------------
     {
       const paraos::CriticalSection critical;
-
-      //   assert(
-      //       !thread->is_canceled_ &&
-      //       "Somebody call destruction for thread object");
 
       if (!thread->is_canceled_) {
         // Необходимо пометить поток как отмененный чтобы деструктор объекта
@@ -370,10 +369,10 @@ class Thread {
 
  private:
   std::string name_;
-  std::size_t stack_depth_{0};
+  [[maybe_unused]] std::size_t stack_depth_{0};
   pthread_t handle_{0};
-  BoolAtomic is_joinable_;
   ThreadPriority priority_{ThreadPriority::kIdle};
+  BoolAtomic is_joinable_;
 
   /// @brief Флаг отмены потока. Если флаг установлен в true, то поток помечен
   /// как удаленный и в скором времени фактически будет удален.

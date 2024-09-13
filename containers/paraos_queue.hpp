@@ -168,7 +168,7 @@ struct Queue {
 
     // Индекс не может превышать максимально допустимое количество элементов в
     // очереди.
-    assert(!(idx > max_elements_numb_));
+    PARAOS_CHECK_ASSERT(!(idx > max_elements_numb_));
 
     if (idx == max_elements_numb_) {
       idx = 0U;
@@ -180,13 +180,13 @@ struct Queue {
   PARAOS_INLINE_TRIVIAL void UpdateWriteIdx() {
     w_idx_ = CyclicIncrementIdx(w_idx_);
     ++contained_cnt_;
-    assert(contained_cnt_ <= max_elements_numb_);
+    PARAOS_CHECK_ASSERT(contained_cnt_ <= max_elements_numb_);
   }
 
   PARAOS_INLINE_TRIVIAL void UpdateReadIdx() {
     r_idx_ = CyclicIncrementIdx(r_idx_);
     --contained_cnt_;
-    assert(contained_cnt_ <= max_elements_numb_);
+    PARAOS_CHECK_ASSERT(contained_cnt_ <= max_elements_numb_);
   }
 
   /// @brief Указатель на область памяти хранения данных очереди.

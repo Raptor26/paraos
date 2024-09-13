@@ -11,7 +11,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(
   ${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/"
                             "${CMAKE_CURRENT_SOURCE_DIR}/../")
-target_link_libraries(${PROJECT_NAME} INTERFACE paraos_setup)
+target_link_libraries(${PROJECT_NAME} INTERFACE paraos_setup Microsoft.GSL::GSL)
 
 if(UTEST)
   add_subdirectory(tests)

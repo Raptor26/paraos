@@ -28,6 +28,8 @@
 #define PARAOS_QUEUE_BLOCKING_HPP
 
 #include "gsl/gsl"
+#include "paraos_attr.h"
+#include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
@@ -81,9 +83,19 @@ class QueueBlocking final : public Queue<T, ALLOCATOR>,
     return queue_ready;
   }
 
+  /// @brief
+  ///
+  /// @note `PARAOS_ATTR_UNUSED Args&&... args` suppress warning: unused
+  /// parameter 'args' [-Werror,-Wunused-parameter] [build] 87 | auto
+  /// EmplaceBack(Args&&... args) -> bool {
+  ///
+  /// @tparam ...Args
+  /// @param ...args
+  /// @return
   template <typename... Args>
-  auto EmplaceBack(Args&&... args) -> bool {
-    assert(false && "Don't use EmplaceBack for blocking queue version");
+  auto EmplaceBack(PARAOS_ATTR_UNUSED Args&&... args) -> bool {
+    PARAOS_CHECK_ASSERT(
+        false && "Don't use EmplaceBack for blocking queue version");
 
     return false;
   }

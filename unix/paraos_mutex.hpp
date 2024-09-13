@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 
+#include "paraos_check.h"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
@@ -55,7 +56,8 @@ class MutexBase {
         is_init_ = true;
       }
     } else {
-      assert(false && "Don't call second init for initalized object");
+      PARAOS_CHECK_ASSERT(
+          false && "Don't call second init for initalized object");
     }
   }
 
@@ -123,7 +125,7 @@ class MutexBase {
 
  private:
   pthread_mutex_t m_obj_;
-  bool is_binary_{true};
+  [[maybe_unused]] bool is_binary_{true};
   bool is_init_{false};
 };
 }  // namespace paraos

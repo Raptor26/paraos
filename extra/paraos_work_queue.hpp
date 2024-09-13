@@ -70,8 +70,7 @@ class WorkQueue final {
 
   WorkQueue(
       const std::string name, std::size_t stack_depth, ThreadPriority priority,
-      std::size_t max_queue_size = 10, bool if_need_start_thread = true,
-      bool is_joinable = false)
+      std::size_t max_queue_size = 10, bool if_need_start_thread = true)
       : queue_{max_queue_size},
         worker_thread_{name, stack_depth, priority, *this},
         if_need_start_thread_{if_need_start_thread} {

@@ -10,18 +10,25 @@ include(setup.cmake)
 
 project(paraos VERSION 0.1.0)
 
-if(UTEST)
+# Is paraos stand alone project?
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(paraos_setup
+                               INTERFACE -DPARAOS_CHECK_LOOP_ENABLE)
+  endif()
+
+  # If paraos is standalone project, we always want use unit testing
   include(CTest)
   enable_testing()
 endif()
 
 add_subdirectory(leaf)
 
-if(WIN32)
-  option(THREAD_ENABLE "Thread support enable" ON)
+if(FREERTOS)
+  add_subdirectory(port_freertos)
+elseif(WIN32)
   add_subdirectory(win)
 elseif(UNIX)
-  option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(unix)
 endif()
 

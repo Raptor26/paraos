@@ -71,12 +71,37 @@ paraos::MessageBuffer message_buff{3};
 std::size_t producer_waiting_timeout_ms{1000};
 std::size_t consumer_waiting_timeout_ms{10};
 
-std::atomic<size_t> total_read_elems_cnt{0};
-std::atomic<size_t> total_written_elems_cnt{0};
+std::atomic<std::size_t> total_read_elems_cnt{0};
+std::atomic<std::size_t> total_written_elems_cnt{0};
+
+#if defined(__linux__) && defined(freeRTOS)
+#define configUSE_IDLE_HOOK 1
+#include <stdlib.h>
+static bool threads_deleted_flag = false;
+/// @brief The idle task runs at the very lowest priority, so such an idle hook
+/// function will only get executed when there are no tasks of higher priority
+/// that are able to run.
+extern "C" void vApplicationIdleHook(void) {
+  if (threads_deleted_flag) {
+    std::cout << "Exiting program..." << std::endl;
+    _Exit(0);
+  }
+  if (elems_vector.size() == consumers_str_container.size()) {
+    std::cout << "elems_vector.size() == consumers_str_container.size()"
+              << std::endl;
+    paraos::Thread::DeleteAll();
+    elems_vector.~vector();
+    consumers_str_container.~vector();
+    total_read_elems_cnt.~atomic();
+    total_written_elems_cnt.~atomic();
+    threads_deleted_flag = true;
+  }
+}
+#endif
 
 struct Producer : public paraos::Thread {
   Producer(
-      const std::string name = "Producer", size_t stack_depth = 1024,
+      const std::string name = "Producer", std::size_t stack_depth = 1024,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
       : paraos::Thread{name, stack_depth, priority} {
     Start();
@@ -135,7 +160,7 @@ struct Producer : public paraos::Thread {
 
 struct Consumer : public paraos::Thread {
   Consumer(
-      const std::string name = "Consumer", size_t stack_depth = 1024,
+      const std::string name = "Consumer", std::size_t stack_depth = 1024,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
       : paraos::Thread{name, stack_depth, priority} {
     Start();

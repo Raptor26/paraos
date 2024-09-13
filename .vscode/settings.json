@@ -117,6 +117,13 @@
         "xutility": "cpp",
         "span_ext": "cpp",
         "*.def": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "freertos.h": "c",
+        "freertosconfig.h": "c",
+        "irtos_attr.h": "c",
+        "task.h": "c",
+        "hash_map": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     }
 }

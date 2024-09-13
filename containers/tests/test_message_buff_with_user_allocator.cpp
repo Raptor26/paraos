@@ -28,6 +28,7 @@
 
 #include <iostream>
 
+#include "paraos_attr.h"
 #include "paraos_message_buffer.hpp"
 #include "paraos_thread.hpp"
 
@@ -106,6 +107,7 @@ class MyAllocBuffer {
 
   // deallocate storage p of deleted elements
   void deallocate(pointer p, size_type num) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(num);
     // print message and deallocate memory with global delete
     paraosTRACE_MESSAGE(
         "Buffer allocator: deallocate " << num << " element(s)"
@@ -188,6 +190,7 @@ class MyAllocQueue {
 
   // deallocate storage p of deleted elements
   void deallocate(pointer p, size_type num) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(num);
     // print message and deallocate memory with global delete
     paraosTRACE_MESSAGE(
         "Queue allocator: deallocate " << num << " element(s)"
