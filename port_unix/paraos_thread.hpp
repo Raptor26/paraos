@@ -139,12 +139,12 @@ class Thread {
   bool SetPriority(const ThreadPriority priority) {
     bool is_priority_updated{false};
 
-    const paraos::CriticalSection critical;
-
     PARAOS_CHECK_ASSERT(
         IsPriorityInRange(priority) == true &&
         "Priority out of range, use only ThreadPriority definitions for change "
         "priority");
+
+    const paraos::CriticalSection critical;
 
     // Изменение приоритета потока возможно только в случае запуска программы от
     // имени суперпользователя
