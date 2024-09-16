@@ -151,7 +151,7 @@ struct EmbeddedProfilerCnt<LOW_ADDR, HightCntDefault> {
   EmbeddedProfilerCnt(EmbeddedProfilerCnt &&other) = default;
   EmbeddedProfilerCnt &operator=(EmbeddedProfilerCnt &&other) = default;
 
-  /// @brief Возвращает значение 316-х битного аппаратного счетчика на момент
+  /// @brief Возвращает значение 16-х битного аппаратного счетчика на момент
   /// вызова.
   /// @return Возвращает переменную типа 'cnt_t' содержащую значение аппаратного
   /// счетчика на момент вызова.
