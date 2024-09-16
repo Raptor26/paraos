@@ -125,5 +125,6 @@
         "hash_map": "cpp",
         "forward_list": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "cSpell.enabled": true
 }
