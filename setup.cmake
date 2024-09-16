@@ -4,7 +4,8 @@ project(paraos_setup)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17 c_std_11)
-target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Werror)
+target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wpedantic
+                                                 -Werror)
 target_link_libraries(${PROJECT_NAME} INTERFACE Boost::leaf)
 
 if(TRACE)
