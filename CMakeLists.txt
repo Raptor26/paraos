@@ -36,5 +36,5 @@ add_subdirectory(containers)
 add_subdirectory(extra)
 add_subdirectory(GSL)
 
-add_library(${PROJECT_NAME} INTERFACE)
-target_link_libraries(${PROJECT_NAME} INTERFACE paraos_containers)
+add_library(${PROJECT_NAME} STATIC)
+target_link_libraries(${PROJECT_NAME} PUBLIC paraos_extra)

@@ -62,6 +62,12 @@ endif()
 # FreeRTOS-Kernel --------------------------------------------------------------
 set(FREERTOS_KERNEL_PATH "FreeRTOS-Kernel")
 add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
+
+# Supress compiler warnings related to the FreeRTOS implementation
+target_compile_options(
+  freertos_kernel_port PRIVATE -Wno-unused-variable
+                               -Wno-unused-but-set-variable)
+
 target_link_libraries(freertos_kernel INTERFACE paraos_setup)
 target_compile_options(
   freertos_kernel
