@@ -52,6 +52,10 @@ using FreeRTOSIdleFncPtr = void (*)();
 
 inline FreeRTOSIdleFncPtr freertos_idle_fnc_ptr{nullptr};
 
+constexpr inline std::size_t GetStackMinimumSizeInBytes() {
+  return 130 * sizeof(size_t);
+}
+
 }  // namespace paraos
 
 #endif /* PARAOS_UTILS_HPP */
