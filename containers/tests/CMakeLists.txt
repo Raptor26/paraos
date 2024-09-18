@@ -37,12 +37,12 @@ if(THREAD_ENABLE)
   add_test(NAME test_queue_blocking_multithread_many_prod_and_cons
            COMMAND test_queue_blocking_multithread_many_prod_and_cons)
 
-  add_executable(test_message_multithread_one_producer_many_consumers
-                 test_message_multithread_one_producer_many_consumers.cpp)
-  target_link_libraries(test_message_multithread_one_producer_many_consumers
+  add_executable(test_message_multithread_many_producer_many_consumers
+                 test_message_multithread_many_producer_many_consumers.cpp)
+  target_link_libraries(test_message_multithread_many_producer_many_consumers
                         PRIVATE paraos_containers)
-  add_test(NAME test_message_multithread_one_producer_many_consumers
-           COMMAND test_message_multithread_one_producer_many_consumers)
+  add_test(NAME test_message_multithread_many_producer_many_consumers
+           COMMAND test_message_multithread_many_producer_many_consumers)
 endif()
 
 # Benchmark --------------------------------------------------------------------
