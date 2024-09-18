@@ -27,28 +27,55 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <syncstream>
 #include <thread>
 #include <vector>
 
-#include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_thread.hpp"
 
 using namespace paraos;
 
-const std::vector<std::string> elems_vector{"1)", "2)", "3)", "4)", "5)",
-                                            "6)", "7)", "8)", "9)", "10)"};
+/// @brief Burning Heart
+const std::vector<std::string> elems_vector{
+    "1)  Two worlds collide",
+    "2)  Rival nations",
+    "3)  It's a primitive clash",
+    "4)  Venting years of frustration",
+    "5)  Bravely we hope",
+    "6)  Against all hope",
+    "7)  There is so much at stake",
+    "8)  Seems our freedom's up",
+    "9)  Against the ropes",
+    "10) Does the crowd understand?",
+    "11) Is it East versus West",
+    "12) Or man against man?",
+    "13) Can any nation stand alone?",
+    "14) In the burning Heart",
+    "15) Just about to burst",
+    "16) There's a quest for answers",
+    "17) An unquenchable thirst",
+    "18) In the darkest night",
+    "19) Rising like a spire",
+    "20) In the burning heart",
+    "21) The unmistakable fire",
+    "22) -----------------------------"};
 
-QueueBlocking<std::string> queue{2};
-std::size_t producer_waiting_timeout_ms{5000};
-std::size_t consumer_waiting_timeout_ms{50};
+/// @brief Контейнер в который записываются строки, считанные потоками
+/// 'Consumer'.
+std::vector<std::string> consumers_str_container;
+
+paraos::QueueBlocking<std::string> queue{2};
+std::size_t producer_waiting_timeout_ms{1000};
+std::size_t consumer_waiting_timeout_ms{10};
 
 std::atomic<std::size_t> total_read_elems_cnt{0};
 std::atomic<std::size_t> total_written_elems_cnt{0};
 
+/// @brief Set actual value in main.
 std::size_t thread_total_numb{0};
 std::size_t thread_exit_cnt{0};
 
@@ -81,21 +108,21 @@ struct Producer : public paraos::Thread {
         }
       }
 
+      is_message_pushed = false;
       if (str_cnt < elems_vector.size()) {
         auto elem = elems_vector[str_cnt];
 
-        if (queue.Push(elem, producer_waiting_timeout_ms)) {
+        auto is_pushed = queue.Push(elem, producer_waiting_timeout_ms);
+
+        if (is_pushed) {
+          is_message_pushed = true;
           const CriticalSection critical;
           std::cout << Name() << " inserting elem: " << elem << std::endl;
-        } else {
-          assert(false && "Can't push element in queue");
         }
-        is_message_pushed = true;
       } else {
+        // Все данные записаны, необходимо выйти из цикла while
         break;
       }
-
-      std::this_thread::sleep_for(1ms);
     }
     const CriticalSection critical;
     std::cout << Name() << " Exiting... " << std::endl;
@@ -115,25 +142,25 @@ struct Consumer : public paraos::Thread {
     using namespace std::chrono_literals;
 
     while (true) {
-      auto elem = queue.Pop(consumer_waiting_timeout_ms);
-      const CriticalSection critical;
-      if (elem) {
-        ++total_read_elems_cnt;
-        if (std::find(elems_vector.begin(), elems_vector.end(), *elem) !=
-            elems_vector.end()) {
-          std::cout << "-- " << Name() << " Got elem from queue: " << *elem
-                    << std::endl;
-        } else {
-          assert(false);
-        }
-      }
-
+      // Если все данные уже считаны, то необходимо выйти из цикла while и
+      // завершить работу
       if (total_read_elems_cnt.load() >= elems_vector.size()) {
         break;
       }
 
-      // Уступить ресурсы другим потокам
-      std::this_thread::sleep_for(1ms);
+      auto elem = queue.Pop(consumer_waiting_timeout_ms);
+      if (elem) {
+        const CriticalSection critical;
+        ++total_read_elems_cnt;
+
+        // Отправить считанную из буфера строку в контейнер чтобы в конце
+        // работы программы можно было проверить, что все строки считаны и
+        // соответствуют тем данным, которые планировалось
+        // записать в буфер из 'elems_vector'.
+        consumers_str_container.push_back(*elem);
+        std::cout << "-- " << Name() << " Got elem from message_buff: " << *elem
+                  << std::endl;
+      }
     }
     const CriticalSection critical;
     std::cout << Name() << " Exiting... " << std::endl;
@@ -193,15 +220,22 @@ int main() {
   const CriticalSection critical;
   std::cout << "Total write elements is " << total_written_elems_cnt
             << std::endl;
-  assert(
-      elems_vector.size() == total_written_elems_cnt &&
-      "Miss some writable element");
 
   assert(
-      elems_vector.size() == total_read_elems_cnt &&
-      "Miss some readable element");
+      elems_vector.size() == consumers_str_container.size() &&
+      "We don't write all strings from 'elems_vector' to "
+      "'consumers_str_container'");
 
-  assert(thread_exit_cnt == thread_total_numb);
+  for (auto &str : consumers_str_container) {
+    assert(
+        std::find(elems_vector.begin(), elems_vector.end(), str) !=
+            elems_vector.end() &&
+        "Can't find consumer string in source container");
+  }
+
+  assert(
+      thread_exit_cnt == thread_total_numb &&
+      "Actualize thread_total_numb value");
 
   return 0;
 }
