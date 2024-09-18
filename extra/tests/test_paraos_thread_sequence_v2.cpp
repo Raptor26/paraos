@@ -31,6 +31,7 @@
 #include "etl/scheduler.h"
 #include "etl/task.h"
 #include "paraos_thread_sequence_v2.hpp"
+#include "paraos_utils.hpp"
 
 namespace {
 
@@ -43,6 +44,8 @@ using ThreadSequence = paraos::ThreadSequenceV2<max_task_in_sequence>;
 ThreadSequence* thread_seq_ptr;
 
 constexpr uint32_t gyr_acc_max_call_cnt{8};
+
+bool is_test_complete{false};
 
 template <typename T = float>
 struct GyrAcc {
@@ -62,6 +65,7 @@ struct GyrAcc {
     } else {
       // Stop test.
       thread_seq_ptr->Break();
+      is_test_complete = true;
     }
   }
 };
@@ -94,9 +98,25 @@ struct Baro {
 
 GyrAccFloat gyr_acc;
 
+/// FreeRTOS can't stop scheduler. In this case we must manually call
+/// exit(EXIT_SUCCESS) after test complete.
+#if defined(FREERTOS)
+void ExitAfterTestComplete() {
+  if (is_test_complete) {
+    exit(EXIT_SUCCESS);
+  }
+}
+#endif
+
 }  // namespace
 
 int main() {
+#if defined(FREERTOS)
+  // ExitAfterTestComplete will be called by scheduler in idle task after no
+  // user task ready for execute.
+  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
+#endif
+
   using namespace paraos;
 
   constexpr uint32_t thread_sequence_call_period_us{1000u};

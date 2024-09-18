@@ -49,28 +49,8 @@ std::size_t consumer_waiting_timeout_ms{50};
 std::atomic<std::size_t> total_read_elems_cnt{0};
 std::atomic<std::size_t> total_written_elems_cnt{0};
 
-#if defined(__linux__) && defined(freeRTOS)
-#define configUSE_IDLE_HOOK 1
-#include <stdlib.h>
-static bool threads_deleted_flag = false;
-/// @brief The idle task runs at the very lowest priority, so such an idle hook
-/// function will only get executed when there are no tasks of higher priority
-/// that are able to run.
-extern "C" void vApplicationIdleHook(void) {
-  if (threads_deleted_flag) {
-    std::cout << "Exiting program..." << std::endl;
-    _Exit(0);
-  }
-  if (total_written_elems_cnt == total_read_elems_cnt) {
-    std::cout << "total_written_elems_cnt == total_read_elems_cnt "
-              << std::endl;
-    elems_vector.~vector();
-    total_read_elems_cnt.~atomic();
-    total_written_elems_cnt.~atomic();
-    threads_deleted_flag = true;
-  }
-}
-#endif
+std::size_t thread_total_numb{0};
+std::size_t thread_exit_cnt{0};
 
 struct Producer : public paraos::Thread {
   Producer(
@@ -119,6 +99,7 @@ struct Producer : public paraos::Thread {
     }
     const CriticalSection critical;
     std::cout << Name() << " Exiting... " << std::endl;
+    ++thread_exit_cnt;
   }
 };
 
@@ -156,19 +137,45 @@ struct Consumer : public paraos::Thread {
     }
     const CriticalSection critical;
     std::cout << Name() << " Exiting... " << std::endl;
+    ++thread_exit_cnt;
   }
 
  private:
   PARAOS_MAYBE_UNUSED bool running_condition_{true};
 };
 
+/// FreeRTOS can't stop scheduler. In this case we must manually call
+/// exit(EXIT_SUCCESS) after test complete.
+#if defined(FREERTOS)
+void ExitAfterTestComplete() {
+  auto is_need_exit{false};
+  {
+    paraos::CriticalSection critical;
+    if (thread_exit_cnt == thread_total_numb) {
+      is_need_exit = true;
+    }
+  }
+
+  if (is_need_exit) {
+    exit(EXIT_SUCCESS);
+  }
+}
+#endif
+
 int main() {
+#if defined(FREERTOS)
+  // ExitAfterTestComplete will be called by scheduler in idle task after no
+  // user task ready for execute.
+  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
+#endif
+
   Consumer elem_consumer_1{
       "Consumer 1", 1024u, paraos::ThreadPriority::kLowest};
   Consumer elem_consumer_2{
       "Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
   Consumer elem_consumer_3{
       "Consumer 3", 1024u, paraos::ThreadPriority::kNormal};
+  thread_total_numb += 3;
 
   Producer elem_producer_1{
       "Producer 1", 1024u, paraos::ThreadPriority::kLowest};
@@ -178,6 +185,7 @@ int main() {
       "Producer 3", 1024u, paraos::ThreadPriority::kNormal};
   Producer elem_producer_4{
       "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
+  thread_total_numb += 4;
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
@@ -192,6 +200,8 @@ int main() {
   assert(
       elems_vector.size() == total_read_elems_cnt &&
       "Miss some readable element");
+
+  assert(thread_exit_cnt == thread_total_numb);
 
   return 0;
 }

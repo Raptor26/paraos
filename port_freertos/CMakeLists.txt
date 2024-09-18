@@ -20,7 +20,7 @@ if(NOT TARGET freertos_config)
               "${CMAKE_SOURCE_DIR}")
 endif()
 
-target_compile_definitions(freertos_config INTERFACE -DfreeRTOS)
+target_compile_definitions(freertos_config INTERFACE -DfreeRTOS -DFREERTOS)
 
 if(FREERTOS_USER_CONFIG)
   # in case when user want use freeRTOS with mcu port, user must define

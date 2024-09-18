@@ -57,6 +57,9 @@ Queue<std::string> queue{100};
 
 std::atomic<std::size_t> total_read_str_cnt{0};
 
+std::size_t thread_total_numb{0};
+std::size_t thread_exit_cnt{0};
+
 #if defined(__linux__) && defined(freeRTOS)
 #define configUSE_IDLE_HOOK 1
 #include <stdlib.h>
@@ -98,6 +101,9 @@ struct Producer : public paraos::Thread {
       }
       ++song_cnt;
     }
+
+    const CriticalSection critical;
+    ++thread_exit_cnt;
   }
 
  private:
@@ -120,12 +126,9 @@ struct Consumer : public paraos::Thread {
       if (total_read_str_cnt.load() >= song_str.size()) {
         is_read_str = true;
       } else {
-        // todo Удалить строку ниже, атомарность должна обеспечиваться очередью
-
         std::optional<std::string> str;
         {
           const paraos::CriticalSection critical;
-
           str = queue.Pop();
         }
         if (str) {
@@ -145,13 +148,40 @@ struct Consumer : public paraos::Thread {
       // Уступить ресурсы другим потокам
       std::this_thread::sleep_for(1ms);
     }
+
+    const CriticalSection critical;
+    ++thread_exit_cnt;
   }
 
  private:
   bool is_read_str{false};
 };
 
+/// FreeRTOS can't stop scheduler. In this case we must manually call
+/// exit(EXIT_SUCCESS) after test complete.
+#if defined(FREERTOS)
+void ExitAfterTestComplete() {
+  auto is_need_exit{false};
+  {
+    paraos::CriticalSection critical;
+    if (thread_exit_cnt == thread_total_numb) {
+      is_need_exit = true;
+    }
+  }
+
+  if (is_need_exit) {
+    exit(EXIT_SUCCESS);
+  }
+}
+#endif
+
 int main() {
+#if defined(FREERTOS)
+  // ExitAfterTestComplete will be called by scheduler in idle task after no
+  // user task ready for execute.
+  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
+#endif
+
   Consumer str_consumer_1{"Consumer 1", 1024u, paraos::ThreadPriority::kLowest};
   Consumer str_consumer_2{
       "Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
@@ -159,14 +189,20 @@ int main() {
       "Consumer 3", 1024u, paraos::ThreadPriority::kBelowNormal};
   Consumer str_consumer_4{"Consumer 4", 1024u, paraos::ThreadPriority::kNormal};
   Consumer str_consumer_5{"Consumer 5", 1024u, paraos::ThreadPriority::kNormal};
+  thread_total_numb += 5;
 
   Producer str_producer{"Producer 1", 1024u, paraos::ThreadPriority::kNormal};
+  thread_total_numb += 1;
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
   assert(
       total_read_str_cnt == song_str.size() &&
+      "Consumers don't read all strings from source container");
+
+  assert(
+      thread_total_numb == thread_exit_cnt &&
       "Consumers don't read all strings from source container");
 
   return 0;

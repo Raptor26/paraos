@@ -48,6 +48,10 @@ inline std::size_t PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) {
   return (uDelayInMs);
 }
 
+using FreeRTOSIdleFncPtr = void (*)();
+
+inline FreeRTOSIdleFncPtr freertos_idle_fnc_ptr{nullptr};
+
 }  // namespace paraos
 
 #endif /* PARAOS_UTILS_HPP */
