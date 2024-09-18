@@ -12,7 +12,13 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(
   ${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/"
                             "${CMAKE_CURRENT_SOURCE_DIR}/../")
-target_link_libraries(${PROJECT_NAME} INTERFACE paraos_setup Microsoft.GSL::GSL)
+target_link_libraries(${PROJECT_NAME} INTERFACE paraos_setup Microsoft.GSL::GSL
+                                                etl::etl)
+
+# Added user etl_profile.h in etl::etl library
+target_include_directories(etl INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/")
+
+set(THREAD_ENABLE on)
 
 if(UTEST)
   add_subdirectory(tests)
