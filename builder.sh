@@ -14,6 +14,15 @@ pc_debug_clang="cmake --preset pc_debug_clang \
         --schedule-random \
         --output-on-failure"
 
+pc_debug_clang_stress="cmake --preset pc_debug_clang \
+    && cmake --build build/pc_debug_clang/ \
+    && ctest --test-dir build/pc_debug_clang \
+        -j16 \
+        --timeout 15 \
+        --repeat-until-fail 1000 \
+        --schedule-random \
+        --output-on-failure"
+
 freertos_debug_clang="cmake --preset freertos_debug_clang \
     && cmake --build build/freertos_debug_clang/ \
     && ctest --test-dir build/freertos_debug_clang \
@@ -23,12 +32,22 @@ freertos_debug_clang="cmake --preset freertos_debug_clang \
         --schedule-random \
         --output-on-failure"
 
+freertos_debug_clang_stress="cmake --preset freertos_debug_clang \
+    && cmake --build build/freertos_debug_clang/ \
+    && ctest --test-dir build/freertos_debug_clang \
+        -j16 \
+        --timeout 15 \
+        --repeat-until-fail 1000 \
+        --schedule-random \
+        --output-on-failure"
+
 echo "Выберите необходимое действие"
 
 echo "  0 - Выход"
 echo "  1 - Запустить все сборки и тесты"
-echo "  2 - pc_debug_clang"
-echo "  3 - freertos_debug_clang"
+echo "  2 - Запустить все сборки и тесты с большим количеством повторений"
+echo "  3 - pc_debug_clang"
+echo "  4 - freertos_debug_clang"
 echo "  12 - run tests in docker"
 
 read doing # Чтение переменной из стандартного ввода
@@ -43,13 +62,20 @@ case $doing in
     else
         echo "${RED}ERROR${NC}: Обнаружена ошибка в сборке или выполнении тестов"
     fi;;
+
 2)
-    if eval $pc_debug_clang; then 
+    if eval "$pc_debug_clang_stress" && eval "$freertos_debug_clang_stress"; then
         echo "${GREEN}SUCCESS: Все тесты выполнены успешно${NC}"
     else
         echo "${RED}ERROR${NC}: Обнаружена ошибка в сборке или выполнении тестов"
     fi;;
 3)
+    if eval $pc_debug_clang; then 
+        echo "${GREEN}SUCCESS: Все тесты выполнены успешно${NC}"
+    else
+        echo "${RED}ERROR${NC}: Обнаружена ошибка в сборке или выполнении тестов"
+    fi;;
+4)
     if eval $freertos_debug_clang; then 
         echo "${GREEN}SUCCESS: Все тесты выполнены успешно${NC}"
     else
