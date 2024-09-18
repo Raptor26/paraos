@@ -60,29 +60,6 @@ std::atomic<std::size_t> total_read_str_cnt{0};
 std::size_t thread_total_numb{0};
 std::size_t thread_exit_cnt{0};
 
-#if defined(__linux__) && defined(freeRTOS)
-#define configUSE_IDLE_HOOK 1
-#include <stdlib.h>
-static bool threads_deleted_flag = false;
-/// @brief The idle task runs at the very lowest priority, so such an idle hook
-/// function will only get executed when there are no tasks of higher priority
-/// that are able to run.
-extern "C" void vApplicationIdleHook(void) {
-  if (threads_deleted_flag) {
-    std::cout << "Exiting program..." << std::endl;
-    _Exit(0);
-  }
-  if (total_read_str_cnt == song_str.size()) {
-    std::cout << "total_read_str_cnt == song_str.size()" << std::endl;
-    // paraos::Thread::DeleteAll();
-    // queue.~Queue();
-    song_str.~vector();
-    total_read_str_cnt.~atomic();
-    threads_deleted_flag = true;
-  }
-}
-#endif
-
 struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", std::size_t stack_depth = 1024,
@@ -93,10 +70,10 @@ struct Producer : public paraos::Thread {
 
   void Run() override {
     while (song_cnt < song_str.size()) {
-      std::cout << Name() << " str:" << song_str[song_cnt] << std::endl;
-
       {
         const paraos::CriticalSection critical;
+        std::cout << Name() << " str:" << song_str[song_cnt] << std::endl;
+
         queue.Push(song_str[song_cnt]);
       }
       ++song_cnt;
@@ -137,6 +114,7 @@ struct Consumer : public paraos::Thread {
           total_read_str_cnt.store(cnt);
           if (std::find(song_str.begin(), song_str.end(), *str) !=
               song_str.end()) {
+            const paraos::CriticalSection critical;
             std::cout << Name() << " str: " << *str << std::endl;
           } else {
             assert(false);

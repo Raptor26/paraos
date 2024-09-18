@@ -78,31 +78,6 @@ std::atomic<std::size_t> total_written_elems_cnt{0};
 std::size_t thread_total_numb{0};
 std::size_t thread_exit_cnt{0};
 
-#if defined(__linux__) && defined(freeRTOS)
-#define configUSE_IDLE_HOOK 1
-#include <stdlib.h>
-static bool threads_deleted_flag = false;
-/// @brief The idle task runs at the very lowest priority, so such an idle hook
-/// function will only get executed when there are no tasks of higher priority
-/// that are able to run.
-extern "C" void vApplicationIdleHook(void) {
-  if (threads_deleted_flag) {
-    std::cout << "Exiting program..." << std::endl;
-    _Exit(0);
-  }
-  if (elems_vector.size() == consumers_str_container.size()) {
-    std::cout << "elems_vector.size() == consumers_str_container.size()"
-              << std::endl;
-    paraos::Thread::DeleteAll();
-    elems_vector.~vector();
-    consumers_str_container.~vector();
-    total_read_elems_cnt.~atomic();
-    total_written_elems_cnt.~atomic();
-    threads_deleted_flag = true;
-  }
-}
-#endif
-
 struct Producer : public paraos::Thread {
   Producer(
       const std::string name = "Producer", std::size_t stack_depth = 1024,
