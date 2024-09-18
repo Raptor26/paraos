@@ -69,6 +69,7 @@ struct Producer : public paraos::Thread {
   }
 
   void Run() override {
+    std::size_t song_cnt{0};
     while (song_cnt < song_str.size()) {
       {
         const paraos::CriticalSection critical;
@@ -82,9 +83,6 @@ struct Producer : public paraos::Thread {
     const CriticalSection critical;
     ++thread_exit_cnt;
   }
-
- private:
-  std::size_t song_cnt{0};
 };
 
 struct Consumer : public paraos::Thread {
@@ -98,10 +96,10 @@ struct Consumer : public paraos::Thread {
   void Run() override {
     using namespace std::chrono_literals;
 
-    while (!is_read_str) {
+    while (true) {
       // Если все строки уже считаны
       if (total_read_str_cnt.load() >= song_str.size()) {
-        is_read_str = true;
+        break;
       } else {
         std::optional<std::string> str;
         {
@@ -109,6 +107,7 @@ struct Consumer : public paraos::Thread {
           str = queue.Pop();
         }
         if (str) {
+          const paraos::CriticalSection critical;
           auto cnt = total_read_str_cnt.load();
           ++cnt;
           total_read_str_cnt.store(cnt);
@@ -120,8 +119,7 @@ struct Consumer : public paraos::Thread {
             assert(false);
           }
         }
-
-      }  // out critical section
+      }
 
       // Уступить ресурсы другим потокам
       std::this_thread::sleep_for(1ms);
@@ -130,9 +128,6 @@ struct Consumer : public paraos::Thread {
     const CriticalSection critical;
     ++thread_exit_cnt;
   }
-
- private:
-  bool is_read_str{false};
 };
 
 /// FreeRTOS can't stop scheduler. In this case we must manually call
