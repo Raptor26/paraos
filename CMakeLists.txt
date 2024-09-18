@@ -20,6 +20,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   # If paraos is standalone project, we always want use unit testing
   include(CTest)
   enable_testing()
+
+  option(IS_PARAOS_STAND_ALONE_PROJECT "Use paraos version for etl_profile.h"
+         ON)
 endif()
 
 add_subdirectory(leaf)
