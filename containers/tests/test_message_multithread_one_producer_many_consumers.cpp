@@ -196,7 +196,7 @@ struct Consumer : public paraos::Thread {
   }
 
  private:
-  bool running_condition_{true};
+  PARAOS_MAYBE_UNUSED bool running_condition_{true};
 };
 
 int main() {

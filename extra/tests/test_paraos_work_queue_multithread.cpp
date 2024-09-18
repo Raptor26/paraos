@@ -134,8 +134,8 @@ class TestThread final : public Thread {
   };
 
  private:
-  int id;
-  std::size_t DelayInSeconds;
+  PARAOS_MAYBE_UNUSED int id;
+  PARAOS_MAYBE_UNUSED std::size_t DelayInSeconds;
 };
 
 /// @brief Multithread test for work queue.

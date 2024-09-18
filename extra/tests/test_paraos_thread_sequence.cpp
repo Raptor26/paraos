@@ -36,8 +36,6 @@ struct Mag : public Thread {
   ~Mag() { std::cout << "~Mag Dtor" << std::endl; }
 
   void Run() override {
-    static std::size_t cnt{0};
-
     std::cout << "Mag Run()" << std::endl;
     ++mag_call_cnt;
   }

@@ -114,9 +114,9 @@ class SequenceThread : private Thread {
       const ThreadPriority priority,
       const gsl::span<const TaskSequence> task_sequence,
       const gsl::span<TaskSequenceInfo> task_sequence_info)
-      : task_sequence_{task_sequence},
-        task_sequence_info_{task_sequence_info},
-        Thread{name, stack_depth, priority} {
+      : Thread{name, stack_depth, priority},
+        task_sequence_{task_sequence},
+        task_sequence_info_{task_sequence_info} {
     assert(
         task_sequence.size() == task_sequence_info.size() &&
         "Dimensions `task_sequence` and `task_sequence_info` arrays must be "

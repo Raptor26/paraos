@@ -23,12 +23,16 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 add_subdirectory(leaf)
+add_subdirectory(etl)
 
 if(FREERTOS)
+  option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_freertos)
 elseif(WIN32)
+  option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_win)
 elseif(UNIX)
+  option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_unix)
 endif()
 
