@@ -86,26 +86,37 @@ class IThreadSequence : public Thread {
   /// NotifyGive().
   /// @param[in] repeating: true if need periodic call, false if need call at
   /// once.
-  /// @return etl::timer::id::NO_TIMER if delegate not registered. In other case
-  /// return valid timer id.
+  /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
+  /// other case return valid timer id in range [0 .. 254].
   auto Registered(callback_type& callback, float freq, bool repeating)
       -> etl::timer::id::type {
-    // in Ctor ThreadSequence, user set period for called NotifyGive() by user
-    // code. In this case, we calculate period in microseconds from frequency.
-    uint32_t period_us{period_in_us_};
-    if (freq != 0.0) {
-      constexpr float us_in_sec{1000000};
-      period_us = gsl::narrow_cast<uint32_t>(1.0f / freq * us_in_sec);
-    }
-
-    auto timer_id =
-        timer_controller_.register_timer(callback, period_us, repeating);
+    paraos::CriticalSection critical;
+    auto timer_id = timer_controller_.register_timer(
+        callback, FreqToPeriod(freq), repeating);
 
     if (timer_id != etl::timer::id::NO_TIMER) {
       timer_controller_.start(timer_id);
     }
 
     return timer_id;
+  }
+
+  auto Unregistered(etl::timer::id::type timer_id) {
+    return timer_controller_.unregister_timer(timer_id);
+  }
+
+  auto SetFreq(etl::timer::id::type timer_id, float freq_) {
+    bool is_period_updated{false};
+
+    paraos::CriticalSection critical;
+
+    if (timer_controller_.set_period(timer_id, FreqToPeriod(freq_))) {
+      // Is timer period successfully update, that's mean timer was stopped,
+      // need start it again.
+      is_period_updated = timer_controller_.start(timer_id);
+    }
+
+    return is_period_updated;
   }
 
   /// @brief Give notify for start new cycle of scheduling tasks, written in
@@ -117,13 +128,30 @@ class IThreadSequence : public Thread {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
+  /// Methods definitions ------------------------------------------------------
+ private:
+  [[nodiscard]] uint32_t FreqToPeriod(float freq) {
+    // in Ctor ThreadSequence, user set period for called NotifyGive() by user
+    // code. In this case, we calculate period in microseconds from frequency.
+    uint32_t period_us{period_in_us_};
+    if (freq != 0.0) {
+      constexpr float us_in_sec{1000000};
+      period_us = gsl::narrow_cast<uint32_t>(1.0f / freq * us_in_sec);
+    }
+
+    return period_us;
+  }
+
+  /// Variable definitions -----------------------------------------------------
  private:
   SemaphoreBinary new_cycle_ready_sem_;
 
-  // Period between user code calling NotifyGive()
+  // Period in microseconds between user code calling NotifyGive(). User code
+  // must provide this information correctly.
   const uint32_t period_in_us_;
 
-  etl::icallback_timer &timer_controller_;
+  /// @brief Scheduler, based on callback timers.
+  etl::icallback_timer& timer_controller_;
 
   // if set nticks_ to zero, delegate will be called after delay
   // period_in_us_. It's not useful for tests.
@@ -151,10 +179,10 @@ class ThreadSequence : public IThreadSequence {
     timer_controller_.enable(true);
   }
 
- virtual ~ThreadSequence() { Break(); }
+  virtual ~ThreadSequence() { Break(); }
 
   /// @brief Force break thread execute. Useful in unit tests.
-  void Break() {IThreadSequence::Break();}
+  void Break() { IThreadSequence::Break(); }
 
  private:
   etl::callback_timer<MAX_TASKS> timer_controller_;
