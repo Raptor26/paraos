@@ -28,9 +28,7 @@ if(THREAD_ENABLE)
            COMMAND test_paraos_work_queue_multithread)
 
   # ----------------------------------------------------------------------------
-  add_executable(test_paraos_thread_sequence
-  test_paraos_thread_sequence.cpp)
+  add_executable(test_paraos_thread_sequence test_paraos_thread_sequence.cpp)
   target_link_libraries(test_paraos_thread_sequence PRIVATE paraos_extra)
-  add_test(NAME test_paraos_thread_sequence
-           COMMAND test_paraos_thread_sequence)
+  add_test(NAME test_paraos_thread_sequence COMMAND test_paraos_thread_sequence)
 endif()

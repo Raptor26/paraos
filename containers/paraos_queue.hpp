@@ -131,7 +131,7 @@ struct Queue {
     return std::move(Front());
   }
 
-  virtual auto IsEmpty() -> bool {
+  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool {
     bool is_empty{false};
     if (contained_cnt_ == 0) {
       is_empty = true;
@@ -140,18 +140,16 @@ struct Queue {
     return is_empty;
   };
 
-  virtual PARAOS_INLINE_TRIVIAL auto IsFull() -> bool {
+  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool {
     if (contained_cnt_ >= max_elements_numb_) {
       return true;
     }
     return false;
   }
 
-  virtual PARAOS_INLINE_TRIVIAL auto Size() -> size_t {
-    return contained_cnt_;
-  };
+  PARAOS_INLINE_TRIVIAL auto Size() -> size_t { return contained_cnt_; };
 
-  virtual void Erase() {
+  PARAOS_INLINE_OPERATIONS void Erase() {
     while (!IsEmpty()) {
       Pop();
     }

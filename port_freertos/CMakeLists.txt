@@ -20,7 +20,7 @@ if(NOT TARGET freertos_config)
               "${CMAKE_SOURCE_DIR}")
 endif()
 
-target_compile_definitions(freertos_config INTERFACE -DfreeRTOS)
+target_compile_definitions(freertos_config INTERFACE -DfreeRTOS -DFREERTOS)
 
 if(FREERTOS_USER_CONFIG)
   # in case when user want use freeRTOS with mcu port, user must define
@@ -41,8 +41,7 @@ elseif(WIN32)
       CACHE STRING "" FORCE)
 
   target_include_directories(
-    freertos_config
-    INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_configs/win/")
+    freertos_config INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/win/")
 
 elseif(UNIX)
 
@@ -55,8 +54,7 @@ elseif(UNIX)
       CACHE STRING "" FORCE)
 
   target_include_directories(
-    freertos_config
-    INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_configs/unix/")
+    freertos_config INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/unix/")
 endif()
 
 # FreeRTOS-Kernel --------------------------------------------------------------
@@ -89,14 +87,26 @@ target_sources(freertos_kernel
 
 # paraos_thread ----------------------------------------------------------------
 add_library(${PROJECT_NAME} STATIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC freertos_kernel freertos_config
-                                             Microsoft.GSL::GSL paraos_setup)
+target_link_libraries(
+  ${PROJECT_NAME} PUBLIC freertos_kernel freertos_config Microsoft.GSL::GSL
+                         paraos_setup etl::etl)
 
 target_sources(
   ${PROJECT_NAME}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp
           ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
+
+if(IS_PARAOS_STAND_ALONE_PROJECT)
+  # Added user etl_profile.h in etl::etl library
+  target_include_directories(etl
+                             INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/")
+else()
+  message(
+    FATAL_ERROR
+      "User project must provide etl_profile.h file and link them with etl target"
+  )
+endif()
 
 if(UTEST)
   add_subdirectory(tests)

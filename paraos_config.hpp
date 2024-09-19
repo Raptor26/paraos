@@ -62,8 +62,10 @@
 #ifndef PARAOS_CONSTEXPR
 #if __cplusplus >= 201703L
 #define PARAOS_CONSTEXPR constexpr
+#define PARAOS_MAYBE_UNUSED [[maybe_unused]]
 #else
 #define PARAOS_CONSTEXPR
+#define PARAOS_MAYBE_UNUSED
 #endif
 #endif
 

@@ -134,9 +134,25 @@ class TestThread final : public Thread {
   };
 
  private:
-  int id;
-  std::size_t DelayInSeconds;
+  PARAOS_MAYBE_UNUSED int id;
+  PARAOS_MAYBE_UNUSED std::size_t DelayInSeconds;
 };
+
+/// FreeRTOS can't stop scheduler. In this case we must manually call
+/// exit(EXIT_SUCCESS) after test complete.
+#if defined(FREERTOS)
+void ExitAfterTestComplete() {
+  if (str_src.size() == str_dst.size()) {
+    for (auto &str : str_dst) {
+      assert(
+          std::find(str_src.begin(), str_src.end(), str) != str_src.end() &&
+          "Can't find consumer string in source container");
+    }
+
+    exit(EXIT_SUCCESS);
+  }
+}
+#endif
 
 /// @brief Multithread test for work queue.
 ///
@@ -148,6 +164,12 @@ class TestThread final : public Thread {
 ///
 /// @return 0 if test success.
 int main() {
+#if defined(FREERTOS)
+  // ExitAfterTestComplete will be called by scheduler in idle task after no
+  // user task ready for execute.
+  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
+#endif
+
   TestThread thread(1, 1);
 
   constexpr std::size_t queue_len{1};

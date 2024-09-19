@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/ETLCPP/etl.git
+	branch = master
+	commit = 081e920302e4062dbd122fc3c86255825ccaa666
+	parent = 2e4592a58b08d0f22e656f6e00d24357591b29a5
+	method = merge
+	cmdver = 0.4.6
