@@ -35,27 +35,19 @@
 
 namespace paraos {
 
-template <uint_least8_t MAX_TASKS = 4>
-class ThreadSequence : public Thread {
+class IThreadSequence : public Thread {
   typedef etl::delegate<void(void)> callback_type;
 
- public:
-  ThreadSequence(
+ protected:
+  IThreadSequence(
       const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, uint32_t period_in_us)
-      : Thread{name, stack_depth, priority}, period_in_us_{period_in_us} {
-    // Run() method must call in forever loop periodical.
-    Thread::SetNeedWhile(true);
+      const ThreadPriority priority, uint32_t period_in_us,
+      etl::icallback_timer& timer_controller)
+      : Thread{name, stack_depth, priority},
+        period_in_us_{period_in_us},
+        timer_controller_{timer_controller} {}
 
-    // Method below create thread and scheduling it's for execute in RTOS (or
-    // windows/unix).
-    Thread::Start();
-
-    // Allow execute all timers, registered in timer_controller_
-    timer_controller_.enable(true);
-  }
-
-  ~ThreadSequence() { Break(); }
+  virtual ~IThreadSequence() {}
 
   /// @brief Run is called in loop wrapper in separate RTOS thread until
   /// anything call Break().
@@ -72,6 +64,22 @@ class ThreadSequence : public Thread {
     }
   }
 
+  /// @brief Force break thread execute. Useful in unit tests.
+  void Break() {
+    const paraos::CriticalSection critical;
+
+    // Run() no more called.
+    Thread::SetNeedWhile(false);
+
+    // Give notify for last call all registered methods task_sequence_. It's
+    // necessary for resume Run() from blocking mode and complete one iteration.
+    // After Run() complete, thread wrapper can safely delete thread (because
+    // above we call Thread::SetNeedWhile(false)) and the thead object can be
+    // safely deleted in thead dtor.
+    NotifyGive();
+  }
+
+ public:
   /// @brief Register delegate for periodic execute.
   /// @param[in] callback: Delegete that needs to be registered.
   /// @param[in] freq: If set 0.0, callback will be called on each user called
@@ -100,21 +108,6 @@ class ThreadSequence : public Thread {
     return timer_id;
   }
 
-  /// @brief Force break thread execute. Useful in unit tests.
-  void Break() {
-    const paraos::CriticalSection critical;
-
-    // Run() no more called.
-    Thread::SetNeedWhile(false);
-
-    // Give notify for last call all registered methods task_sequence_. It's
-    // necessary for resume Run() from blocking mode and complete one iteration.
-    // After Run() complete, thread wrapper can safely delete thread (because
-    // above we call Thread::SetNeedWhile(false)) and the thead object can be
-    // safely deleted in thead dtor.
-    NotifyGive();
-  }
-
   /// @brief Give notify for start new cycle of scheduling tasks, written in
   /// task_sequence_.
   /// @note User code must call this method at regular intervals, for example -
@@ -125,15 +118,47 @@ class ThreadSequence : public Thread {
   }
 
  private:
-  etl::callback_timer<MAX_TASKS> timer_controller_;
   SemaphoreBinary new_cycle_ready_sem_;
 
   // Period between user code calling NotifyGive()
   const uint32_t period_in_us_;
 
+  etl::icallback_timer &timer_controller_;
+
   // if set nticks_ to zero, delegate will be called after delay
   // period_in_us_. It's not useful for tests.
   uint32_t nticks_{period_in_us_};
+};
+
+template <uint_least8_t MAX_TASKS = 4>
+class ThreadSequence : public IThreadSequence {
+  typedef etl::delegate<void(void)> callback_type;
+
+ public:
+  ThreadSequence(
+      const std::string name, const std::size_t stack_depth,
+      const ThreadPriority priority, uint32_t period_in_us)
+      : IThreadSequence{
+            name, stack_depth, priority, period_in_us, timer_controller_} {
+    // Run() method must call in forever loop periodical.
+    Thread::SetNeedWhile(true);
+
+    // Method below create thread and scheduling it's for execute in RTOS (or
+    // windows/unix).
+    Thread::Start();
+
+    // Allow execute all timers, registered in timer_controller_
+    timer_controller_.enable(true);
+  }
+
+ virtual ~ThreadSequence() { Break(); }
+
+  /// @brief Force break thread execute. Useful in unit tests.
+  void Break() {IThreadSequence::Break();}
+
+ private:
+  etl::callback_timer<MAX_TASKS> timer_controller_;
+  SemaphoreBinary new_cycle_ready_sem_;
 };
 }  // namespace paraos
 
