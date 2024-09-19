@@ -23,8 +23,8 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef PARAOS_THREAD_SEQUENCE_V2_HPP
-#define PARAOS_THREAD_SEQUENCE_V2_HPP
+#ifndef PARAOS_THREAD_SEQUENCE_HPP
+#define PARAOS_THREAD_SEQUENCE_HPP
 
 #include "etl/callback_timer.h"
 #include "gsl/gsl"
@@ -135,4 +135,4 @@ class ThreadSequence : public Thread {
 };
 }  // namespace paraos
 
-#endif /* PARAOS_THREAD_SEQUENCE_V2_HPP */
+#endif /* PARAOS_THREAD_SEQUENCE_HPP */
