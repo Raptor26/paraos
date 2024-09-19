@@ -126,8 +126,9 @@ int main() {
 
   thread_seq_ptr = &thread_sequence;
 
-  // Compile time delegate.
-  auto gyr_acc_delegate = etl::delegate<void(
+  // Compile time delegate. Delegate lifetime can't be less then lifetime
+  // between Registered() and Unregistered() call methods.
+  static auto gyr_acc_delegate = etl::delegate<void(
       void)>::create<GyrAccFloat, gyr_acc, &GyrAccFloat::Update>();
 
   {
@@ -141,8 +142,9 @@ int main() {
     // runtime variable.
     static Mag mag;
 
-    // runtime delegate.
-    etl::delegate<void(void)> mag_delegate =
+    // runtime delegate. Delegate lifetime can't be less then lifetime between
+    // Registered() and Unregistered() call methods.
+    static etl::delegate<void(void)> mag_delegate =
         etl::delegate<void(void)>::create<Mag, &Mag::Update>(mag);
 
     {
@@ -151,16 +153,14 @@ int main() {
           mag_delegate, thread_sequence_call_period_us / 2.0, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
-
-    // mag_delegate will be destroyed here. After registered delegate in
-    // sequence, no more need delegate for runtime mag::Update.
   }
 
   {
     // runtime variable.
     static Baro baro;
 
-    // runtime delegate.
+    // runtime delegate. Delegate lifetime can't be less then lifetime between
+    // Registered() and Unregistered() call methods.
     etl::delegate<void(void)> baro_delegate =
         etl::delegate<void(void)>::create<Baro, &Baro::Update>(baro);
 
