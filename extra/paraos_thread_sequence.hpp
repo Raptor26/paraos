@@ -120,7 +120,9 @@ class ThreadSequence : public Thread {
   /// @note User code must call this method at regular intervals, for example -
   /// in a timer overflow interrupt.
   /// @return
-  bool NotifyGive() { return new_cycle_ready_sem_.Give(); }
+  bool NotifyGive(bool is_isr = false) {
+    return new_cycle_ready_sem_.Give(is_isr);
+  }
 
  private:
   etl::callback_timer<MAX_TASKS> timer_controller_;
