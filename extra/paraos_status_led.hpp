@@ -1,3 +1,28 @@
+/// @file paraos_status_led.hpp
+/// @author Mickle Isaev (mrraptor26@gmail.com)
+///
+/// @copyright (c) 2024 Stilsoft
+///
+/// MIT License:
+///
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the 'Software'), to
+/// deal in the Software without restriction, including without limitation the
+/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
+///
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
+///
+/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+/// IN THE SOFTWARE.
+
 #ifndef PARAOS_STATUS_LED_HPP
 #define PARAOS_STATUS_LED_HPP
 
@@ -25,66 +50,36 @@ struct IStatusLed {
 class StatusLed {
   using delegate_type = etl::delegate<void(void)>;
 
+  static constexpr int blink_mode_max_numb =
+      static_cast<int>(StatusLedMode::kMaxNumb);
+
+  /// @brief Freq calculated to period befor disable led after enable was
+  /// called. Used in Blink().
+  static constexpr float enable_freq{20.0};
+
+  /// @brief Freq calculated to period befor enable led after disable was
+  /// called. Used in Blink().
+  static constexpr float disable_freq{1.0};
+
  public:
   StatusLed(
       IStatusLed &io, IThreadSequence &thread_sequence,
-      StatusLedMode blink_mode = StatusLedMode::kIdle)
-      : io_{io}, thread_sequence_{thread_sequence} {
-    NewBlinkMode(blink_mode);
-  }
+      StatusLedMode blink_mode = StatusLedMode::kIdle);
 
-  virtual ~StatusLed() {}
+  virtual ~StatusLed();
 
-  auto NewBlinkMode(StatusLedMode new_blink_mode) -> bool {
-    bool is_new_blink_mode_set{false};
-    thread_sequence_.Unregistered(id_);
-    id_ = is_new_blink_mode_set = thread_sequence_.Registered(
-        delegates_arr_[static_cast<int>(new_blink_mode)],
-        delegates_freq_arr_[static_cast<int>(new_blink_mode)],
-        delegates_is_continuous_arr[static_cast<int>(new_blink_mode)]);
-
-    if (id_ != etl::timer::id::NO_TIMER) {
-      is_new_blink_mode_set = true;
-    }
-
-    return is_new_blink_mode_set;
-  }
+  auto NewBlinkMode(StatusLedMode new_blink_mode) -> bool;
 
  private:
-  void Enable() { io_.Enable(); }
+  void Enable();
 
-  void Disable() { io_.Disable(); }
+  void Disable();
 
-  void Idle() {
-    // Toggle led.
-    if (is_led_enable_) {
-      is_led_enable_ = false;
-      io_.Disable();
-    } else {
-      is_led_enable_ = true;
-      io_.Enable();
-    }
-  }
+  void Idle();
 
-  void Blink() {
-    if (is_led_enable_) {
-      io_.Disable();
-      thread_sequence_.SetFreq(id_, disable_freq);
+  void Blink();
 
-      // After a period of time, specified by the disable_freq, Blink() enable
-      // led again.
-      is_led_enable_ = false;
-    } else {
-      io_.Enable();
-      thread_sequence_.SetFreq(id_, enable_freq);
-
-      // After a period of time, specified by the enable_freq, Blink() disable
-      // led.
-      is_led_enable_ = true;
-    }
-  }
-
-  void Error() { Idle(); }
+  void Error();
 
  private:
   IStatusLed &io_;
@@ -93,34 +88,19 @@ class StatusLed {
 
   bool is_led_enable_{false};
 
-  delegate_type delegates_arr_[static_cast<int>(StatusLedMode::kMaxNumb)] = {
-      delegate_type::create<StatusLed, &StatusLed::Enable>(*this),
-      delegate_type::create<StatusLed, &StatusLed::Disable>(*this),
-      delegate_type::create<StatusLed, &StatusLed::Idle>(*this),
-      delegate_type::create<StatusLed, &StatusLed::Blink>(*this),
-      delegate_type::create<StatusLed, &StatusLed::Error>(*this)};
+  struct StatusLedDelegate {
+    delegate_type delegate_;
+    float freq_;
+    bool is_continuous_;
+  };
 
-  float delegates_freq_arr_[static_cast<int>(StatusLedMode::kMaxNumb)] = {
-      0.0,    // StatusLed::Enable
-      0.0,    // StatusLed::Disable
-      1.0,    // StatusLed::Idle
-      0.0,    // StatusLed::Blink
-      10.0};  // StatusLed::Error
-
-  /// @brief Freq calculated to period befor disable led after called enable.
-  /// Used in Blink().
-  static constexpr float enable_freq{20.0};
-
-  /// @brief Freq calculated to period befor enable led after called disable.
-  /// Used in Blink().
-  static constexpr float disable_freq{1.0};
-
-  bool delegates_is_continuous_arr[static_cast<int>(StatusLedMode::kMaxNumb)] =
-      {false,  // StatusLed::Enable
-       false,  // StatusLed::Disable
-       true,   // StatusLed::Idle
-       true,   // StatusLed::Blink
-       true};  // StatusLed::Error
+  StatusLedDelegate delegate_[blink_mode_max_numb] = {
+      {delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0, false},
+      {delegate_type::create<StatusLed, &StatusLed::Disable>(*this), 0.0,
+       false},
+      {delegate_type::create<StatusLed, &StatusLed::Idle>(*this), 1.0, true},
+      {delegate_type::create<StatusLed, &StatusLed::Blink>(*this), 0.0, true},
+      {delegate_type::create<StatusLed, &StatusLed::Error>(*this), 10.0, true}};
 };
 
 }  // namespace paraos
