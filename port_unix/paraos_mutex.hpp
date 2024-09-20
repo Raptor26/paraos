@@ -128,6 +128,20 @@ class MutexBase {
   [[maybe_unused]] bool is_binary_{true};
   bool is_init_{false};
 };
+
+class MutexBaseBinary : public MutexBase {
+ public:
+  MutexBaseBinary() : MutexBase(MutexAttr{true}) {}
+
+  ~MutexBaseBinary() {}
+
+  MutexBaseBinary(const MutexBaseBinary& other) = delete;
+  MutexBaseBinary(MutexBaseBinary&& other) = delete;
+
+  MutexBaseBinary& operator=(const MutexBaseBinary& other) = delete;
+  MutexBaseBinary& operator=(MutexBaseBinary&& other) = delete;
+};
+
 }  // namespace paraos
 
 #endif /* PARAOS_MUTEX_HPP */
