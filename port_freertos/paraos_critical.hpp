@@ -74,6 +74,9 @@ class CriticalSection final {
   const bool is_isr_;
   UBaseType_t uxSavedInterruptStatus;
 };
+
+inline void DisableIsr() { taskENTER_CRITICAL(); }
+inline void EnableIsr() { taskEXIT_CRITICAL(); }
 }  // namespace paraos
 
 #endif /* PARAOS_CRITICAL_HPP */
