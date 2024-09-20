@@ -74,6 +74,10 @@ inline int TimespecAdd(
   return iStatus;
 }
 
+constexpr inline std::size_t GetStackMinimumSizeInBytes() {
+  return 1024 * sizeof(size_t);
+}
+
 }  // namespace paraos
 
 #endif /* PARAOS_UTILS_HPP */
