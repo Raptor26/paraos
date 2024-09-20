@@ -26,7 +26,7 @@
 #ifndef PARAOS_THREAD_SEQUENCE_HPP
 #define PARAOS_THREAD_SEQUENCE_HPP
 
-#include "etl/callback_timer_locked.h"
+#include "etl/callback_timer.h"
 #include "etl/delegate.h"
 #include "gsl/gsl"
 #include "paraos_bool_atomic.hpp"
@@ -47,7 +47,7 @@ class IThreadSequence : public Thread {
   IThreadSequence(
       const std::string name, const std::size_t stack_depth,
       const ThreadPriority priority, uint32_t period_in_us,
-      etl::icallback_timer_locked& timer_controller)
+      etl::icallback_timer& timer_controller)
       : Thread{name, stack_depth, priority},
         period_in_us_{period_in_us},
         timer_controller_{timer_controller} {}
@@ -95,7 +95,7 @@ class IThreadSequence : public Thread {
   /// other case return valid timer id in range [0 .. 254].
   auto Registered(callback_type& callback, float freq, bool repeating)
       -> etl::timer::id::type {
-    paraos::CriticalSection critical;
+    // paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
 
@@ -113,7 +113,7 @@ class IThreadSequence : public Thread {
   auto SetFreq(etl::timer::id::type timer_id, float freq_) {
     bool is_period_updated{false};
 
-    paraos::CriticalSection critical;
+    // paraos::CriticalSection critical;
 
     if (timer_controller_.set_period(timer_id, FreqToPeriod(freq_))) {
       // Is timer period successfully update, that's mean timer was stopped,
@@ -148,9 +148,9 @@ class IThreadSequence : public Thread {
   }
 
  private:
-  bool TryLock() { return mutex_.Lock(0); }
-  void Lock() { mutex_.Lock(paraos::max_delay); }
-  void Unlock() { mutex_.Unlock(); }
+  bool TryLock() { return true; }
+  void Lock() {}
+  void Unlock() {}
 
   /// Variable definitions -----------------------------------------------------
  private:
@@ -161,28 +161,11 @@ class IThreadSequence : public Thread {
   const uint32_t period_in_us_;
 
   /// @brief Scheduler, based on callback timers.
-  etl::icallback_timer_locked& timer_controller_;
+  etl::icallback_timer& timer_controller_;
 
   // if set nticks_ to zero, delegate will be called after delay
   // period_in_us_. It's not useful for tests.
   uint32_t nticks_{period_in_us_};
-
-  /// @brief Provided lock delegates for
-  MutexBaseBinary mutex_;
-
-  /// Delegates marked as protected for  set_locks() in timer_controller_ in
-  /// derived class (ThreadSequence). If set_locks() in 'IThreadSequence' ctor,
-  /// timer_controller_ not constructed in this moment and locks variables in
-  /// timer_controller_ will be overwritten by default values.
- protected:
-  try_lock_type try_lock_delegate_ =
-      try_lock_type::create<IThreadSequence, &IThreadSequence::TryLock>(*this);
-
-  lock_type lock_delegate_ =
-      lock_type::create<IThreadSequence, &IThreadSequence::Lock>(*this);
-
-  unlock_type unlock_delegate_ =
-      unlock_type::create<IThreadSequence, &IThreadSequence::Unlock>(*this);
 };
 
 template <uint_least8_t MAX_TASKS = 4>
@@ -193,9 +176,6 @@ class ThreadSequence : public IThreadSequence {
       const ThreadPriority priority, uint32_t period_in_us)
       : IThreadSequence{
             name, stack_depth, priority, period_in_us, timer_controller_} {
-    timer_controller_.set_locks(
-        try_lock_delegate_, lock_delegate_, unlock_delegate_);
-
     // Run() method must call in forever loop periodical.
     Thread::SetNeedWhile(true);
 
@@ -214,7 +194,7 @@ class ThreadSequence : public IThreadSequence {
 
   /// Variable definitions -----------------------------------------------------
  private:
-  etl::callback_timer_locked<MAX_TASKS> timer_controller_;
+  etl::callback_timer<MAX_TASKS> timer_controller_;
 };
 }  // namespace paraos
 
