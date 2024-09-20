@@ -36,6 +36,9 @@ namespace paraos {
 constexpr std::size_t max_delay{INFINITE};
 static_assert(sizeof(max_delay) >= sizeof(DWORD));
 
+constexpr inline std::size_t GetStackMinimumSizeInBytes() {
+  return 1024 * sizeof(size_t);
+}
 }  // namespace paraos
 
 #endif /* UTILS_HPP */

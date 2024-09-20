@@ -31,4 +31,11 @@ if(THREAD_ENABLE)
   add_executable(test_paraos_thread_sequence test_paraos_thread_sequence.cpp)
   target_link_libraries(test_paraos_thread_sequence PRIVATE paraos_extra)
   add_test(NAME test_paraos_thread_sequence COMMAND test_paraos_thread_sequence)
+
+  # ----------------------------------------------------------------------------
+  add_executable(test_paraos_cooperative_scheduling
+                 test_paraos_cooperative_scheduling.cpp)
+  target_link_libraries(test_paraos_cooperative_scheduling PRIVATE paraos_extra)
+  add_test(NAME test_paraos_cooperative_scheduling
+           COMMAND test_paraos_cooperative_scheduling)
 endif()
