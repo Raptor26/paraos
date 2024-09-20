@@ -27,6 +27,8 @@
 
 #include "paraos_thread_cooperative_scheduling.hpp"
 
+using namespace paraos;
+
 bool is_test_complete{false};
 
 class Task1 : public etl::task {
@@ -104,13 +106,32 @@ class Idle {
     std::cout << "Exiting the scheduler" << std::endl;
 
     // Call exit(EXIT_SUCCESS) in ExitAfterTestComplete() for force break system
-    // process.
+    // process (in freertos port only).
     is_test_complete = true;
   }
 
  private:
   etl::ischeduler& scheduler;
 };
+
+// -----------------------------------------------------------------------------
+// Global definitions for variables need for freertos port. When called
+// exit(EXIT_SUCCESS), global object call their destructions (for local object
+// nothing calls). It's help to reduced memory check warnings.
+// -----------------------------------------------------------------------------
+
+CooperativeScheduling<10, etl::scheduler_policy_highest_priority>
+    cooperative_scheduler{
+        "Cooperative", GetStackMinimumSizeInBytes() + 1024,
+        ThreadPriority::kNormal, false};
+
+Idle idle_handle(cooperative_scheduler.GetScheduler());
+
+etl::function_mv<Idle, &Idle::IdleCallback> idle_callback(idle_handle);
+
+Task1 task1;
+Task2 task2;
+Task3 task3;
 
 /// FreeRTOS can't stop scheduler. In this case we must manually call
 /// exit(EXIT_SUCCESS) after test complete.
@@ -128,20 +149,6 @@ int main() {
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
-
-  using namespace paraos;
-  CooperativeScheduling<10, etl::scheduler_policy_highest_priority>
-      cooperative_scheduler{
-          "Cooperative", GetStackMinimumSizeInBytes() + 1024,
-          ThreadPriority::kNormal, false};
-
-  Task1 task1;
-  Task2 task2;
-  Task3 task3;
-
-  Idle idle_handle(cooperative_scheduler.GetScheduler());
-
-  etl::function_mv<Idle, &Idle::IdleCallback> idle_callback(idle_handle);
 
   cooperative_scheduler.AddTask(task1);
   cooperative_scheduler.AddTask(task3);
