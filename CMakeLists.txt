@@ -1,10 +1,10 @@
-# Copyright (c) 2024 Stilsoft
+#[=[
+Copyright (c) 2024 Stilsoft
+Autor Mickle Isaev
+Distributed under the MIT License
+]=]
 
-# Autor Mickle Isaev
-
-# Distributed under the MIT License
-
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.20)
 
 include(setup.cmake)
 
@@ -25,8 +25,34 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
          ON)
 endif()
 
-add_subdirectory(leaf)
-add_subdirectory(etl)
+if(NOT TARGET Boost::leaf)
+  add_subdirectory(leaf)
+endif()
+
+if(NOT TARGET etl::etl)
+  add_subdirectory(etl)
+endif()
+
+if(NOT TARGET Microsoft.GSL::GSL)
+  add_subdirectory(GSL)
+endif()
+
+add_library(${PROJECT_NAME} STATIC)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft.GSL::GSL etl::etl
+                                             Boost::leaf paraos_setup)
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17 c_std_11)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+if(TRACE)
+  message("paraos trace enable")
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DparaosTRACE_ENABLE)
+endif()
+
+target_include_directories(${PROJECT_NAME}
+                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 if(FREERTOS)
   option(THREAD_ENABLE "Thread support enable" ON)
@@ -41,11 +67,3 @@ endif()
 
 add_subdirectory(containers)
 add_subdirectory(extra)
-add_subdirectory(GSL)
-
-add_library(${PROJECT_NAME} STATIC)
-set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(${PROJECT_NAME} PUBLIC paraos_extra)
-
-target_include_directories(${PROJECT_NAME}
-                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")

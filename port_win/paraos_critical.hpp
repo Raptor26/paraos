@@ -85,6 +85,9 @@ class CriticalSection final {
   static inline CriticalSectionFactory critical_section_factory;
 };
 
+inline void DisableIsr() {}
+inline void EnableIsr() {}
+
 }  // namespace paraos
 
 #endif /* CRITICAL_HPP */

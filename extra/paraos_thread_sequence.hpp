@@ -76,7 +76,7 @@ class IThreadSequence : public Thread {
     // Run() no more called.
     Thread::SetNeedWhile(false);
 
-    // Give notify for last call all registered methods task_sequence_. It's
+    // Give notify for last call all registered methods timer_controller_. It's
     // necessary for resume Run() from blocking mode and complete one iteration.
     // After Run() complete, thread wrapper can safely delete thread (because
     // above we call Thread::SetNeedWhile(false)) and the thead object can be
@@ -86,7 +86,7 @@ class IThreadSequence : public Thread {
 
  public:
   /// @brief Register delegate for periodic execute.
-  /// @param[in] callback: Delegete that needs to be registered.
+  /// @param[in] callback: Delegate that needs to be registered.
   /// @param[in] freq: If set 0.0, callback will be called on each user called
   /// NotifyGive().
   /// @param[in] repeating: true if need periodic call, false if need call at
@@ -95,7 +95,7 @@ class IThreadSequence : public Thread {
   /// other case return valid timer id in range [0 .. 254].
   auto Registered(callback_type& callback, float freq, bool repeating)
       -> etl::timer::id::type {
-    // paraos::CriticalSection critical;
+    paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
 
@@ -107,13 +107,14 @@ class IThreadSequence : public Thread {
   }
 
   auto Unregistered(etl::timer::id::type timer_id) {
+    paraos::CriticalSection critical;
     return timer_controller_.unregister_timer(timer_id);
   }
 
   auto SetFreq(etl::timer::id::type timer_id, float freq_) {
     bool is_period_updated{false};
 
-    // paraos::CriticalSection critical;
+    paraos::CriticalSection critical;
 
     if (timer_controller_.set_period(timer_id, FreqToPeriod(freq_))) {
       // Is timer period successfully update, that's mean timer was stopped,
@@ -125,7 +126,7 @@ class IThreadSequence : public Thread {
   }
 
   /// @brief Give notify for start new cycle of scheduling tasks, written in
-  /// task_sequence_.
+  /// timer_controller_.
   /// @note User code must call this method at regular intervals, for example -
   /// in a timer overflow interrupt.
   /// @return
@@ -146,11 +147,6 @@ class IThreadSequence : public Thread {
 
     return period_us;
   }
-
- private:
-  bool TryLock() { return true; }
-  void Lock() {}
-  void Unlock() {}
 
   /// Variable definitions -----------------------------------------------------
  private:

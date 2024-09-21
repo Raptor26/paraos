@@ -1,22 +1,15 @@
-# Copyright (c) 2024 Stilsoft
+#[=[
+Copyright (c) 2024 Stilsoft
+Autor Mickle Isaev
+Distributed under the MIT License
+]=]
 
-# Autor Mickle Isaev
+cmake_minimum_required(VERSION 3.20)
 
-# Distributed under the MIT License
+target_sources(${PROJECT_NAME} PRIVATE paraos_status_led.cpp)
 
-cmake_minimum_required(VERSION 3.28)
-
-project(paraos_extra VERSION 0.1.0)
-
-add_library(${PROJECT_NAME} INTERFACE)
-
-target_sources(${PROJECT_NAME} INTERFACE paraos_status_led.cpp)
-
-target_link_libraries(${PROJECT_NAME} INTERFACE paraos_containers)
-
-target_include_directories(
-  ${PROJECT_NAME} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/"
-                            "${CMAKE_SOURCE_DIR}/")
+target_include_directories(${PROJECT_NAME}
+                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 if(UTEST)
   add_subdirectory(tests)

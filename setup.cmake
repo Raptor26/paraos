@@ -1,12 +1,10 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.20)
 
+# User can specifiet building paros libnrary for link anything with paraos_setup
+# interface taget
 project(paraos_setup)
 
 add_library(${PROJECT_NAME} INTERFACE)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17 c_std_11)
-target_compile_options(${PROJECT_NAME} INTERFACE -Wall -Wextra -Wpedantic
-                                                 -Werror)
-target_link_libraries(${PROJECT_NAME} INTERFACE Boost::leaf)
 
 if(TRACE)
   message("paraos trace enable")

@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "paraos_critical.hpp"
-#include "paraos_freertos_hooks.hpp"
 #include "paraos_thread.hpp"
 
 static std::size_t cnt{0};

@@ -1,23 +1,18 @@
-# Copyright (c) 2024 Stilsoft
+#[=[
+Copyright (c) 2024 Stilsoft
+Autor Mickle Isaev
+Autor Vyhodcev Egor
+Distributed under the MIT License
+]=]
 
-# Autor Mickle Isaev
-
-# Autor Vyhodcev Egor
-
-# Distributed under the MIT License
-
-cmake_minimum_required(VERSION 3.28)
-
-project(paraos_osal VERSION 0.1.0)
+cmake_minimum_required(VERSION 3.20)
 
 message("Using freeRTOS implementation")
 
 if(NOT TARGET freertos_config)
   add_library(freertos_config INTERFACE)
-  target_include_directories(
-    freertos_config SYSTEM
-    INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/freertos_port/"
-              "${CMAKE_SOURCE_DIR}")
+  target_include_directories(freertos_config
+                             INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/")
 endif()
 
 target_compile_definitions(freertos_config INTERFACE -DfreeRTOS -DFREERTOS)
@@ -66,7 +61,6 @@ target_compile_options(
   freertos_kernel_port PRIVATE -Wno-unused-variable
                                -Wno-unused-but-set-variable)
 
-target_link_libraries(freertos_kernel INTERFACE paraos_setup)
 target_compile_options(
   freertos_kernel
   PRIVATE -Wno-unused-variable
@@ -86,10 +80,10 @@ target_sources(freertos_kernel
                PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_freertos_hooks.cpp)
 
 # paraos_thread ----------------------------------------------------------------
-add_library(${PROJECT_NAME} STATIC)
-target_link_libraries(
-  ${PROJECT_NAME} PUBLIC freertos_kernel freertos_config Microsoft.GSL::GSL
-                         paraos_setup etl::etl)
+target_link_libraries(${PROJECT_NAME} PUBLIC freertos_kernel)
+
+target_include_directories(${PROJECT_NAME}
+                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 target_sources(
   ${PROJECT_NAME}

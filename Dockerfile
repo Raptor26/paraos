@@ -15,10 +15,11 @@ RUN apt-get update && \
     wget \
     ninja-build \
     clang \
-    valgrind
+    valgrind \
+    build-essential
 
-# Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная 
-# требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию 
+# Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная
+# требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию
 # необходимо установить cmake вручную с помощью wget.
 RUN rm -rf /var/lib/apt/lists/* \
     && wget https://github.com/Kitware/CMake/releases/download/v3.30.0/cmake-3.30.0-linux-x86_64.sh \
@@ -59,10 +60,11 @@ RUN apt-get update && \
     ninja-build \
     clang \
     valgrind \
-    dos2unix
+    dos2unix \
+    build-essential
 
-# Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная 
-# требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию 
+# Из apt устанаваливается cmake версии 3.25. На текущий момент минимальная
+# требуемая версия в проекте - 3.28. Для удовлеторвения данному требованию
 # необходимо установить cmake вручную с помощью wget.
 RUN rm -rf /var/lib/apt/lists/* \
     && wget https://github.com/Kitware/CMake/releases/download/v3.30.0/cmake-3.30.0-linux-x86_64.sh \

@@ -71,9 +71,9 @@ Thread::~Thread() {
   paraosTRACE_MESSAGE("Thread deleted: " << name_);
 }
 
-std::string_view Thread::Name() { return name_; }
+std::string_view Thread::Name() const { return name_; }
 
-TaskHandle_t Thread::Handle() { return handle_; }
+TaskHandle_t Thread::Handle() const { return handle_; }
 
 void Thread::DelayMs(std::size_t sleep_ms) {
   vTaskDelay(static_cast<TickType_t>(PARAOS_ConvertMsToTicks(sleep_ms)));

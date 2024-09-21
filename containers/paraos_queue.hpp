@@ -48,10 +48,6 @@ struct Queue {
       std::is_nothrow_move_constructible<T>::value,
       "'T' move constructor must be annotated as noexcept");
 
-  static_assert(
-      std::is_same_v<T, typename traits_t1::value_type>,
-      "Queue item type and allocator type must be same type");
-
  public:
   Queue(size_t max_elements_numb) : max_elements_numb_{max_elements_numb} {
     if (max_elements_numb > 0) {

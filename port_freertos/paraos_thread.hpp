@@ -73,11 +73,11 @@ class Thread {
 
   /// @brief Метод используется для получения названия потока.
   /// @return Возвращает имя потока.
-  std::string_view Name();
+  std::string_view Name() const;
 
   /// @brief Метод используется для получения дескриптора созданного потока.
   /// @return Возвращает дескриптор потока.
-  TaskHandle_t Handle();
+  TaskHandle_t Handle() const;
 
   /// @brief Метод используется для задержки потока на указанное время.
   /// @param[in] sleep_ms: Время в мс, на которое необходимо заблокировать
@@ -156,8 +156,8 @@ class Thread {
  private:
   static inline BoolAtomic is_scheduler_started_{false};
 
-  /// @brief If true, call Start() make thread, otherwise, destructor was called
-  /// for class and will not create the tread.
+  /// @brief If true, calling Start() make thread, otherwise, destructor was
+  /// called for class and will not create the thread.
   BoolAtomic is_thread_makeable_{true};
 
   /// @brief If semaphore given, that's mean perform_work() complete execute and

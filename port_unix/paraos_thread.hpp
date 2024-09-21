@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <deque>
 #include <string>
+#include <string_view>
 
 #include "gsl/gsl"
 #include "paraos_bool_atomic.hpp"

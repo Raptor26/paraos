@@ -15,6 +15,13 @@
         "инвалидирует"
     ],
     "files.associations": {
+        "*.c": "c",
+        "*.cpp": "cpp",
+        "*.h": "c",
+        "*.hpp": "cpp",
+        "CMakeLIsts.txt": "cmake",
+        "*.cmake": "cmake",
+        "*.json": "json",
         "array": "cpp",
         "atomic": "cpp",
         "bit": "cpp",
@@ -124,7 +131,8 @@
         "task.h": "c",
         "hash_map": "cpp",
         "forward_list": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "xhash": "cpp"
     },
     "cSpell.enabled": true
 }
