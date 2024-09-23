@@ -164,6 +164,15 @@ class IThreadSequence : public Thread {
   uint32_t nticks_{period_in_us_};
 };
 
+/// @brief Create separate thread for execute registered delegates.
+/// @tparam MAX_TASKS - Max registered delegates in one time.
+/// @param[in] name: Thread name, whose  context is provided for execute
+/// registered delegates.
+/// @param[in] stack_depth: Stack depth in bytes for thread.
+/// @param[in] priority: Thread priority.
+/// @param[in] period_in_us: Period in microseconds, between user code call
+/// NotifyGive(). User code responsible for specifying this parameter, which
+/// corresponding to the actual call period NotifyGive().
 template <uint_least8_t MAX_TASKS = 4>
 class ThreadSequence : public IThreadSequence {
  public:
@@ -179,7 +188,7 @@ class ThreadSequence : public IThreadSequence {
     // windows/unix).
     Thread::Start();
 
-    // Allow execute all timers, registered in timer_controller_
+    // Allow execute all timers, registered in timer_controller_.
     timer_controller_.enable(true);
   }
 
