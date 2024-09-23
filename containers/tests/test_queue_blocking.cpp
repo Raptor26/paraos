@@ -34,10 +34,11 @@ using namespace paraos;
 
 constexpr size_t block_time_ms{0};
 
-TEST(QueueBlocking, Create) { QueueBlocking<int> queue{10}; }
+TEST(QueueBlocking, Create) { QueueBlocking<int, 20> queue; }
 
 TEST(QueueBlocking, EmplaceThenRead) {
-  QueueBlocking<int> queue{3};
+  constexpr std::size_t max_elem{3};
+  QueueBlocking<int, max_elem> queue;
 
   ASSERT_TRUE(queue.Push(1, block_time_ms));
   ASSERT_TRUE(queue.Push(2, block_time_ms));
@@ -69,7 +70,8 @@ TEST(QueueBlocking, EmplaceThenRead) {
 }
 
 TEST(QueueBlocking, PushThenRead) {
-  QueueBlocking<int> queue{2};
+  constexpr std::size_t max_elem{2};
+  QueueBlocking<int, max_elem> queue;
 
   int val{1};
   ASSERT_TRUE(queue.Push(val, block_time_ms));     // push lvalue
@@ -97,7 +99,8 @@ TEST(QueueBlocking, PushThenRead) {
 }
 
 TEST(QueueBlocking, PopOnEmptyQueue) {
-  QueueBlocking<int> queue{2};
+  constexpr std::size_t max_elem{2};
+  QueueBlocking<int, max_elem> queue;
 
   {
     // Метод Pop() не дождётся семафора push_sem (не было выполнено вставок) и

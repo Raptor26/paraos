@@ -52,9 +52,10 @@ class WorkItemForDestroyThread final : public WorkItem {
 };
 
 /// @brief Contained params for execute user function.
+template <const std::size_t SIZE = 10>
 class WorkQueue final {
   using item_type = std::unique_ptr<WorkItem>;
-  using queue_type = QueueBlocking<item_type>;
+  using queue_type = QueueBlocking<item_type, SIZE>;
 
  public:
   /// @brief Call this method only if WorkQueue() initialized with
@@ -70,14 +71,34 @@ class WorkQueue final {
 
   WorkQueue(
       const std::string name, std::size_t stack_depth, ThreadPriority priority,
-      std::size_t max_queue_size = 10, bool if_need_start_thread = true)
-      : queue_{max_queue_size},
-        worker_thread_{name, stack_depth, priority, *this},
+      bool if_need_start_thread = true)
+      : worker_thread_{name, stack_depth, priority, *this},
         if_need_start_thread_{if_need_start_thread} {
     StartThread();
   }
 
-  auto Push(item_type &&work_item, std::size_t delay_ms = max_delay) {
+//   // Конструктор копирования
+//   WorkQueue(const WorkQueue& other) {}
+
+//   // Конструктор перемещения, noexcept - для оптимизации при использовании
+//   // стандартных контейнеров
+//   WorkQueue(WorkQueue&& other) noexcept {}
+
+//   // Оператор присваивания копированием (copy assignment)
+//   WorkQueue& operator=(const WorkQueue& other) {
+//     if (this == &other) return *this;
+
+//     return *this;
+//   }
+
+//   // Оператор присваивания перемещением (move assignment)
+//   WorkQueue& operator=(WorkQueue&& other) noexcept {
+//     if (this == &other) return *this;
+
+//     return *this;
+//   }
+
+  auto Push(item_type&& work_item, std::size_t delay_ms = max_delay) {
     if (if_we_need_destroy_thread_) {
       return false;
     } else {
@@ -120,7 +141,7 @@ class WorkQueue final {
    public:
     WorkerThread(
         const std::string name, std::size_t stack_depth,
-        ThreadPriority priority, WorkQueue &parent, bool is_joinable = false)
+        ThreadPriority priority, WorkQueue& parent, bool is_joinable = false)
         : Thread{name, stack_depth, priority, is_joinable}, parent_{parent} {}
 
     ~WorkerThread() {}
@@ -158,7 +179,7 @@ class WorkQueue final {
       paraosTRACE_MESSAGE("~WorkerThread Run() complete");
     }
 
-    WorkQueue &parent_;
+    WorkQueue& parent_;
   };
 
   /// @brief Support Dtor without race conditions.

@@ -35,17 +35,12 @@
 constexpr std::size_t thread_delay{0};
 
 TEST(Message, Create) {
-  paraos::MessageBuffer buff{2};
+  paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 }
 
-TEST(Message, CreateEmpty) {
-  paraos::MessageBuffer buff{0};
-  ASSERT_FALSE(buff);
-}
-
 TEST(Message, PushThenPop) {
-  paraos::MessageBuffer buff{2};
+  paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 
   constexpr double val{12};
@@ -63,7 +58,7 @@ TEST(Message, PushThenPop) {
 }
 
 TEST(Message, PushToFull) {
-  paraos::MessageBuffer buff{2};
+  paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 
   constexpr double val{12};
@@ -85,7 +80,7 @@ TEST(Message, PushToFull) {
 }
 
 TEST(Message, PushButForceFree) {
-  paraos::MessageBuffer buff{2};
+  paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 
   ASSERT_TRUE(buff.IsEmpty());

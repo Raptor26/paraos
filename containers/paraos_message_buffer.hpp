@@ -156,11 +156,14 @@ class MessageWritable final {
 };
 
 template <
-    typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>,
-    typename QUEUE_ALLOCATOR = std::allocator<Message<BUFFER_ALLOCATOR>>>
+    const std::size_t QUEUE_SIZE,
+    typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
 class MessageBuffer final {
+  static_assert(
+      QUEUE_SIZE > 0, "Message contained counter must be greater then '0'");
+
  public:
-  MessageBuffer(const std::size_t queue_len = 10u) : queue_{queue_len} {}
+  MessageBuffer() {}
 
   operator bool() const { return queue_; }
 
@@ -177,7 +180,7 @@ class MessageBuffer final {
   PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
 
  private:
-  paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_ALLOCATOR> queue_;
+  paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;
 };
 
 }  // namespace paraos

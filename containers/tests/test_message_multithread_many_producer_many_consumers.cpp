@@ -67,7 +67,7 @@ const std::vector<std::string> elems_vector{
 /// 'Consumer'.
 std::vector<std::string> consumers_str_container;
 
-paraos::MessageBuffer message_buff{3};
+paraos::MessageBuffer<3> message_buff;
 std::size_t producer_waiting_timeout_ms{1000};
 std::size_t consumer_waiting_timeout_ms{10};
 

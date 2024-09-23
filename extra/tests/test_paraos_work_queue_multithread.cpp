@@ -60,8 +60,10 @@ SemaphoreBinary all_works_complete_sem;
 
 volatile int WorkItemCount = 0;
 
-std::unique_ptr<WorkQueue> wq_low_ptr{nullptr};
-std::unique_ptr<WorkQueue> wq_high_ptr{nullptr};
+constexpr std::size_t work_queue_size{10};
+
+std::unique_ptr<WorkQueue<work_queue_size>> wq_low_ptr{nullptr};
+std::unique_ptr<WorkQueue<work_queue_size>> wq_high_ptr{nullptr};
 
 #if defined(__linux__) && defined(freeRTOS)
 #define configUSE_IDLE_HOOK 1
@@ -115,12 +117,9 @@ class TestThread final : public Thread {
 
  protected:
   void Run() {
-    constexpr std::size_t queue_len{2};
-
     // High priority work queue.
-    wq_high_ptr = std::make_unique<WorkQueue>(
-        "wq_high", DEFAULT_WORK_QUEUE_STACK_SIZE, ThreadPriority::kHighest,
-        queue_len);
+    wq_high_ptr = std::make_unique<WorkQueue<work_queue_size>>(
+        "wq_high", DEFAULT_WORK_QUEUE_STACK_SIZE, ThreadPriority::kHighest);
 
     constexpr std::size_t delay_ms{10000};
 
@@ -175,19 +174,18 @@ int main() {
   constexpr std::size_t queue_len{1};
 
   // low priority work queue.
-  wq_low_ptr = std::make_unique<WorkQueue>(
-      "wq_high", DEFAULT_WORK_QUEUE_STACK_SIZE, ThreadPriority::kLowest,
-      queue_len);
+  wq_low_ptr = std::make_unique<WorkQueue<work_queue_size>>(
+      "wq_high", DEFAULT_WORK_QUEUE_STACK_SIZE, ThreadPriority::kLowest);
 
   // Code below check memory leak
-  auto work_queue_one = std::make_unique<WorkQueue>(
+  auto work_queue_one = std::make_unique<WorkQueue<work_queue_size>>(
       "test work_queue", DEFAULT_WORK_QUEUE_STACK_SIZE, ThreadPriority::kLowest,
-      queue_len, false);
+      false);
 
   // Code below check memory leak
-  auto work_queue_two = WorkQueue(
+  auto work_queue_two = WorkQueue<work_queue_size>(
       "test work_queue next", DEFAULT_WORK_QUEUE_STACK_SIZE,
-      ThreadPriority::kLowest, queue_len, true);
+      ThreadPriority::kLowest, true);
 
   Thread::StartScheduler();
   Thread::DeleteAll();
