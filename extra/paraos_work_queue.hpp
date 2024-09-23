@@ -58,6 +58,23 @@ class WorkQueue final {
   using queue_type = QueueBlocking<item_type, SIZE>;
 
  public:
+  WorkQueue(
+      const std::string name, std::size_t stack_depth, ThreadPriority priority,
+      bool if_need_start_thread = true)
+      : worker_thread_{name, stack_depth, priority, *this},
+        if_need_start_thread_{if_need_start_thread} {
+    StartThread();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Five rule
+  // ---------------------------------------------------------------------------
+
+  WorkQueue(const WorkQueue& other) = delete;
+  WorkQueue(WorkQueue&& other) noexcept = delete;
+  WorkQueue& operator=(const WorkQueue& other) = delete;
+  WorkQueue& operator=(WorkQueue&& other) noexcept = delete;
+
   /// @brief Call this method only if WorkQueue() initialized with
   /// if_need_start_thread == false.
   void StartThread() {
@@ -68,35 +85,6 @@ class WorkQueue final {
       is_thread_started_ = true;
     }
   }
-
-  WorkQueue(
-      const std::string name, std::size_t stack_depth, ThreadPriority priority,
-      bool if_need_start_thread = true)
-      : worker_thread_{name, stack_depth, priority, *this},
-        if_need_start_thread_{if_need_start_thread} {
-    StartThread();
-  }
-
-//   // Конструктор копирования
-//   WorkQueue(const WorkQueue& other) {}
-
-//   // Конструктор перемещения, noexcept - для оптимизации при использовании
-//   // стандартных контейнеров
-//   WorkQueue(WorkQueue&& other) noexcept {}
-
-//   // Оператор присваивания копированием (copy assignment)
-//   WorkQueue& operator=(const WorkQueue& other) {
-//     if (this == &other) return *this;
-
-//     return *this;
-//   }
-
-//   // Оператор присваивания перемещением (move assignment)
-//   WorkQueue& operator=(WorkQueue&& other) noexcept {
-//     if (this == &other) return *this;
-
-//     return *this;
-//   }
 
   auto Push(item_type&& work_item, std::size_t delay_ms = max_delay) {
     if (if_we_need_destroy_thread_) {
