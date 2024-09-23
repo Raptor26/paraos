@@ -53,7 +53,7 @@ std::vector<std::string> song_str{
     "12) It's always the same, it's just a shame, that's all",
     "13) ---------------------------------------------------"};
 
-Queue<std::string> queue{100};
+Queue<std::string, 100> queue;
 
 std::atomic<std::size_t> total_read_str_cnt{0};
 

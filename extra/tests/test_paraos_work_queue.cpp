@@ -30,5 +30,5 @@
 using namespace paraos;
 
 TEST(WorkQueue, Create) {
-  WorkQueue work_queue("Def", 1024, ThreadPriority::kIdle, 2, false);
+  WorkQueue<2> work_queue("Def", 1024, ThreadPriority::kIdle, false);
 }

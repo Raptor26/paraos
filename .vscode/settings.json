@@ -132,7 +132,14 @@
         "hash_map": "cpp",
         "forward_list": "cpp",
         "valarray": "cpp",
-        "xhash": "cpp"
+        "xhash": "cpp",
+        "locale": "cpp",
+        "ranges": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xloctime": "cpp",
+        "xtree": "cpp"
     },
     "cSpell.enabled": true
 }

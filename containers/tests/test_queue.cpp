@@ -80,13 +80,16 @@ struct DataForHeapAlloc final {
 
 using user_data_type = DataForHeapAlloc;
 
+constexpr std::size_t queue_default_size{10};
+
 class QueueCreator : public ::testing::Test {
  public:
-  std::unique_ptr<paraos::Queue<user_data_type>> queue_;
+  std::unique_ptr<paraos::Queue<user_data_type, queue_default_size>> queue_;
 
  protected:
   virtual void SetUp() {
-    queue_ = std::make_unique<paraos::Queue<user_data_type>>(10);
+    queue_ =
+        std::make_unique<paraos::Queue<user_data_type, queue_default_size>>();
     ASSERT_TRUE(*queue_);
   }
 
@@ -94,15 +97,9 @@ class QueueCreator : public ::testing::Test {
 };
 
 TEST(Queue, Create) {
-  Queue<user_data_type> queue{10};
+  Queue<user_data_type, 10> queue;
 
   ASSERT_TRUE(queue);
-}
-
-TEST(Queue, CreateEmptyQueue) {
-  Queue<user_data_type> queue{0};
-
-  ASSERT_FALSE(queue);
 }
 
 TEST_F(QueueCreator, PushThenPop) {
@@ -126,7 +123,7 @@ TEST_F(QueueCreator, PushOnly) {
 }
 
 TEST_F(QueueCreator, PushCopy) {
-  Queue<user_data_type> queue{2};
+  Queue<user_data_type, 2> queue;
   ASSERT_TRUE(queue_->IsEmpty());
   user_data_type data{10};
   ASSERT_TRUE(queue_->Push(data));
@@ -135,7 +132,7 @@ TEST_F(QueueCreator, PushCopy) {
 
 TEST(Queue, PushMaxThenPopWhileNotEmpty) {
   constexpr int queue_size{3};
-  Queue<int> queue{queue_size};
+  Queue<int, queue_size> queue;
   constexpr std::array<int, queue_size> arr{1, 2, 3};
   ASSERT_TRUE(queue.IsEmpty());
 
@@ -182,7 +179,7 @@ TEST(Queue, PushMaxThenPopWhileNotEmpty) {
 TEST_F(QueueCreator, IsFullEmptyBuff) { ASSERT_FALSE(queue_->IsFull()); }
 
 TEST(Queue, FullThenCheck) {
-  Queue<user_data_type> queue{2};
+  Queue<user_data_type, 2> queue;
   ASSERT_TRUE(queue.EmplaceBack(10));
   ASSERT_TRUE(queue.Push(user_data_type{20}));
   ASSERT_TRUE(queue.IsFull());
@@ -190,7 +187,7 @@ TEST(Queue, FullThenCheck) {
 }
 
 TEST(Queue, Erase) {
-  Queue<user_data_type> queue{2};
+  Queue<user_data_type, 2> queue;
   ASSERT_TRUE(queue.EmplaceBack(10));
   ASSERT_EQ(1, queue.Size());
   ASSERT_TRUE(queue.Push(user_data_type{20}));

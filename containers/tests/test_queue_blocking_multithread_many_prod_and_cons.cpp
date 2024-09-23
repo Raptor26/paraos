@@ -68,7 +68,8 @@ const std::vector<std::string> elems_vector{
 /// 'Consumer'.
 std::vector<std::string> consumers_str_container;
 
-paraos::QueueBlocking<std::string> queue{2};
+constexpr std::size_t max_elem{10};
+paraos::QueueBlocking<std::string, max_elem> queue;
 std::size_t producer_waiting_timeout_ms{1000};
 std::size_t consumer_waiting_timeout_ms{10};
 

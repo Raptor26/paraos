@@ -223,9 +223,7 @@ bool operator!=(const MyAllocQueue<T1> &, const MyAllocQueue<T2> &) throw() {
 using buffer_allocator = MyAllocBuffer<std::uint8_t>;
 
 TEST(BufferUserAlloc, Create) {
-  paraos::MessageBuffer<
-      buffer_allocator, MyAllocQueue<paraos::Message<buffer_allocator>>>
-      buffer{7};
+  paraos::MessageBuffer<10, buffer_allocator> buffer;
   constexpr float val{123.456};
 
   {

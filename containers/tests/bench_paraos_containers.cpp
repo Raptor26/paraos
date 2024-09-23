@@ -38,7 +38,8 @@ BENCHMARK_MAIN();
 
 static void QueueBlockingPushThenPop(bm::State &state) {
   std::string str{"Hello world"};
-  QueueBlocking<std::string> queue{10};
+  constexpr std::size_t max_elem{10};
+  QueueBlocking<std::string, max_elem> queue;
   assert(queue);
   for (auto _ : state) {
     benchmark::DoNotOptimize(queue.Push(str, 0));
@@ -49,7 +50,7 @@ BENCHMARK(QueueBlockingPushThenPop);
 
 static void MessageBufferPushThenPop(bm::State &state) {
   std::string str{"Hello world"};
-  paraos::MessageBuffer buff{10};
+  paraos::MessageBuffer<10> buff;
   assert(buff);
   for (auto _ : state) {
     auto write = buff.Alloc(str.size(), 0u);
