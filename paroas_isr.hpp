@@ -54,11 +54,11 @@ struct ISRbool final {
 
   /// @brief Bool flag. This value returned 'operator bool()', just like simple
   /// bool variable.
-  bool is_success_{false};
+  bool is_success_;
 
   /// @brief Is true, we need switch scheduler context. Useful when
   /// semaphore/mutex api called from ISR.
-  bool is_need_switch_context_{false};
+  bool is_need_switch_context_;
 
   /// @brief  Behavior like as simple bool variable.
   operator bool() const { return is_success_; }
