@@ -34,6 +34,7 @@
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
+#include "paroas_isr.hpp"
 
 namespace paraos {
 
@@ -130,7 +131,7 @@ class IThreadSequence : public Thread {
   /// @note User code must call this method at regular intervals, for example -
   /// in a timer overflow interrupt.
   /// @return
-  bool NotifyGive(bool is_isr = false) {
+  auto NotifyGive(bool is_isr = false) -> ISRbool {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
