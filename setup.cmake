@@ -4,7 +4,9 @@ cmake_minimum_required(VERSION 3.20)
 # interface taget
 project(paraos_setup)
 
-add_library(${PROJECT_NAME} INTERFACE)
+if(NOT TARGET ${PROJECT_NAME})
+  add_library(${PROJECT_NAME} INTERFACE)
+endif()
 
 if(TRACE)
   message("paraos trace enable")

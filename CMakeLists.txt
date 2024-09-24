@@ -25,14 +25,21 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
          ON)
 endif()
 
+# Boost::leaf ------------------------------------------------------------------
 if(NOT TARGET Boost::leaf)
   add_subdirectory(leaf)
 endif()
 
+# etl::etl ---------------------------------------------------------------------
 if(NOT TARGET etl::etl)
   add_subdirectory(etl)
 endif()
 
+# Link etl::etl with paraos_setup so that user code can determine to the path,
+# which contained etl_profile.h
+target_link_libraries(etl INTERFACE paraos_setup)
+
+# Microsoft.GSL::GSL -----------------------------------------------------------
 if(NOT TARGET Microsoft.GSL::GSL)
   add_subdirectory(GSL)
 endif()
