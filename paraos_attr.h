@@ -1,5 +1,5 @@
-#ifndef IRTOS_ATTR_H
-#define IRTOS_ATTR_H
+#ifndef PARAOS_ATTR_H
+#define PARAOS_ATTR_H
 
 #define PARAOS_ATTR_UNUSED_VAR(X) (void)X
 
@@ -230,4 +230,4 @@
 #error "Need definition PARAOS_PACK for used compiler"
 #endif
 
-#endif /* IRTOS_ATTR_H */
+#endif /* PARAOS_ATTR_H */
