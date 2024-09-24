@@ -134,6 +134,13 @@ class IThreadSequence : public Thread {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
+  auto GetMainFreq() const -> float {
+    // Convert microseconds to sec.
+    const float main_freq = (static_cast<float>(period_in_us_)) * 0.000001;
+
+    return static_cast<float>(1.0) / main_freq;
+  }
+
   /// Methods definitions ------------------------------------------------------
  private:
   [[nodiscard]] uint32_t FreqToPeriod(float freq) {
