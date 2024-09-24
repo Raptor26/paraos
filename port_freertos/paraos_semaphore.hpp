@@ -31,6 +31,7 @@
 
 #include "FreeRTOS.h"
 #include "paraos_utils.hpp"
+#include "paroas_isr.hpp"
 #include "semphr.h"
 
 namespace paraos {
@@ -58,12 +59,13 @@ class Semaphore {
   /// другой поток не увеличит счётчик.
   /// @param[in] timeout_ms: Время ожидания счётчика семафора в мс.
   /// @return Возвращает результат ожидания счётчика семафора.
-  bool Take(std::size_t timeout_ms = max_delay);
+  ISRbool Take(std::size_t timeout_ms = max_delay, bool from_isr = false);
 
-  /// @brief Метод увеличивает значение счётчика на 1.
-  /// @param[in] from_isr: Флаг вызова метода более приоритетным потоком.
-  /// @return Возвращает результат выполнения операции.
-  bool Give(bool from_isr = false);
+  /// @brief Release semaphore.
+  /// @param[in] from_isr: Set true, if called from isr.
+  /// @return Return operation status. ISRbool contained value indicate is need
+  /// switch context. Useful when Give() called from isr.
+  ISRbool Give(bool from_isr = false);
 
  protected:
   Semaphore() : Semaphore{SemaphoreAttr{}} {}

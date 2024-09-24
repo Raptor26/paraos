@@ -58,24 +58,44 @@ Semaphore::~Semaphore() {
 
 Semaphore::operator bool() const { return handle_ != nullptr ? true : false; }
 
-bool Semaphore::Take(std::size_t timeout_ms) {
-  PARAOS_CHECK_ASSERT(handle_ != nullptr);
-  return static_cast<bool>(
-      xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms)));
-}
-
-bool Semaphore::Give(bool from_isr) {
+ISRbool Semaphore::Take(std::size_t timeout_ms, bool from_isr) {
   PARAOS_CHECK_ASSERT(handle_ != nullptr);
 
-  auto success = pdTRUE;
-  if (from_isr == true) {
-    BaseType_t higher_priority_task_woken = 1;
-    success = xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken);
+  ISRbool status;
+  BaseType_t xHigherPriorityTaskWoken = pdFAIL;
+
+  if (!from_isr) {
+    status.is_success_ =
+        xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
   } else {
-    success = xSemaphoreGive(handle_);
+    status.is_success_ =
+        xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken);
   }
 
-  return success == pdTRUE ? true : false;
+  if (xHigherPriorityTaskWoken == pdPASS) {
+    status.is_need_switch_context_ = true;
+  }
+
+  return status;
+}
+
+ISRbool Semaphore::Give(bool from_isr) {
+  PARAOS_CHECK_ASSERT(handle_ != nullptr);
+
+  ISRbool status{};
+  BaseType_t higher_priority_task_woken{pdPASS};
+  if (from_isr == true) {
+    status.is_success_ =
+        xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken);
+  } else {
+    status.is_success_ = xSemaphoreGive(handle_);
+  }
+
+  if (higher_priority_task_woken == pdPASS) {
+    status.is_need_switch_context_ = true;
+  }
+
+  return status;
 }
 
 }  // namespace paraos

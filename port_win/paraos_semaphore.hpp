@@ -35,6 +35,7 @@
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_utils.hpp"
+#include "paroas_isr.hpp"
 
 namespace paraos {
 
@@ -69,7 +70,7 @@ class Semaphore {
 
   operator bool() const { return handle_ != nullptr ? true : false; }
 
-  bool Take(std::size_t timeout_ms = max_delay) {
+  ISRbool Take(std::size_t timeout_ms = max_delay) {
     PARAOS_CHECK_ASSERT(handle_);
     bool is_sem_taken = false;
     if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
@@ -83,14 +84,14 @@ class Semaphore {
   /// @note
   /// https://learn.microsoft.com/ru-ru/windows/win32/api/synchapi/nf-synchapi-releasesemaphore
   /// @return
-  bool Give(bool from_isr = false) {
+  ISRbool Give(bool from_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
     PARAOS_CHECK_ASSERT(handle_);
     constexpr LONG increment_sem_cnt{1u};
 
-    return static_cast<bool>(
-        ReleaseSemaphore(handle_, increment_sem_cnt, nullptr));
+    return ISRbool{static_cast<bool>(
+        ReleaseSemaphore(handle_, increment_sem_cnt, nullptr))};
   }
 
  protected:

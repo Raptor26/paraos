@@ -31,6 +31,7 @@
 
 #include "paraos_attr.h"
 #include "paraos_utils.hpp"
+#include "paroas_isr.hpp"
 
 namespace paraos {
 
@@ -53,7 +54,7 @@ class Semaphore {
 
   virtual ~Semaphore() { sem_destroy(&handle_); }
 
-  bool Take(std::size_t timeout_ms = max_delay) {
+  ISRbool Take(std::size_t timeout_ms = max_delay) {
     bool is_sem_taken = false;
     int result = -1;
     if (timeout_ms == 0) {
@@ -79,7 +80,7 @@ class Semaphore {
     return is_sem_taken;
   }
 
-  bool Give(bool from_isr = false) {
+  ISRbool Give(bool from_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
     bool is_sem_given{false};
     auto result = sem_post(&handle_);
