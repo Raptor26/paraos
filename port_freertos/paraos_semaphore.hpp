@@ -72,6 +72,8 @@ class Semaphore {
 
  private:
   SemaphoreHandle_t handle_{nullptr};
+
+  bool is_recursive_;
 };
 
 /// @brief Класс-реализация бинарного семафора.

@@ -38,8 +38,10 @@ Semaphore::Semaphore(const SemaphoreAttr attr) noexcept {
   // будет создан либо бинарный, либо счётный семафор.
   if (attr.max_count < 2) {
     handle_ = xSemaphoreCreateBinary();
+    is_recursive_ = false;
   } else {
     handle_ = xSemaphoreCreateCounting(attr.max_count, initial_count);
+    is_recursive_ = true;
   }
 }
 
@@ -59,20 +61,25 @@ Semaphore::~Semaphore() {
 Semaphore::operator bool() const { return handle_ != nullptr ? true : false; }
 
 ISRbool Semaphore::Take(std::size_t timeout_ms, bool from_isr) {
-  PARAOS_CHECK_ASSERT(handle_ != nullptr);
+  PARAOS_CHECK_ASSERT(handle_);
 
   ISRbool status;
-  BaseType_t xHigherPriorityTaskWoken = pdFAIL;
+  BaseType_t xHigherPriorityTaskWoken{pdFALSE};
 
   if (!from_isr) {
-    status.is_success_ =
-        xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
+    if (is_recursive_) {
+      status.is_success_ =
+          xSemaphoreTakeRecursive(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
+    } else {
+      status.is_success_ =
+          xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
+    }
   } else {
     status.is_success_ =
         xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken);
   }
 
-  if (xHigherPriorityTaskWoken == pdPASS) {
+  if (xHigherPriorityTaskWoken == pdTRUE) {
     status.is_need_switch_context_ = true;
   }
 
@@ -80,18 +87,22 @@ ISRbool Semaphore::Take(std::size_t timeout_ms, bool from_isr) {
 }
 
 ISRbool Semaphore::Give(bool from_isr) {
-  PARAOS_CHECK_ASSERT(handle_ != nullptr);
+  PARAOS_CHECK_ASSERT(handle_);
 
   ISRbool status{};
-  BaseType_t higher_priority_task_woken{pdPASS};
-  if (from_isr == true) {
+  BaseType_t higher_priority_task_woken{pdFALSE};
+  if (!from_isr) {
+    if (is_recursive_) {
+      status.is_success_ = xSemaphoreGiveRecursive(handle_);
+    } else {
+      status.is_success_ = xSemaphoreGive(handle_);
+    }
+  } else {
     status.is_success_ =
         xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken);
-  } else {
-    status.is_success_ = xSemaphoreGive(handle_);
   }
 
-  if (higher_priority_task_woken == pdPASS) {
+  if (higher_priority_task_woken == pdTRUE) {
     status.is_need_switch_context_ = true;
   }
 
