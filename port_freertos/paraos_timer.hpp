@@ -171,7 +171,6 @@ class Timer {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     ISRbool is_reset;
-    BaseType_t xHigherPriorityTaskWoken{pdFALSE};
 
     is_reset.is_success_ =
         xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));

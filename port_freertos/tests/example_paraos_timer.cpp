@@ -31,7 +31,7 @@ constexpr std::size_t period_ms{100};
 
 struct UserTimer : public paraos::Timer {
   UserTimer(std::string_view str, std::size_t period_ms)
-      : str_{str}, Timer{period_ms, true} {}
+      : Timer{period_ms, true}, str_{str} {}
 
   virtual ~UserTimer() = default;
 
@@ -43,7 +43,7 @@ struct UserTimer : public paraos::Timer {
 
 struct UserTimerWithCnt : public paraos::Timer {
   UserTimerWithCnt(std::string_view str, std::size_t period_ms)
-      : str_{str}, Timer{period_ms, false} {}
+      : Timer{period_ms, false}, str_{str} {}
 
   virtual ~UserTimerWithCnt() = default;
 
