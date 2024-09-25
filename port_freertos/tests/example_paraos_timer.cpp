@@ -1,4 +1,4 @@
-/// @file test_paraos_timer.cpp
+/// @file example_timer.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -23,19 +23,15 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#include <iostream>
-#include <string>
-#include <string_view>
-
-#include "paraos_semaphore.hpp"
+#include "iostream"
+#include "paraos_thread.hpp"
 #include "paraos_timer.hpp"
 
-paraos::SemaphoreBinary sem;
-constexpr std::size_t period_ms{10};
+constexpr std::size_t period_ms{100};
 
 struct UserTimer : public paraos::Timer {
   UserTimer(std::string_view str, std::size_t period_ms)
-      : Timer{period_ms, true}, str_{str} {}
+      : str_{str}, Timer{period_ms, true} {}
 
   virtual ~UserTimer() = default;
 
@@ -47,7 +43,7 @@ struct UserTimer : public paraos::Timer {
 
 struct UserTimerWithCnt : public paraos::Timer {
   UserTimerWithCnt(std::string_view str, std::size_t period_ms)
-      : Timer{period_ms, false}, str_{str} {}
+      : str_{str}, Timer{period_ms, false} {}
 
   virtual ~UserTimerWithCnt() = default;
 
@@ -56,7 +52,7 @@ struct UserTimerWithCnt : public paraos::Timer {
     cnt += period_ms;
 
     if (cnt > runtime_max_ms_) {
-      sem.Give();
+      exit(0);
     }
   }
 
@@ -66,18 +62,12 @@ struct UserTimerWithCnt : public paraos::Timer {
   static constexpr std::size_t runtime_max_ms_{1000};
 };
 
-UserTimer user_timer{"Global timer", 500u};
-
 int main() {
-  UserTimer user_timer{"Local timer", 100u};
-  UserTimerWithCnt local_timer("Local timer repetition", period_ms);
-  auto is_timer_started = local_timer.Start();
-  PARAOS_CHECK_ASSERT(is_timer_started);
-  Sleep(100);
-  local_timer.Stop();
-  std::cout << " timer is stopped " << std::endl;
-  local_timer.Start();
+  UserTimerWithCnt use_timer{"local timer", 100};
+  use_timer.Start();
 
-  sem.Take();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
+
   return 0;
 }
