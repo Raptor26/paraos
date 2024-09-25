@@ -11,6 +11,11 @@ add_executable(test_rtos_thread_joined test_thread_join.cpp)
 target_link_libraries(test_rtos_thread_joined PRIVATE paraos::paraos)
 add_test(NAME test_rtos_thread_joined COMMAND test_rtos_thread_joined)
 
+# Timer example ----------------------------------------------------------------
+add_executable(example_timer example_timer.cpp)
+target_link_libraries(example_timer PRIVATE paraos::paraos)
+
+# GTEST ------------------------------------------------------------------------
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
