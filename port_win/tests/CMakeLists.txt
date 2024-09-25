@@ -16,6 +16,10 @@ add_test(NAME test_paraos_thread COMMAND test_paraos_thread)
 add_executable(example_paraos_timer example_paraos_timer.cpp)
 target_link_libraries(example_paraos_timer PRIVATE paraos::paraos)
 
+target_compile_features(example_paraos_timer PRIVATE cxx_std_17 c_std_11)
+target_compile_options(example_paraos_timer PRIVATE -Wall -Wextra -Wpedantic
+                                                    -Werror)
+
 # GTEST ------------------------------------------------------------------------
 find_package(GTest REQUIRED)
 include(GoogleTest)

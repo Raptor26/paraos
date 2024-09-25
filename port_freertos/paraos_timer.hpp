@@ -1,20 +1,20 @@
 /// @file paraos_timer.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
-/// 
+///
 /// @copyright (c) 2024 Stilsoft
-/// 
+///
 /// MIT License:
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the 'Software'), to
 /// deal in the Software without restriction, including without limitation the
 /// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 /// sell copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,8 +35,17 @@
 
 namespace paraos {
 
+/// @brief Class provided software timers. For creating timer, user code must
+/// provide custom class as derived from paraos::Timer.
+///
+/// @see example_paraos_timer.cpp for more information about using 'Timer'
+/// class.
 class Timer {
  public:
+  /// @brief Software timer ctor. Create timer and start execute immediately (if
+  /// needed).
+  /// @param[in] period_ms: Period in miliseconds for calling Run() method,
+  /// which user code must override in custom class.
   Timer(
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer") {
@@ -49,13 +58,23 @@ class Timer {
     }
   }
 
-  ISRbool Start(std::size_t max_block_time = max_delay, bool is_isr = false) {
+  /// @brief Start software timer.
+  ///
+  /// @param[in] max_block_time_ms: FreeRTOS can wait period, specified in
+  /// max_block_time_ms if no space in queue for registered start timer command.
+  /// @param[in] is_isr: Set true if API called from ISR.
+  ///
+  /// @return Return true if command successfully pushed in timer queue.
+  /// @note If is_isr == true, return value contained field, specified is need
+  /// switch RTOS context from ISR.
+  ISRbool Start(
+      std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
     ISRbool is_timer_started;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (handle_) {
       if (!is_isr) {
         is_timer_started.is_success_ =
-            xTimerStart(handle_, PARAOS_ConvertMsToTicks(max_block_time));
+            xTimerStart(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));
       } else {
         is_timer_started.is_success_ =
             xTimerStartFromISR(handle_, &xHigherPriorityTaskWoken);
@@ -68,14 +87,25 @@ class Timer {
     return is_timer_started;
   }
 
+  /// @brief Change period between scheduler call callback function.
+  ///
+  /// @param[in] period_ms; New period between scheduler call callback function.
+  /// @param[in] max_block_time_ms; FreeRTOS can wait period, specified in
+  /// max_block_time_ms if no space in queue for registered ChangePeriod
+  /// command.
+  /// @param[in] is_isr: Set true if API called from ISR.
+  ///
+  /// @return Return true if command successfully pushed in timer queue.
+  /// @note If is_isr == true, return value contained field, specified is need
+  /// switch RTOS context from ISR.
   ISRbool ChangePeriod(
-      std::size_t period_ms, std::size_t max_block_time = max_delay,
+      std::size_t period_ms, std::size_t max_block_time_ms = max_delay,
       bool is_isr = false) {
     ISRbool is_period_changed;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
       is_period_changed.is_success_ = xTimerChangePeriod(
-          handle_, period_ms, PARAOS_ConvertMsToTicks(max_block_time));
+          handle_, period_ms, PARAOS_ConvertMsToTicks(max_block_time_ms));
     } else {
       is_period_changed.is_success_ = xTimerChangePeriodFromISR(
           handle_, period_ms, &xHigherPriorityTaskWoken);
@@ -88,12 +118,21 @@ class Timer {
     return is_period_changed;
   }
 
-  ISRbool Stop(std::size_t max_block_time = max_delay, bool is_isr = false) {
+  /// @brief Stop scheduling callback function.
+  ///
+  /// @param[in] max_block_time_ms; FreeRTOS can wait period, specified in
+  /// max_block_time_ms if no space in queue for registered Stop command.
+  /// @param[in] is_isr: Set true if API called from ISR.
+  ///
+  /// @return Return true if command successfully pushed in timer queue.
+  /// @note If is_isr == true, return value contained field, specified is need
+  /// switch RTOS context from ISR.
+  ISRbool Stop(std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
     ISRbool is_stopped;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
       is_stopped.is_success_ =
-          xTimerStop(handle_, PARAOS_ConvertMsToTicks(max_block_time));
+          xTimerStop(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));
     } else {
       is_stopped.is_success_ =
           xTimerStopFromISR(handle_, &xHigherPriorityTaskWoken);
@@ -106,15 +145,36 @@ class Timer {
     return is_stopped;
   }
 
-  ISRbool Reset(std::size_t max_block_time = max_delay, bool is_isr = false) {
+  /// @brief Re-starts a timer that was previously created using the ctor. If
+  /// the timer had already been started and was already in the active state,
+  /// then Reset() will cause the timer to re- evaluate its expiry time so
+  /// that it is relative to when Reset() was called. If the timer was in
+  /// the dormant state then Reset() has equivalent functionality to the
+  /// Reset() API function.
+  ///
+  /// @details Resetting a timer ensures the timer is in the active state. If
+  /// the timer is not stopped, deleted, or reset in the mean time, the callback
+  /// function associated with the timer will get called 'n' ticks after Reset()
+  /// was called, where 'n' is the timers defined period.
+  ///
+  /// @param[in] max_block_time_ms; FreeRTOS can wait period, specified in
+  /// max_block_time_ms if no space in queue for registered Stop command.
+  /// @param[in] is_isr: Set true if API called from ISR.
+  ///
+  /// @return Return true if command successfully pushed in timer queue.
+  /// @note If is_isr == true, return value contained field, specified is need
+  /// switch RTOS context from ISR.
+  ISRbool Reset(
+      std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
     // Reset not provided ISR API.
     PARAOS_CHECK_ASSERT(is_isr == false);
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     ISRbool is_reset;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
 
     is_reset.is_success_ =
-        xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time));
+        xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));
 
     return is_reset;
   }
