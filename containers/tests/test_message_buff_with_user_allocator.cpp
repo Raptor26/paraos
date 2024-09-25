@@ -239,7 +239,7 @@ TEST(BufferUserAlloc, Create) {
 
   {
     auto read = buffer.Pop(thread_delay);
-    EXPECT_TRUE(read);
+    ASSERT_TRUE(read);
 
     auto float_ptr = static_cast<float *>(read->Addr());
 

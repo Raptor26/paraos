@@ -104,6 +104,10 @@ class Semaphore {
 struct SemaphoreBinary final : public Semaphore {
   SemaphoreBinary() noexcept : Semaphore{} {}
 
+  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : Semaphore{} {
+    PARAOS_ATTR_UNUSED_VAR(attr);
+  }
+
   ~SemaphoreBinary() = default;
 };
 

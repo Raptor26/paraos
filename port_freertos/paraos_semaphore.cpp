@@ -38,10 +38,8 @@ Semaphore::Semaphore(const SemaphoreAttr attr) noexcept {
   // будет создан либо бинарный, либо счётный семафор.
   if (attr.max_count < 2) {
     handle_ = xSemaphoreCreateBinary();
-    is_recursive_ = false;
   } else {
     handle_ = xSemaphoreCreateCounting(attr.max_count, initial_count);
-    is_recursive_ = true;
   }
 }
 
@@ -64,23 +62,20 @@ ISRbool Semaphore::Take(std::size_t timeout_ms, bool from_isr) {
   PARAOS_CHECK_ASSERT(handle_);
 
   ISRbool status;
-  BaseType_t xHigherPriorityTaskWoken{pdFALSE};
 
   if (!from_isr) {
-    if (is_recursive_) {
-      status.is_success_ =
-          xSemaphoreTakeRecursive(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
-    } else {
-      status.is_success_ =
-          xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
-    }
+    // API for Take semaphore and recursive semaphore are identically!!! Not
+    // need call xSemaphoreTakeRecursive().
+    status.is_success_ =
+        xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
   } else {
+    BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     status.is_success_ =
         xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken);
-  }
 
-  if (xHigherPriorityTaskWoken == pdTRUE) {
-    status.is_need_switch_context_ = true;
+    if (xHigherPriorityTaskWoken == pdTRUE) {
+      status.is_need_switch_context_ = true;
+    }
   }
 
   return status;
@@ -90,20 +85,19 @@ ISRbool Semaphore::Give(bool from_isr) {
   PARAOS_CHECK_ASSERT(handle_);
 
   ISRbool status{};
-  BaseType_t higher_priority_task_woken{pdFALSE};
+
   if (!from_isr) {
-    if (is_recursive_) {
-      status.is_success_ = xSemaphoreGiveRecursive(handle_);
-    } else {
-      status.is_success_ = xSemaphoreGive(handle_);
-    }
+    // API for Take semaphore and recursive semaphore are identically!!! Not
+    // need call xSemaphoreGiveRecursive().
+    status.is_success_ = xSemaphoreGive(handle_);
   } else {
+    BaseType_t higher_priority_task_woken{pdFALSE};
     status.is_success_ =
         xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken);
-  }
 
-  if (higher_priority_task_woken == pdTRUE) {
-    status.is_need_switch_context_ = true;
+    if (higher_priority_task_woken == pdTRUE) {
+      status.is_need_switch_context_ = true;
+    }
   }
 
   return status;
