@@ -72,14 +72,16 @@ class Semaphore {
 
  private:
   SemaphoreHandle_t handle_{nullptr};
-
-  bool is_recursive_;
 };
 
 /// @brief Класс-реализация бинарного семафора.
 struct SemaphoreBinary final : public Semaphore {
   /// @brief Конструктор по умолчанию для бинарного семафора.
   SemaphoreBinary() noexcept : Semaphore{} {}
+
+  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : Semaphore{} {
+    PARAOS_ATTR_UNUSED_VAR(attr);
+  }
 
   ~SemaphoreBinary() = default;
 };
