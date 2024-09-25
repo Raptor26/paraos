@@ -100,7 +100,10 @@ class Timer {
   }
 
  private:
-  void Delete() { DeleteTimerQueueTimer(timer_, nullptr, nullptr); }
+  void Delete() {
+    DeleteTimerQueueTimer(nullptr, timer_, nullptr);
+    timer_ = nullptr;
+  }
 
   /// @brief Starting address for a timer callback or a registered wait
   /// callback.
