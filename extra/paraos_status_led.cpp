@@ -36,10 +36,10 @@ StatusLed::~StatusLed() {}
 
 auto StatusLed::NewBlinkMode(StatusLedMode new_blink_mode) -> bool {
   bool is_new_blink_mode_set{false};
-  thread_sequence_.Unregistered(id_);
+  thread_sequence_.Unregister(id_);
 
   auto blink_mode = static_cast<int>(new_blink_mode);
-  id_ = is_new_blink_mode_set = thread_sequence_.Registered(
+  id_ = is_new_blink_mode_set = thread_sequence_.Register(
       delegate_[blink_mode].delegate_, delegate_[blink_mode].freq_,
       delegate_[blink_mode].is_continuous_);
 

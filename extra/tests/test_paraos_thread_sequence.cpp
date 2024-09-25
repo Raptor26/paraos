@@ -134,7 +134,7 @@ int main() {
   {
     // gyr_acc_delegate will be run on each call NotifyGive(). In this case
     // frequency set 0.0.
-    auto timer_id = thread_sequence.Registered(gyr_acc_delegate, 0.0, true);
+    auto timer_id = thread_sequence.Register(gyr_acc_delegate, 0.0, true);
     assert(timer_id != etl::timer::id::NO_TIMER);
   }
 
@@ -149,7 +149,7 @@ int main() {
 
     {
       // mag_delegate call period is two times less than gyr_acc_delegate
-      auto timer_id = thread_sequence.Registered(
+      auto timer_id = thread_sequence.Register(
           mag_delegate, thread_sequence_call_period_us / 2.0, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
@@ -166,7 +166,7 @@ int main() {
 
     {
       // mag_delegate call period is four times less than gyr_acc_delegate
-      auto timer_id = thread_sequence.Registered(
+      auto timer_id = thread_sequence.Register(
           baro_delegate, thread_sequence_call_period_us / 4.0, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
@@ -177,7 +177,7 @@ int main() {
 
   {
     // No space for register second delegate.
-    auto timer_id = thread_sequence.Registered(gyr_acc_delegate, 0.0, true);
+    auto timer_id = thread_sequence.Register(gyr_acc_delegate, 0.0, true);
     assert(timer_id == etl::timer::id::NO_TIMER);
   }
 
