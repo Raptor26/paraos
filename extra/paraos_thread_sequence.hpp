@@ -94,7 +94,7 @@ class IThreadSequence : public Thread {
   /// once.
   /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
   /// other case return valid timer id in range [0 .. 254].
-  auto Registered(callback_type& callback, float freq, bool repeating)
+  auto Register(callback_type& callback, float freq, bool repeating)
       -> etl::timer::id::type {
     paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
@@ -107,7 +107,7 @@ class IThreadSequence : public Thread {
     return timer_id;
   }
 
-  auto Unregistered(etl::timer::id::type timer_id) {
+  auto Unregister(etl::timer::id::type timer_id) {
     paraos::CriticalSection critical;
     return timer_controller_.unregister_timer(timer_id);
   }
