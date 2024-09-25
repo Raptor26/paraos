@@ -11,6 +11,11 @@ add_executable(test_paraos_thread test_paraos_thread.cpp)
 target_link_libraries(test_paraos_thread PRIVATE paraos::paraos)
 add_test(NAME test_paraos_thread COMMAND test_paraos_thread)
 
+# Timer ------------------------------------------------------------------------
+# It's not test, so not registered as test in Ctest
+add_executable(example_paraos_timer example_paraos_timer.cpp)
+target_link_libraries(example_paraos_timer PRIVATE paraos::paraos)
+
 # GTEST ------------------------------------------------------------------------
 find_package(GTest REQUIRED)
 include(GoogleTest)
