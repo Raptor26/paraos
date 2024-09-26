@@ -42,17 +42,15 @@ template <typename T>
 struct IQueueBlocking {
   virtual ~IQueueBlocking() = default;
 
-  /// @brief
+  /// @brief Construct object "in place" in queue storage.
   ///
-  /// @note `PARAOS_ATTR_UNUSED Args&&... args` suppress warning: unused
-  /// parameter 'args' [-Werror,-Wunused-parameter] [build] 87 | auto
-  /// EmplaceBack(Args&&... args) -> bool {
-  ///
-  /// @tparam ...Args
-  /// @param ...args
-  /// @return
+  /// @tparam Args: Arguments to be passed in ctor for construct object in
+  /// place.
+  /// @param[in] args: Arguments to be passed in ctor for construct object in
+  /// place.
+  /// @return true if object constructed, false otherwise.
   template <typename... Args>
-  auto EmplaceBack(PARAOS_ATTR_UNUSED Args&&... args) -> bool {
+  auto EmplaceBack(Args&&... args) -> bool {
     bool is_pushed{false};
     if (pop_sem_.Take(0u)) {
       if (!queue_.IsFull()) {
@@ -72,7 +70,11 @@ struct IQueueBlocking {
       {
         const paraos::CriticalSection critical;
         paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-        is_pushed = queue_.Push(std::move(item));
+
+        if (!queue_.full()) {
+          queue_.push(std::move(item));
+          is_pushed = true;
+        }
       }
 
       push_sem_.Give();
@@ -88,7 +90,11 @@ struct IQueueBlocking {
       {
         const paraos::CriticalSection critical;
         paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-        is_pushed = queue_.Push(item);
+
+        if (!queue_.full()) {
+          queue_.push(item);
+          is_pushed = true;
+        }
       }
 
       push_sem_.Give();
@@ -97,16 +103,23 @@ struct IQueueBlocking {
     return is_pushed;
   }
 
+  /// @brief Moved object from queue and pop queue.
+  /// @param[in] timeout_ms: Timeout for waiting when item is queue will be
+  /// available for read.
+  /// @return Read object, contained in std::optional. If no object read,
+  /// std::optional not contained any value.
   auto Pop(std::size_t timeout_ms) -> std::optional<T> {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
     if (push_sem_.Take(timeout_ms)) {
-      // Лямбда-функция ниже будет вызвана сразу после оператора return
-      auto pop_from_queue = gsl::finally([&] { pop_sem_.Give(); });
+      // pop_sem_.Give() will be called after return.
+      auto sem_give = gsl::finally([&] { pop_sem_.Give(); });
 
       const paraos::CriticalSection critical;
       paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
-      return queue_.Pop();
+
+      // Moved value from queue in std::optional<T>.
+      return FrontAndPop();
     }
 
     return std::nullopt;
@@ -114,32 +127,53 @@ struct IQueueBlocking {
 
   PARAOS_INLINE_TRIVIAL void Erase() {
     const paraos::CriticalSection critical;
-    queue_.Erase();
+    queue_.clear();
   }
 
   PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool {
     const paraos::CriticalSection critical;
-    return queue_.IsEmpty();
+    return queue_.empty();
   }
 
   PARAOS_INLINE_TRIVIAL auto IsFull() -> bool {
     const paraos::CriticalSection critical;
-    return queue_.IsFull();
+    return queue_.full();
   }
 
-  virtual auto Size() -> size_t {
+  PARAOS_INLINE_TRIVIAL auto Size() -> size_t {
     const paraos::CriticalSection critical;
-    return queue_.Size();
+    return queue_.size();
   }
 
  protected:
   IQueueBlocking(
-      paraos::IQueue<T>& queue, SemaphoreCounting& push_sem,
+      etl::iqueue<T>& queue, SemaphoreCounting& push_sem,
       SemaphoreCounting& pop_sem)
       : queue_{queue}, push_sem_{push_sem}, pop_sem_{pop_sem} {}
 
  private:
-  paraos::IQueue<T>& queue_;
+  auto FrontAndPop() -> std::optional<T> {
+    // When FrontAndPop() called in Pop(), semaphore contained information about
+    // items numb in queue. In this case, we don't need check is queue empty.
+#if 0
+    if (queue_.empty()) {
+      return std::nullopt;
+    }
+#endif
+
+    // Lambda below will called after return operator.
+    auto pop_from_queue = gsl::finally([&] {
+      paraosTRACE_MESSAGE("Call pop() for queue");
+      queue_.pop();
+    });
+
+    // Move object from queue, then, after return, lambda above delete object
+    // from queue with pop() operation.
+    return std::move(queue_.front());
+  }
+
+ private:
+  etl::iqueue<T>& queue_;
   SemaphoreCounting& push_sem_;
   SemaphoreCounting& pop_sem_;
 };
@@ -165,7 +199,7 @@ class QueueBlocking final : public IQueueBlocking<T> {
   operator bool() const {
     bool queue_ready{false};
 
-    if (push_sem_ && pop_sem_ && queue_.IsQueueReady()) {
+    if (push_sem_ && pop_sem_ && (queue_.capacity() == SIZE)) {
       queue_ready = true;
     }
 
@@ -173,7 +207,7 @@ class QueueBlocking final : public IQueueBlocking<T> {
   }
 
  private:
-  paraos::Queue<T, SIZE> queue_;
+  etl::queue<T, SIZE> queue_;
   SemaphoreCounting push_sem_;
   SemaphoreCounting pop_sem_;
 };
