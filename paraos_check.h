@@ -25,8 +25,13 @@
 #if defined(__WIN32__) || defined(__WIN64__) || defined(__linux__) || \
     defined(__unix__)
 
-#define PARAOS_CHECK_LOOP() assert(1 != 1)
+#ifndef PARAOS_CHECK_LOOP
+#define PARAOS_CHECK_LOOP() assert(false)
+#endif
+
+#ifndef PARAOS_CHECK_ASSERT
 #define PARAOS_CHECK_ASSERT(x) assert(x)
+#endif
 
 #elif !defined(PARAOS_CHECK_LOOP)
 #error \
