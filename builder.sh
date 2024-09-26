@@ -14,6 +14,15 @@ pc_debug_clang="cmake --preset pc_debug_clang \
         --schedule-random \
         --output-on-failure"
 
+pc_release_clang="cmake --preset pc_release_clang \
+    && cmake --build build/pc_release_clang/ \
+    && ctest --test-dir build/pc_release_clang \
+        -j8 \
+        --timeout 15 \
+        --repeat-until-fail 2 \
+        --schedule-random \
+        --output-on-failure"
+
 pc_debug_clang_stress="cmake --preset pc_debug_clang \
     && cmake --build build/pc_debug_clang/ \
     && ctest --test-dir build/pc_debug_clang \
@@ -26,6 +35,15 @@ pc_debug_clang_stress="cmake --preset pc_debug_clang \
 freertos_debug_clang="cmake --preset freertos_debug_clang \
     && cmake --build build/freertos_debug_clang/ \
     && ctest --test-dir build/freertos_debug_clang \
+        -j8 \
+        --timeout 15 \
+        --repeat-until-fail 2 \
+        --schedule-random \
+        --output-on-failure"
+
+freertos_release_clang="cmake --preset freertos_release_clang \
+    && cmake --build build/freertos_release_clang/ \
+    && ctest --test-dir build/freertos_release_clang \
         -j8 \
         --timeout 15 \
         --repeat-until-fail 2 \
@@ -57,7 +75,10 @@ case $doing in
 0)
     exit 0;;
 1)
-    if eval "$pc_debug_clang" && eval "$freertos_debug_clang"; then
+    if eval "$pc_debug_clang" \
+        && eval "$pc_release_clang" \
+        && eval "$freertos_debug_clang"\
+        && eval "$freertos_release_clang"; then
         echo "${GREEN}SUCCESS: Все тесты выполнены успешно${NC}"
     else
         echo "${RED}ERROR${NC}: Обнаружена ошибка в сборке или выполнении тестов"

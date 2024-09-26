@@ -35,11 +35,27 @@
             }
         },
         {
+            "name": "pc_release_clang",
+            "displayName": "PC Release Clang with trace",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
             "name": "freertos_debug_clang",
-            "displayName": "freeRTOS debug Clang",
+            "displayName": "freeRTOS Debug Clang",
             "inherits": "pc_debug_clang",
             "cacheVariables": {
                 "FREERTOS": "true"
+            }
+        },
+        {
+            "name": "freertos_release_clang",
+            "displayName": "freeRTOS Release Clang",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
             }
         },
         {

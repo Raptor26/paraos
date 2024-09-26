@@ -73,6 +73,7 @@ int main() {
   UserTimerWithCnt local_timer("Local timer repetition", period_ms);
   auto is_timer_started = local_timer.Start();
   PARAOS_CHECK_ASSERT(is_timer_started);
+  PARAOS_ATTR_UNUSED_VAR(is_timer_started);
   Sleep(100);
   local_timer.Stop();
   std::cout << " timer is stopped " << std::endl;
