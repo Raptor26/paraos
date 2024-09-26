@@ -39,26 +39,16 @@
 
 namespace paraos {
 
-template <typename T, const size_t SIZE>
-struct Queue {
- private:
-  static_assert(
-      std::is_nothrow_move_constructible<T>::value,
-      "'T' move constructor must be annotated as noexcept");
-
-  static_assert(SIZE > 0, "Queue size must be greater then '0'");
-
- public:
-  Queue() {}
-
-  virtual ~Queue() { Erase(); };
-
-  Queue(const Queue& other) = delete;
-  Queue(Queue&& other) = delete;
-  Queue& operator=(const Queue& other) = delete;
-  Queue& operator=(Queue&& other) = delete;
+template <typename T>
+struct IQueue {
+  virtual ~IQueue() = default;
 
   operator bool() const { return true; }
+
+  IQueue(const IQueue& other) = delete;
+  IQueue(IQueue&& other) = delete;
+  IQueue& operator=(const IQueue& other) = delete;
+  IQueue& operator=(IQueue&& other) = delete;
 
   template <typename... Args>
   auto EmplaceBack(Args&&... args) -> bool {
@@ -118,10 +108,46 @@ struct Queue {
   PARAOS_INLINE_OPERATIONS void Erase() { queue_.clear(); };
 
  protected:
-  auto IsQueueReady() const -> bool { return *this; }
+  IQueue(etl::iqueue<T>& queue) : queue_{queue} {}
 
  private:
-  /// @brief
+  etl::iqueue<T>& queue_;
+};
+
+template <typename T, const size_t SIZE>
+class Queue : public IQueue<T> {
+  static_assert(SIZE > 0, "Queue size must be greater then '0'");
+
+ public:
+  Queue() : IQueue<T>{queue_} {}
+
+  virtual ~Queue() = default;
+
+  // ---------------------------------------------------------------------------
+  // Five rule
+  // ---------------------------------------------------------------------------
+
+  /// @brief Copy Ctor.
+  Queue(const Queue& other) : IQueue<T>{queue_} { queue_ = other.queue_; }
+
+  /// @brief Move Ctor.
+  Queue(Queue&& other) : IQueue<T>{queue_} { queue_ = std::move(other.queue_); }
+
+  /// @brief Copy assignment.
+  Queue& operator=(const Queue& other) {
+    queue_ = other.queue_;
+    return *this;
+  }
+
+  /// @brief Move assignment.
+  Queue& operator=(Queue&& other) {
+    queue_ = std::move(other.queue_);
+    return *this;
+  }
+
+  auto IsQueueReady() const -> bool { return true; }
+
+ private:
   etl::queue<T, SIZE> queue_;
 };
 

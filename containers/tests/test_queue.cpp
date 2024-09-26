@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <string>
 
 #include "paraos_queue.hpp"
 
@@ -53,7 +54,17 @@ struct DataForHeapAlloc final {
     other.mem_ = nullptr;
   }
 
-  DataForHeapAlloc &operator=(const DataForHeapAlloc &other) = delete;
+  DataForHeapAlloc &operator=(const DataForHeapAlloc &other) {
+    if (&other != this) {
+      delete mem_;
+
+      mem_ = new int;
+      *mem_ = *other.mem_;
+    }
+
+    return *this;
+  }
+
   DataForHeapAlloc &operator=(DataForHeapAlloc &&other) {
     delete mem_;
 
@@ -72,9 +83,11 @@ struct DataForHeapAlloc final {
     return is_valid;
   }
 
+  int operator()() { return *mem_; }
+
   ~DataForHeapAlloc() { delete mem_; }
 
- private:
+ public:
   int *mem_;
 };
 
@@ -199,4 +212,64 @@ TEST(Queue, Erase) {
   ASSERT_FALSE(queue.IsFull());
   ASSERT_TRUE(queue.IsEmpty());
   ASSERT_EQ(0, queue.Size());
+}
+
+TEST(Queue, CopyCtor) {
+  const std::string str{"Hello"};
+  Queue<std::string, 2> queue_src;
+  queue_src.Push(str);
+  ASSERT_FALSE(queue_src.IsEmpty());
+
+  auto queue_dst{queue_src};
+  ASSERT_FALSE(queue_dst.IsEmpty());
+
+  auto pop_val = queue_dst.Pop();
+  ASSERT_TRUE(pop_val);
+  ASSERT_EQ(str, pop_val.value());
+}
+
+TEST(Queue, MoveCtor) {
+  const std::string str{"Hello"};
+  Queue<std::string, 2> queue_src;
+  queue_src.Push(str);
+  ASSERT_FALSE(queue_src.IsEmpty());
+
+  auto queue_dst{std::move(queue_src)};
+  ASSERT_FALSE(queue_dst.IsEmpty());
+
+  auto pop_val = queue_dst.Pop();
+  ASSERT_TRUE(pop_val);
+  ASSERT_EQ(str, pop_val.value());
+}
+
+TEST(Queue, CopyOperator) {
+  const std::string str{"Hello"};
+  Queue<std::string, 2> queue_src;
+  queue_src.Push(str);
+  ASSERT_FALSE(queue_src.IsEmpty());
+
+  Queue<std::string, 2> queue_dst;
+  ASSERT_TRUE(queue_dst.IsEmpty());
+
+  queue_dst = queue_src;
+
+  auto pop_val = queue_dst.Pop();
+  ASSERT_TRUE(pop_val);
+  ASSERT_EQ(str, pop_val.value());
+}
+
+TEST(Queue, MoveOperator) {
+  const std::string str{"Hello"};
+  Queue<std::string, 2> queue_src;
+  queue_src.Push(str);
+  ASSERT_FALSE(queue_src.IsEmpty());
+
+  Queue<std::string, 2> queue_dst;
+  ASSERT_TRUE(queue_dst.IsEmpty());
+
+  queue_dst = std::move(queue_src);
+
+  auto pop_val = queue_dst.Pop();
+  ASSERT_TRUE(pop_val);
+  ASSERT_EQ(str, pop_val.value());
 }
