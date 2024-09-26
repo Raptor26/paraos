@@ -40,22 +40,51 @@
 namespace paraos {
 
 struct SemaphoreAttr {
-  std::size_t max_count = 1u;
+  std::size_t max_count{1u};
+  std::size_t initial_count{0u};
 };
 
-constexpr std::size_t initial_count = 0u;
-
-class Semaphore {
+class SemaphoreBase {
  public:
-  Semaphore(const SemaphoreAttr attr) noexcept
-      : handle_{
-            CreateSemaphore(nullptr, initial_count, attr.max_count, nullptr)} {
+  operator bool() const { return handle_ != nullptr ? true : false; }
+
+  ISRbool Take(
+      std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept {
+    PARAOS_CHECK_ASSERT(handle_);
+
+    // PARAOS wrapper for winapi not provided isr operations.
+    PARAOS_CHECK_ASSERT(from_isr == false);
+
+    bool is_sem_taken{false};
+    if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
+        WAIT_OBJECT_0) {
+      is_sem_taken = true;
+    }
+    return is_sem_taken;
+  }
+
+  /// @brief
+  /// @note
+  /// https://learn.microsoft.com/ru-ru/windows/win32/api/synchapi/nf-synchapi-releasesemaphore
+  /// @return
+  ISRbool Give(bool from_isr = false) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(from_isr);
+
+    PARAOS_CHECK_ASSERT(handle_);
+    constexpr LONG increment_sem_cnt{1u};
+
+    return ISRbool{static_cast<bool>(
+        ReleaseSemaphore(handle_, increment_sem_cnt, nullptr))};
+  }
+
+ protected:
+  SemaphoreBase() noexcept {
 #ifdef paraosTRACE_ENABLE
     std::cout << "Semaphore Ctor" << std::endl;
 #endif
   }
 
-  virtual ~Semaphore() {
+  virtual ~SemaphoreBase() {
     if (handle_) {
       CloseHandle(handle_);
 
@@ -68,46 +97,32 @@ class Semaphore {
 #endif
   }
 
-  operator bool() const { return handle_ != nullptr ? true : false; }
-
-  ISRbool Take(std::size_t timeout_ms = max_delay) {
-    PARAOS_CHECK_ASSERT(handle_);
-    bool is_sem_taken = false;
-    if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
-        WAIT_OBJECT_0) {
-      is_sem_taken = true;
-    }
-    return is_sem_taken;
-  }
-
-  /// @brief
-  /// @note
-  /// https://learn.microsoft.com/ru-ru/windows/win32/api/synchapi/nf-synchapi-releasesemaphore
-  /// @return
-  ISRbool Give(bool from_isr = false) {
-    PARAOS_ATTR_UNUSED_VAR(from_isr);
-
-    PARAOS_CHECK_ASSERT(handle_);
-    constexpr LONG increment_sem_cnt{1u};
-
-    return ISRbool{static_cast<bool>(
-        ReleaseSemaphore(handle_, increment_sem_cnt, nullptr))};
-  }
-
- protected:
-  Semaphore() : Semaphore{SemaphoreAttr{}} {}
-
- private:
   HANDLE handle_{nullptr};
 };
 
-struct SemaphoreBinary final : public Semaphore {
-  SemaphoreBinary() noexcept : Semaphore{} {}
-
-  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : Semaphore{} {
-    PARAOS_ATTR_UNUSED_VAR(attr);
+struct SemaphoreCounting final : public SemaphoreBase {
+  SemaphoreCounting(const SemaphoreAttr &attr) : SemaphoreBase{} {
+    handle_ =
+        CreateSemaphore(nullptr, attr.initial_count, attr.max_count, nullptr);
   }
 
+  /// @brief Semaphore deleted by ~SemaphoreBase()
+  ~SemaphoreCounting() = default;
+};
+
+/// @brief Класс-реализация бинарного семафора.
+struct SemaphoreBinary final : public SemaphoreBase {
+  /// @brief Конструктор по умолчанию для бинарного семафора.
+  SemaphoreBinary() noexcept : SemaphoreBinary{SemaphoreAttr{}} {}
+
+  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
+    PARAOS_ATTR_UNUSED_VAR(attr);
+    constexpr LONG max_counter{1};
+    constexpr LONG initial_count{0};
+    handle_ = CreateSemaphore(nullptr, initial_count, max_counter, nullptr);
+  }
+
+  /// @brief Semaphore deleted by ~SemaphoreBase()
   ~SemaphoreBinary() = default;
 };
 

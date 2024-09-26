@@ -175,8 +175,8 @@ class QueueBlocking final : public Queue<T, SIZE>, public IQueueBlocking<T> {
   }
 
  private:
-  Semaphore push_sem_;
-  Semaphore pop_sem_;
+  SemaphoreCounting push_sem_;
+  SemaphoreCounting pop_sem_;
 };
 
 }  // namespace paraos
