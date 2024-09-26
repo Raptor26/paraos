@@ -79,6 +79,50 @@ TEST(Message, PushToFull) {
   }
 }
 
+TEST(Message, CopyCtor) {
+  paraos::MessageBuffer<2> buff;
+  ASSERT_TRUE(buff);
+
+  constexpr double val{12};
+  {
+    auto message = buff.Alloc(sizeof(val), thread_delay);
+    ASSERT_TRUE(message);
+    ASSERT_TRUE(buff.IsEmpty());
+
+    auto *vector = static_cast<double *>(message.Addr());
+    *vector = val;
+  }
+
+  auto received_message = buff.Pop(0u);
+  ASSERT_TRUE(received_message);
+  auto received_message_copy = received_message.value();
+
+  auto *vector = static_cast<double *>(received_message_copy.Addr());
+  EXPECT_NEAR(val, *vector, 0.001);
+}
+
+TEST(Message, MoveCtor) {
+  paraos::MessageBuffer<2> buff;
+  ASSERT_TRUE(buff);
+
+  constexpr double val{12};
+  {
+    auto message = buff.Alloc(sizeof(val), thread_delay);
+    ASSERT_TRUE(message);
+    ASSERT_TRUE(buff.IsEmpty());
+
+    auto *vector = static_cast<double *>(message.Addr());
+    *vector = val;
+  }
+
+  auto received_message = buff.Pop(0u);
+  ASSERT_TRUE(received_message);
+  auto received_message_copy = std::move(received_message.value());
+
+  auto *vector = static_cast<double *>(received_message_copy.Addr());
+  EXPECT_NEAR(val, *vector, 0.001);
+}
+
 TEST(Message, PushButForceFree) {
   paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);

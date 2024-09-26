@@ -54,15 +54,19 @@ class Message {
 
   virtual ~Message() { SafeDeallocate(); }
 
-  Message(const Message &other) {
+  Message(const Message &other)
+      : data_ptr_{nullptr}, size_in_bytes_{other.size_in_bytes_} {
     SafeAllocate();
-    size_in_bytes_ = other.size_in_bytes_;
+
+    if (data_ptr_) {
+      // After memory allocated, need copy bytes in allocated memory area from
+      // other memory area.
+      memcpy(data_ptr_, other.data_ptr_, size_in_bytes_);
+    }
   }
 
-  Message(Message &&other) noexcept {
-    data_ptr_ = other.data_ptr_;
-    size_in_bytes_ = other.size_in_bytes_;
-
+  Message(Message &&other)
+      : data_ptr_{other.data_ptr_}, size_in_bytes_{other.size_in_bytes_} {
     other.data_ptr_ = nullptr;
   }
 
@@ -110,7 +114,7 @@ class Message {
   std::uint8_t *data_ptr_;
 
   /// @brief Размер выделенной области памяти в байтах.
-  std::size_t size_in_bytes_;
+  const std::size_t size_in_bytes_;
 };
 
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
