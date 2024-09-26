@@ -30,6 +30,7 @@
 #include <semaphore.h>
 
 #include "paraos_attr.h"
+#include "paraos_check.h"
 #include "paraos_utils.hpp"
 #include "paroas_isr.hpp"
 
@@ -42,19 +43,13 @@ struct SemaphoreAttr {
 
 constexpr std::size_t initial_count = 0u;
 
-class Semaphore {
+class SemaphoreBase {
  public:
-  Semaphore(const SemaphoreAttr attr) noexcept {
-    if (sem_init(&handle_, 0, attr.initial_value) == 0) {
-      is_sem_created = true;
-    }
-  }
+  ISRbool Take(std::size_t timeout_ms = max_delay, bool from_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(from_isr);
 
-  Semaphore() noexcept : Semaphore{SemaphoreAttr{}} {}
-
-  virtual ~Semaphore() { sem_destroy(&handle_); }
-
-  ISRbool Take(std::size_t timeout_ms = max_delay) {
+    // PARAOS wrapper for POSIX not provided isr functions.
+    PARAOS_CHECK_ASSERT(from_isr == false);
     bool is_sem_taken = false;
     int result = -1;
     if (timeout_ms == 0) {
@@ -91,18 +86,39 @@ class Semaphore {
     return is_sem_given;
   }
 
-  operator bool() const { return is_sem_created; }
+  operator bool() const { return is_sem_created_; }
 
- private:
+ protected:
+  SemaphoreBase() = default;
+
+  virtual ~SemaphoreBase() {
+    if (is_sem_created_) {
+      sem_destroy(&handle_);
+    }
+  }
+
   sem_t handle_;
-  bool is_sem_created{false};
+  bool is_sem_created_;
 };
 
-struct SemaphoreBinary final : public Semaphore {
-  SemaphoreBinary() noexcept : Semaphore{} {}
+struct SemaphoreCounting final : public SemaphoreBase {
+  SemaphoreCounting(const SemaphoreAttr &attr) : SemaphoreBase{} {
+    if (sem_init(&handle_, 0, attr.initial_value) == 0) {
+      is_sem_created_ = true;
+    }
+  }
 
-  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : Semaphore{} {
-    PARAOS_ATTR_UNUSED_VAR(attr);
+  /// @brief Semaphore deleted by ~SemaphoreBase()
+  ~SemaphoreCounting() = default;
+};
+
+struct SemaphoreBinary final : public SemaphoreBase {
+  SemaphoreBinary() noexcept : SemaphoreBinary{SemaphoreAttr{}} {}
+
+  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
+    if (sem_init(&handle_, 0, attr.initial_value) == 0) {
+      is_sem_created_ = true;
+    }
   }
 
   ~SemaphoreBinary() = default;

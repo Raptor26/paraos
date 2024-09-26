@@ -86,10 +86,8 @@ target_include_directories(${PROJECT_NAME}
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 target_sources(
-  ${PROJECT_NAME}
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/paraos_semaphore.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
+  ${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
 
 if(IS_PARAOS_STAND_ALONE_PROJECT)
   # Added user etl_profile.h in etl::etl library

@@ -31,14 +31,14 @@ using namespace paraos;
 
 TEST(Semaphore, CreateDefault) {
   SemaphoreAttr attr;
-  auto sem_with_def_attr = Semaphore(attr);
+  auto sem_with_def_attr = SemaphoreCounting(attr);
   ASSERT_TRUE(sem_with_def_attr);
 }
 
 TEST(Semaphore, GiveThanTakeTwice) {
   SemaphoreAttr attr;
   attr.max_count = 2u;
-  auto sem = Semaphore(attr);
+  auto sem = SemaphoreCounting(attr);
   ASSERT_TRUE(sem);
 
   ASSERT_TRUE(sem.Give());

@@ -29,10 +29,10 @@
 
 using namespace paraos;
 
-TEST(Semaphore, Create) { Semaphore sem; }
+TEST(Semaphore, Create) { SemaphoreCounting sem{SemaphoreAttr{}}; }
 
 TEST(Semaphore, Give) {
-  Semaphore sem;
+  SemaphoreCounting sem{SemaphoreAttr{}};
   ASSERT_FALSE(sem.Take(0u));
   ASSERT_TRUE(sem.Give());
   ASSERT_TRUE(sem.Take());
