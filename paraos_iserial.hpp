@@ -26,6 +26,11 @@ class ISerial {
   virtual auto Transmit(void *src, size_t msg_size) -> size_t = 0;
 
   virtual ~ISerial() = default;
+
+ protected:
+  /// @brief Disable direct creation of interface class by declaring ctor as
+  /// protected.
+  ISerial() = default;
 };
 
 }  // namespace paraos
