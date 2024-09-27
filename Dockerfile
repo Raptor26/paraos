@@ -42,10 +42,14 @@ WORKDIR /app/src
 # Сборка всех доступных конфигураций проекта
 RUN cmake . --preset pc_debug_clang && \
     cmake --build ./build/pc_debug_clang/ && \
+    cmake . --preset pc_release_clang && \
+    cmake --build ./build/pc_release_clang/ &&\
     cmake . --preset pc_debug_clang_docker && \
     cmake --build ./build/pc_debug_clang_docker/ &&\
     cmake . --preset freertos_debug_clang && \
-    cmake --build ./build/freertos_debug_clang/
+    cmake --build ./build/freertos_debug_clang/ && \
+    cmake . --preset freertos_release_clang && \
+    cmake --build ./build/freertos_release_clang/
 # Запуск ---------------------------------------
 # В качестве базового образа используем ubuntu:latest
 FROM ubuntu:latest

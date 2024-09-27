@@ -80,6 +80,8 @@ class Thread {
         "If you create thread, you must call Thread::StartScheduler() in "
         "main(), otherwise, destructor can't safely delete thread");
 
+    PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
+
     const paraos::CriticalSection critical;
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
@@ -265,6 +267,8 @@ class Thread {
 
       // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
       PARAOS_CHECK_ASSERT(is_sem_taken && "Sem always must taken");
+
+      PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
 
       auto result_code = pthread_create(&handle_, nullptr, perform_work, this);
 
