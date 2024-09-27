@@ -26,7 +26,11 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+// clang-format off
+// winsock2.h must include before windows.h
+#include <winsock2.h>
 #include <windows.h>
+// clang-format on
 
 #include <cassert>
 #include <cstddef>

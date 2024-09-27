@@ -15,6 +15,8 @@ if(IS_PARAOS_STAND_ALONE_PROJECT)
                              INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/")
 endif()
 
+target_link_libraries(${PROJECT_NAME} INTERFACE wsock32 ws2_32)
+
 set(THREAD_ENABLE on)
 
 if(UTEST)

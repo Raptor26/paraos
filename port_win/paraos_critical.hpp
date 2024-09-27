@@ -26,8 +26,8 @@
 #ifndef CRITICAL_HPP
 #define CRITICAL_HPP
 
-#include <Windows.h>
 #include <assert.h>
+#include <synchapi.h>
 
 #ifdef paraosTRACE_ENABLE
 #include <iostream>

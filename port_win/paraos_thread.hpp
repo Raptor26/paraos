@@ -26,7 +26,7 @@
 #ifndef PARAOS_THREAD_HPP
 #define PARAOS_THREAD_HPP
 
-#include <windows.h>
+#include <processthreadsapi.h>
 
 #include <algorithm>
 #include <cassert>

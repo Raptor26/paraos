@@ -27,7 +27,6 @@
 #ifndef PARAOS_TIMER_HPP
 #define PARAOS_TIMER_HPP
 
-#include <Windows.h>
 #include <threadpoollegacyapiset.h>
 
 #include "etl/delegate.h"
