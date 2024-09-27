@@ -27,14 +27,16 @@
 #ifndef PARAOS_QUEUE_BLOCKING_HPP
 #define PARAOS_QUEUE_BLOCKING_HPP
 
+#include <optional>
+
+#include "etl/queue.h"
 #include "gsl/gsl"
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
-#include "paraos_mutex.hpp"
-#include "paraos_mutex_raii.hpp"
-#include "paraos_queue.hpp"
+#include "paraos_semaphore.hpp"
+#include "paraos_trace.hpp"
 
 namespace paraos {
 
