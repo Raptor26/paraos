@@ -65,8 +65,28 @@ class ICooperativeScheduling : protected Thread {
   }
 
   void Run() override {
-    // Method below haw internal loop.
-    scheduler_.start();
+    try {
+      // Method below has internal loop.
+      scheduler_.start();
+    } catch (etl::scheduler_no_tasks_exception &e) {
+      paraosTRACE_MESSAGE(
+          e.file_name() << "; --line: " << e.line_number()
+                        << "; --what: " << e.what());
+
+      // Run() method call in loop. When no tasks for execute,
+      // scheduler_.start() throw exception. After Run() catch exception,
+      // scheduler_.start() will call immediately in forever loop (Run() execute
+      // in external forever loop). In this case all processor time will be
+      // wasted. So, DelayMs() yeld processor time for other threads. After any
+      // task was registered (when user code call AddTask()), scheduler_.start()
+      // start execute in internal loop, which blocking void Idle() method by
+      // taking semaphore.
+      Thread::DelayMs(1000);
+    } catch (etl::exception &e) {
+      paraosTRACE_MESSAGE(
+          e.file_name() << "; --line: " << e.line_number()
+                        << "; --what: " << e.what());
+    }
   }
 
   bool NotifyGive(bool is_isr = false) {

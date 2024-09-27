@@ -31,10 +31,10 @@
 
 #include "paraos_critical.hpp"
 
-#define paraosTRACE_MESSAGE(__message__)    \
-  {                                         \
-    const paraos::CriticalSection critical; \
-    std::cout << __message__ << std::endl;  \
+#define paraosTRACE_MESSAGE(__message__)          \
+  {                                               \
+    const paraos::CriticalSection macro_critical; \
+    std::cout << __message__ << std::endl;        \
   }
 
 #else
