@@ -119,7 +119,11 @@ class SemaphoreBase {
 
  protected:
   SemaphoreBase() = default;
-  virtual ~SemaphoreBase() = default;
+  virtual ~SemaphoreBase() {
+    if (handle_) {
+      vSemaphoreDelete(handle_);
+    }
+  }
   SemaphoreHandle_t handle_;
 };
 
