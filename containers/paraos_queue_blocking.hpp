@@ -71,9 +71,11 @@ struct IQueueBlocking {
         const paraos::CriticalSection critical;
         paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
 
-        if (!queue_.full()) {
+        try {
           queue_.push(std::move(item));
           is_pushed = true;
+        } catch (etl::queue_full& e) {
+          paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
         }
       }
 
@@ -91,9 +93,11 @@ struct IQueueBlocking {
         const paraos::CriticalSection critical;
         paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
 
-        if (!queue_.full()) {
+        try {
           queue_.push(item);
           is_pushed = true;
+        } catch (etl::queue_full& e) {
+          paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
         }
       }
 
@@ -114,9 +118,6 @@ struct IQueueBlocking {
     if (push_sem_.Take(timeout_ms)) {
       // pop_sem_.Give() will be called after return.
       auto sem_give = gsl::finally([&] { pop_sem_.Give(); });
-
-      const paraos::CriticalSection critical;
-      paraosTRACE_MESSAGE("BlockingQueue PUSH semaphore taken successfully");
 
       // Moved value from queue in std::optional<T>.
       return FrontAndPop();
@@ -153,23 +154,23 @@ struct IQueueBlocking {
 
  private:
   auto FrontAndPop() -> std::optional<T> {
+    const paraos::CriticalSection critical;
+
     // When FrontAndPop() called in Pop(), semaphore contained information about
     // items numb in queue. In this case, we don't need check is queue empty.
-#if 0
-    if (queue_.empty()) {
-      return std::nullopt;
+    if (!queue_.empty()) {
+      // Lambda below will called after return operator.
+      auto pop_from_queue = gsl::finally([&] {
+        // We check is queue empty above, exertion can't be throw.
+        queue_.pop();
+      });
+
+      // Move object from queue, then, after return, lambda above delete object
+      // from queue with pop() operation.
+      return std::move(queue_.front());
     }
-#endif
 
-    // Lambda below will called after return operator.
-    auto pop_from_queue = gsl::finally([&] {
-      paraosTRACE_MESSAGE("Call pop() for queue");
-      queue_.pop();
-    });
-
-    // Move object from queue, then, after return, lambda above delete object
-    // from queue with pop() operation.
-    return std::move(queue_.front());
+    return std::nullopt;
   }
 
  private:
