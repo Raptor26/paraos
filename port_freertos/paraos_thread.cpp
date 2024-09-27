@@ -45,6 +45,10 @@ Thread::Thread(
 
 Thread::~Thread() {
   is_thread_makeable_ = false;
+
+  // Destructor initialize competition thread loop for safety destruct object.
+  SetNeedWhile(false);
+
   if (handle_) {
     // Dtor free resources only after thread body in MyThreadFunction() complete
     // execute.

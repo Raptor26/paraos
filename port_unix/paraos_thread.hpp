@@ -70,6 +70,9 @@ class Thread {
   }
 
   virtual ~Thread() {
+    // Destructor initialize competition thread loop for safety destruct object.
+    SetNeedWhile(false);
+
     // Dtor free resources only after thread body in perform_work()
     // complete execute.
     std::size_t delay_ms{4000};
