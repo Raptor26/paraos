@@ -54,15 +54,19 @@ class Message {
 
   virtual ~Message() { SafeDeallocate(); }
 
-  Message(const Message &other) {
+  Message(const Message &other)
+      : data_ptr_{nullptr}, size_in_bytes_{other.size_in_bytes_} {
     SafeAllocate();
-    size_in_bytes_ = other.size_in_bytes_;
+
+    if (data_ptr_) {
+      // After memory allocated, need copy bytes in allocated memory area from
+      // other memory area.
+      memcpy(data_ptr_, other.data_ptr_, size_in_bytes_);
+    }
   }
 
-  Message(Message &&other) noexcept {
-    data_ptr_ = other.data_ptr_;
-    size_in_bytes_ = other.size_in_bytes_;
-
+  Message(Message &&other)
+      : data_ptr_{other.data_ptr_}, size_in_bytes_{other.size_in_bytes_} {
     other.data_ptr_ = nullptr;
   }
 
@@ -110,7 +114,7 @@ class Message {
   std::uint8_t *data_ptr_;
 
   /// @brief Размер выделенной области памяти в байтах.
-  std::size_t size_in_bytes_;
+  const std::size_t size_in_bytes_;
 };
 
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
@@ -155,17 +159,15 @@ class MessageWritable final {
   const std::size_t timeout_ms_;
 };
 
-template <
-    const std::size_t QUEUE_SIZE,
-    typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
-class MessageBuffer final {
-  static_assert(
-      QUEUE_SIZE > 0, "Message contained counter must be greater then '0'");
-
+template <typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
+class IMessageBuffer {
  public:
-  MessageBuffer() {}
+  virtual ~IMessageBuffer() = default;
 
-  operator bool() const { return queue_; }
+  IMessageBuffer(const IMessageBuffer &other) = delete;
+  IMessageBuffer(IMessageBuffer &&other) = delete;
+  IMessageBuffer &operator=(const IMessageBuffer &other) = delete;
+  IMessageBuffer &operator=(IMessageBuffer &&other) = delete;
 
   PARAOS_INLINE_TRIVIAL auto Alloc(
       const std::size_t size_in_bytes, const std::size_t timeout_ms) {
@@ -178,6 +180,33 @@ class MessageBuffer final {
 
   PARAOS_INLINE_TRIVIAL bool IsFull() { return queue_.IsFull(); }
   PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
+
+ protected:
+  IMessageBuffer(paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
+      : queue_{queue} {}
+
+ private:
+  paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
+};
+
+template <
+    const std::size_t QUEUE_SIZE,
+    typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
+class MessageBuffer final : public IMessageBuffer<BUFFER_ALLOCATOR> {
+  static_assert(
+      QUEUE_SIZE > 0, "Message contained counter must be greater then '0'");
+
+ public:
+  MessageBuffer() : IMessageBuffer<BUFFER_ALLOCATOR>{queue_} {}
+
+  ~MessageBuffer() = default;
+
+  MessageBuffer(const MessageBuffer &other) = delete;
+  MessageBuffer(MessageBuffer &&other) = delete;
+  MessageBuffer &operator=(const MessageBuffer &other) = delete;
+  MessageBuffer &operator=(MessageBuffer &&other) = delete;
+
+  operator bool() const { return queue_; }
 
  private:
   paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;
