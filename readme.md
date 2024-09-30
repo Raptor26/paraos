@@ -31,3 +31,60 @@ lang: "ru-RU"
 - Буфер сообщений (paraos_message_buffer.hpp)
 - Рабочие очереди (paraos_work_queue.hpp)
 - Последовательность (paraos_thread_sequence.hpp)
+
+## Как собрать проект
+
+Для сборки проекта лучше всего воспользоваться cmake presets. Для получения списка доступных предустановок воспользуйтесь командой `cmake --list-presets`.
+
+Вы увидите что-то вроде этого:
+``` bash
+Available configure presets:
+
+  "pc_debug_clang"             - PC Debug Clang
+  "pc_debug_clang_docker"      - Docker with clang and without sudo
+  "pc_debug_clang_trace"       - PC Debug Clang with trace
+  "pc_release_clang"           - PC Release Clang with trace
+  "freertos_debug_clang"       - freeRTOS Debug Clang
+  "freertos_release_clang"     - freeRTOS Release Clang
+  "freertos_debug_clang_trace" - freeRTOS Debug Clang with trace
+```
+
+Вам необходимо сконфигурировать и собрать проект, используя одну из предустановок. Команда конфигурации имеет следующий синтаксис `cmake --preset <name-of-preset>`
+
+Например:
+
+``` bash
+cmake --preset pc_debug_clang
+```
+
+Аналогично вы можете получить список предустановок сборки `cmake --build --list-presets`:
+```bash
+Available build presets:
+
+  "build_pc_debug_clang"
+
+```
+
+Выполним сборку:
+
+```bash
+cmake --build --preset build_pc_debug_clang
+```
+
+Запуск тестов (опционально)
+
+Запросите список доступных предустановок тестов командой `ctest --list-presets`
+
+Ответом будет что-то вроде:
+
+```bash
+Available test presets:
+
+  "test_pc_debug_clang"
+```
+
+Тогда, для запуска тестового набора используйте:
+
+```bash
+ctest --preset test_pc_debug_clang
+```

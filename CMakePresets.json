@@ -67,6 +67,12 @@
             }
         }
     ],
+    "buildPresets": [
+        {
+            "name": "build_pc_debug_clang",
+            "configurePreset": "pc_debug_clang"
+        }
+    ],
     "testPresets": [
         {
             "name": "test_pc_debug_clang",
@@ -76,7 +82,8 @@
             },
             "execution": {
                 "noTestsAction": "error",
-                "stopOnFailure": true
+                "stopOnFailure": true,
+                "timeout": 10
             }
         }
     ]

@@ -1,0 +1,10 @@
+stages:
+ - configure_build_test
+
+## Windows
+ci:windows:
+ stage: configure_build_test
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build --preset build_pc_debug_clang
+  - ctest --preset test_pc_debug_clang
