@@ -44,11 +44,16 @@ if(NOT TARGET Microsoft.GSL::GSL)
   add_subdirectory(GSL)
 endif()
 
+# LWRB -------------------------------------------------------------------------
+if(NOT TARGET lwrb_ex)
+  add_subdirectory(lwrb)
+endif()
+
 add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft.GSL::GSL etl::etl
-                                             Boost::leaf paraos_setup)
+                                             Boost::leaf paraos_setup lwrb)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17 c_std_11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
