@@ -75,6 +75,8 @@ class IRingBuff {
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
  public:
+  virtual ~IRingBuff() = default;
+
   operator bool() { return lwrb_is_ready(&lwrb_); }
 
   auto Write(const void* src, lwrb_sz_t size_in_bytes) {
@@ -118,8 +120,6 @@ class IRingBuff {
 
     PARAOS_ATTR_UNUSED_VAR(is_init_success);
   }
-
-  virtual ~IRingBuff() = default;
 
  private:
   lwrb_t lwrb_;
