@@ -1,0 +1,26 @@
+# Copyright (c) 2024 Stilsoft
+# Distributed under the MIT License
+# Author Vyhodcev Egor
+
+#!/bin/bash
+
+echo "[TEST START] STRESS CTest with clang:"
+ctest --test-dir ./build/pc_debug_clang_docker \
+-j8 \
+--timeout 15 \
+--repeat-until-fail 1000 \
+--schedule-random \
+--output-on-failure \
+--stop-on-failure
+
+echo "[TEST START] STRESS freeRTOS test with clang:"
+ctest --test-dir ./build/freertos_debug_clang \
+-j8 \
+--timeout 15 \
+--repeat-until-fail 1000 \
+--schedule-random \
+--output-on-failure \
+--stop-on-failure
+
+echo "Memory check tests:"
+sh ./memcheck.sh
