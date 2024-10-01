@@ -10,13 +10,17 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 # GTEST ------------------------------------------------------------------------
-add_executable(${PROJECT_NAME} test_message_buff.cpp test_queue_blocking.cpp
-                               test_message_buff_with_user_allocator.cpp)
+add_executable(
+  ${PROJECT_NAME} test_message_buff.cpp test_queue_blocking.cpp
+                  test_message_buff_with_user_allocator.cpp test_lwrb.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS MESSAGE]:")
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17 c_std_11)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS CONTAINERS]:")
 
 # Multithread ------------------------------------------------------------------
 if(THREAD_ENABLE)
@@ -34,6 +38,11 @@ if(THREAD_ENABLE)
                         PRIVATE paraos::paraos)
   add_test(NAME test_message_multithread_many_producer_many_consumers
            COMMAND test_message_multithread_many_producer_many_consumers)
+
+  # ----------------------------------------------------------------------------
+  add_executable(test_lwrb_multithread_spsc test_lwrb_multithread_spsc.cpp)
+  target_link_libraries(test_lwrb_multithread_spsc PRIVATE paraos::paraos)
+  add_test(NAME test_lwrb_multithread_spsc COMMAND test_lwrb_multithread_spsc)
 endif()
 
 # Benchmark --------------------------------------------------------------------
