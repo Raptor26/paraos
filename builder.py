@@ -1,0 +1,167 @@
+import os
+import shutil
+import builder_functions
+
+
+def show_result_output(result: bool):
+    if not result:
+        print(
+            f'{builder_functions.FAIL}\nОшибки при тестировании '
+            'в следующих пресетах:'
+        )
+        for preset, errors in builder_functions.tests_errors_table.items():
+            if errors:
+                print(f'{preset}: {errors}')
+        print(f'{builder_functions.END_COLOR}')
+
+    if builder_functions.memcheck_results_table:
+        print(f'{builder_functions.WARNING}'
+              '\n--------- Обнаружены замечания MEMCHECK:\n')
+        for preset, res in builder_functions.memcheck_results_table.items():
+            print(preset)
+            print(f'Defects:\n {res["defects"]}', end='')
+            print(f'Memcheck results:\n {res["memcheck_results"]}')
+
+        print('--------- MEMCHECK SUMMARY:\n')
+        for preset, res in builder_functions.memcheck_results_table.items():
+            print(preset)
+            print(res["memcheck_results"])
+        print('-------------------------------\n')
+        
+    if not result:
+        print(
+            f'{builder_functions.FAIL}'
+            'Тестирование завершилось с ошибками, '
+            'подробности находятся выше в терминале.'
+            f'{builder_functions.END_COLOR}\n'
+        )
+    else:
+        print(
+            f'{builder_functions.OK_GREEN}'
+            'Все тесты завершились успешно!\n'
+            f'{builder_functions.END_COLOR}'
+        )
+
+
+if __name__ == '__main__':
+    print('Выберите необходимое действие:\n'
+          ' 0 - Выход\n'
+          ' 1 - Запустить все сборки и тесты\n'
+          ' 2 - Запустить все сборки и стресс тест (1000 повторений)\n'
+          ' 3 - pc_debug_clang\n'
+          ' 4 - freertos_debug_clang\n'
+          ' 11 - Запуск тестов в Docker\n'
+          ' 12 - Запуск стресс-тестов в Docker\n')
+
+    action = input()
+    match action:
+        case '0':
+            exit(0)
+
+        case '1':
+            pc_debug_res = builder_functions.test_preset(
+                ['cmake', '--preset', 'pc_debug_clang'],
+                ['cmake', '--build', 'build/pc_debug_clang/'],
+                'build/pc_debug_clang'
+            )
+            pc_release_res = builder_functions.test_preset(
+                ['cmake', '--preset', 'pc_release_clang'],
+                ['cmake', '--build', 'build/pc_release_clang/'],
+                'build/pc_release_clang'
+            )
+
+            rtos_debug_res = builder_functions.test_preset(
+                ['cmake', '--preset', 'freertos_debug_clang'],
+                [
+                    'cmake', '--build', 'build/freertos_debug_clang/'
+                ],
+                'build/freertos_debug_clang'
+            )
+            rtos_release_res = builder_functions.test_preset(
+                ['cmake', '--preset', 'freertos_release_clang'],
+                [
+                    'cmake', '--build', 'build/freertos_release_clang/'
+                ],
+                'build/freertos_release_clang'
+            )
+
+            final_result = (
+                    pc_debug_res and pc_release_res
+                    and rtos_debug_res and rtos_release_res
+            )
+            show_result_output(final_result)
+
+        case '2':
+            pc_debug_clang_res = builder_functions.stress_test_preset(
+                ['cmake', '--preset', 'pc_debug_clang'],
+                ['cmake', '--build', 'build/pc_debug_clang/'],
+                'build/pc_debug_clang'
+            )
+            rtos_debug_res = builder_functions.stress_test_preset(
+                ['cmake', '--preset', 'freertos_debug_clang'],
+                [
+                    'cmake', '--build', 'build/freertos_debug_clang/'
+                ],
+                'build/freertos_debug_clang'
+            )
+
+            final_result = pc_debug_clang_res and rtos_debug_res
+
+            show_result_output(final_result)
+
+        case '3':
+            pc_debug_res = builder_functions.test_preset(
+                ['cmake', '--preset', 'pc_debug_clang'],
+                ['cmake', '--build', 'build/pc_debug_clang/'],
+                'build/pc_debug_clang'
+            )
+
+            show_result_output(pc_debug_res)
+
+        case '4':
+            rtos_debug_res = builder_functions.test_preset(
+                ['cmake', '--preset', 'freertos_debug_clang'],
+                [
+                    'cmake', '--build', 'build/freertos_debug_clang/'
+                ],
+                'build/freertos_debug_clang'
+            )
+
+            show_result_output(rtos_debug_res)
+
+        case '11':
+            if os.path.isfile('docker_tests_entrypoint.sh'):
+                os.remove('docker_tests_entrypoint.sh')
+
+            shutil.copy(
+                'docker_tests_entrypoint_single.sh',
+                'docker_tests_entrypoint.sh'
+            )
+            docker_test_result = builder_functions.run_docker_test()
+            show_result_output(docker_test_result)
+
+            if os.path.isfile('docker_tests_entrypoint.sh'):
+                os.remove('docker_tests_entrypoint.sh')
+
+        case '12':
+            if os.path.isfile('docker_tests_entrypoint.sh'):
+                os.remove('docker_tests_entrypoint.sh')
+
+            shutil.copy(
+                'docker_tests_entrypoint_stress.sh',
+                'docker_tests_entrypoint.sh'
+            )
+            docker_test_result = builder_functions.run_docker_test()
+            show_result_output(docker_test_result)
+
+            if os.path.isfile('docker_tests_entrypoint.sh'):
+                os.remove('docker_tests_entrypoint.sh')
+
+        case _:
+            print(
+                f'{builder_functions.WARNING}'
+                'Указанное действие не поддерживается!'
+                f'{builder_functions.END_COLOR}'
+            )
+
+    _ = input('Нажмите ENTER для завершения тестирования')
