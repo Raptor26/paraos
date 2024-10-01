@@ -102,3 +102,20 @@ TEST(RingBuff, Clear) {
   ring_buff.Clear();
   ASSERT_EQ(0u, ring_buff.Size());
 }
+
+TEST(RingBuff, Skip) {
+  std::string src{"Hello World!"};
+  constexpr std::size_t ringbuff_size_in_bytes{100};
+  paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
+
+  auto written_bytes_numb =
+      ring_buff.Write(static_cast<const void *>(src.data()), src.size());
+
+  ASSERT_EQ(written_bytes_numb, ring_buff.Size());
+
+  constexpr std::size_t skip_need{10};
+  auto skip_bytes = ring_buff.Skip(skip_need);
+  ASSERT_EQ(skip_need, skip_bytes);
+
+  ASSERT_EQ(written_bytes_numb - skip_need, ring_buff.Size());
+}

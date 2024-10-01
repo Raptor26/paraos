@@ -96,6 +96,10 @@ class IRingBuff {
     return Read(begin, std::distance(begin, end));
   }
 
+  auto Skip(lwrb_sz_t size_in_bytes) {
+    return lwrb_skip(&lwrb_, size_in_bytes);
+  }
+
   auto Free() { return lwrb_get_free(&lwrb_); }
 
   /// @brief Return numbers of bytes currently available in buffer.
