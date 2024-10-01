@@ -32,6 +32,7 @@
 #include "etl/task.h"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_trace.hpp"
 
 namespace paraos {
 
