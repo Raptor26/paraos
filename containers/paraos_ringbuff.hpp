@@ -29,11 +29,31 @@
 #include <cstdint>
 #include <iterator>
 
+#include "etl/error_handler.h"
+#include "etl/exception.h"
 #include "lwrb/lwrb.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
 
 namespace paraos {
+
+#define RINGBUFF_FILE_ID (100)
+
+/// The base class for ring buffer exceptions.
+class ringbuff_exception : public etl::exception {
+ public:
+  ringbuff_exception(
+      string_type reason_, string_type file_name_, numeric_type line_number_)
+      : exception(reason_, file_name_, line_number_) {}
+};
+
+class ringbuff_ctor_error : public ringbuff_exception {
+ public:
+  ringbuff_ctor_error(string_type file_name_, numeric_type line_number_)
+      : ringbuff_exception(
+            ETL_ERROR_TEXT("ringbuff:Ctor", RINGBUFF_FILE_ID), file_name_,
+            line_number_) {}
+};
 
 /// @brief  This is the base for all ring buffers that contain a particular
 /// type.
@@ -89,7 +109,9 @@ class IRingBuff {
  protected:
   IRingBuff(void* buff, lwrb_sz_t buff_size_in_bytes) {
     auto is_init_success = lwrb_init(&lwrb_, buff, buff_size_in_bytes);
-    PARAOS_CHECK_ASSERT(is_init_success != 0u);
+
+    ETL_ASSERT(is_init_success == 1u, ETL_ERROR(ringbuff_ctor_error));
+
     PARAOS_ATTR_UNUSED_VAR(is_init_success);
   }
 
@@ -105,6 +127,9 @@ class IRingBuff {
 /// 'SIZE * sizeof(T)'
 template <typename T, std::size_t SIZE>
 class RingBuff : public IRingBuff<T> {
+  static_assert(
+      SIZE > 1, "Size of ring buffer must be greater than one element");
+
  public:
   RingBuff() : IRingBuff<T>(static_cast<void*>(storage), SIZE) {}
 

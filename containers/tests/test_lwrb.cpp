@@ -30,18 +30,25 @@
 
 #include "paraos_ringbuff.hpp"
 
-TEST(RingBuff, Create) { paraos::RingBuff<std::uint8_t, 10> ring_buff; }
+TEST(RingBuff, Create) {
+  try {
+    paraos::RingBuff<char, 2> ring_buff;
+  } catch (paraos::ringbuff_ctor_error &e) {
+    FAIL() << "paraos::RingBuff can't throw exception" << std::endl;
+  }
+}
 
 TEST(RingBuff, WriteThenRead) {
   std::string src{"Hello World!"};
   constexpr std::size_t ringbuff_size_in_bytes{100};
+
   paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
 
   // Free bytes less at one bytes from size.
   ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
 
   auto written_bytes_numb =
-      ring_buff.Write(static_cast<const void*>(src.c_str()), src.size());
+      ring_buff.Write(static_cast<const void *>(src.c_str()), src.size());
   ASSERT_EQ(src.size(), written_bytes_numb);
   ASSERT_EQ(src.size(), ring_buff.Size());
 
@@ -51,8 +58,8 @@ TEST(RingBuff, WriteThenRead) {
 
   ASSERT_EQ(
       0, memcmp(
-             static_cast<const void*>(src.data()),
-             static_cast<const void*>(dst_.data()), src.size()));
+             static_cast<const void *>(src.data()),
+             static_cast<const void *>(dst_.data()), src.size()));
 
   // All date read. Free bytes less at one bytes from size.
   ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
@@ -78,8 +85,8 @@ TEST(RingBuff, WriteThenReadIterator) {
 
   ASSERT_EQ(
       0, memcmp(
-             static_cast<const void*>(src.data()),
-             static_cast<const void*>(dst_.data()), str_len_without_null));
+             static_cast<const void *>(src.data()),
+             static_cast<const void *>(dst_.data()), str_len_without_null));
 }
 
 TEST(RingBuff, Clear) {
@@ -88,7 +95,7 @@ TEST(RingBuff, Clear) {
   paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
 
   auto written_bytes_numb =
-      ring_buff.Write(static_cast<const void*>(src.data()), src.size());
+      ring_buff.Write(static_cast<const void *>(src.data()), src.size());
 
   ASSERT_EQ(written_bytes_numb, ring_buff.Size());
 
