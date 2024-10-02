@@ -11,8 +11,10 @@ include(GoogleTest)
 
 # GTEST ------------------------------------------------------------------------
 add_executable(
-  ${PROJECT_NAME} test_message_buff.cpp test_queue_blocking.cpp
-                  test_message_buff_with_user_allocator.cpp test_lwrb.cpp)
+  ${PROJECT_NAME}
+  test_message_buff.cpp test_queue_blocking.cpp
+  test_message_buff_with_user_allocator.cpp test_lwrb.cpp
+  test_multi_ringbuff.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
@@ -43,6 +45,11 @@ if(THREAD_ENABLE)
   add_executable(test_lwrb_multithread_spsc test_lwrb_multithread_spsc.cpp)
   target_link_libraries(test_lwrb_multithread_spsc PRIVATE paraos::paraos)
   add_test(NAME test_lwrb_multithread_spsc COMMAND test_lwrb_multithread_spsc)
+
+  # ----------------------------------------------------------------------------
+  add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
+  target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
+  add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
 endif()
 
 # Benchmark --------------------------------------------------------------------
