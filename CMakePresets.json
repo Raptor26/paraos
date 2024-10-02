@@ -117,6 +117,18 @@
                 "stopOnFailure": true,
                 "timeout": 10
             }
+        },
+        {
+            "name": "test_freertos_release_clang",
+            "configurePreset": "freertos_release_clang",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "timeout": 10
+            }
         }
     ]
 }
