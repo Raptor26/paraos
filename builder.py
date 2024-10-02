@@ -3,6 +3,15 @@ import shutil
 import builder_functions
 
 
+presets_tuple = (
+    'pc_debug_clang',
+    'pc_debug_gcc',
+    'pc_release_clang',
+    'freertos_debug_clang',
+    'freertos_debug_gcc',
+    'freertos_release_clang'
+)
+
 def show_result_output(result: bool):
     if not result:
         print(
@@ -47,7 +56,7 @@ if __name__ == '__main__':
     print('Выберите необходимое действие:\n'
           ' 0 - Выход\n'
           ' 1 - Запустить все сборки и тесты\n'
-          ' 2 - Запустить все сборки и стресс тест (1000 повторений)\n'
+          ' 2 - Запустить все сборки и стресс тест\n'
           ' 3 - pc_debug_clang\n'
           ' 4 - freertos_debug_clang\n'
           ' 11 - Запуск тестов в Docker\n'
@@ -59,55 +68,34 @@ if __name__ == '__main__':
             exit(0)
 
         case '1':
-            pc_debug_res = builder_functions.test_preset(
-                ['cmake', '--preset', 'pc_debug_clang'],
-                ['cmake', '--build', 'build/pc_debug_clang/'],
-                'build/pc_debug_clang'
-            )
-            pc_release_res = builder_functions.test_preset(
-                ['cmake', '--preset', 'pc_release_clang'],
-                ['cmake', '--build', 'build/pc_release_clang/'],
-                'build/pc_release_clang'
-            )
+            results_list = []
+            for preset in presets_tuple:
+                preset_res = builder_functions.test_preset(
+                    ['cmake', '--preset', preset],
+                    ['cmake', '--build', f'build/{preset}/'],
+                    f'build/{preset}'
+                )
+            final_res = True
 
-            rtos_debug_res = builder_functions.test_preset(
-                ['cmake', '--preset', 'freertos_debug_clang'],
-                [
-                    'cmake', '--build', 'build/freertos_debug_clang/'
-                ],
-                'build/freertos_debug_clang'
-            )
-            rtos_release_res = builder_functions.test_preset(
-                ['cmake', '--preset', 'freertos_release_clang'],
-                [
-                    'cmake', '--build', 'build/freertos_release_clang/'
-                ],
-                'build/freertos_release_clang'
-            )
-
-            final_result = (
-                    pc_debug_res and pc_release_res
-                    and rtos_debug_res and rtos_release_res
-            )
-            show_result_output(final_result)
+            for res in results_list:
+                final_res = final_res and res
+    
+            show_result_output(final_res)
 
         case '2':
-            pc_debug_clang_res = builder_functions.stress_test_preset(
-                ['cmake', '--preset', 'pc_debug_clang'],
-                ['cmake', '--build', 'build/pc_debug_clang/'],
-                'build/pc_debug_clang'
-            )
-            rtos_debug_res = builder_functions.stress_test_preset(
-                ['cmake', '--preset', 'freertos_debug_clang'],
-                [
-                    'cmake', '--build', 'build/freertos_debug_clang/'
-                ],
-                'build/freertos_debug_clang'
-            )
+            results_list = []
+            for preset in presets_tuple:
+                preset_res = builder_functions.stress_test_preset(
+                    ['cmake', '--preset', preset],
+                    ['cmake', '--build', f'build/{preset}/'],
+                    f'build/{preset}'
+                )
+            final_res = True
 
-            final_result = pc_debug_clang_res and rtos_debug_res
-
-            show_result_output(final_result)
+            for res in results_list:
+                final_res = final_res and res
+    
+            show_result_output(final_res)
 
         case '3':
             pc_debug_res = builder_functions.test_preset(
