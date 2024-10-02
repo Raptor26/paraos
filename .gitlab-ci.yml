@@ -1,16 +1,16 @@
 stages:
- - test_linux_posix_debug
- - test_linux_posix_release
- - test_linux_freertos_debug
- - test_linux_freertos_release
- - test_windows_winapi_debug
- - test_windows_winapi_release
- - test_windows_freertos_debug
- - test_windows_freertos_release
+ - test_linux_posix_debug_clang
+ - test_linux_posix_release_clang
+ - test_linux_freertos_debug_clang
+ - test_linux_freertos_release_clang
+ - test_windows_winapi_debug_clang
+ - test_windows_winapi_release_clang
+ - test_windows_freertos_debug_clang
+ - test_windows_freertos_release_clang
 
 ## Linux -----------------------------------------------------------------------
 ci:linux_posix_debug:
- stage: test_linux_posix_debug
+ stage: test_linux_posix_debug_clang
  needs: []
  tags:
   - linux
@@ -20,7 +20,7 @@ ci:linux_posix_debug:
   - ctest --preset test_pc_debug_clang
 
 ci:linux_posix_release:
- stage: test_linux_posix_release
+ stage: test_linux_posix_release_clang
  needs: []
  tags:
   - linux
@@ -30,7 +30,7 @@ ci:linux_posix_release:
   - ctest --preset test_pc_release_clang
 
 ci:linux_freertos_debug:
- stage: test_linux_freertos_debug
+ stage: test_linux_freertos_debug_clang
  needs: []
  tags:
   - linux
@@ -40,7 +40,7 @@ ci:linux_freertos_debug:
   - ctest --preset test_freertos_debug_clang
 
 ci:linux_freertos_release:
- stage: test_linux_freertos_release
+ stage: test_linux_freertos_release_clang
  needs: []
  tags:
   - linux
@@ -51,7 +51,7 @@ ci:linux_freertos_release:
 
 ## windows ---------------------------------------------------------------------
 ci:windows:
- stage: test_windows_winapi_debug
+ stage: test_windows_winapi_debug_clang
  needs: []
  tags:
   - windows
@@ -61,7 +61,7 @@ ci:windows:
   - ctest --preset test_pc_debug_clang
 
 ci:windows_winapi_release:
- stage: test_windows_winapi_release
+ stage: test_windows_winapi_release_clang
  needs: []
  tags:
   - linux
@@ -71,7 +71,7 @@ ci:windows_winapi_release:
   - ctest --preset test_pc_release_clang
 
 ci:windows_freertos:
- stage: test_windows_freertos_debug
+ stage: test_windows_freertos_debug_clang
  needs: []
  tags:
   - linux
@@ -81,7 +81,7 @@ ci:windows_freertos:
   - ctest --preset test_freertos_debug_clang
 
 ci:windows_freertos_release:
- stage: test_windows_freertos_release
+ stage: test_windows_freertos_release_clang
  needs: []
  tags:
   - linux
