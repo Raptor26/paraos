@@ -1,25 +1,135 @@
 stages:
- - configure_build_test_linux
- - configure_build_test_windows
+ - test_linux_posix_debug_clang
+ - test_linux_posix_debug_gcc
+ - test_linux_posix_release_clang
+ - test_linux_freertos_debug_clang
+ - test_linux_freertos_debug_gcc
+ - test_linux_freertos_release_clang
+ - test_windows_winapi_debug_clang
+ - test_windows_winapi_debug_gcc
+ - test_windows_winapi_release_clang
+ - test_windows_freertos_debug_clang
+ - test_windows_freertos_debug_gcc
+ - test_windows_freertos_release_clang
 
-## Linux
-ci:linux:
- stage: configure_build_test_linux
+## Linux -----------------------------------------------------------------------
+ci:linux_posix_debug_clang:
+ stage: test_linux_posix_debug_clang
  needs: []
  tags:
   - linux
  script:
   - cmake --preset pc_debug_clang
-  - cmake --build --preset build_pc_debug_clang
+  - cmake --build build/pc_debug_clang
   - ctest --preset test_pc_debug_clang
 
-## windows
+ci:linux_posix_debug_gcc:
+ stage: test_linux_posix_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --preset test_pc_debug_gcc
+
+ci:linux_posix_release_clang:
+ stage: test_linux_posix_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_release_clang
+  - cmake --build build/pc_release_clang
+  - ctest --preset test_pc_release_clang
+
+ci:linux_freertos_debug_clang:
+ stage: test_linux_freertos_debug_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --preset test_freertos_debug_clang
+
+ci:linux_freertos_debug_gcc:
+ stage: test_linux_freertos_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --preset test_freertos_debug_gcc
+
+ci:linux_freertos_release_clang:
+ stage: test_linux_freertos_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_release_clang
+  - cmake --build build/freertos_release_clang
+  - ctest --preset test_freertos_release_clang
+
+## windows ---------------------------------------------------------------------
 ci:windows:
- stage: configure_build_test_windows
+ stage: test_windows_winapi_debug_clang
  needs: []
  tags:
   - windows
  script:
   - cmake --preset pc_debug_clang
-  - cmake --build --preset build_pc_debug_clang
+  - cmake --build build/pc_debug_clang
   - ctest --preset test_pc_debug_clang
+
+ci:windows_winapi_debug_gcc:
+ stage: test_windows_winapi_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --preset test_pc_debug_gcc
+
+ci:windows_winapi_release_clang:
+ stage: test_windows_winapi_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_release_clang
+  - cmake --build build/pc_release_clang
+  - ctest --preset test_pc_release_clang
+
+ci:windows_freertos_debug_clang:
+ stage: test_windows_freertos_debug_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --preset test_freertos_debug_clang
+
+ci:windows_freertos_debug_gcc:
+ stage: test_windows_freertos_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --preset test_freertos_debug_gcc
+
+ci:windows_freertos_release_clang:
+ stage: test_windows_freertos_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_release_clang
+  - cmake --build build/freertos_release_clang
+  - ctest --preset test_freertos_release_clang

@@ -19,19 +19,23 @@
             }
         },
         {
-            "name": "pc_debug_clang_docker",
-            "displayName": "Docker with clang and without sudo",
-            "inherits": "pc_debug_clang",
-            "cacheVariables": {
-                "NOSUDO": "true"
-            }
-        },
-        {
             "name": "pc_debug_clang_trace",
             "displayName": "PC Debug Clang with trace",
             "inherits": "pc_debug_clang",
             "cacheVariables": {
                 "TRACE": "true"
+            }
+        },
+        {
+            "name": "pc_debug_gcc",
+            "displayName": "PC Debug GCC",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "UTEST": "true"
             }
         },
         {
@@ -51,6 +55,14 @@
             }
         },
         {
+            "name": "freertos_debug_gcc",
+            "displayName": "freeRTOS Debug GCC",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "FREERTOS": "true"
+            }
+        },
+        {
             "name": "freertos_release_clang",
             "displayName": "freeRTOS Release Clang",
             "inherits": "pc_debug_clang",
@@ -65,18 +77,80 @@
             "cacheVariables": {
                 "TRACE": "true"
             }
-        }
-    ],
-    "buildPresets": [
+        },
         {
-            "name": "build_pc_debug_clang",
-            "configurePreset": "pc_debug_clang"
+            "name": "pc_debug_clang_docker",
+            "displayName": "Docker with clang and without sudo",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "NOSUDO": "true"
+            }
         }
     ],
     "testPresets": [
         {
             "name": "test_pc_debug_clang",
             "configurePreset": "pc_debug_clang",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "timeout": 10
+            }
+        },
+        {
+            "name": "test_pc_debug_gcc",
+            "configurePreset": "pc_debug_gcc",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "timeout": 10
+            }
+        },
+        {
+            "name": "test_pc_release_clang",
+            "configurePreset": "pc_release_clang",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "timeout": 10
+            }
+        },
+        {
+            "name": "test_freertos_debug_clang",
+            "configurePreset": "freertos_debug_clang",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "timeout": 10
+            }
+        },
+        {
+            "name": "test_freertos_debug_gcc",
+            "configurePreset": "freertos_debug_gcc",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "timeout": 10
+            }
+        },
+        {
+            "name": "test_freertos_release_clang",
+            "configurePreset": "freertos_release_clang",
             "output": {
                 "outputOnFailure": true
             },
