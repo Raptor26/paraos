@@ -38,7 +38,7 @@ ci:linux_posix_debug_clang_stress:
   - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: manual
+    when: always
     allow_failure: true
 
 ci:linux_posix_debug_gcc:
@@ -82,7 +82,7 @@ ci:linux_freertos_debug_clang_stress:
   - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: manual
+    when: always
     allow_failure: true
 
 ci:linux_freertos_debug_gcc:
@@ -127,7 +127,7 @@ ci:windows_winapi_debug_clang_stress:
   - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: manual
+    when: always
     allow_failure: true
 
 ci:windows_winapi_debug_gcc:
@@ -171,7 +171,7 @@ ci:windows_freertos_debug_clang_stress:
   - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: manual
+    when: always
     allow_failure: true
 
 ci:windows_freertos_debug_gcc:
