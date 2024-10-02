@@ -21,7 +21,7 @@ ci:linux_posix_debug_clang:
  script:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
-  - ctest --preset test_pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
 
 ci:linux_posix_debug_gcc:
  stage: test_linux_posix_debug_gcc
@@ -31,7 +31,7 @@ ci:linux_posix_debug_gcc:
  script:
   - cmake --preset pc_debug_gcc
   - cmake --build build/pc_debug_gcc
-  - ctest --preset test_pc_debug_gcc
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure
 
 ci:linux_posix_release_clang:
  stage: test_linux_posix_release_clang
@@ -41,7 +41,7 @@ ci:linux_posix_release_clang:
  script:
   - cmake --preset pc_release_clang
   - cmake --build build/pc_release_clang
-  - ctest --preset test_pc_release_clang
+  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure
 
 ci:linux_freertos_debug_clang:
  stage: test_linux_freertos_debug_clang
@@ -51,7 +51,7 @@ ci:linux_freertos_debug_clang:
  script:
   - cmake --preset freertos_debug_clang
   - cmake --build build/freertos_debug_clang
-  - ctest --preset test_freertos_debug_clang
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure
 
 ci:linux_freertos_debug_gcc:
  stage: test_linux_freertos_debug_gcc
@@ -61,7 +61,7 @@ ci:linux_freertos_debug_gcc:
  script:
   - cmake --preset freertos_debug_gcc
   - cmake --build build/freertos_debug_gcc
-  - ctest --preset test_freertos_debug_gcc
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure
 
 ci:linux_freertos_release_clang:
  stage: test_linux_freertos_release_clang
@@ -71,7 +71,7 @@ ci:linux_freertos_release_clang:
  script:
   - cmake --preset freertos_release_clang
   - cmake --build build/freertos_release_clang
-  - ctest --preset test_freertos_release_clang
+  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure
 
 ## windows ---------------------------------------------------------------------
 ci:windows:
@@ -82,7 +82,7 @@ ci:windows:
  script:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
-  - ctest --preset test_pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
 
 ci:windows_winapi_debug_gcc:
  stage: test_windows_winapi_debug_gcc
@@ -92,7 +92,7 @@ ci:windows_winapi_debug_gcc:
  script:
   - cmake --preset pc_debug_gcc
   - cmake --build build/pc_debug_gcc
-  - ctest --preset test_pc_debug_gcc
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure
 
 ci:windows_winapi_release_clang:
  stage: test_windows_winapi_release_clang
@@ -102,7 +102,7 @@ ci:windows_winapi_release_clang:
  script:
   - cmake --preset pc_release_clang
   - cmake --build build/pc_release_clang
-  - ctest --preset test_pc_release_clang
+  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure
 
 ci:windows_freertos_debug_clang:
  stage: test_windows_freertos_debug_clang
@@ -112,7 +112,7 @@ ci:windows_freertos_debug_clang:
  script:
   - cmake --preset freertos_debug_clang
   - cmake --build build/freertos_debug_clang
-  - ctest --preset test_freertos_debug_clang
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure
 
 ci:windows_freertos_debug_gcc:
  stage: test_windows_freertos_debug_gcc
@@ -122,7 +122,7 @@ ci:windows_freertos_debug_gcc:
  script:
   - cmake --preset freertos_debug_gcc
   - cmake --build build/freertos_debug_gcc
-  - ctest --preset test_freertos_debug_gcc
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure
 
 ci:windows_freertos_release_clang:
  stage: test_windows_freertos_release_clang
@@ -132,4 +132,4 @@ ci:windows_freertos_release_clang:
  script:
   - cmake --preset freertos_release_clang
   - cmake --build build/freertos_release_clang
-  - ctest --preset test_freertos_release_clang
+  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure
