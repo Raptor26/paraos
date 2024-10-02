@@ -5,6 +5,7 @@ stages:
 ## Linux
 ci:linux:
  stage: configure_build_test_linux
+ needs: []
  tags:
   - linux
  script:
@@ -15,6 +16,7 @@ ci:linux:
 ## windows
 ci:windows:
  stage: configure_build_test_windows
+ needs: []
  tags:
   - windows
  script:
