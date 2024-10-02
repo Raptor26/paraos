@@ -49,6 +49,8 @@ if(NOT TARGET lwrb_ex)
   add_subdirectory(lwrb)
 endif()
 
+target_compile_definitions(lwrb PUBLIC -DLWRB_DISABLE_ATOMIC)
+
 add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
