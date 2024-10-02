@@ -119,3 +119,26 @@ TEST(RingBuff, Skip) {
 
   ASSERT_EQ(written_bytes_numb - skip_need, ring_buff.Size());
 }
+
+TEST(RingBuff, WriteSpanThenReadSpan) {
+  std::string src{"Hello World!"};
+  constexpr std::size_t ringbuff_size_in_bytes{100};
+
+  paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
+
+  auto written_bytes_numb = ring_buff.Write(src);
+  ASSERT_EQ(src.size(), written_bytes_numb);
+  ASSERT_EQ(src.size(), ring_buff.Size());
+
+  std::array<char, 100> dst_;
+  auto read_bytes_numb = ring_buff.Read(dst_);
+  ASSERT_EQ(written_bytes_numb, read_bytes_numb);
+
+  ASSERT_EQ(
+      0, memcmp(
+             static_cast<const void *>(src.data()),
+             static_cast<const void *>(dst_.data()), src.size()));
+
+  // All data was read. Free bytes must be one byte less than buffer size.
+  ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
+}

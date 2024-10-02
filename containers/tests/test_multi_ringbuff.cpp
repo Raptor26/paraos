@@ -127,3 +127,30 @@ TEST(MultiRingBuff, WriteTwiceReadTwice) {
   ASSERT_EQ(written_bytes_numb, read_bytes_numb);
   ASSERT_EQ(cbuff_id, buff_id);
 }
+
+TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
+  constexpr std::size_t max_ring_buff_size{128};
+  constexpr std::size_t max_ring_buff_numb{5};
+  paraos::MultiRingBuff<10, max_ring_buff_size, max_ring_buff_numb>
+      multi_ring_buff{};
+  std::string str{"Hello world!"};
+  // Каст строки в массив uint8_t для последующего преобразования в span.
+  std::vector<uint8_t> myVector(str.begin(), str.end());
+
+  constexpr std::size_t cbuff_id{0};
+  auto written_bytes_numb = multi_ring_buff.Write(cbuff_id, myVector, 0u);
+
+  ASSERT_EQ(str.size(), written_bytes_numb);
+
+  std::array<std::uint8_t, 128> dst_arr{};
+
+  std::size_t buff_id;
+  auto read_bytes_numb = multi_ring_buff.Read(buff_id, dst_arr, 0u);
+
+  ASSERT_EQ(written_bytes_numb, read_bytes_numb);
+  ASSERT_EQ(cbuff_id, buff_id);
+  ASSERT_EQ(
+      0, memcmp(
+             static_cast<const void *>(str.data()),
+             static_cast<const void *>(dst_arr.data()), read_bytes_numb));
+}
