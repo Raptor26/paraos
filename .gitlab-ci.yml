@@ -1,9 +1,24 @@
 stages:
- - configure_build_test
+ - configure_build_test_linux
+ - configure_build_test_windows
 
-## Windows
+## Linux
+ci:linux:
+ stage: configure_build_test_linux
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build --preset build_pc_debug_clang
+  - ctest --preset test_pc_debug_clang
+
+## windows
 ci:windows:
- stage: configure_build_test
+ stage: configure_build_test_windows
+ needs: []
+ tags:
+  - windows
  script:
   - cmake --preset pc_debug_clang
   - cmake --build --preset build_pc_debug_clang
