@@ -67,20 +67,6 @@
             }
         }
     ],
-    "buildPresets": [
-        {
-            "name": "build_pc_debug_clang",
-            "configurePreset": "pc_debug_clang"
-        },
-        {
-            "name": "build_pc_release_clang",
-            "configurePreset": "pc_release_clang"
-        },
-        {
-            "name": "build_freertos_debug_clang",
-            "configurePreset": "freertos_debug_clang"
-        }
-    ],
     "testPresets": [
         {
             "name": "test_pc_debug_clang",

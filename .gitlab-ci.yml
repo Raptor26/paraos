@@ -57,7 +57,7 @@ ci:windows:
   - windows
  script:
   - cmake --preset pc_debug_clang
-  - cmake --build --preset build_pc_debug_clang
+  - cmake --build build/pc_debug_clang
   - ctest --preset test_pc_debug_clang
 
 ci:windows_winapi_release:
