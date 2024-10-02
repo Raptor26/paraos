@@ -1,6 +1,8 @@
 stages:
  - configure_build_test_linux
+ - configure_build_test_linux_freertos_clang
  - configure_build_test_windows
+ - configure_build_test_windows_freertos_clang
 
 ## Linux
 ci:linux:
@@ -13,6 +15,16 @@ ci:linux:
   - cmake --build --preset build_pc_debug_clang
   - ctest --preset test_pc_debug_clang
 
+ci:linux_freertos:
+ stage: configure_build_test_linux_freertos_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --preset test_freertos_debug_clang
+
 ## windows
 ci:windows:
  stage: configure_build_test_windows
@@ -23,3 +35,13 @@ ci:windows:
   - cmake --preset pc_debug_clang
   - cmake --build --preset build_pc_debug_clang
   - ctest --preset test_pc_debug_clang
+
+ci:windows_freertos:
+ stage: configure_build_test_windows_freertos_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --preset test_freertos_debug_clang
