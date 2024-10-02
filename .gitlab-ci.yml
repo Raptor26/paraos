@@ -1,5 +1,6 @@
 stages:
  - test_linux_posix_debug_clang
+ - test_linux_posix_debug_clang_stress
  - test_linux_posix_debug_gcc
  - test_linux_posix_release_clang
  - test_linux_freertos_debug_clang
@@ -22,6 +23,20 @@ ci:linux_posix_debug_clang:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
   - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
+
+ci:linux_posix_debug_clang_stress:
+ stage: test_linux_posix_debug_clang_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build build/pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 50
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: manual
+    allow_failure: true
 
 ci:linux_posix_debug_gcc:
  stage: test_linux_posix_debug_gcc
