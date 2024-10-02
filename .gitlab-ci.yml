@@ -1,15 +1,19 @@
 stages:
  - test_linux_posix_debug_clang
+ - test_linux_posix_debug_gcc
  - test_linux_posix_release_clang
  - test_linux_freertos_debug_clang
+ - test_linux_freertos_debug_gcc
  - test_linux_freertos_release_clang
  - test_windows_winapi_debug_clang
+ - test_windows_winapi_debug_gcc
  - test_windows_winapi_release_clang
  - test_windows_freertos_debug_clang
+ - test_windows_freertos_debug_gcc
  - test_windows_freertos_release_clang
 
 ## Linux -----------------------------------------------------------------------
-ci:linux_posix_debug:
+ci:linux_posix_debug_clang:
  stage: test_linux_posix_debug_clang
  needs: []
  tags:
@@ -19,7 +23,17 @@ ci:linux_posix_debug:
   - cmake --build build/pc_debug_clang
   - ctest --preset test_pc_debug_clang
 
-ci:linux_posix_release:
+ci:linux_posix_debug_gcc:
+ stage: test_linux_posix_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --preset test_pc_debug_gcc
+
+ci:linux_posix_release_clang:
  stage: test_linux_posix_release_clang
  needs: []
  tags:
@@ -29,7 +43,7 @@ ci:linux_posix_release:
   - cmake --build build/pc_release_clang
   - ctest --preset test_pc_release_clang
 
-ci:linux_freertos_debug:
+ci:linux_freertos_debug_clang:
  stage: test_linux_freertos_debug_clang
  needs: []
  tags:
@@ -39,7 +53,17 @@ ci:linux_freertos_debug:
   - cmake --build build/freertos_debug_clang
   - ctest --preset test_freertos_debug_clang
 
-ci:linux_freertos_release:
+ci:linux_freertos_debug_gcc:
+ stage: test_linux_freertos_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --preset test_freertos_debug_gcc
+
+ci:linux_freertos_release_clang:
  stage: test_linux_freertos_release_clang
  needs: []
  tags:
@@ -60,7 +84,17 @@ ci:windows:
   - cmake --build build/pc_debug_clang
   - ctest --preset test_pc_debug_clang
 
-ci:windows_winapi_release:
+ci:windows_winapi_debug_gcc:
+ stage: test_windows_winapi_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --preset test_pc_debug_gcc
+
+ci:windows_winapi_release_clang:
  stage: test_windows_winapi_release_clang
  needs: []
  tags:
@@ -70,7 +104,7 @@ ci:windows_winapi_release:
   - cmake --build build/pc_release_clang
   - ctest --preset test_pc_release_clang
 
-ci:windows_freertos:
+ci:windows_freertos_debug_clang:
  stage: test_windows_freertos_debug_clang
  needs: []
  tags:
@@ -80,7 +114,17 @@ ci:windows_freertos:
   - cmake --build build/freertos_debug_clang
   - ctest --preset test_freertos_debug_clang
 
-ci:windows_freertos_release:
+ci:windows_freertos_debug_gcc:
+ stage: test_windows_freertos_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --preset test_freertos_debug_gcc
+
+ci:windows_freertos_release_clang:
  stage: test_windows_freertos_release_clang
  needs: []
  tags:
