@@ -127,7 +127,8 @@ def stress_test_preset(
             '-j16',
             '--timeout', '15',
             '--repeat-until-fail', '555',
-            '--stop-on-failure'
+            '--stop-on-failure',
+            '--output-on-failure'
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

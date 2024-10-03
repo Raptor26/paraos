@@ -76,6 +76,9 @@ if __name__ == '__main__':
                     f'build/{preset}'
                 )
                 results_list.append(preset_res)
+                if not preset_res:
+                    break
+
             final_res = True
 
             for res in results_list:
@@ -92,6 +95,9 @@ if __name__ == '__main__':
                     f'build/{preset}'
                 )
                 results_list.append(preset_res)
+                if not preset_res:
+                    break
+                    
             final_res = True
 
             for res in results_list:
