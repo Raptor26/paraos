@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+	branch = main
+	commit = d3052f1f50c416ba30e8036410ee79765d5fd4a5
+	parent = 6062016f0cfeeede689b45183d5cbc70f04bdae1
+	method = merge
+	cmdver = 0.4.6

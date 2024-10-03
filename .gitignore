@@ -1,1 +1,8 @@
 build/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore generated files by builder.py
+docker_tests_entrypoint.sh

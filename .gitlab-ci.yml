@@ -1,0 +1,195 @@
+stages:
+ - test_linux_posix_debug_clang
+ - test_linux_posix_debug_clang_stress
+ - test_linux_posix_debug_gcc
+ - test_linux_posix_release_clang
+ - test_linux_freertos_debug_clang
+ - test_linux_freertos_debug_clang_stress
+ - test_linux_freertos_debug_gcc
+ - test_linux_freertos_release_clang
+ - test_windows_winapi_debug_clang
+ - test_windows_winapi_debug_clang_stress
+ - test_windows_winapi_debug_gcc
+ - test_windows_winapi_release_clang
+ - test_windows_freertos_debug_clang
+ - test_windows_freertos_debug_clang_stress
+ - test_windows_freertos_debug_gcc
+ - test_windows_freertos_release_clang
+
+## Linux -----------------------------------------------------------------------
+ci:linux_posix_debug_clang:
+ stage: test_linux_posix_debug_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build build/pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
+
+ci:linux_posix_debug_clang_stress:
+ stage: test_linux_posix_debug_clang_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build build/pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: true
+
+ci:linux_posix_debug_gcc:
+ stage: test_linux_posix_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure
+
+ci:linux_posix_release_clang:
+ stage: test_linux_posix_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_release_clang
+  - cmake --build build/pc_release_clang
+  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure
+
+ci:linux_freertos_debug_clang:
+ stage: test_linux_freertos_debug_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure
+
+ci:linux_freertos_debug_clang_stress:
+ stage: test_linux_freertos_debug_clang_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: true
+
+ci:linux_freertos_debug_gcc:
+ stage: test_linux_freertos_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure
+
+ci:linux_freertos_release_clang:
+ stage: test_linux_freertos_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_release_clang
+  - cmake --build build/freertos_release_clang
+  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure
+
+## windows ---------------------------------------------------------------------
+ci:windows:
+ stage: test_windows_winapi_debug_clang
+ needs: []
+ tags:
+  - windows
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build build/pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
+
+ci:windows_winapi_debug_clang_stress:
+ stage: test_windows_winapi_debug_clang_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build build/pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: true
+
+ci:windows_winapi_debug_gcc:
+ stage: test_windows_winapi_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure
+
+ci:windows_winapi_release_clang:
+ stage: test_windows_winapi_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_release_clang
+  - cmake --build build/pc_release_clang
+  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure
+
+ci:windows_freertos_debug_clang:
+ stage: test_windows_freertos_debug_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure
+
+ci:windows_freertos_debug_clang_stress:
+ stage: test_windows_freertos_debug_clang_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_clang
+  - cmake --build build/freertos_debug_clang
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: true
+
+ci:windows_freertos_debug_gcc:
+ stage: test_windows_freertos_debug_gcc
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure
+
+ci:windows_freertos_release_clang:
+ stage: test_windows_freertos_release_clang
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_release_clang
+  - cmake --build build/freertos_release_clang
+  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure
