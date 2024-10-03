@@ -172,7 +172,7 @@ struct Consumer : public paraos::Thread {
   void Run() override {
     std::size_t idx;
     constexpr std::size_t read_delay_ms{100u};
-    constexpr std::size_t read_mem_size{128u};
+    constexpr std::size_t read_mem_size{2048};
 
     auto read_mem = std::make_unique<std::array<std::uint8_t, read_mem_size>>();
     read_mem->fill('[');
