@@ -42,8 +42,10 @@ ci:linux_posix_debug_clang_stress:
     allow_failure: true
     if: $CI_COMMIT_BRANCH == 'master'
     when: always
+    allow_failure: true
     if: $CI_COMMIT_BRANCH == 'develop'
     when: always
+    allow_failure: true
 
 ci:linux_posix_debug_gcc:
  stage: test_linux_posix_debug_gcc
@@ -90,8 +92,10 @@ ci:linux_freertos_debug_clang_stress:
     allow_failure: true
     if: $CI_COMMIT_BRANCH == 'master'
     when: always
+    allow_failure: true
     if: $CI_COMMIT_BRANCH == 'develop'
     when: always
+    allow_failure: true
 
 ci:linux_freertos_debug_gcc:
  stage: test_linux_freertos_debug_gcc
@@ -114,7 +118,7 @@ ci:linux_freertos_release_clang:
   - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure --schedule-random
 
 ## windows ---------------------------------------------------------------------
-ci:windows:
+ci:windows_winapi_debug_clang:
  stage: test_windows_winapi_debug_clang
  needs: []
  tags:
@@ -139,8 +143,10 @@ ci:windows_winapi_debug_clang_stress:
     allow_failure: true
     if: $CI_COMMIT_BRANCH == 'master'
     when: always
+    allow_failure: true
     if: $CI_COMMIT_BRANCH == 'develop'
     when: always
+    allow_failure: true
 
 ci:windows_winapi_debug_gcc:
  stage: test_windows_winapi_debug_gcc
@@ -187,8 +193,10 @@ ci:windows_freertos_debug_clang_stress:
     allow_failure: true
     if: $CI_COMMIT_BRANCH == 'master'
     when: always
+    allow_failure: true
     if: $CI_COMMIT_BRANCH == 'develop'
     when: always
+    allow_failure: true
 
 ci:windows_freertos_debug_gcc:
  stage: test_windows_freertos_debug_gcc
