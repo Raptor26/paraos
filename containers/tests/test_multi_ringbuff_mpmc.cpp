@@ -65,7 +65,7 @@ const std::vector<std::string> str_array{
 std::vector<std::string> read_array;
 
 constexpr std::size_t queue_size{2};
-constexpr std::size_t ring_buff_size{512};
+constexpr std::size_t ring_buff_size{2048};
 constexpr std::size_t ring_buff_numb{5};
 
 std::size_t thread_total_numb{0};
