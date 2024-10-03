@@ -1,6 +1,7 @@
 stages:
  - test_linux_posix_debug_clang
  - test_linux_posix_debug_clang_stress
+ - test_linux_posix_debug_clang_stress_rungbuff
  - test_linux_posix_debug_gcc
  - test_linux_posix_release_clang
  - test_linux_freertos_debug_clang
@@ -46,6 +47,17 @@ ci:linux_posix_debug_clang_stress:
     if: $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: true
+
+# Delete this job after rung buff mpmc debug
+ci:linux_posix_debug_clang_stress:
+ stage: test_linux_posix_debug_clang_stress_rungbuff
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_clang
+  - cmake --build build/pc_debug_clang
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random -j4 -R test_multi_ringbuff_mpmc --output-on-failure 
 
 ci:linux_posix_debug_gcc:
  stage: test_linux_posix_debug_gcc
