@@ -90,6 +90,12 @@ class IMultiRingBuff {
       buff_id = *ring_buff_id;
       auto& bf = ringbuff_[buff_id];
       read_bytes_numb = bf->Read(dst, dst_size);
+
+      // If not read all available bytes, push ring buffer id in queue for read
+      // remaining bytes in next call Read().
+      if (bf->Size() != 0u) {
+        queue_.Push(buff_id, timeout_ms);
+      }
     }
 
     return read_bytes_numb;
