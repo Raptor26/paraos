@@ -72,29 +72,9 @@ class IMultiRingBuff {
   auto Write(
       std::size_t buff_id, const gsl::span<std::uint8_t> src,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
-    PARAOS_ATTR_UNUSED_VAR(is_isr);
-
-    std::size_t written_bytes_numb{0};
-
-    if (buff_id < ring_buff_numb_) {
-      auto& bf = ringbuff_[buff_id];
-      if (bf->Free() >= src.size()) {
-        {
-          const paraos::CriticalSection critical;
-          written_bytes_numb = bf->Write(src);
-        }
-
-        // If ring buffer id not pushed in queue, reader can't read these bytes.
-        // Therefore skip written in buffer bytes for free memory.
-        if (!queue_.Push(buff_id, timeout_ms)) {
-          const paraos::CriticalSection critical;
-          bf->Skip(written_bytes_numb);
-          written_bytes_numb = 0u;
-        }
-      }
-    }
-
-    return written_bytes_numb;
+    return Write(
+        buff_id, static_cast<const void*>(src.data()), src.size(), timeout_ms,
+        is_isr);
   }
 
   auto Read(
@@ -110,6 +90,12 @@ class IMultiRingBuff {
       buff_id = *ring_buff_id;
       auto& bf = ringbuff_[buff_id];
       read_bytes_numb = bf->Read(dst, dst_size);
+
+      // If not read all available bytes, push ring buffer id in queue for read
+      // remaining bytes in next call Read().
+      if (bf->Size() != 0u) {
+        queue_.Push(buff_id, timeout_ms);
+      }
     }
 
     return read_bytes_numb;
@@ -118,19 +104,9 @@ class IMultiRingBuff {
   auto Read(
       std::size_t& buff_id, gsl::span<std::uint8_t> dst, std::size_t timeout_ms,
       bool is_isr = false) -> std::size_t {
-    PARAOS_ATTR_UNUSED_VAR(is_isr);
-
-    std::size_t read_bytes_numb{0};
-    // queue_.Pop return std::optional
-    auto ring_buff_id = queue_.Pop(timeout_ms);
-    if (ring_buff_id) {
-      const paraos::CriticalSection critical;
-      buff_id = *ring_buff_id;
-      auto& bf = ringbuff_[buff_id];
-      read_bytes_numb = bf->Read(dst);
-    }
-
-    return read_bytes_numb;
+    return Read(
+        buff_id, static_cast<void*>(dst.data()), dst.size(), timeout_ms,
+        is_isr);
   }
 
  protected:

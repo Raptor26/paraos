@@ -171,8 +171,8 @@ struct Consumer : public paraos::Thread {
 
   void Run() override {
     std::size_t idx;
-    constexpr std::size_t read_delay_ms{100u};
-    constexpr std::size_t read_mem_size{128u};
+    constexpr std::size_t read_delay_ms{15u};
+    constexpr std::size_t read_mem_size{2048};
 
     auto read_mem = std::make_unique<std::array<std::uint8_t, read_mem_size>>();
     read_mem->fill('[');
@@ -180,11 +180,11 @@ struct Consumer : public paraos::Thread {
         idx, static_cast<void *>(read_mem->data()), read_mem->size(),
         read_delay_ms);
 
-    auto str_container =
-        split(reinterpret_cast<const char *>(read_mem->data()), read_mem_size);
+    const paraos::CriticalSection critical;
+    if (read_bytes_numb != 0) {
+      auto str_container = split(
+          reinterpret_cast<const char *>(read_mem->data()), read_mem_size);
 
-    {
-      const paraos::CriticalSection critical;
       std::cout << "Consumer " << Name()
                 << " got str container with size: " << str_container.size()
                 << std::endl;
@@ -192,14 +192,10 @@ struct Consumer : public paraos::Thread {
         std::cout << "Consumer " << Name() << " read string: " << str
                   << std::endl;
       }
-    }
 
-    const paraos::CriticalSection critical;
-    total_read_bytes += read_bytes_numb;
-    if (read_bytes_numb != 0) {
       read_array.push_back(reinterpret_cast<const char *>(read_mem->data()));
-
       read_idx += str_container.size();
+      total_read_bytes += read_bytes_numb;
     }
 
     if (!(read_idx < str_array.size())) {
@@ -214,6 +210,8 @@ void AssertsForTestComplete() {
       total_bytes_for_write == total_written_bytes &&
       "Producers not write all bytes");
 
+  std::cout << "Expect read bytes: " << total_bytes_for_write << std::endl;
+  std::cout << "Actual read bytes: " << total_read_bytes << std::endl;
   assert(
       total_bytes_for_write == total_read_bytes &&
       "Consumers not read all bytes");
