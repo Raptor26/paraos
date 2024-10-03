@@ -1,0 +1,9 @@
+Checks: >-
+  boost-*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  -performance-move-constructor-init,
+  /* cppcoreguidelines-*, */
+# WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'

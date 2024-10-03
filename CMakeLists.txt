@@ -1,0 +1,83 @@
+#[=[
+Copyright (c) 2024 Stilsoft
+Autor Mickle Isaev
+Distributed under the MIT License
+]=]
+
+cmake_minimum_required(VERSION 3.20)
+
+include(setup.cmake)
+
+project(paraos VERSION 0.1.0)
+
+# Is paraos standalone project?
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(paraos_setup
+                               INTERFACE -DPARAOS_CHECK_LOOP_ENABLE)
+  endif()
+
+  # If paraos is standalone project, we always want use unit testing
+  include(CTest)
+  enable_testing()
+
+  option(IS_PARAOS_STAND_ALONE_PROJECT "Use paraos version for etl_profile.h"
+         ON)
+endif()
+
+# Boost::leaf ------------------------------------------------------------------
+if(NOT TARGET Boost::leaf)
+  add_subdirectory(leaf)
+endif()
+
+# etl::etl ---------------------------------------------------------------------
+if(NOT TARGET etl::etl)
+  add_subdirectory(etl)
+endif()
+
+# Link etl::etl with paraos_setup so that user code can determine to the path,
+# which contained etl_profile.h
+target_link_libraries(etl INTERFACE paraos_setup)
+
+# Microsoft.GSL::GSL -----------------------------------------------------------
+if(NOT TARGET Microsoft.GSL::GSL)
+  add_subdirectory(GSL)
+endif()
+
+# LWRB -------------------------------------------------------------------------
+if(NOT TARGET lwrb_ex)
+  add_subdirectory(lwrb)
+endif()
+
+target_compile_definitions(lwrb PUBLIC -DLWRB_DISABLE_ATOMIC)
+
+add_library(${PROJECT_NAME} STATIC)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft.GSL::GSL etl::etl
+                                             Boost::leaf paraos_setup lwrb)
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17 c_std_11)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+if(TRACE)
+  message("paraos trace enable")
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DparaosTRACE_ENABLE)
+endif()
+
+target_include_directories(${PROJECT_NAME}
+                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
+
+if(FREERTOS)
+  option(THREAD_ENABLE "Thread support enable" ON)
+  add_subdirectory(port_freertos)
+elseif(WIN32)
+  option(THREAD_ENABLE "Thread support enable" ON)
+  add_subdirectory(port_win)
+elseif(UNIX)
+  option(THREAD_ENABLE "Thread support enable" ON)
+  add_subdirectory(port_unix)
+endif()
+
+add_subdirectory(containers)
+add_subdirectory(extra)
