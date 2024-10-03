@@ -25,7 +25,7 @@ ci:linux_posix_debug_clang:
  script:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
-  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --schedule-random
 
 ci:linux_posix_debug_clang_stress:
  stage: test_linux_posix_debug_clang_stress
@@ -35,7 +35,7 @@ ci:linux_posix_debug_clang_stress:
  script:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
-  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -53,7 +53,7 @@ ci:linux_posix_debug_gcc:
  script:
   - cmake --preset pc_debug_gcc
   - cmake --build build/pc_debug_gcc
-  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure --schedule-random
 
 ci:linux_posix_release_clang:
  stage: test_linux_posix_release_clang
@@ -63,7 +63,7 @@ ci:linux_posix_release_clang:
  script:
   - cmake --preset pc_release_clang
   - cmake --build build/pc_release_clang
-  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure --schedule-random
 
 ci:linux_freertos_debug_clang:
  stage: test_linux_freertos_debug_clang
@@ -73,7 +73,7 @@ ci:linux_freertos_debug_clang:
  script:
   - cmake --preset freertos_debug_clang
   - cmake --build build/freertos_debug_clang
-  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --schedule-random
 
 ci:linux_freertos_debug_clang_stress:
  stage: test_linux_freertos_debug_clang_stress
@@ -83,7 +83,7 @@ ci:linux_freertos_debug_clang_stress:
  script:
   - cmake --preset freertos_debug_clang
   - cmake --build build/freertos_debug_clang
-  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -101,7 +101,7 @@ ci:linux_freertos_debug_gcc:
  script:
   - cmake --preset freertos_debug_gcc
   - cmake --build build/freertos_debug_gcc
-  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure --schedule-random
 
 ci:linux_freertos_release_clang:
  stage: test_linux_freertos_release_clang
@@ -111,7 +111,7 @@ ci:linux_freertos_release_clang:
  script:
   - cmake --preset freertos_release_clang
   - cmake --build build/freertos_release_clang
-  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure --schedule-random
 
 ## windows ---------------------------------------------------------------------
 ci:windows:
@@ -122,7 +122,7 @@ ci:windows:
  script:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
-  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --schedule-random
 
 ci:windows_winapi_debug_clang_stress:
  stage: test_windows_winapi_debug_clang_stress
@@ -132,7 +132,7 @@ ci:windows_winapi_debug_clang_stress:
  script:
   - cmake --preset pc_debug_clang
   - cmake --build build/pc_debug_clang
-  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+  - ctest --test-dir build/pc_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -150,7 +150,7 @@ ci:windows_winapi_debug_gcc:
  script:
   - cmake --preset pc_debug_gcc
   - cmake --build build/pc_debug_gcc
-  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure --schedule-random
 
 ci:windows_winapi_release_clang:
  stage: test_windows_winapi_release_clang
@@ -160,7 +160,7 @@ ci:windows_winapi_release_clang:
  script:
   - cmake --preset pc_release_clang
   - cmake --build build/pc_release_clang
-  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/pc_release_clang --timeout 15 --stop-on-failure --schedule-random
 
 ci:windows_freertos_debug_clang:
  stage: test_windows_freertos_debug_clang
@@ -170,7 +170,7 @@ ci:windows_freertos_debug_clang:
  script:
   - cmake --preset freertos_debug_clang
   - cmake --build build/freertos_debug_clang
-  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --schedule-random
 
 ci:windows_freertos_debug_clang_stress:
  stage: test_windows_freertos_debug_clang_stress
@@ -180,7 +180,7 @@ ci:windows_freertos_debug_clang_stress:
  script:
   - cmake --preset freertos_debug_clang
   - cmake --build build/freertos_debug_clang
-  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500
+  - ctest --test-dir build/freertos_debug_clang --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -198,7 +198,7 @@ ci:windows_freertos_debug_gcc:
  script:
   - cmake --preset freertos_debug_gcc
   - cmake --build build/freertos_debug_gcc
-  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure --schedule-random
 
 ci:windows_freertos_release_clang:
  stage: test_windows_freertos_release_clang
@@ -208,4 +208,4 @@ ci:windows_freertos_release_clang:
  script:
   - cmake --preset freertos_release_clang
   - cmake --build build/freertos_release_clang
-  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure
+  - ctest --test-dir build/freertos_release_clang --timeout 15 --stop-on-failure --schedule-random
