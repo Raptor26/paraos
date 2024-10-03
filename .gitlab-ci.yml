@@ -40,6 +40,10 @@ ci:linux_posix_debug_clang_stress:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: true
+    if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    if: $CI_COMMIT_BRANCH == 'develop'
+    when: always
 
 ci:linux_posix_debug_gcc:
  stage: test_linux_posix_debug_gcc
@@ -84,6 +88,10 @@ ci:linux_freertos_debug_clang_stress:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: true
+    if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    if: $CI_COMMIT_BRANCH == 'develop'
+    when: always
 
 ci:linux_freertos_debug_gcc:
  stage: test_linux_freertos_debug_gcc
@@ -177,6 +185,10 @@ ci:windows_freertos_debug_clang_stress:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: true
+    if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    if: $CI_COMMIT_BRANCH == 'develop'
+    when: always
 
 ci:windows_freertos_debug_gcc:
  stage: test_windows_freertos_debug_gcc
