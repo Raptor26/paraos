@@ -75,6 +75,7 @@ if __name__ == '__main__':
                     ['cmake', '--build', f'build/{preset}/'],
                     f'build/{preset}'
                 )
+                results_list.append(preset_res)
             final_res = True
 
             for res in results_list:
@@ -90,6 +91,7 @@ if __name__ == '__main__':
                     ['cmake', '--build', f'build/{preset}/'],
                     f'build/{preset}'
                 )
+                results_list.append(preset_res)
             final_res = True
 
             for res in results_list:
