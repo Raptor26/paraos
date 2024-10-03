@@ -40,16 +40,13 @@ ci:linux_posix_debug_clang_stress:
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'master'
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'develop'
-    when: always
-    allow_failure: true
+    allow_failure: false
 
 # Delete this job after rung buff mpmc debug
-ci:linux_posix_debug_clang_stress:
+ci:linux_posix_debug_clang_stress_ringbuff:
  stage: test_linux_posix_debug_clang_stress_rungbuff
  needs: []
  tags:
@@ -101,13 +98,10 @@ ci:linux_freertos_debug_clang_stress:
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'master'
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'develop'
-    when: always
-    allow_failure: true
+    allow_failure: false
 
 ci:linux_freertos_debug_gcc:
  stage: test_linux_freertos_debug_gcc
@@ -152,13 +146,10 @@ ci:windows_winapi_debug_clang_stress:
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'master'
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'develop'
-    when: always
-    allow_failure: true
+    allow_failure: false
 
 ci:windows_winapi_debug_gcc:
  stage: test_windows_winapi_debug_gcc
@@ -202,13 +193,10 @@ ci:windows_freertos_debug_clang_stress:
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'master'
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
-    allow_failure: true
-    if: $CI_COMMIT_BRANCH == 'develop'
-    when: always
-    allow_failure: true
+    allow_failure: false
 
 ci:windows_freertos_debug_gcc:
  stage: test_windows_freertos_debug_gcc
