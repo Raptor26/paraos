@@ -47,9 +47,12 @@ endif()
 # LWRB -------------------------------------------------------------------------
 if(NOT TARGET lwrb_ex)
   add_subdirectory(lwrb)
-endif()
 
-target_compile_definitions(lwrb PUBLIC -DLWRB_DISABLE_ATOMIC)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Fixed build error when gcc can't resolve lwrb_sz_atomic_t type
+    target_compile_definitions(lwrb PUBLIC -DLWRB_DISABLE_ATOMIC)
+  endif()
+endif()
 
 add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
