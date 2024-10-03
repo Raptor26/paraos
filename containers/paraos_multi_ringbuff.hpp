@@ -69,6 +69,34 @@ class IMultiRingBuff {
     return written_bytes_numb;
   }
 
+  auto Write(
+      std::size_t buff_id, const gsl::span<std::uint8_t> src,
+      std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+
+    std::size_t written_bytes_numb{0};
+
+    if (buff_id < ring_buff_numb_) {
+      auto& bf = ringbuff_[buff_id];
+      if (bf->Free() >= src.size()) {
+        {
+          const paraos::CriticalSection critical;
+          written_bytes_numb = bf->Write(src);
+        }
+
+        // If ring buffer id not pushed in queue, reader can't read these bytes.
+        // Therefore skip written in buffer bytes for free memory.
+        if (!queue_.Push(buff_id, timeout_ms)) {
+          const paraos::CriticalSection critical;
+          bf->Skip(written_bytes_numb);
+          written_bytes_numb = 0u;
+        }
+      }
+    }
+
+    return written_bytes_numb;
+  }
+
   auto Read(
       std::size_t& buff_id, void* dst, std::size_t dst_size,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
@@ -82,6 +110,24 @@ class IMultiRingBuff {
       buff_id = *ring_buff_id;
       auto& bf = ringbuff_[buff_id];
       read_bytes_numb = bf->Read(dst, dst_size);
+    }
+
+    return read_bytes_numb;
+  }
+
+  auto Read(
+      std::size_t& buff_id, gsl::span<std::uint8_t> dst, std::size_t timeout_ms,
+      bool is_isr = false) -> std::size_t {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+
+    std::size_t read_bytes_numb{0};
+    // queue_.Pop return std::optional
+    auto ring_buff_id = queue_.Pop(timeout_ms);
+    if (ring_buff_id) {
+      const paraos::CriticalSection critical;
+      buff_id = *ring_buff_id;
+      auto& bf = ringbuff_[buff_id];
+      read_bytes_numb = bf->Read(dst);
     }
 
     return read_bytes_numb;

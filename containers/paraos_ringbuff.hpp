@@ -31,6 +31,7 @@
 
 #include "etl/error_handler.h"
 #include "etl/exception.h"
+#include "gsl/gsl"
 #include "lwrb/lwrb.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
@@ -83,6 +84,10 @@ class IRingBuff {
     return lwrb_write(&lwrb_, src, size_in_bytes);
   }
 
+  auto Write(const gsl::span<T> src) {
+    return lwrb_write(&lwrb_, static_cast<void*>(src.data()), src.size());
+  }
+
   template <class TIterator>
   auto Write(TIterator begin, TIterator end) {
     return Write(
@@ -92,6 +97,10 @@ class IRingBuff {
 
   auto Read(void* dst, lwrb_sz_t dst_size_in_bytes) {
     return lwrb_read(&lwrb_, dst, dst_size_in_bytes);
+  }
+
+  auto Read(gsl::span<T> dst) {
+    return lwrb_read(&lwrb_, static_cast<void*>(dst.data()), dst.size());
   }
 
   auto Read(iterator begin, iterator end) {
