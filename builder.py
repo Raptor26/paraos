@@ -33,8 +33,13 @@ def show_result_output(result: bool):
 
         print('--------- MEMCHECK SUMMARY:\n')
         for preset, res in builder_functions.memcheck_results_table.items():
-            print(preset)
-            print(res["memcheck_results"])
+            if res["defects"] != '':
+                print(
+                    f'{builder_functions.BOLD}'
+                    f'{preset}'
+                    f'{builder_functions.BOLD}'
+                )
+                print(res["memcheck_results"])
         print('-------------------------------\n')
         
     if not result:
@@ -52,6 +57,19 @@ def show_result_output(result: bool):
         )
 
 
+def remove_tmp_docker_entrypoint():
+    if os.path.isfile('docker_tests_entrypoint.sh'):
+        os.remove('docker_tests_entrypoint.sh')
+
+def replace_docker_entrypoint(entrypoint_name: str):
+    remove_tmp_docker_entrypoint()
+
+    shutil.copy(
+        entrypoint_name,
+        'docker_tests_entrypoint.sh'
+    )
+
+
 if __name__ == '__main__':
     print('Выберите необходимое действие:\n'
           ' 0 - Выход\n'
@@ -59,6 +77,7 @@ if __name__ == '__main__':
           ' 2 - Запустить все сборки и стресс тест\n'
           ' 3 - pc_debug_clang\n'
           ' 4 - freertos_debug_clang\n'
+          ' 5 - Memcheck only\n'
           ' 11 - Запуск тестов в Docker\n'
           ' 12 - Запуск стресс-тестов в Docker\n')
 
@@ -125,33 +144,29 @@ if __name__ == '__main__':
 
             show_result_output(rtos_debug_res)
 
-        case '11':
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+        case '5':
+            replace_docker_entrypoint('docker_tests_entrypoint_memcheck.sh')
 
-            shutil.copy(
-                'docker_tests_entrypoint_single.sh',
-                'docker_tests_entrypoint.sh'
-            )
             docker_test_result = builder_functions.run_docker_test()
             show_result_output(docker_test_result)
 
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+            remove_tmp_docker_entrypoint()
+
+        case '11':
+            replace_docker_entrypoint('docker_tests_entrypoint_single.sh')
+
+            docker_test_result = builder_functions.run_docker_test()
+            show_result_output(docker_test_result)
+
+            remove_tmp_docker_entrypoint()
 
         case '12':
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+            replace_docker_entrypoint('docker_tests_entrypoint_stress.sh')
 
-            shutil.copy(
-                'docker_tests_entrypoint_stress.sh',
-                'docker_tests_entrypoint.sh'
-            )
             docker_test_result = builder_functions.run_docker_test()
             show_result_output(docker_test_result)
 
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+            remove_tmp_docker_entrypoint()
 
         case _:
             print(
