@@ -26,6 +26,8 @@
 #ifndef PARAOS_UTILS_HPP
 #define PARAOS_UTILS_HPP
 
+#include <sys/time.h>
+
 #include <cassert>
 #include <cstddef>
 #include <limits>
@@ -76,6 +78,19 @@ inline int TimespecAdd(
 
 constexpr inline std::size_t GetStackMinimumSizeInBytes() {
   return 1024 * sizeof(size_t);
+}
+
+inline struct timespec CalcTimeDelayWithTimespecRespect(std::size_t delay_ms) {
+  timespec delay{};
+  delay.tv_nsec = static_cast<long>(delay_ms) * NANOSECONDS_PER_MILISECONDS;
+
+  timespec current_time{};
+  clock_gettime(CLOCK_REALTIME, &current_time);
+
+  //   timespecadd(&current_time, &delay, &delay);
+  TimespecAdd(&current_time, &delay, &delay);
+
+  return delay;
 }
 
 }  // namespace paraos
