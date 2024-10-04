@@ -100,7 +100,7 @@ class Timer {
     ISRbool is_timer_started{false};
 
     if (is_auto_reload_) {
-      itval.it_value = MilisecondsInTimerSpec(period_ms_);
+      itval.it_value = MillisecondsInTimeSpec(period_ms_);
       itval.it_interval.tv_sec = itval.it_value.tv_sec;
       itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
     } else {

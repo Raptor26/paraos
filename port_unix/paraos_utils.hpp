@@ -81,14 +81,18 @@ constexpr inline std::size_t GetStackMinimumSizeInBytes() {
   return 1024 * sizeof(size_t);
 }
 
-inline struct timespec MilisecondsInTimerSpec(std::size_t miliseconds) {
-  struct timespec current_time {};
-  current_time.tv_sec = miliseconds / MILISECONDS_PER_SECOND;
+/// @brief Calculate period in <timespec> class from time in milliseconds.
+/// @param[in] milliseconds: Time in milliseconds for convert in timespec class.
+/// @return struct timespec with filled fields.
+inline struct timespec MillisecondsInTimeSpec(std::size_t milliseconds) {
+  struct timespec time_y_milliseconds {};
+  time_y_milliseconds.tv_sec = static_cast<time_t>(milliseconds) /
+                        static_cast<time_t>(MILISECONDS_PER_SECOND);
 
-  time_t ms = miliseconds - (current_time.tv_sec * MILISECONDS_PER_SECOND);
-  current_time.tv_nsec = ms * NANOSECONDS_PER_MILISECONDS;
+  time_t ms = milliseconds - (time_y_milliseconds.tv_sec * MILISECONDS_PER_SECOND);
+  time_y_milliseconds.tv_nsec = ms * NANOSECONDS_PER_MILISECONDS;
 
-  return current_time;
+  return time_y_milliseconds;
 }
 
 }  // namespace paraos
