@@ -24,7 +24,7 @@ target_compile_options(example_paraos_timer PRIVATE -Wall -Wextra -Wpedantic
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(${PROJECT_NAME} test_paraos_semaphore.cpp test_paraos_mutex.cpp test_paraos_timer.cpp)
+add_executable(${PROJECT_NAME} test_paraos_semaphore.cpp test_paraos_mutex.cpp test_paraos_timer.cpp test_paraos_utils.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")

@@ -40,6 +40,7 @@ constexpr std::size_t max_delay{std::numeric_limits<std::size_t>::max()};
 #define NANOSECONDS_PER_SECOND (1000000000LL) /**< Nanoseconds per second. */
 #define NANOSECONDS_PER_MILISECONDS \
   (1000000LL) /**< Nanoseconds per microseconds. */
+#define MILISECONDS_PER_SECOND (1000LL)
 
 #define MICROSECONDS_PER_MILISECONDS (1000LL)
 
@@ -91,6 +92,16 @@ inline struct timespec CalcTimeDelayWithTimespecRespect(std::size_t delay_ms) {
   TimespecAdd(&current_time, &delay, &delay);
 
   return delay;
+}
+
+inline struct timespec MilisecondsInTimespec(std::size_t miliseconds) {
+  struct timespec current_time {};
+  current_time.tv_sec = miliseconds / MILISECONDS_PER_SECOND;
+
+  std::size_t ms = miliseconds - (current_time.tv_sec * MILISECONDS_PER_SECOND);
+  current_time.tv_nsec = ms * NANOSECONDS_PER_MILISECONDS;
+
+  return current_time;
 }
 
 }  // namespace paraos
