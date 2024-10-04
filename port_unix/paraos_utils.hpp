@@ -26,6 +26,8 @@
 #ifndef PARAOS_UTILS_HPP
 #define PARAOS_UTILS_HPP
 
+#include <sys/time.h>
+
 #include <cassert>
 #include <cstddef>
 #include <limits>
@@ -38,6 +40,7 @@ constexpr std::size_t max_delay{std::numeric_limits<std::size_t>::max()};
 #define NANOSECONDS_PER_SECOND (1000000000LL) /**< Nanoseconds per second. */
 #define NANOSECONDS_PER_MILISECONDS \
   (1000000LL) /**< Nanoseconds per microseconds. */
+#define MILISECONDS_PER_SECOND (1000LL)
 
 #define MICROSECONDS_PER_MILISECONDS (1000LL)
 
@@ -76,6 +79,20 @@ inline int TimespecAdd(
 
 constexpr inline std::size_t GetStackMinimumSizeInBytes() {
   return 1024 * sizeof(size_t);
+}
+
+/// @brief Calculate period in <timespec> class from time in milliseconds.
+/// @param[in] milliseconds: Time in milliseconds for convert in timespec class.
+/// @return struct timespec with filled fields.
+inline struct timespec MillisecondsInTimeSpec(std::size_t milliseconds) {
+  struct timespec time_y_milliseconds {};
+  time_y_milliseconds.tv_sec = static_cast<time_t>(milliseconds) /
+                        static_cast<time_t>(MILISECONDS_PER_SECOND);
+
+  time_t ms = milliseconds - (time_y_milliseconds.tv_sec * MILISECONDS_PER_SECOND);
+  time_y_milliseconds.tv_nsec = ms * NANOSECONDS_PER_MILISECONDS;
+
+  return time_y_milliseconds;
 }
 
 }  // namespace paraos
