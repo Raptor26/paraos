@@ -3,24 +3,23 @@ import shutil
 import builder_functions
 
 
-presets_tuple = (
-    'pc_debug_clang',
-    'pc_debug_gcc',
-    'pc_release_clang',
-    'freertos_debug_clang',
-    'freertos_debug_gcc',
-    'freertos_release_clang'
-)
+stress_test_repetitions_count = 555
+
 
 def show_result_output(result: bool):
+    """
+    Функция выполняет вывод общего результата по всем выбранным тестам.
+    :param result: Результат выполнения одного или нескольких тестов.
+    """
     if not result:
         print(
             f'{builder_functions.FAIL}\nОшибки при тестировании '
             'в следующих пресетах:'
+
         )
         for preset, errors in builder_functions.tests_errors_table.items():
             if errors:
-                print(f'{preset}: {errors}')
+                print(f'{preset}:\n {errors}')
         print(f'{builder_functions.END_COLOR}')
 
     if builder_functions.memcheck_results_table:
@@ -88,41 +87,48 @@ if __name__ == '__main__':
 
         case '1':
             results_list = []
-            for preset in presets_tuple:
-                preset_res = builder_functions.test_preset(
-                    ['cmake', '--preset', preset],
-                    ['cmake', '--build', f'build/{preset}/'],
-                    f'build/{preset}'
-                )
-                results_list.append(preset_res)
-                if not preset_res:
-                    break
+            presets_tuple = builder_functions.parse_presets()
+            print(f'Обнаружены следующие пресеты:\n{presets_tuple}')
+            if presets_tuple:
+                for preset in presets_tuple:
+                    preset_res = builder_functions.test_preset(
+                        ['cmake', '--preset', preset],
+                        ['cmake', '--build', f'build/{preset}/'],
+                        f'build/{preset}'
+                    )
+                    results_list.append(preset_res)
+                    if not preset_res:
+                        break
 
-            final_res = True
+                final_res = True
 
-            for res in results_list:
-                final_res = final_res and res
-    
-            show_result_output(final_res)
+                for res in results_list:
+                    final_res = final_res and res
+
+                show_result_output(final_res)
 
         case '2':
             results_list = []
-            for preset in presets_tuple:
-                preset_res = builder_functions.stress_test_preset(
-                    ['cmake', '--preset', preset],
-                    ['cmake', '--build', f'build/{preset}/'],
-                    f'build/{preset}'
-                )
-                results_list.append(preset_res)
-                if not preset_res:
-                    break
-                    
-            final_res = True
+            presets_tuple = builder_functions.parse_presets()
+            print(f'Обнаружены следующие пресеты:\n{presets_tuple}')
+            if presets_tuple:
+                for preset in presets_tuple:
+                    preset_res = builder_functions.test_preset(
+                        ['cmake', '--preset', preset],
+                        ['cmake', '--build', f'build/{preset}/'],
+                        f'build/{preset}',
+                        stress_test_repetitions_count
+                    )
+                    results_list.append(preset_res)
+                    if not preset_res:
+                        break
 
-            for res in results_list:
-                final_res = final_res and res
-    
-            show_result_output(final_res)
+                final_res = True
+
+                for res in results_list:
+                    final_res = final_res and res
+
+                show_result_output(final_res)
 
         case '3':
             pc_debug_res = builder_functions.test_preset(
@@ -136,9 +142,7 @@ if __name__ == '__main__':
         case '4':
             rtos_debug_res = builder_functions.test_preset(
                 ['cmake', '--preset', 'freertos_debug_clang'],
-                [
-                    'cmake', '--build', 'build/freertos_debug_clang/'
-                ],
+                ['cmake', '--build', 'build/freertos_debug_clang/'],
                 'build/freertos_debug_clang'
             )
 
@@ -147,7 +151,9 @@ if __name__ == '__main__':
         case '5':
             replace_docker_entrypoint('docker_tests_entrypoint_memcheck.sh')
 
-            docker_test_result = builder_functions.run_docker_test()
+            docker_test_result = builder_functions.run_docker_test(
+                'docker_test_paraos', 'docker_test_paraos:1.0'
+            )
             show_result_output(docker_test_result)
 
             remove_tmp_docker_entrypoint()
@@ -155,7 +161,9 @@ if __name__ == '__main__':
         case '11':
             replace_docker_entrypoint('docker_tests_entrypoint_single.sh')
 
-            docker_test_result = builder_functions.run_docker_test()
+            docker_test_result = builder_functions.run_docker_test(
+                'docker_test_paraos', 'docker_test_paraos:1.0'
+            )
             show_result_output(docker_test_result)
 
             remove_tmp_docker_entrypoint()
@@ -163,7 +171,9 @@ if __name__ == '__main__':
         case '12':
             replace_docker_entrypoint('docker_tests_entrypoint_stress.sh')
 
-            docker_test_result = builder_functions.run_docker_test()
+            docker_test_result = builder_functions.run_docker_test(
+                'docker_test_paraos', 'docker_test_paraos:1.0'
+            )
             show_result_output(docker_test_result)
 
             remove_tmp_docker_entrypoint()
