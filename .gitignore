@@ -9,3 +9,6 @@ docker_tests_entrypoint.sh
 
 # PyCharm
 .idea
+
+# Python virtual environment
+venv/
