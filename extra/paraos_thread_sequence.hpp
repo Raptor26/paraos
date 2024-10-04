@@ -67,8 +67,6 @@ class IThreadSequence : public Thread {
         period_in_us_{period_in_us},
         timer_controller_{timer_controller} {}
 
-  virtual ~IThreadSequence() {}
-
   /// @brief Run is called in loop wrapper in separate RTOS thread until
   /// anything call Break().
   PARAOS_THREAD_SEQUENCE_VIRTUAL void Run() override {
@@ -187,6 +185,8 @@ class IThreadSequence : public Thread {
 
     return static_cast<float>(1.0) / main_freq;
   }
+
+  virtual ~IThreadSequence() {}
 
   /// Methods definitions ------------------------------------------------------
  private:
