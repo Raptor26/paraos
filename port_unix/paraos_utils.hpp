@@ -87,9 +87,10 @@ constexpr inline std::size_t GetStackMinimumSizeInBytes() {
 inline struct timespec MillisecondsInTimeSpec(std::size_t milliseconds) {
   struct timespec time_y_milliseconds {};
   time_y_milliseconds.tv_sec = static_cast<time_t>(milliseconds) /
-                        static_cast<time_t>(MILISECONDS_PER_SECOND);
+                               static_cast<time_t>(MILISECONDS_PER_SECOND);
 
-  time_t ms = milliseconds - (time_y_milliseconds.tv_sec * MILISECONDS_PER_SECOND);
+  time_t ms =
+      milliseconds - (time_y_milliseconds.tv_sec * MILISECONDS_PER_SECOND);
   time_y_milliseconds.tv_nsec = ms * NANOSECONDS_PER_MILISECONDS;
 
   return time_y_milliseconds;
