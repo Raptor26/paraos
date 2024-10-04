@@ -25,12 +25,13 @@ tests_errors_table = {
 #     'defects': '',
 #     'memcheck_results': ''
 # }
-memcheck_results_table = {}
+memcheck_results_table: dict = {}
 
 OK_GREEN = '\033[92m'
 WARNING = '\033[93m'
 FAIL = '\033[91m'
 END_COLOR = '\033[0m'
+BOLD = '\033[1m'
 
 
 def _make_preset(make_command: list[str]):
@@ -222,18 +223,23 @@ def _run_docker_container():
             if stream_content.find(
                     b'-- Processing memory checking output:') != -1:
                 memcheck_flag = True
+                stream_content = b''
             if stream_content.find(
                     b'Memory checking results:') != -1:
                 memcheck_flag = True
-                memcheck_results_table[preset_name][
-                    'defects'] = memcheck_output
+                if memcheck_output != '':
+                    memcheck_results_table[preset_name][
+                        'defects'] = memcheck_output
+                else:
+                    del memcheck_results_table[preset_name]
                 memcheck_output = ''
                 memcheck_results_flag = True
                 stream_content = b''
 
             elif stream_content.find(
                     b'[MEMCHECK START]') != -1:
-                if preset_name != 'preset':
+                if (preset_name != 'preset'
+                        and preset_name in memcheck_results_table):
                     memcheck_results_table[preset_name][
                         'memcheck_results'] = memcheck_output
                     memcheck_results_flag = False
@@ -266,9 +272,12 @@ def _run_docker_container():
                 else:
                     memcheck_output += line
 
-        if memcheck_output != '':
-            memcheck_results_table[
-                preset_name]['memcheck_results'] = memcheck_output
+        if preset_name in memcheck_results_table:
+            if memcheck_output != '':
+                memcheck_results_table[
+                    preset_name]['memcheck_results'] = memcheck_output
+            else:
+                del memcheck_results_table[preset_name]
 
     except DockerException as e:
         tests_errors_table['docker_tests'] = e
