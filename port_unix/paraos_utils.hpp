@@ -81,24 +81,11 @@ constexpr inline std::size_t GetStackMinimumSizeInBytes() {
   return 1024 * sizeof(size_t);
 }
 
-inline struct timespec CalcTimeDelayWithTimespecRespect(std::size_t delay_ms) {
-  timespec delay{};
-  delay.tv_nsec = static_cast<long>(delay_ms) * NANOSECONDS_PER_MILISECONDS;
-
-  timespec current_time{};
-  clock_gettime(CLOCK_REALTIME, &current_time);
-
-  //   timespecadd(&current_time, &delay, &delay);
-  TimespecAdd(&current_time, &delay, &delay);
-
-  return delay;
-}
-
-inline struct timespec MilisecondsInTimespec(std::size_t miliseconds) {
+inline struct timespec MilisecondsInTimerSpec(std::size_t miliseconds) {
   struct timespec current_time {};
   current_time.tv_sec = miliseconds / MILISECONDS_PER_SECOND;
 
-  std::size_t ms = miliseconds - (current_time.tv_sec * MILISECONDS_PER_SECOND);
+  time_t ms = miliseconds - (current_time.tv_sec * MILISECONDS_PER_SECOND);
   current_time.tv_nsec = ms * NANOSECONDS_PER_MILISECONDS;
 
   return current_time;

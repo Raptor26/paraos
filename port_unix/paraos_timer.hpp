@@ -22,7 +22,7 @@ namespace paraos {
 
 /// @brief
 /// @see
-/// https://stackoverflow.com/questions/5947395/passing-user-data-with-timer-create
+/// https://stackoverflow.com/questions/64429205/how-to-use-sigev-thread-sigevent-for-linux-timers-expiration-handling-in-c
 class Timer {
  public:
   Timer(
@@ -49,7 +49,7 @@ class Timer {
     ISRbool is_timer_started{false};
 
     if (is_auto_reload_) {
-      itval.it_value = MilisecondsInTimespec(period_ms_);
+      itval.it_value = MilisecondsInTimerSpec(period_ms_);
       itval.it_interval.tv_sec = itval.it_value.tv_sec;
       itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
     } else {
