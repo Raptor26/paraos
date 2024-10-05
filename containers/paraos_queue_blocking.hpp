@@ -186,18 +186,10 @@ class QueueBlocking final : public IQueueBlocking<T> {
  public:
   QueueBlocking()
       : IQueueBlocking<T>{queue_, push_sem_, pop_sem_},
-        push_sem_{SemaphoreAttr{SIZE}},
-        pop_sem_{SemaphoreAttr{SIZE}} {
-    for (std::size_t i = 0u; i < SIZE; ++i) {
-      // необходимо отдать семафор pop_sem_ столько раз, сколько элементов может
-      // хранить очередь. Иначе при вызове Push() семафор не будет получен
-      // никогда.
-      pop_sem_.Give();
-      push_sem_.Take(0u);
-    }
-  }
+        push_sem_{SemaphoreAttr{SIZE, 0}},
+        pop_sem_{SemaphoreAttr{SIZE, SIZE}} {}
 
-  virtual ~QueueBlocking() {}
+  virtual ~QueueBlocking() = default;
 
   operator bool() const {
     bool queue_ready{false};
