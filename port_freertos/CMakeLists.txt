@@ -94,7 +94,3 @@ if(IS_PARAOS_STAND_ALONE_PROJECT)
   target_include_directories(etl
                              INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/")
 endif()
-
-if(UTEST)
-  add_subdirectory(tests)
-endif()

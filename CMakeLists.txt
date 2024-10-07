@@ -82,5 +82,9 @@ elseif(UNIX)
   add_subdirectory(port_unix)
 endif()
 
+if(UTEST)
+  add_subdirectory(port_tests)
+endif()
+
 add_subdirectory(containers)
 add_subdirectory(extra)

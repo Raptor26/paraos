@@ -1,4 +1,5 @@
 /// @file test_thread_join.cpp
+/// @author Mickle Isaev <mrraptor26@gmail.com>
 /// @author VyhodcevEgor <vyhodcev@internet.ru>
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -40,8 +41,9 @@ static std::size_t cnt{0};
 /// that have complete their execution in ExitAfterTestComplete().
 std::vector<paraos::Thread*> thread_ptr;
 
-static bool threads_deleted_flag = false;
 void ExitAfterTestComplete() {
+  static bool threads_deleted_flag{false};
+
   if (cnt == 3) {
     std::cout << "Deleting all threads..." << std::endl;
 
@@ -73,7 +75,7 @@ struct TestMessage : public paraos::Thread {
 };
 
 int main() {
-#if (configUSE_IDLE_HOOK == 1)
+#if defined(FREERTOS)
   // ExitAfterTestComplete will be called by scheduler in idle task after no
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
@@ -91,5 +93,6 @@ int main() {
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
-  return 0;
+  std::cout << "Exiting program..." << std::endl;
+  return EXIT_SUCCESS;
 }
