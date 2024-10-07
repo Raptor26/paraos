@@ -28,7 +28,9 @@
 
 #include <cassert>
 
+#include "paraos_attr.h"
 #include "paraos_bool_atomic.hpp"
+#include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
 
@@ -47,16 +49,6 @@ struct MutexAttr {
 /// https://learn.microsoft.com/ru-ru/windows/win32/sync/using-mutex-objects
 class MutexBase {
  public:
-  MutexBase(const MutexAttr& attr)
-      : handle_{CreateMutex(nullptr, false, nullptr)},
-        is_binary_{attr.is_binary_} {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "MutexBase Ctor" << std::endl;
-#endif
-  }
-
-  MutexBase() : MutexBase(MutexAttr{}) {}
-
   virtual ~MutexBase() {
     assert(handle_);
     if (handle_) {
@@ -80,6 +72,7 @@ class MutexBase {
   operator bool() const { return handle_ != nullptr ? true : false; }
 
   virtual bool Lock(std::size_t timeout_ms = max_delay) {
+    PARAOS_CHECK_ASSERT(handle_);
     bool is_mutex_taken = false;
 
     if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
@@ -89,33 +82,38 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  virtual bool Unlock() { return static_cast<bool>(ReleaseMutex(handle_)); }
+  virtual bool Unlock() {
+    PARAOS_CHECK_ASSERT(handle_);
+    return static_cast<bool>(ReleaseMutex(handle_));
+  }
 
- private:
+ protected:
+  MutexBase() = default;
+
+ protected:
   HANDLE handle_{nullptr};
-  [[maybe_unused]] bool is_binary_{true};
 };
 
-class MutexBaseBinary : public MutexBase {
+class Mutex final : public MutexBase {
  public:
-  MutexBaseBinary() : MutexBase(MutexAttr{true}) {}
+  Mutex() { handle_ = CreateMutex(nullptr, false, nullptr); }
 
-  ~MutexBaseBinary() {}
+  ~Mutex() {}
 
-  MutexBaseBinary(const MutexBaseBinary& other) = delete;
-  MutexBaseBinary(MutexBaseBinary&& other) = delete;
+  Mutex(const Mutex& other) = delete;
+  Mutex(Mutex&& other) = delete;
 
-  MutexBaseBinary& operator=(const MutexBaseBinary& other) = delete;
-  MutexBaseBinary& operator=(MutexBaseBinary&& other) = delete;
+  Mutex& operator=(const Mutex& other) = delete;
+  Mutex& operator=(Mutex&& other) = delete;
 
-  virtual bool Lock(std::size_t timeout_ms = max_delay) override {
+  bool Lock(std::size_t timeout_ms = max_delay) override {
     bool is_current_operation_locked{false};
     if (is_locked_ == false) {
       is_current_operation_locked = MutexBase::Lock(timeout_ms);
       // We call MutexBase::Lock() if our current state "unlocked". If
       // MutexBase::Lock() returned false (from unlocked state), i don't know
       // what that mean. Try find race condition for "is_locked_" variable in
-      // "MutexBaseBinary" class.
+      // "Mutex" class.
       assert(is_current_operation_locked == true);
       is_locked_ = true;
     }
@@ -123,7 +121,7 @@ class MutexBaseBinary : public MutexBase {
     return is_current_operation_locked;
   }
 
-  virtual bool Unlock() override {
+  bool Unlock() override {
     bool is_current_operation_unlocked{false};
     if (is_locked_ == true) {
       is_current_operation_unlocked = MutexBase::Unlock();
@@ -142,6 +140,9 @@ class MutexBaseBinary : public MutexBase {
   /// @brief Safe thread flag
   BoolAtomic is_locked_{false};
 };
+
+using MutexRecursive = Mutex;
+
 }  // namespace paraos
 
 #endif /* PARAOS_MUTEX_HPP */
