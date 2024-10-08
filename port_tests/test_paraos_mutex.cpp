@@ -31,38 +31,44 @@
 using namespace paraos;
 
 TEST(Mutex, Create) {
-  auto parametrize_ctor = Mutex();
-  ASSERT_TRUE(parametrize_ctor);
-
   auto default_ctor = Mutex();
   ASSERT_TRUE(default_ctor);
+}
+
+TEST(Mutex, LockTwice) {
+  auto default_ctor = Mutex();
+
+  ASSERT_TRUE(default_ctor.Lock(0));
+
+  // Can't lock twice if non recursive mutex.
+  ASSERT_FALSE(default_ctor.Lock(0));
 }
 
 TEST(Mutex, LockThenUnlock) {
   auto default_ctor = Mutex();
-  ASSERT_TRUE(default_ctor);
 
   ASSERT_TRUE(default_ctor.Lock(0));
   ASSERT_TRUE(default_ctor.Unlock());
-}
 
-TEST(Mutex, LockThenUnlockTwice) {
-  auto default_ctor = Mutex();
-  ASSERT_TRUE(default_ctor);
-
-  ASSERT_TRUE(default_ctor.Lock(0));
-
-  // Current thread can't take mutex twice.
-  ASSERT_FALSE(default_ctor.Lock(5000));
-  ASSERT_TRUE(default_ctor.Unlock());
+  // Can't unlock twice if non recursive mutex.
   ASSERT_FALSE(default_ctor.Unlock());
 }
 
 TEST(Mutex, LockThenUnlockWithRAII) {
   auto default_ctor = Mutex();
-  ASSERT_TRUE(default_ctor);
 
   { auto mutex_raii = MutexGuard(default_ctor); }
+}
 
+TEST(MutexRecursive, LockThenUnlockTwice) {
+  auto default_ctor = MutexRecursive();
   ASSERT_TRUE(default_ctor);
+
+  ASSERT_TRUE(default_ctor.Lock(0));
+  ASSERT_TRUE(default_ctor.Lock(5000));
+  ASSERT_TRUE(default_ctor.Unlock());
+  ASSERT_TRUE(default_ctor.Unlock());
+
+  // Mutex lock twice, and unlock twice too, next release not succeed.
+  ASSERT_FALSE(default_ctor.Unlock());
 }

@@ -85,9 +85,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC freertos_kernel)
 target_include_directories(${PROJECT_NAME}
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-target_sources(
-  ${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/paraos_mutex.cpp)
+target_sources(${PROJECT_NAME}
+               PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/paraos_thread.cpp)
 
 if(IS_PARAOS_STAND_ALONE_PROJECT)
   # Added user etl_profile.h in etl::etl library

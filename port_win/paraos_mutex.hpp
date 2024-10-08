@@ -28,21 +28,19 @@
 
 #include <cassert>
 
+#include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_bool_atomic.hpp"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
+#include "paroas_isr.hpp"
 
 #ifdef paraosTRACE_ENABLE
 #include <iostream>
 #endif
 
 namespace paraos {
-
-struct MutexAttr {
-  bool is_binary_ = false;
-};
 
 /// @brief
 /// @note Пример использования мьютексов можно найти по ссылке ниже
@@ -71,32 +69,55 @@ class MutexBase {
 
   operator bool() const { return handle_ != nullptr ? true : false; }
 
-  virtual bool Lock(std::size_t timeout_ms = max_delay) {
+  ISRbool Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     PARAOS_CHECK_ASSERT(handle_);
-    bool is_mutex_taken = false;
+    ISRbool is_mutex_taken;
+    bool is_need_take{false};
 
-    if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
-        WAIT_OBJECT_0) {
-      is_mutex_taken = true;
+    if (((!is_recursive_) && (lock_cnt_ == 0)) || is_recursive_) {
+      is_need_take = true;
     }
+
+    if (is_need_take) {
+      if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
+          WAIT_OBJECT_0) {
+        is_mutex_taken.is_success_ = true;
+        ++lock_cnt_;
+      }
+    }
+
     return is_mutex_taken;
   }
 
-  virtual bool Unlock() {
+  ISRbool Unlock(bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     PARAOS_CHECK_ASSERT(handle_);
-    return static_cast<bool>(ReleaseMutex(handle_));
+
+    ISRbool is_unlock = static_cast<ISRbool>(ReleaseMutex(handle_));
+    if (is_unlock == true) {
+      --lock_cnt_;
+    }
+
+    return is_unlock;
   }
 
  protected:
-  MutexBase() = default;
+  MutexBase(bool is_recursive) : is_recursive_{is_recursive} {
+    handle_ = CreateMutex(nullptr, false, nullptr);
+  };
 
  protected:
   HANDLE handle_{nullptr};
+
+ private:
+  bool is_recursive_{false};
+  etl::atomic_int lock_cnt_{0};
 };
 
 class Mutex final : public MutexBase {
  public:
-  Mutex() { handle_ = CreateMutex(nullptr, false, nullptr); }
+  Mutex() : MutexBase{false} {}
 
   ~Mutex() {}
 
@@ -105,43 +126,23 @@ class Mutex final : public MutexBase {
 
   Mutex& operator=(const Mutex& other) = delete;
   Mutex& operator=(Mutex&& other) = delete;
-
-  bool Lock(std::size_t timeout_ms = max_delay) override {
-    bool is_current_operation_locked{false};
-    if (is_locked_ == false) {
-      is_current_operation_locked = MutexBase::Lock(timeout_ms);
-      // We call MutexBase::Lock() if our current state "unlocked". If
-      // MutexBase::Lock() returned false (from unlocked state), i don't know
-      // what that mean. Try find race condition for "is_locked_" variable in
-      // "Mutex" class.
-      assert(is_current_operation_locked == true);
-      is_locked_ = true;
-    }
-
-    return is_current_operation_locked;
-  }
-
-  bool Unlock() override {
-    bool is_current_operation_unlocked{false};
-    if (is_locked_ == true) {
-      is_current_operation_unlocked = MutexBase::Unlock();
-      // We call MutexBase::Unlock() if our current state "locked". If
-      // MutexBase::Unlock() returned false (from "locked" state), i don't know
-      // what that mean. Try find race condition for "is_locked_" variable in
-      // "MutexBaseBinary" class.
-      assert(is_current_operation_unlocked == true);
-      is_locked_ = false;
-    }
-
-    return is_current_operation_unlocked;
-  }
-
- private:
-  /// @brief Safe thread flag
-  BoolAtomic is_locked_{false};
 };
 
-using MutexRecursive = Mutex;
+/// @brief
+/// @see Why recursive mutex is evil:
+/// https://stackoverflow.com/questions/2323490/non-recursive-mutex-ownership
+class MutexRecursive final : public MutexBase {
+ public:
+  MutexRecursive() : MutexBase{true} {}
+
+  ~MutexRecursive() {}
+
+  MutexRecursive(const MutexRecursive& other) = delete;
+  MutexRecursive(MutexRecursive&& other) = delete;
+
+  MutexRecursive& operator=(const MutexRecursive& other) = delete;
+  MutexRecursive& operator=(MutexRecursive&& other) = delete;
+};
 
 }  // namespace paraos
 
