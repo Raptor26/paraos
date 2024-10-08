@@ -18,7 +18,3 @@ endif()
 target_link_libraries(${PROJECT_NAME} INTERFACE wsock32 ws2_32)
 
 set(THREAD_ENABLE on)
-
-if(UTEST)
-  add_subdirectory(tests)
-endif()

@@ -35,6 +35,7 @@
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
+#include "paroas_isr.hpp"
 #include "semphr.h"
 
 #ifdef paraosTRACE_ENABLE
@@ -43,23 +44,23 @@
 
 namespace paraos {
 
-/// @brief Атрибуты мьютекса, используемые при его создании.
-struct MutexAttr {
-  bool is_binary_ = false;
-};
-
-/// @brief Класс-реализация мьютексов в freeRTOS, общий для всех разновидностей
-/// мьютексов.
+/// @brief
+/// @note Пример использования мьютексов можно найти по ссылке ниже
+/// https://learn.microsoft.com/ru-ru/windows/win32/sync/using-mutex-objects
 class MutexBase {
  public:
-  /// @brief Конструктор MutexBase.
-  /// @param[in] attr: Атрибуты мьютекса.
-  MutexBase(const MutexAttr& attr);
+  virtual ~MutexBase() {
+    if (handle_) {
+      vSemaphoreDelete(handle_);
 
-  /// @brief Конструктор MutexBase по умолчанию.
-  MutexBase();
+      // need for debug only
+      handle_ = nullptr;
+    }
 
-  virtual ~MutexBase();
+#ifdef paraosTRACE_ENABLE
+    std::cout << "MutexBase Dtor" << std::endl;
+#endif
+  }
 
   MutexBase(const MutexBase& other) = delete;
   MutexBase(MutexBase&& other) = delete;
@@ -67,87 +68,160 @@ class MutexBase {
   MutexBase& operator=(const MutexBase& other) = delete;
   MutexBase& operator=(MutexBase&& other) = delete;
 
-  operator bool() const;
+  operator bool() const { return handle_ != nullptr ? true : false; }
 
-  /// @brief Метод блокирует вызывающий поток до тех пор, пока
-  /// этот поток не получит права владения мьютексом.
-  /// @param[in] timeout_ms: Время ожидания получения права владения мьютексом в
-  /// мс.
-  /// @return Возвращает результат ожидания получения права владения мьютексом.
-  virtual bool Lock(std::size_t timeout_ms = max_delay);
+  ISRbool Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) {
+    PARAOS_CHECK_ASSERT(handle_);
+    ISRbool is_mutex_taken;
 
-  /// @brief Метод выпускает права владения мьютексом из вызывающего потока.
-  /// @return Возвращает результат операции выпуска прав владения мьютексом.
-  virtual bool Unlock();
+    if (!is_isr) {
+      if (is_recursive_) {
+        // Lock recursive can take mutex if Lock called by mutex holder thread
+        // or another.
+        is_mutex_taken = LockRecursive(timeout_ms);
+      } else {
+        is_mutex_taken = LockNormal(timeout_ms);
+      }
+    } else {
+      is_mutex_taken = LockIsr();
+    }
+
+    return is_mutex_taken;
+  }
+
+  ISRbool Unlock(bool is_isr = false) {
+    PARAOS_CHECK_ASSERT(handle_);
+    ISRbool is_mutex_release;
+
+    if (!is_isr) {
+      // UnlockRecursive() may call only if caller thread is mutex holder.
+      // Otherwise try release as normal mutex.
+      if ((is_recursive_ == true) &&
+          (xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(handle_))) {
+        // Recursive mutex release operations counter can't be greater then take
+        // operations counter.
+        if (recursive_holder_take_cnt_ > 0) {
+          is_mutex_release = UnlockRecursive();
+        }
+      } else {
+        // Mutex releases a thread that is not mutex holder.
+        is_mutex_release = UnlockNormal();
+      }
+    } else {
+      is_mutex_release = UnlockIsr();
+    }
+
+    return is_mutex_release;
+  }
+
+ protected:
+  MutexBase(bool is_recursive) : is_recursive_{is_recursive} {};
 
  private:
+  ISRbool LockNormal(std::size_t timeout_ms = max_delay) {
+    ISRbool is_mutex_taken;
+    if (xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms)) ==
+        pdTRUE) {
+      is_mutex_taken.is_success_ = true;
+    }
+
+    return is_mutex_taken;
+  }
+
+  ISRbool LockRecursive(std::size_t timeout_ms = max_delay) {
+    ISRbool is_mutex_taken;
+    if (xSemaphoreGetMutexHolder(handle_) == xTaskGetCurrentTaskHandle()) {
+      ++recursive_holder_take_cnt_;
+    }
+    if (xQueueTakeMutexRecursive(
+            handle_, PARAOS_ConvertMsToTicks(timeout_ms)) == pdTRUE) {
+      is_mutex_taken.is_success_ = true;
+    }
+
+    return is_mutex_taken;
+  }
+
+  ISRbool LockIsr() {
+    ISRbool is_mutex_taken;
+    BaseType_t xHigherPriorityTaskWoken{pdFALSE};
+    if (xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken) == pdTRUE) {
+      is_mutex_taken.is_success_ = true;
+      if (xHigherPriorityTaskWoken == pdTRUE) {
+        is_mutex_taken.is_need_switch_context_ = true;
+      }
+    }
+
+    return is_mutex_taken;
+  }
+
+  ISRbool UnlockRecursive() {
+    ISRbool is_mutex_release;
+    if (xSemaphoreGiveRecursive(handle_) == pdTRUE) {
+      is_mutex_release.is_success_ = true;
+      --recursive_holder_take_cnt_;
+    }
+
+    return is_mutex_release;
+  }
+
+  ISRbool UnlockNormal() {
+    ISRbool is_mutex_release;
+    if (xSemaphoreGive(handle_) == pdTRUE) {
+      is_mutex_release.is_success_ = true;
+    }
+    return is_mutex_release;
+  }
+
+  ISRbool UnlockIsr() {
+    ISRbool is_mutex_release;
+    BaseType_t xHigherPriorityTaskWoken{pdFALSE};
+    if (xSemaphoreGiveFromISR(handle_, &xHigherPriorityTaskWoken) == pdTRUE) {
+      is_mutex_release.is_success_ = true;
+      if (xHigherPriorityTaskWoken == pdTRUE) {
+        is_mutex_release.is_need_switch_context_ = true;
+      }
+    }
+
+    return is_mutex_release;
+  }
+
+ protected:
   SemaphoreHandle_t handle_{nullptr};
+  bool is_recursive_{false};
+
+  /// @brief Watch for symmetric call Lock() and Unlock() for recursive mutex.
+  int recursive_holder_take_cnt_{0};
 };
 
-/// @brief Класс-реализация бинарного мьютекса.
-class MutexBaseBinary : public MutexBase {
+class Mutex final : public MutexBase {
  public:
-  /// @brief Конструктор по умолчанию.
-  MutexBaseBinary();
+  Mutex() : MutexBase{false} { handle_ = xSemaphoreCreateMutex(); }
 
-  virtual ~MutexBaseBinary();
+  ~Mutex() {}
 
-  MutexBaseBinary(const MutexBaseBinary& other) = delete;
-  MutexBaseBinary(MutexBaseBinary&& other) = delete;
+  Mutex(const Mutex& other) = delete;
+  Mutex(Mutex&& other) = delete;
 
-  MutexBaseBinary& operator=(const MutexBaseBinary& other) = delete;
-  MutexBaseBinary& operator=(MutexBaseBinary&& other) = delete;
-
-  /// @brief Метод блокирует вызывающий поток до тех пор, пока
-  /// этот поток не получит права владения мьютексом.
-  /// @param[in] timeout_ms: Время ожидания получения права владения мьютексом в
-  /// мс.
-  /// @return Возвращает результат ожидания получения права владения мьютексом.
-  virtual bool Lock(std::size_t timeout_ms = max_delay) override;
-
-  /// @brief Метод выпускает права владения мьютексом из вызывающего потока.
-  /// @return Возвращает результат операции выпуска прав владения мьютексом.
-  virtual bool Unlock() override;
-
- private:
-  /// @brief Safe thread flag
-  BoolAtomic is_locked_{false};
+  Mutex& operator=(const Mutex& other) = delete;
+  Mutex& operator=(Mutex&& other) = delete;
 };
 
-/// @brief Класс рекурсивного мьютекса.
-/// @note Рекурсивный мьютекс позволяет вызывать метод Lock() более 1 раза без
-/// вызова Unlock().
-class RecursiveMutex {
+/// @brief
+/// @see Why recursive mutex is evil:
+/// https://stackoverflow.com/questions/2323490/non-recursive-mutex-ownership
+class MutexRecursive final : public MutexBase {
  public:
-  /// @brief Конструктор класса рекурсивного мьютекса.
-  /// @param[in] attr: Атрибуты мьютекса.
-  RecursiveMutex(const MutexAttr& attr);
+  MutexRecursive() : MutexBase{true} {
+    handle_ = xSemaphoreCreateRecursiveMutex();
+  }
 
-  RecursiveMutex();
+  ~MutexRecursive() {}
 
-  virtual ~RecursiveMutex();
+  MutexRecursive(const MutexRecursive& other) = delete;
+  MutexRecursive(MutexRecursive&& other) = delete;
 
-  RecursiveMutex(const RecursiveMutex& other) = delete;
-  RecursiveMutex(RecursiveMutex&& other) = delete;
-
-  RecursiveMutex& operator=(const RecursiveMutex& other) = delete;
-  RecursiveMutex& operator=(RecursiveMutex&& other) = delete;
-
-  operator bool() const;
-
-  /// @brief Метод блокирует вызывающий поток до тех пор, пока
-  /// этот поток не получит права владения мьютексом.
-  /// @param[in] timeout_ms: Время ожидания получения права владения мьютексом в
-  /// мс.
-  /// @return Возвращает результат ожидания получения права владения мьютексом.
-  virtual bool Lock(std::size_t timeout_ms = max_delay);
-
-  /// @brief Метод выпускает права владения мьютексом из вызывающего потока.
-  /// @return Возвращает результат операции выпуска прав владения мьютексом.
-  virtual bool Unlock();
-
- private:
-  SemaphoreHandle_t handle_{nullptr};
+  MutexRecursive& operator=(const MutexRecursive& other) = delete;
+  MutexRecursive& operator=(MutexRecursive&& other) = delete;
 };
 
 }  // namespace paraos

@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 
+#include "etl/atomic.h"
 #include "paraos_check.h"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
@@ -40,41 +41,11 @@ struct MutexAttr {
 
 class MutexBase {
  public:
-  MutexBase(const MutexAttr& attr) noexcept : is_binary_{attr.is_binary_} {
-    if (!is_init_) {
-      pthread_mutexattr_t pthread_mutex_attr;
-      pthread_mutexattr_init(&pthread_mutex_attr);
-
-      if (attr.is_binary_ == false) {
-        pthread_mutexattr_settype(&pthread_mutex_attr, PTHREAD_MUTEX_RECURSIVE);
-      }
-
-      auto status = pthread_mutex_init(&m_obj_, &pthread_mutex_attr);
-
-      if (status == 0) {
-        paraosTRACE_MESSAGE("Mutex constructed");
-        is_init_ = true;
-      }
-    } else {
-      PARAOS_CHECK_ASSERT(
-          false && "Don't call second init for initalized object");
-    }
-  }
-
-  MutexBase() noexcept : MutexBase(MutexAttr{}) {}
-
   virtual ~MutexBase() {
     pthread_mutex_destroy(&m_obj_);
 
     paraosTRACE_MESSAGE("Mutex deleted");
-    // Debug only
-    is_init_ = false;
   }
-
-  /// @brief Возвращает true если мьютекс успешно инициализирован.
-  /// @note Рекомендуется выполнить данную проверку единожды после создания
-  /// мьютекса.
-  operator bool() const noexcept { return is_init_; }
 
   MutexBase(const MutexBase& other) = delete;
   MutexBase(MutexBase&& other) = delete;
@@ -82,10 +53,10 @@ class MutexBase {
   MutexBase& operator=(const MutexBase& other) = delete;
   MutexBase& operator=(MutexBase&& other) = delete;
 
-  virtual bool Lock(std::size_t timeout_ms = max_delay) noexcept {
+  bool Lock(std::size_t timeout_ms = max_delay) noexcept {
     bool is_mutex_taken{false};
 
-    int result = -1;
+    int result{-1};
     if (timeout_ms == 0) {
       result = pthread_mutex_trylock(&m_obj_);
     } else if (timeout_ms == max_delay) {
@@ -104,6 +75,7 @@ class MutexBase {
     }
 
     if (result == 0) {
+      ++lock_cnt_;
       is_mutex_taken = true;
       paraosTRACE_MESSAGE("Mutex locked");
     }
@@ -111,35 +83,70 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  virtual bool Unlock() noexcept {
+  bool Unlock() noexcept {
     bool is_mutex_released{false};
 
-    auto result = pthread_mutex_unlock(&m_obj_);
-    if (result == 0) {
-      is_mutex_released = true;
-      paraosTRACE_MESSAGE("Mutex unlocked");
+    // Paraos mutex API need return false if unlock mutex operations cnt greater
+    // then lock.
+    if (lock_cnt_ > 0) {
+      if (pthread_mutex_unlock(&m_obj_) == 0) {
+        --lock_cnt_;
+        is_mutex_released = true;
+        paraosTRACE_MESSAGE("Mutex unlocked");
+      }
     }
 
     return is_mutex_released;
   }
 
- private:
+  operator bool() const { return is_mutex_ready_; }
+
+ protected:
+  MutexBase(int kind) noexcept {
+    pthread_mutexattr_t pthread_mutex_attr;
+    pthread_mutexattr_init(&pthread_mutex_attr);
+    pthread_mutexattr_settype(&pthread_mutex_attr, kind);
+    if (pthread_mutex_init(&m_obj_, &pthread_mutex_attr) == 0) {
+      is_mutex_ready_ = true;
+    }
+  }
+
+ protected:
   pthread_mutex_t m_obj_;
-  [[maybe_unused]] bool is_binary_{true};
-  bool is_init_{false};
+
+  bool is_mutex_ready_{false};
+
+ private:
+  /// @brief If lock_cnt_ == 0, then try unlock mutex. Otherwise only return
+  /// false without any action. It's need for consistent API between
+  /// Unix/WinAPI/FreeRTOS
+  etl::atomic_int lock_cnt_{0};
 };
 
-class MutexBaseBinary : public MutexBase {
+class Mutex final : public MutexBase {
  public:
-  MutexBaseBinary() : MutexBase(MutexAttr{true}) {}
+  Mutex() : MutexBase{PTHREAD_MUTEX_NORMAL} {}
 
-  ~MutexBaseBinary() {}
+  ~Mutex() {}
 
-  MutexBaseBinary(const MutexBaseBinary& other) = delete;
-  MutexBaseBinary(MutexBaseBinary&& other) = delete;
+  Mutex(const Mutex& other) = delete;
+  Mutex(Mutex&& other) = delete;
 
-  MutexBaseBinary& operator=(const MutexBaseBinary& other) = delete;
-  MutexBaseBinary& operator=(MutexBaseBinary&& other) = delete;
+  Mutex& operator=(const Mutex& other) = delete;
+  Mutex& operator=(Mutex&& other) = delete;
+};
+
+class MutexRecursive final : public MutexBase {
+ public:
+  MutexRecursive() : MutexBase{PTHREAD_MUTEX_RECURSIVE} {}
+
+  ~MutexRecursive() {}
+
+  MutexRecursive(const MutexRecursive& other) = delete;
+  MutexRecursive(Mutex&& MutexRecursive) = delete;
+
+  MutexRecursive& operator=(const MutexRecursive& other) = delete;
+  MutexRecursive& operator=(MutexRecursive&& other) = delete;
 };
 
 }  // namespace paraos

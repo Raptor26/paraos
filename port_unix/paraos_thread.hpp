@@ -138,6 +138,10 @@ class Thread {
     usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
   }
 
+  static void SleepMs(std::size_t sleep_ms) {
+    usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
+  }
+
   PARAOS_INLINE_TRIVIAL void SetNeedWhile(bool is_need_while) {
     is_need_while_ = is_need_while;
   }

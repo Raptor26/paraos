@@ -54,7 +54,7 @@ class CriticalSection final {
 
  private:
   [[maybe_unused]] const bool is_isr_;
-  static inline MutexBase mutex_;
+  static inline MutexRecursive mutex_;
 };
 
 }  // namespace paraos
