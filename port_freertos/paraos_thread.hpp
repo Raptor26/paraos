@@ -84,6 +84,8 @@ class Thread {
   /// поток.
   void DelayMs(std::size_t sleep_ms);
 
+  static void SleepMs(std::size_t sleep_ms);
+
   /// @brief After "Thread' complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
@@ -163,7 +165,7 @@ class Thread {
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.
   SemaphoreBinary is_thread_complete_sem_;
-  MutexBaseBinary join_mutex_;
+  Mutex join_mutex_;
 };
 }  // namespace paraos
 
