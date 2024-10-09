@@ -142,3 +142,12 @@ TEST(RingBuff, WriteSpanThenReadSpan) {
   // All data was read. Free bytes must be one byte less than buffer size.
   ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
 }
+
+TEST(RingBuff, WriteOverflow) {
+  std::string src{"Hello World!"};
+  constexpr std::size_t ringbuff_size_in_bytes{10};
+
+  paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
+  auto written_bytes_numb = ring_buff.Write(src);
+  ASSERT_EQ(0u, written_bytes_numb);
+}
