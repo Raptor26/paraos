@@ -44,6 +44,14 @@ namespace paraos {
 #define PARAOS_THREAD_SEQUENCE_VIRTUAL
 #endif
 
+/// @brief Provided thread for execute delegates.
+///
+/// @warning No delegates should use blocking paraos API. For example,
+/// - sem.Take(100) - bad idea, because all delegates in the thread will blocked
+///                   for 100 ms.
+/// - sem.Take(0) - good. If no semaphore for take, method return control to
+///                 delegate immediately. Remember, all blocking api return
+///                 status, indicates is API calls successfully.
 class IThreadSequence : public Thread {
   typedef etl::delegate<void(void)> callback_type;
   using try_lock_type = etl::delegate<bool(void)>;
@@ -93,11 +101,22 @@ class IThreadSequence : public Thread {
 
  public:
   /// @brief Register delegate for periodic execute.
+  ///
+  /// @warning All registered delegates execute in one thread. That's mean, no
+  /// delegate should use blocking API.
+  /// For example, if delegate call 'sem.Take(delay_ms)' and 'delay_ms > 0', all
+  /// delegates in the thread will blocked for specfied period (most likely,
+  /// this is not behavior you need). Timeout in all paraos API must be set as
+  /// zero!
+  /// - sem.Take(100) - bad;
+  /// - sem.Take(0) - good;
+  ///
   /// @param[in] callback: Delegate that needs to be registered.
   /// @param[in] freq: If set 0.0, callback will be called on each user called
   /// NotifyGive().
   /// @param[in] repeating: true if need periodic call, false if need call at
   /// once.
+  ///
   /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
   /// other case return valid timer id in range [0 .. 254].
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
@@ -114,12 +133,25 @@ class IThreadSequence : public Thread {
     return timer_id;
   }
 
+  /// @brief Delete delegate from periodic execute.
+  ///
+  /// @param[in] timer_id: Delegate id, which needs for delete from queue
+  /// executor.
+  ///
+  /// @return true if delegate successfully deleted, false in otherwise.
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(
       etl::timer::id::type timer_id) -> bool {
     paraos::CriticalSection critical;
     return timer_controller_.unregister_timer(timer_id);
   }
 
+  /// @brief Change freq for delegate execution.
+  ///
+  /// @param[in] timer_id: Delegate id whose execution frequency will be
+  /// changed.
+  /// @param[in] freq_: new frequency for periodic call delegate.
+  ///
+  /// @return true if frequency changed successfully, false in otherwise.
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto SetFreq(
       etl::timer::id::type timer_id, float freq_) -> bool {
     bool is_period_updated{false};
@@ -145,6 +177,10 @@ class IThreadSequence : public Thread {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
+  /// @brief Return frequency which thread execute. Relative to this frequency,
+  /// the periods for calling delegates are calculated.
+  ///
+  /// @return Main frequency in Hz.
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const -> float {
     // Convert microseconds to sec.
     const float main_freq = (static_cast<float>(period_in_us_)) * 0.000001;

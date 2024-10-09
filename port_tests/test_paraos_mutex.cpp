@@ -1,4 +1,4 @@
-/// @file test_semaphore.cpp
+/// @file test_mutex.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -25,15 +25,50 @@
 
 #include <gtest/gtest.h>
 
-#include "paraos_semaphore.hpp"
+#include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
 
 using namespace paraos;
 
-TEST(Semaphore, Create) { SemaphoreCounting sem{SemaphoreAttr{}}; }
+TEST(Mutex, Create) {
+  auto default_ctor = Mutex();
+  ASSERT_TRUE(default_ctor);
+}
 
-TEST(Semaphore, Give) {
-  SemaphoreCounting sem{SemaphoreAttr{}};
-  ASSERT_FALSE(sem.Take(0u));
-  ASSERT_TRUE(sem.Give());
-  ASSERT_TRUE(sem.Take());
+TEST(Mutex, LockTwice) {
+  auto default_ctor = Mutex();
+
+  ASSERT_TRUE(default_ctor.Lock(0));
+
+  // Can't lock twice if non recursive mutex.
+  ASSERT_FALSE(default_ctor.Lock(0));
+}
+
+TEST(Mutex, LockThenUnlock) {
+  auto default_ctor = Mutex();
+
+  ASSERT_TRUE(default_ctor.Lock(0));
+  ASSERT_TRUE(default_ctor.Unlock());
+
+  // Can't unlock twice if non recursive mutex.
+  ASSERT_FALSE(default_ctor.Unlock());
+}
+
+TEST(Mutex, LockThenUnlockWithRAII) {
+  auto default_ctor = Mutex();
+
+  { auto mutex_raii = MutexGuard(default_ctor); }
+}
+
+TEST(MutexRecursive, LockThenUnlockTwice) {
+  auto default_ctor = MutexRecursive();
+  ASSERT_TRUE(default_ctor);
+
+  ASSERT_TRUE(default_ctor.Lock(0));
+  ASSERT_TRUE(default_ctor.Lock(5000));
+  ASSERT_TRUE(default_ctor.Unlock());
+  ASSERT_TRUE(default_ctor.Unlock());
+
+  // Mutex lock twice, and unlock twice too, next release not succeed.
+  ASSERT_FALSE(default_ctor.Unlock());
 }

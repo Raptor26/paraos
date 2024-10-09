@@ -62,10 +62,20 @@ const std::vector<std::string> str_array{
     "23) I'll be comin' for you anyway",
     "24) -------------------------------------------"};
 
+/// @brief Total bytes numb in str_array with null terminate symbols in each
+/// string.
+std::size_t total_bytes_for_write{0};
+
+/// @brief Numb of written bytes by all producers. Update in runtime.
+std::size_t total_written_bytes{0};
+
 std::vector<std::string> read_array;
 
+/// @brief Numb of read bytes by all consumers. Update in runtime.
+std::size_t total_read_bytes{0};
+
 constexpr std::size_t queue_size{2};
-constexpr std::size_t ring_buff_size{512};
+constexpr std::size_t ring_buff_size{2048};
 constexpr std::size_t ring_buff_numb{5};
 
 std::size_t thread_total_numb{0};
@@ -119,16 +129,19 @@ struct Producer : public paraos::Thread {
 
     if (idx < str_array.size()) {
       auto str = str_array[idx];
-      {
-        const paraos::CriticalSection critical;
-        std::cout << "Producer with id " << thread_id_
-                  << " writing string: " << str << std::endl;
-      }
 
       const std::size_t strl_len_with_null = str.size() + 1u;
       auto written_bytes_numb = multi_ring_buff.Write(
           thread_id_, static_cast<const void *>(str.data()), strl_len_with_null,
           write_delay_ms);
+
+      {
+        const paraos::CriticalSection critical;
+        total_written_bytes += written_bytes_numb;
+
+        std::cout << "Producer with id " << thread_id_
+                  << " writing string: " << str << std::endl;
+      }
 
       PARAOS_CHECK_ASSERT(
           written_bytes_numb == strl_len_with_null &&
@@ -158,8 +171,8 @@ struct Consumer : public paraos::Thread {
 
   void Run() override {
     std::size_t idx;
-    constexpr std::size_t read_delay_ms{100u};
-    constexpr std::size_t read_mem_size{128u};
+    constexpr std::size_t read_delay_ms{15u};
+    constexpr std::size_t read_mem_size{2048};
 
     auto read_mem = std::make_unique<std::array<std::uint8_t, read_mem_size>>();
     read_mem->fill('[');
@@ -167,11 +180,11 @@ struct Consumer : public paraos::Thread {
         idx, static_cast<void *>(read_mem->data()), read_mem->size(),
         read_delay_ms);
 
-    auto str_container =
-        split(reinterpret_cast<const char *>(read_mem->data()), read_mem_size);
+    const paraos::CriticalSection critical;
+    if (read_bytes_numb != 0) {
+      auto str_container = split(
+          reinterpret_cast<const char *>(read_mem->data()), read_mem_size);
 
-    {
-      const paraos::CriticalSection critical;
       std::cout << "Consumer " << Name()
                 << " got str container with size: " << str_container.size()
                 << std::endl;
@@ -179,13 +192,10 @@ struct Consumer : public paraos::Thread {
         std::cout << "Consumer " << Name() << " read string: " << str
                   << std::endl;
       }
-    }
 
-    const paraos::CriticalSection critical;
-    if (read_bytes_numb != 0) {
       read_array.push_back(reinterpret_cast<const char *>(read_mem->data()));
-
       read_idx += str_container.size();
+      total_read_bytes += read_bytes_numb;
     }
 
     if (!(read_idx < str_array.size())) {
@@ -194,6 +204,18 @@ struct Consumer : public paraos::Thread {
     }
   }
 };
+
+void AssertsForTestComplete() {
+  assert(
+      total_bytes_for_write == total_written_bytes &&
+      "Producers not write all bytes");
+
+  std::cout << "Expect read bytes: " << total_bytes_for_write << std::endl;
+  std::cout << "Actual read bytes: " << total_read_bytes << std::endl;
+  assert(
+      total_bytes_for_write == total_read_bytes &&
+      "Consumers not read all bytes");
+}
 
 #if defined(FREERTOS)
 void ExitAfterTestComplete() {
@@ -206,12 +228,7 @@ void ExitAfterTestComplete() {
   }
 
   if (is_need_exit) {
-    for (auto &str : read_array) {
-      assert(
-          std::find(str_array.begin(), str_array.end(), str) !=
-              str_array.end() &&
-          "Can't find consumer string in source container");
-    }
+    AssertsForTestComplete();
     exit(EXIT_SUCCESS);
   }
 }
@@ -223,6 +240,10 @@ auto main() -> int {
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
+
+  for (auto &str : str_array) {
+    total_bytes_for_write += str.size() + 1u;
+  }
 
   Producer prod_1{0, "Prod 1"};
   Producer prod_2{1, "Prod 2"};
@@ -238,11 +259,7 @@ auto main() -> int {
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
-  for (auto &str : read_array) {
-    assert(
-        std::find(str_array.begin(), str_array.end(), str) != str_array.end() &&
-        "Can't find consumer string in source container");
-  }
+  AssertsForTestComplete();
 
   return 0;
 }

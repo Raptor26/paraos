@@ -172,6 +172,8 @@ class Thread {
 
   void DelayMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
 
+  static void SleepMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
+
   /// @brief Enable or disable loop calling Run() method.
   /// @param[in] is_need_while: if `is_need_while == true`, Run() calling in
   /// infinite loop. If set `is_need_while == false`, Run() calling at once.

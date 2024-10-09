@@ -3,24 +3,23 @@ import shutil
 import builder_functions
 
 
-presets_tuple = (
-    'pc_debug_clang',
-    'pc_debug_gcc',
-    'pc_release_clang',
-    'freertos_debug_clang',
-    'freertos_debug_gcc',
-    'freertos_release_clang'
-)
+stress_test_repetitions_count = 555
+
 
 def show_result_output(result: bool):
+    """
+    Функция выполняет вывод общего результата по всем выбранным тестам.
+    :param result: Результат выполнения одного или нескольких тестов.
+    """
     if not result:
         print(
             f'{builder_functions.FAIL}\nОшибки при тестировании '
             'в следующих пресетах:'
+
         )
         for preset, errors in builder_functions.tests_errors_table.items():
             if errors:
-                print(f'{preset}: {errors}')
+                print(f'{preset}:\n {errors}')
         print(f'{builder_functions.END_COLOR}')
 
     if builder_functions.memcheck_results_table:
@@ -33,8 +32,13 @@ def show_result_output(result: bool):
 
         print('--------- MEMCHECK SUMMARY:\n')
         for preset, res in builder_functions.memcheck_results_table.items():
-            print(preset)
-            print(res["memcheck_results"])
+            if res["defects"] != '':
+                print(
+                    f'{builder_functions.BOLD}'
+                    f'{preset}'
+                    f'{builder_functions.BOLD}'
+                )
+                print(res["memcheck_results"])
         print('-------------------------------\n')
         
     if not result:
@@ -52,6 +56,19 @@ def show_result_output(result: bool):
         )
 
 
+def remove_tmp_docker_entrypoint():
+    if os.path.isfile('docker_tests_entrypoint.sh'):
+        os.remove('docker_tests_entrypoint.sh')
+
+def replace_docker_entrypoint(entrypoint_name: str):
+    remove_tmp_docker_entrypoint()
+
+    shutil.copy(
+        entrypoint_name,
+        'docker_tests_entrypoint.sh'
+    )
+
+
 if __name__ == '__main__':
     print('Выберите необходимое действие:\n'
           ' 0 - Выход\n'
@@ -59,6 +76,7 @@ if __name__ == '__main__':
           ' 2 - Запустить все сборки и стресс тест\n'
           ' 3 - pc_debug_clang\n'
           ' 4 - freertos_debug_clang\n'
+          ' 5 - Memcheck only\n'
           ' 11 - Запуск тестов в Docker\n'
           ' 12 - Запуск стресс-тестов в Docker\n')
 
@@ -69,33 +87,48 @@ if __name__ == '__main__':
 
         case '1':
             results_list = []
-            for preset in presets_tuple:
-                preset_res = builder_functions.test_preset(
-                    ['cmake', '--preset', preset],
-                    ['cmake', '--build', f'build/{preset}/'],
-                    f'build/{preset}'
-                )
-            final_res = True
+            presets_tuple = builder_functions.parse_presets()
+            print(f'Обнаружены следующие пресеты:\n{presets_tuple}')
+            if presets_tuple:
+                for preset in presets_tuple:
+                    preset_res = builder_functions.test_preset(
+                        ['cmake', '--preset', preset],
+                        ['cmake', '--build', f'build/{preset}/'],
+                        f'build/{preset}'
+                    )
+                    results_list.append(preset_res)
+                    if not preset_res:
+                        break
 
-            for res in results_list:
-                final_res = final_res and res
-    
-            show_result_output(final_res)
+                final_res = True
+
+                for res in results_list:
+                    final_res = final_res and res
+
+                show_result_output(final_res)
 
         case '2':
             results_list = []
-            for preset in presets_tuple:
-                preset_res = builder_functions.stress_test_preset(
-                    ['cmake', '--preset', preset],
-                    ['cmake', '--build', f'build/{preset}/'],
-                    f'build/{preset}'
-                )
-            final_res = True
+            presets_tuple = builder_functions.parse_presets()
+            print(f'Обнаружены следующие пресеты:\n{presets_tuple}')
+            if presets_tuple:
+                for preset in presets_tuple:
+                    preset_res = builder_functions.test_preset(
+                        ['cmake', '--preset', preset],
+                        ['cmake', '--build', f'build/{preset}/'],
+                        f'build/{preset}',
+                        stress_test_repetitions_count
+                    )
+                    results_list.append(preset_res)
+                    if not preset_res:
+                        break
 
-            for res in results_list:
-                final_res = final_res and res
-    
-            show_result_output(final_res)
+                final_res = True
+
+                for res in results_list:
+                    final_res = final_res and res
+
+                show_result_output(final_res)
 
         case '3':
             pc_debug_res = builder_functions.test_preset(
@@ -109,41 +142,41 @@ if __name__ == '__main__':
         case '4':
             rtos_debug_res = builder_functions.test_preset(
                 ['cmake', '--preset', 'freertos_debug_clang'],
-                [
-                    'cmake', '--build', 'build/freertos_debug_clang/'
-                ],
+                ['cmake', '--build', 'build/freertos_debug_clang/'],
                 'build/freertos_debug_clang'
             )
 
             show_result_output(rtos_debug_res)
 
-        case '11':
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+        case '5':
+            replace_docker_entrypoint('docker_tests_entrypoint_memcheck.sh')
 
-            shutil.copy(
-                'docker_tests_entrypoint_single.sh',
-                'docker_tests_entrypoint.sh'
+            docker_test_result = builder_functions.run_docker_test(
+                'docker_test_paraos', 'docker_test_paraos:1.0'
             )
-            docker_test_result = builder_functions.run_docker_test()
             show_result_output(docker_test_result)
 
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+            remove_tmp_docker_entrypoint()
+
+        case '11':
+            replace_docker_entrypoint('docker_tests_entrypoint_single.sh')
+
+            docker_test_result = builder_functions.run_docker_test(
+                'docker_test_paraos', 'docker_test_paraos:1.0'
+            )
+            show_result_output(docker_test_result)
+
+            remove_tmp_docker_entrypoint()
 
         case '12':
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+            replace_docker_entrypoint('docker_tests_entrypoint_stress.sh')
 
-            shutil.copy(
-                'docker_tests_entrypoint_stress.sh',
-                'docker_tests_entrypoint.sh'
+            docker_test_result = builder_functions.run_docker_test(
+                'docker_test_paraos', 'docker_test_paraos:1.0'
             )
-            docker_test_result = builder_functions.run_docker_test()
             show_result_output(docker_test_result)
 
-            if os.path.isfile('docker_tests_entrypoint.sh'):
-                os.remove('docker_tests_entrypoint.sh')
+            remove_tmp_docker_entrypoint()
 
         case _:
             print(

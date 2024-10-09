@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import subprocess
 
 try:
@@ -12,37 +13,88 @@ except (ImportError, DockerException) as e:
         '"python install_builder_dependencies.py"'
     )
 
-tests_errors_table = {
-    'pc_debug_clang': '',
-    'pc_release_clang': '',
-    'freertos_debug_clang': '',
-    'freertos_release_clang': '',
-    'docker_tests': ''
-}
+tests_errors_table = {}
 
 # Таблица с результатами memcheck:
 # 'preset_name': {
 #     'defects': '',
 #     'memcheck_results': ''
 # }
-memcheck_results_table = {}
+memcheck_results_table: dict = {}
 
 OK_GREEN = '\033[92m'
 WARNING = '\033[93m'
 FAIL = '\033[91m'
 END_COLOR = '\033[0m'
+BOLD = '\033[1m'
+
+
+def check_presets_existence():
+    """
+    Функция проверяет наличие файла CMakePresets.json в одной директории со
+    скриптом builder.
+    :return: Возвращает True, если файл CMakePresets.json существует,
+        иначе - False.
+    """
+    if os.path.isfile('CMakePresets.json'):
+        return True
+    else:
+        return False
+
+
+def parse_presets():
+    """
+    Функция выполняет парсинг доступных пресетов из файла CMakePresets.json.
+    :return: Возвращает кортеж пресетов, полученных в результате парсинга.
+    """
+    if check_presets_existence():
+        with open('CMakePresets.json') as presets_file:
+            presets_dict = json.load(presets_file)
+            config_presets_list = presets_dict['configurePresets']
+
+            tests_errors_table.update(
+                {
+                    preset_data['name']: '' for preset_data in
+                    config_presets_list
+                    if preset_data['name'].find('_trace') == -1
+                    and preset_data['name'].find('_docker') == -1
+                }
+            )
+            return tuple(
+                preset_data['name']
+                for preset_data in config_presets_list
+                if preset_data['name'].find('_trace') == -1
+                and preset_data['name'].find('_docker') == -1
+            )
+
+    else:
+        print(FAIL, 'Не обнаружено файла CMakePresets.json', END_COLOR)
 
 
 def _make_preset(make_command: list[str]):
-    subprocess.run(
+    """
+    Функция выполняет команду make с заданными аргументами.
+    :param make_command: Команда make, которую необходимо запустить.
+    """
+    make_result = subprocess.run(
         make_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
     )
 
+    print(make_result.stdout)
+
 
 def _build_preset(build_command: list[str]):
+    """
+    Функция выполняет сборку проекта, выполняя запуск соответствующе команды с
+    заданными аргументами.
+    :param build_command: Команда для сборки проекта,
+        которую необходимо запустить.
+    :return: Возвращает объект завершённого процесса для доступа к его
+        результатам.
+    """
     build_res = subprocess.run(
         build_command,
         stdout=subprocess.PIPE,
@@ -56,8 +108,19 @@ def _build_preset(build_command: list[str]):
 def test_preset(
         make_command: list[str],
         build_command: list[str],
-        test_dir: str
+        test_dir: str,
+        repetitions_count: int = 2,
 ):
+    """
+    Функция выполняет тестирование выбранного пресета.
+    :param make_command: Команда make с заданными аргументами,
+        которую необходимо запустить.
+    :param build_command: Команда build с заданными аргументами,
+        которую необходимо запустить.
+    :param test_dir: Путь к директории для тестов ctest.
+    :param repetitions_count: Количество повторений каждого теста.
+    :return: Возвращает результат тестирования пресета.
+    """
     preset_name = make_command[2]
     print(f'Фаза Make {preset_name}')
     _make_preset(make_command)
@@ -71,52 +134,7 @@ def test_preset(
         )
         return False
 
-    print(f'Фаза тестирования {preset_name}')
-    test_res = subprocess.run(
-        [
-            'ctest',
-            '--test-dir',
-            test_dir,
-            '-j8',
-            '--timeout', '15',
-            '--repeat-until-fail', '2',
-            '--schedule-random',
-            '--output-on-failure'
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-
-    print(test_res.stdout)
-
-    if test_res != 0 and test_res.stderr:
-        failed_test_output = test_res.stdout.split('FAILED:')
-        tests_errors_table[preset_name] = failed_test_output[1]
-
-        return False
-
-    return True
-
-
-def stress_test_preset(
-        make_command: list[str],
-        build_command: list[str],
-        test_dir: str
-):
-    out_string = ''
-    preset_name = make_command[2]
-    print(f'Фаза Make {preset_name}')
-    _make_preset(make_command)
-
-    print(f'Фаза сборки {preset_name}')
-    build_res = _build_preset(build_command)
-    if not build_res:
-        print(
-            f'{FAIL}Произошла ошибка при сборке '
-            f'{preset_name}! {build_res.stderr}{END_COLOR}'
-        )
-        return False
+    print(build_res.stdout)
 
     print(f'Фаза стресс-тестирования {preset_name}')
     test_process = subprocess.Popen(
@@ -126,45 +144,55 @@ def stress_test_preset(
             test_dir,
             '-j16',
             '--timeout', '15',
-            '--repeat-until-fail', '555',
-            '--stop-on-failure'
+            '--repeat-until-fail', f'{repetitions_count}',
+            '--stop-on-failure',
+            '--output-on-failure'
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
     )
-
-    found_failed_tests = False
+    found_fail_test_out = False
+    failed_test_output = ''
     while True:
-        out = test_process.stdout.read(10)
+        out = test_process.stdout.readline()
         if test_process.poll() is not None:
             break
         if out != '':
-            if out.find('FAILED:'):
-                found_failed_tests = True
+
+            if out.find('Running main()') != -1:
+                found_fail_test_out = True
+
+            elif out.find('FAILED TEST') != -1:
+                found_fail_test_out = False
+                tests_errors_table[preset_name] += failed_test_output
+
             sys.stdout.write(out)
             sys.stdout.flush()
 
-            if found_failed_tests:
-                out_string += out
+            if found_fail_test_out:
+                failed_test_output += out
 
     if test_process.returncode != 0:
         print(test_process.stderr.readline())
-        failed_test_output = out_string.split('FAILED:')
-        tests_errors_table[preset_name] = failed_test_output[1]
 
         return False
 
     return True
 
 
-def _build_docker_image():
+def _build_docker_image(image_tags: str):
+    """
+    Функция выполняет сборку Docker образа.
+    :param image_tags: Тег, который необходимо присвоить создаваемому образу.
+    :return: Возвращает результат выполнения операции.
+    """
     failed_flag = False
     fail_output = ''
     try:
         build_output_generator = docker.build(
             context_path='.',
-            tags='docker_test_paraos:1.0',
+            tags=image_tags,
             stream_logs=True
         )
 
@@ -182,7 +210,16 @@ def _build_docker_image():
         return False
 
 
-def _run_docker_container():
+def _run_docker_container(image_name: str, image_tags: str):
+    """
+    Функция выполняет запуск Docker контейнера и отслеживание его вывода для
+    сохранения ошибок.
+    :param image_name: Название Docker контейнера,
+        присваиваемое ему после запуска.
+    :param image_tags: Тег образа, на основе которого
+        необходимо запустить контейнер.
+    :return: Возвращает результат выполнения операции.
+    """
     result = True
     memcheck_flag = False
     tests_fail_flag = False
@@ -193,8 +230,8 @@ def _run_docker_container():
     try:
         memcheck_results_table.clear()
         run_output_generator = docker.run(
-            name='docker_test_paraos',
-            image='docker_test_paraos:1.0',
+            name=image_name,
+            image=image_tags,
             stream=True,
             remove=True,
             privileged=True
@@ -202,18 +239,14 @@ def _run_docker_container():
 
         for _, stream_content in run_output_generator:
             print(stream_content)
-            if (stream_content.find(b'The following tests FAILED:') != -1
-                    and not memcheck_flag):
+            if stream_content.find(b'Running main()') != -1:
                 tests_fail_flag = True
-            if stream_content.find(b'Errors while running CTest') != -1:
-                tests_fail_flag = False
-                stream_content = b''
-            if stream_content.find(
-                    b'-- Processing memory checking output:') != -1:
-                tests_fail_flag = False
-            if stream_content.find(b'[TEST START]') != -1:
+            elif stream_content.find(b'[TEST START]') != -1:
                 tests_fail_flag = False
                 tests_fail_out += b'\n' + stream_content + b'\n'
+
+            elif stream_content.find(b'FAILED TEST') != -1:
+                tests_fail_flag = False
 
             if tests_fail_flag:
                 tests_fail_out += stream_content
@@ -221,18 +254,23 @@ def _run_docker_container():
             if stream_content.find(
                     b'-- Processing memory checking output:') != -1:
                 memcheck_flag = True
+                stream_content = b''
             if stream_content.find(
                     b'Memory checking results:') != -1:
                 memcheck_flag = True
-                memcheck_results_table[preset_name][
-                    'defects'] = memcheck_output
+                if memcheck_output != '':
+                    memcheck_results_table[preset_name][
+                        'defects'] = memcheck_output
+                else:
+                    del memcheck_results_table[preset_name]
                 memcheck_output = ''
                 memcheck_results_flag = True
                 stream_content = b''
 
             elif stream_content.find(
                     b'[MEMCHECK START]') != -1:
-                if preset_name != 'preset':
+                if (preset_name != 'preset'
+                        and preset_name in memcheck_results_table):
                     memcheck_results_table[preset_name][
                         'memcheck_results'] = memcheck_output
                     memcheck_results_flag = False
@@ -257,6 +295,8 @@ def _run_docker_container():
 
             if memcheck_flag:
                 line = stream_content.decode('utf-8')
+                if line.find('Errors while running CTest') != -1:
+                    continue
                 if memcheck_results_flag:
                     if line.find('Potential') == -1:
                         memcheck_output += FAIL + line + WARNING
@@ -265,19 +305,22 @@ def _run_docker_container():
                 else:
                     memcheck_output += line
 
-        if memcheck_output != '':
-            memcheck_results_table[
-                preset_name]['memcheck_results'] = memcheck_output
+        if preset_name in memcheck_results_table:
+            if memcheck_output != '':
+                memcheck_results_table[
+                    preset_name]['memcheck_results'] = memcheck_output
+            else:
+                del memcheck_results_table[preset_name]
 
     except DockerException as e:
         tests_errors_table['docker_tests'] = e
-        if tests_fail_out != '':
+        if tests_fail_out != b'':
             tests_errors_table[
                 'docker_tests'
             ] = tests_fail_out.decode("utf-8")
             result = False
 
-        if memcheck_output != '':
+        if memcheck_output != '' and preset_name in memcheck_results_table:
             memcheck_results_table[
                 preset_name]['memcheck_results'] = memcheck_output
 
@@ -286,7 +329,14 @@ def _run_docker_container():
     return result
 
 
-def run_docker_test():
+def run_docker_test(image_name: str, image_tags: str):
+    """
+    Функция выполняет сборку и запуск docker контейнеров,
+    вызывается из внешних скриптов.
+    :param image_name: Название образа для сборки и запуска.
+    :param image_tags: Тег образа для сборки и запуска.
+    :return: Возвращает результат выполнения операций сборки и запуска.
+    """
     print('Удаление "Dangling" образов...')
     result = True
     dangling_remove_res = subprocess.run(
@@ -299,8 +349,8 @@ def run_docker_test():
     if dangling_remove_res.returncode == 0:
         print('Сборка Docker образа, процесс может занять длительное время...')
 
-        result = _build_docker_image()
+        result = _build_docker_image(image_tags)
         if result:
-            result = _run_docker_container()
+            result = _run_docker_container(image_name, image_tags)
 
     return result
