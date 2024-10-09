@@ -37,6 +37,7 @@
 #include <string>
 
 #include "paraos_iserial.hpp"
+#include "paraos_thread.hpp"
 
 namespace paraos {
 
@@ -99,6 +100,12 @@ class UDPSocket : public paraos::ISerial {
     size_t read_bytes_num = 0;
     int slen = sizeof(sockaddr_in);
 
+    // When socket not connected, recvfrom (see below) return control
+    // immediately. We want wait some time before check connection again.
+    if (!is_connected_) {
+      paraos::Thread::SleepMs(500u);
+    }
+
     // If no incoming data is available at the socket, the recvfrom function
     // blocks and waits for data to arrive according to the blocking rules
     // defined for WSARecv with the MSG_PARTIAL flag not set unless the socket
@@ -111,6 +118,9 @@ class UDPSocket : public paraos::ISerial {
       std::cout << "recvfrom() failed with error code: " << WSAGetLastError()
                 << "\n";
       read_bytes_num = 0;
+      is_connected_ = false;
+    } else {
+      is_connected_ = true;
     }
 
     return read_bytes_num;
@@ -143,6 +153,8 @@ class UDPSocket : public paraos::ISerial {
   sockaddr_in server_{};
 
   bool is_init_succeeded_ = true;
+
+  bool is_connected_{false};
 };
 
 }  // namespace paraos
