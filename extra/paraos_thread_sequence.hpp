@@ -38,6 +38,12 @@
 
 namespace paraos {
 
+#if PARAOS_THREAD_SEQUENCE_USING_VIRTUAL
+#define PARAOS_THREAD_SEQUENCE_VIRTUAL virtual
+#else
+#define PARAOS_THREAD_SEQUENCE_VIRTUAL
+#endif
+
 class IThreadSequence : public Thread {
   typedef etl::delegate<void(void)> callback_type;
   using try_lock_type = etl::delegate<bool(void)>;
@@ -57,7 +63,7 @@ class IThreadSequence : public Thread {
 
   /// @brief Run is called in loop wrapper in separate RTOS thread until
   /// anything call Break().
-  void Run() override {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Run() override {
     // Wait semaphore before try run all methods in array. It's allows call
     // methods with a user-defined period (period with witch user code calls
     // the method NotifyGive()).
@@ -71,7 +77,7 @@ class IThreadSequence : public Thread {
   }
 
   /// @brief Force break thread execute. Useful in unit tests.
-  void Break() {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Break() {
     const paraos::CriticalSection critical;
 
     // Run() no more called.
@@ -94,8 +100,9 @@ class IThreadSequence : public Thread {
   /// once.
   /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
   /// other case return valid timer id in range [0 .. 254].
-  auto Register(callback_type& callback, float freq, bool repeating)
-      -> etl::timer::id::type {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
+      callback_type& callback, float freq,
+      bool repeating) -> etl::timer::id::type {
     paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
@@ -107,12 +114,14 @@ class IThreadSequence : public Thread {
     return timer_id;
   }
 
-  auto Unregister(etl::timer::id::type timer_id) {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(
+      etl::timer::id::type timer_id) -> bool {
     paraos::CriticalSection critical;
     return timer_controller_.unregister_timer(timer_id);
   }
 
-  auto SetFreq(etl::timer::id::type timer_id, float freq_) {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto SetFreq(
+      etl::timer::id::type timer_id, float freq_) -> bool {
     bool is_period_updated{false};
 
     paraos::CriticalSection critical;
@@ -131,11 +140,12 @@ class IThreadSequence : public Thread {
   /// @note User code must call this method at regular intervals, for example -
   /// in a timer overflow interrupt.
   /// @return
-  auto NotifyGive(bool is_isr = false) -> ISRbool {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto NotifyGive(bool is_isr = false)
+      -> ISRbool {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
-  auto GetMainFreq() const -> float {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const -> float {
     // Convert microseconds to sec.
     const float main_freq = (static_cast<float>(period_in_us_)) * 0.000001;
 
