@@ -81,11 +81,13 @@ class IRingBuff {
   operator bool() { return lwrb_is_ready(&lwrb_); }
 
   auto Write(const void* src, lwrb_sz_t size_in_bytes) {
-    return lwrb_write(&lwrb_, src, size_in_bytes);
+    lwrb_sz_t written{0};
+    lwrb_write_ex(&lwrb_, src, size_in_bytes, &written, LWRB_FLAG_WRITE_ALL);
+    return written;
   }
 
   auto Write(const gsl::span<T> src) {
-    return lwrb_write(&lwrb_, static_cast<void*>(src.data()), src.size());
+    return Write(static_cast<void*> (src.data()), src.size_bytes());
   }
 
   template <class TIterator>
@@ -99,8 +101,10 @@ class IRingBuff {
     return lwrb_read(&lwrb_, dst, dst_size_in_bytes);
   }
 
-  auto Read(gsl::span<T> dst) {
-    return lwrb_read(&lwrb_, static_cast<void*>(dst.data()), dst.size());
+  PARAOS_INLINE_TRIVIAL auto Read(gsl::span<T> dst) {
+    return Read(
+        static_cast<void*>(dst.data()),
+        static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
   auto Read(iterator begin, iterator end) {
