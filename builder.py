@@ -11,7 +11,7 @@ def show_result_output(result: bool):
     Функция выполняет вывод общего результата по всем выбранным тестам.
     :param result: Результат выполнения одного или нескольких тестов.
     """
-    if not result:
+    if not result and not builder_functions.build_failed_flag:
         print(
             f'{builder_functions.FAIL}\nОшибки при тестировании '
             'в следующих пресетах:'
@@ -40,25 +40,27 @@ def show_result_output(result: bool):
                 )
                 print(res["memcheck_results"])
         print('-------------------------------\n')
-        
-    if not result:
-        print(
-            f'{builder_functions.FAIL}'
-            'Тестирование завершилось с ошибками, '
-            'подробности находятся выше в терминале.'
-            f'{builder_functions.END_COLOR}\n'
-        )
-    else:
-        print(
-            f'{builder_functions.OK_GREEN}'
-            'Все тесты завершились успешно!\n'
-            f'{builder_functions.END_COLOR}'
-        )
+
+    if not builder_functions.build_failed_flag:
+        if not result:
+            print(
+                f'{builder_functions.FAIL}'
+                'Тестирование завершилось с ошибками, '
+                'подробности находятся выше в терминале.'
+                f'{builder_functions.END_COLOR}\n'
+            )
+        else:
+            print(
+                f'{builder_functions.OK_GREEN}'
+                'Все тесты завершились успешно!\n'
+                f'{builder_functions.END_COLOR}'
+            )
 
 
 def remove_tmp_docker_entrypoint():
     if os.path.isfile('docker_tests_entrypoint.sh'):
         os.remove('docker_tests_entrypoint.sh')
+
 
 def replace_docker_entrypoint(entrypoint_name: str):
     remove_tmp_docker_entrypoint()
