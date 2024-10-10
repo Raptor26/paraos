@@ -63,18 +63,18 @@ struct IQueueBlocking {
     return is_pushed;
   }
 
-  auto Push(T&& item, std::size_t timeout_ms) -> bool {
+  auto Push(T&& item, std::size_t timeout_ms, bool is_isr = false) -> bool {
     paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
 
     bool is_pushed{false};
 
-    if (pop_sem_.Take(timeout_ms)) {
+    if (pop_sem_.Take(timeout_ms, is_isr)) {
       paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
       try {
         const paraos::CriticalSection critical;
         queue_.push(std::move(item));
         is_pushed = true;
-        push_sem_.Give();
+        push_sem_.Give(is_isr);
       } catch (etl::queue_full& e) {
         paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
       }
@@ -83,16 +83,17 @@ struct IQueueBlocking {
     return is_pushed;
   }
 
-  auto Push(const T& item, std::size_t timeout_ms) -> bool {
+  auto Push(const T& item, std::size_t timeout_ms, bool is_isr = false)
+      -> bool {
     bool is_pushed{false};
 
-    if (pop_sem_.Take(timeout_ms)) {
+    if (pop_sem_.Take(timeout_ms, is_isr)) {
       paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
       try {
         const paraos::CriticalSection critical;
         queue_.push(item);
         is_pushed = true;
-        push_sem_.Give();
+        push_sem_.Give(is_isr);
       } catch (etl::queue_full& e) {
         paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
       }
@@ -106,13 +107,13 @@ struct IQueueBlocking {
   /// available for read.
   /// @return Read object, contained in std::optional. If no object read,
   /// std::optional not contained any value.
-  auto Pop(std::size_t timeout_ms) -> std::optional<T> {
+  auto Pop(std::size_t timeout_ms, bool is_isr = false) -> std::optional<T> {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
-    if (push_sem_.Take(timeout_ms)) {
+    if (push_sem_.Take(timeout_ms, is_isr)) {
       const paraos::CriticalSection critical;
       // pop_sem_.Give() will be called after return.
-      auto sem_give = gsl::finally([&] { pop_sem_.Give(); });
+      auto sem_give = gsl::finally([&] { pop_sem_.Give(is_isr); });
 
       // Moved value from queue in std::optional<T>.
       return FrontAndPop();

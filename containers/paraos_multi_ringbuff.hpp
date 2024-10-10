@@ -27,6 +27,8 @@
 #ifndef PARAOS_MULTI_RINGBUFF_HPP
 #define PARAOS_MULTI_RINGBUFF_HPP
 
+#include <tuple>
+
 #include "etl/unordered_map.h"
 #include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
@@ -48,9 +50,12 @@ class IMultiRingBuff {
 
     std::size_t written_bytes_numb{0};
 
-    if (buff_id < ring_buff_numb_) {
-      auto& bf = ringbuff_[buff_id];
-      if (bf->Free() >= src_size) {
+    if (timeout_ms == 0u) {
+      written_bytes_numb = TryWrite(buff_id, src, src_size, is_isr);
+    } else {
+      if (buff_id < ring_buff_numb_) {
+        auto& bf = ringbuff_[buff_id];
+
         {
           const paraos::CriticalSection critical;
           written_bytes_numb = bf->Write(src, src_size);
@@ -58,10 +63,31 @@ class IMultiRingBuff {
 
         // If ring buffer id not pushed in queue, reader can't read these bytes.
         // Therefore skip written in buffer bytes for free memory.
-        if (!queue_.Push(buff_id, timeout_ms)) {
+        if ((written_bytes_numb != 0) && (!queue_.Push(buff_id, timeout_ms))) {
           const paraos::CriticalSection critical;
           bf->Skip(written_bytes_numb);
           written_bytes_numb = 0u;
+        }
+      }
+    }
+
+    return written_bytes_numb;
+  }
+
+  auto TryWrite(
+      std::size_t buff_id, const void* src, std::size_t src_size,
+      bool is_isr = false) -> std::size_t {
+    std::size_t written_bytes_numb{0};
+    if (buff_id < ring_buff_numb_) {
+      auto& bf = ringbuff_[buff_id];
+
+      const paraos::CriticalSection critical;
+      if (!queue_.IsFull()) {
+        written_bytes_numb = bf->Write(src, src_size);
+        if (written_bytes_numb != 0u) {
+          auto is_queue_pushed = queue_.Push(buff_id, 0u, is_isr);
+          PARAOS_CHECK_ASSERT(is_queue_pushed);
+          PARAOS_ATTR_UNUSED_VAR(is_queue_pushed);
         }
       }
     }
@@ -109,6 +135,8 @@ class IMultiRingBuff {
         is_isr);
   }
 
+  auto GetBuffNumb() const { return ring_buff_numb_; }
+
  protected:
   IMultiRingBuff(
       IQueueBlocking<std::size_t>& queue, ringbuff_pointer* ringbuff,
@@ -121,35 +149,74 @@ class IMultiRingBuff {
   const std::size_t ring_buff_numb_;
 };
 
-template <
-    std::size_t QUEUE_SIZE, std::size_t RING_BUFF_SIZE,
-    std::size_t RING_BUFF_NUMB>
+/// @brief Manage many ring buffers.
+///
+/// @tparam QUEUE_SIZE: After any write operations in ring buffer successfully
+/// complete (by producer), MultiRingBuff send notify to    consumers using
+/// blocking queue. QUEUE_SIZE indicates how many notifications can queued in
+/// one time.
+/// @tparam ...RINGBUFF: Parameter packs, each element contained one ring
+/// buffer.
+template <std::size_t QUEUE_SIZE, typename... RINGBUFF>
 class MultiRingBuff : public IMultiRingBuff {
-  using ringbuff_type = RingBuff<std::uint8_t, RING_BUFF_SIZE>;
-  using ringbuff_pointer = ringbuff_type*;
+  static constexpr std::size_t ring_buffs_numbs{sizeof...(RINGBUFF)};
 
+  using ringbuff_type = RingBuff<std::uint8_t, ring_buffs_numbs>;
+  using ringbuff_pointer = ringbuff_type*;
   using iringbuff_type = IRingBuff<std::uint8_t>;
   using iringbuff_pointer = iringbuff_type*;
 
+  static_assert(
+      QUEUE_SIZE > 1u, "Queue size in MultiRingBuff must be greater then one");
+
  public:
-  MultiRingBuff() : IMultiRingBuff{queue_, ring_buff_ptr, RING_BUFF_NUMB} {
-    // Write address for ringbuff_ access by polymorphic IRingBuff class.
-    for (std::size_t i = 0; i < RING_BUFF_NUMB; ++i) {
-      ring_buff_ptr[i] = &ringbuff_[i];
-    }
+  MultiRingBuff() : IMultiRingBuff{queue_, ring_buff_ptr, ring_buffs_numbs} {
+    // Copy ring buff addresses from tuple in ring_buff_ptr.
+    SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }
 
   virtual ~MultiRingBuff() = default;
 
  private:
+  /// --------------------------------------------------------------------------
+  /// Methods below need for iterate tuple.
+  /// --------------------------------------------------------------------------
+
+  /// @brief Iterate tuple.
+  template <typename T>
+  void SetPointerOnPolymorphicRingBuffClass(T& x, int& idx) {
+    ring_buff_ptr[idx++] = &x;
+  }
+
+  /// @brief Iterate tuple.
+  template <typename TupleT, std::size_t... Is>
+  void SetPointersOnPolymorphicClassesManual(
+      TupleT& tp, std::index_sequence<Is...>) {
+    int idx{0};
+
+    // SetPointerOnPolymorphicRingBuffClass() will calls as many times as there
+    // are ring buffers contained in the tuple.
+    (SetPointerOnPolymorphicRingBuffClass(std::get<Is>(tp), idx), ...);
+  }
+
+  /// @brief Iterate tuple.
+  template <typename TupleT, std::size_t TupSize = std::tuple_size_v<TupleT>>
+  void SetPointersOnPolymorphicClasses(TupleT& tp) {
+    SetPointersOnPolymorphicClassesManual(
+        tp, std::make_index_sequence<TupSize>{});
+  }
+
+ private:
   QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
-  ringbuff_type ringbuff_[RING_BUFF_NUMB];
+
+  /// @brief Tuple for contained ring buffers.
+  std::tuple<RINGBUFF...> ringbuff_tuple_;
 
   /// @brief Array of pointers for polymorphic classes, each element contained
   /// address one ringbuff_ exemplar. Need for using in IMultiRingBuff class and
   /// correctly access for each exemplars of ringbuff_ array by polymorphic
   /// IRingBuff class.
-  iringbuff_pointer ring_buff_ptr[RING_BUFF_NUMB];
+  iringbuff_pointer ring_buff_ptr[ring_buffs_numbs];
 };
 
 }  // namespace paraos
