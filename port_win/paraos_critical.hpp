@@ -29,52 +29,28 @@
 #include <assert.h>
 #include <synchapi.h>
 
+#include "paraos_mutex.hpp"
+
 #ifdef paraosTRACE_ENABLE
 #include <iostream>
 #endif
 
 namespace paraos {
 
-class CriticalSectionFactory final {
- public:
-  CriticalSectionFactory() noexcept {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "CriticalSectionFactory Ctor" << std::endl;
-#endif
-    if (!InitializeCriticalSectionAndSpinCount(&critical_section_, 0x00000400))
-      assert(true == false);
-  }
-
-  ~CriticalSectionFactory() {
-    DeleteCriticalSection(&critical_section_);
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "CriticalSectionFactory Dtor" << std::endl;
-#endif
-  }
-
-  LPCRITICAL_SECTION GiveHandle() { return &critical_section_; }
-
- private:
-  CRITICAL_SECTION critical_section_;
-};
-
 class CriticalSection final {
  public:
   /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
   /// @param is_isr
   CriticalSection(bool is_isr = false) noexcept : is_isr_{is_isr} {
-    EnterCriticalSection(critical_section_factory.GiveHandle());
+    mutex_.Lock(INFINITE, is_isr_);
   }
 
   /// @brief Деструктор обеспечивает автоматический выход из критической секции.
-  ~CriticalSection() {
-    LeaveCriticalSection(critical_section_factory.GiveHandle());
-  }
+  ~CriticalSection() { mutex_.Unlock(is_isr_); }
 
  private:
-  [[maybe_unused]] const bool is_isr_;
-  static inline CriticalSectionFactory critical_section_factory;
+  const bool is_isr_;
+  static inline paraos::MutexRecursive mutex_;
 };
 
 inline void DisableIsr() {}
