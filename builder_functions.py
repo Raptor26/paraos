@@ -28,6 +28,8 @@ FAIL = '\033[91m'
 END_COLOR = '\033[0m'
 BOLD = '\033[1m'
 
+build_failed_flag = False
+
 
 def check_presets_existence():
     """
@@ -95,14 +97,35 @@ def _build_preset(build_command: list[str]):
     :return: Возвращает объект завершённого процесса для доступа к его
         результатам.
     """
-    build_res = subprocess.run(
+    preset_name = build_command[2].split('/')[1]
+    build_process = subprocess.Popen(
         build_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
     )
 
-    return build_res
+    global build_failed_flag
+    build_output = ''
+    while True:
+        out = build_process.stdout.readline()
+        if build_process.poll() is not None:
+            break
+        if out != '':
+
+            if out.find('FAILED:') != -1:
+                build_failed_flag = True
+
+            sys.stdout.write(out)
+            sys.stdout.flush()
+
+            if build_failed_flag:
+                build_output += out
+
+    if build_failed_flag:
+        tests_errors_table[preset_name] += build_output
+
+    return build_process
 
 
 def test_preset(
@@ -127,14 +150,13 @@ def test_preset(
 
     print(f'Фаза сборки {preset_name}')
     build_res = _build_preset(build_command)
-    if not build_res:
+    if build_res.returncode != 0:
         print(
             f'{FAIL}Произошла ошибка при сборке '
-            f'{preset_name}! {build_res.stderr}{END_COLOR}'
+            f'{preset_name}!\n'
+            f'{tests_errors_table[preset_name]}{END_COLOR}'
         )
         return False
-
-    print(build_res.stdout)
 
     print(f'Фаза стресс-тестирования {preset_name}')
     test_process = subprocess.Popen(
@@ -159,13 +181,12 @@ def test_preset(
         if test_process.poll() is not None:
             break
         if out != '':
-
-            if out.find('Running main()') != -1:
+            out = out.replace('  ', ' ')
+            if out.find('***') != -1:
                 found_fail_test_out = True
 
-            elif out.find('FAILED TEST') != -1:
+            elif out.find('FAILED TEST') != -1 or out.find('Test #') != -1:
                 found_fail_test_out = False
-                tests_errors_table[preset_name] += failed_test_output
 
             sys.stdout.write(out)
             sys.stdout.flush()
@@ -175,6 +196,9 @@ def test_preset(
 
     if test_process.returncode != 0:
         print(test_process.stderr.readline())
+
+    if failed_test_output != '':
+        tests_errors_table[preset_name] = failed_test_output
 
         return False
 

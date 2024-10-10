@@ -180,19 +180,35 @@ struct Consumer : public paraos::Thread {
   PARAOS_MAYBE_UNUSED bool running_condition_{true};
 };
 
+void CheckIfTestSuccessfullyComplete() {
+  const CriticalSection critical;
+  std::cout << "Total write elements is " << total_written_elems_cnt
+            << std::endl;
+
+  assert(
+      elems_vector.size() == consumers_str_container.size() &&
+      "We don't write all strings from 'elems_vector' to "
+      "'consumers_str_container'");
+
+  for (auto &str : consumers_str_container) {
+    assert(
+        std::find(elems_vector.begin(), elems_vector.end(), str) !=
+            elems_vector.end() &&
+        "Can't find consumer string in source container");
+  }
+
+  assert(
+      thread_exit_cnt == thread_total_numb &&
+      "Actualize thread_total_numb value");
+}
+
 /// FreeRTOS can't stop scheduler. In this case we must manually call
 /// exit(EXIT_SUCCESS) after test complete.
 #if defined(FREERTOS)
 void ExitAfterTestComplete() {
-  auto is_need_exit{false};
-  {
-    paraos::CriticalSection critical;
-    if (thread_exit_cnt == thread_total_numb) {
-      is_need_exit = true;
-    }
-  }
-
-  if (is_need_exit) {
+  paraos::CriticalSection critical;
+  if (thread_exit_cnt >= thread_total_numb) {
+    CheckIfTestSuccessfullyComplete();
     exit(EXIT_SUCCESS);
   }
 }
@@ -226,25 +242,7 @@ int main() {
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
-  const CriticalSection critical;
-  std::cout << "Total write elements is " << total_written_elems_cnt
-            << std::endl;
-
-  assert(
-      elems_vector.size() == consumers_str_container.size() &&
-      "We don't write all strings from 'elems_vector' to "
-      "'consumers_str_container'");
-
-  for (auto &str : consumers_str_container) {
-    assert(
-        std::find(elems_vector.begin(), elems_vector.end(), str) !=
-            elems_vector.end() &&
-        "Can't find consumer string in source container");
-  }
-
-  assert(
-      thread_exit_cnt == thread_total_numb &&
-      "Actualize thread_total_numb value");
+  CheckIfTestSuccessfullyComplete();
 
   return 0;
 }

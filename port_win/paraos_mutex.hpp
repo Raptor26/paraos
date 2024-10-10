@@ -30,9 +30,7 @@
 
 #include "etl/atomic.h"
 #include "paraos_attr.h"
-#include "paraos_bool_atomic.hpp"
 #include "paraos_check.h"
-#include "paraos_critical.hpp"
 #include "paraos_utils.hpp"
 #include "paroas_isr.hpp"
 

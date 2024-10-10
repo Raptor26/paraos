@@ -29,6 +29,7 @@
 #include <pthread.h>
 
 #include "etl/atomic.h"
+#include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
@@ -53,7 +54,8 @@ class MutexBase {
   MutexBase& operator=(const MutexBase& other) = delete;
   MutexBase& operator=(MutexBase&& other) = delete;
 
-  bool Lock(std::size_t timeout_ms = max_delay) noexcept {
+  bool Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     bool is_mutex_taken{false};
 
     int result{-1};
@@ -83,7 +85,8 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  bool Unlock() noexcept {
+  bool Unlock(bool is_isr = false) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     bool is_mutex_released{false};
 
     // Paraos mutex API need return false if unlock mutex operations cnt greater

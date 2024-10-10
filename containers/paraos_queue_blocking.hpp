@@ -69,19 +69,15 @@ struct IQueueBlocking {
     bool is_pushed{false};
 
     if (pop_sem_.Take(timeout_ms)) {
-      {
+      paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
+      try {
         const paraos::CriticalSection critical;
-        paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-
-        try {
-          queue_.push(std::move(item));
-          is_pushed = true;
-        } catch (etl::queue_full& e) {
-          paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
-        }
+        queue_.push(std::move(item));
+        is_pushed = true;
+        push_sem_.Give();
+      } catch (etl::queue_full& e) {
+        paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
       }
-
-      push_sem_.Give();
     }
 
     return is_pushed;
@@ -91,19 +87,15 @@ struct IQueueBlocking {
     bool is_pushed{false};
 
     if (pop_sem_.Take(timeout_ms)) {
-      {
+      paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
+      try {
         const paraos::CriticalSection critical;
-        paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-
-        try {
-          queue_.push(item);
-          is_pushed = true;
-        } catch (etl::queue_full& e) {
-          paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
-        }
+        queue_.push(item);
+        is_pushed = true;
+        push_sem_.Give();
+      } catch (etl::queue_full& e) {
+        paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
       }
-
-      push_sem_.Give();
     }
 
     return is_pushed;
@@ -118,6 +110,7 @@ struct IQueueBlocking {
     paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
 
     if (push_sem_.Take(timeout_ms)) {
+      const paraos::CriticalSection critical;
       // pop_sem_.Give() will be called after return.
       auto sem_give = gsl::finally([&] { pop_sem_.Give(); });
 
@@ -156,8 +149,6 @@ struct IQueueBlocking {
 
  private:
   auto FrontAndPop() -> std::optional<T> {
-    const paraos::CriticalSection critical;
-
     // When FrontAndPop() called in Pop(), semaphore contained information about
     // items numb in queue. In this case, we don't need check is queue empty.
     if (!queue_.empty()) {
