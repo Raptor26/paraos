@@ -108,10 +108,6 @@ class IRingBuff {
         static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
-  PARAOS_INLINE_TRIVIAL auto Read(iterator begin, iterator end) {
-    return Read(begin, std::distance(begin, end));
-  }
-
   PARAOS_INLINE_TRIVIAL auto Skip(lwrb_sz_t size_in_bytes) {
     return lwrb_skip(&lwrb_, size_in_bytes);
   }

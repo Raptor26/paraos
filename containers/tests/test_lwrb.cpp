@@ -80,7 +80,7 @@ TEST(RingBuff, WriteThenReadIterator) {
   ASSERT_EQ(str_len_without_null, ring_buff.Size());
 
   std::array<char, 100> dst_;
-  auto read_bytes_numb = ring_buff.Read(dst_.begin(), dst_.end());
+  auto read_bytes_numb = ring_buff.Read(dst_.begin(), dst_.size());
   ASSERT_EQ(written_bytes_numb, read_bytes_numb);
 
   ASSERT_EQ(

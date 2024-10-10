@@ -27,7 +27,9 @@
 #ifndef PARAOS_MULTI_RINGBUFF_HPP
 #define PARAOS_MULTI_RINGBUFF_HPP
 
+#include <iterator>
 #include <tuple>
+#include <type_traits>
 
 #include "etl/unordered_map.h"
 #include "paraos_attr.h"
@@ -36,72 +38,66 @@
 
 namespace paraos {
 
+template <typename T>
 class IMultiRingBuff {
-  using ringbuff_type = IRingBuff<std::uint8_t>;
+  using ringbuff_type = IRingBuff<T>;
   using ringbuff_pointer = ringbuff_type*;
 
  public:
   virtual ~IMultiRingBuff() = default;
 
   auto Write(
-      std::size_t buff_id, const void* src, std::size_t src_size,
+
+      /// @brief Write objects from src in ring buff.
+      ///
+      /// @param[in] buff_id: Ring buffer id for write objects from src.
+      /// @param[in] src: Pointer on first object in array.
+      /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
+      ///
+      /// @return Returned number of written elements.
+      const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
-    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    std::size_t written_elem_numb{0};
 
-    std::size_t written_bytes_numb{0};
-
-    if (timeout_ms == 0u) {
-      written_bytes_numb = TryWrite(buff_id, src, src_size, is_isr);
-    } else {
-      if (buff_id < ring_buff_numb_) {
-        auto& bf = ringbuff_[buff_id];
-
-        {
-          const paraos::CriticalSection critical;
-          written_bytes_numb = bf->Write(src, src_size);
-        }
-
-        // If ring buffer id not pushed in queue, reader can't read these bytes.
-        // Therefore skip written in buffer bytes for free memory.
-        if ((written_bytes_numb != 0) && (!queue_.Push(buff_id, timeout_ms))) {
-          const paraos::CriticalSection critical;
-          bf->Skip(written_bytes_numb);
-          written_bytes_numb = 0u;
-        }
-      }
-    }
-
-    return written_bytes_numb;
-  }
-
-  auto TryWrite(
-      std::size_t buff_id, const void* src, std::size_t src_size,
-      bool is_isr = false) -> std::size_t {
-    std::size_t written_bytes_numb{0};
     if (buff_id < ring_buff_numb_) {
       auto& bf = ringbuff_[buff_id];
 
-      const paraos::CriticalSection critical;
-      if (!queue_.IsFull()) {
-        written_bytes_numb = bf->Write(src, src_size);
+      {
+        const paraos::CriticalSection critical;
+        written_elem_numb = bf->Write(src, sizeof(T) * src_elem_numb);
+      }
 
-        if (written_bytes_numb != 0u) {
-          auto is_queue_pushed = queue_.Push(buff_id, 0u, is_isr);
-          PARAOS_CHECK_ASSERT(is_queue_pushed);
-          PARAOS_ATTR_UNUSED_VAR(is_queue_pushed);
-        }
+      // Convert number of written bytes in written elements number.
+      written_elem_numb /= sizeof(T);
+
+      // If ring buffer id not pushed in queue, reader can't read these bytes.
+      // Therefore skip written in buffer bytes for free memory.
+      if ((written_elem_numb != 0) &&
+          (!queue_.Push(buff_id, timeout_ms, is_isr))) {
+        const paraos::CriticalSection critical;
+        bf->Skip(written_elem_numb);
+        written_elem_numb = 0u;
       }
     }
 
-    return written_bytes_numb;
+    return written_elem_numb;
   }
 
-  auto Write(
-      std::size_t buff_id, const gsl::span<std::uint8_t> src,
-      std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
+  template <class TIterator>
+  PARAOS_INLINE_TRIVIAL auto Write(
+      std::size_t buff_id, TIterator begin, TIterator end,
+      std::size_t timeout_ms, bool is_isr = false) {
+    // todo Only random_access_iterator supported. Need static check.
+
     return Write(
-        buff_id, static_cast<const void*>(src.data()), src.size(), timeout_ms,
-        is_isr);
+        buff_id, begin, static_cast<lwrb_sz_t>(std::distance(begin, end)),
+        timeout_ms, is_isr);
+  }
+
+  PARAOS_INLINE_TRIVIAL auto Write(
+      std::size_t buff_id, const gsl::span<T> src, std::size_t timeout_ms,
+      bool is_isr = false) -> std::size_t {
+    return Write(buff_id, src.data(), src.size(), timeout_ms, is_isr);
   }
 
   auto Read(
@@ -137,7 +133,7 @@ class IMultiRingBuff {
     return read_bytes_numb;
   }
 
-  auto Read(
+  PARAOS_INLINE_TRIVIAL auto Read(
       std::size_t& buff_id, gsl::span<std::uint8_t> dst, std::size_t timeout_ms,
       bool is_isr = false) -> std::size_t {
     return Read(
@@ -189,22 +185,23 @@ class IMultiRingBuff {
 /// successfully complete (by producer), MultiRingBuff send notify to
 /// consumers using blocking queue. QUEUE_SIZE indicates how many
 /// notifications can queued in one time.
+/// @tparam T: Type of contained objects in all ring buffers.
 /// @tparam ...RINGBUFF: Parameter packs, each element contained one ring
 /// buffer.
-template <std::size_t QUEUE_SIZE, typename... RINGBUFF>
-class MultiRingBuff : public IMultiRingBuff {
+template <std::size_t QUEUE_SIZE, typename T, typename... RINGBUFF>
+class MultiRingBuff : public IMultiRingBuff<T> {
   static constexpr std::size_t ring_buffs_numbs{sizeof...(RINGBUFF)};
 
-  using ringbuff_type = RingBuff<std::uint8_t, ring_buffs_numbs>;
+  using ringbuff_type = RingBuff<T, ring_buffs_numbs>;
   using ringbuff_pointer = ringbuff_type*;
-  using iringbuff_type = IRingBuff<std::uint8_t>;
+  using iringbuff_type = IRingBuff<T>;
   using iringbuff_pointer = iringbuff_type*;
 
   static_assert(
       QUEUE_SIZE > 1u, "Queue size in MultiRingBuff must be greater then one");
 
  public:
-  MultiRingBuff() : IMultiRingBuff{queue_, ring_buff_ptr, ring_buffs_numbs} {
+  MultiRingBuff() : IMultiRingBuff<T>{queue_, ring_buff_ptr, ring_buffs_numbs} {
     // Copy ring buff addresses from tuple in ring_buff_ptr.
     SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }
@@ -217,8 +214,8 @@ class MultiRingBuff : public IMultiRingBuff {
   /// --------------------------------------------------------------------------
 
   /// @brief Iterate tuple.
-  template <typename T>
-  void SetPointerOnPolymorphicRingBuffClass(T& x, int& idx) {
+  template <typename D>
+  void SetPointerOnPolymorphicRingBuffClass(D& x, int& idx) {
     ring_buff_ptr[idx++] = &x;
   }
 
