@@ -84,6 +84,7 @@ class IMultiRingBuff {
       const paraos::CriticalSection critical;
       if (!queue_.IsFull()) {
         written_bytes_numb = bf->Write(src, src_size);
+
         if (written_bytes_numb != 0u) {
           auto is_queue_pushed = queue_.Push(buff_id, 0u, is_isr);
           PARAOS_CHECK_ASSERT(is_queue_pushed);
@@ -108,6 +109,9 @@ class IMultiRingBuff {
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
+    PARAOS_CHECK_ASSERT(dst);
+    PARAOS_CHECK_ASSERT(dst_size != 0u);
+
     std::size_t read_bytes_numb{0};
     // queue_.Pop return std::optional
     auto ring_buff_id = queue_.Pop(timeout_ms);
@@ -117,11 +121,17 @@ class IMultiRingBuff {
       auto& bf = ringbuff_[buff_id];
       read_bytes_numb = bf->Read(dst, dst_size);
 
-      // If not read all available bytes, push ring buffer id in queue for read
-      // remaining bytes in next call Read().
+      // If not read all available bytes, push ring buffer id in queue for
+      // read remaining bytes in next call Read().
       if (bf->Size() != 0u) {
-        queue_.Push(buff_id, timeout_ms);
+        if (!queue_.Push(buff_id, timeout_ms)) {
+          // No space in queue. Set force read flag for read data from
+          // buffer without request id from queue.
+          is_need_force_read_ = true;
+        }
       }
+    } else if (is_need_force_read_ == true) {
+      read_bytes_numb = ForceRead(buff_id, dst, dst_size);
     }
 
     return read_bytes_numb;
@@ -133,6 +143,29 @@ class IMultiRingBuff {
     return Read(
         buff_id, static_cast<void*>(dst.data()), dst.size(), timeout_ms,
         is_isr);
+  }
+
+  auto ForceRead(std::size_t& buff_id, void* dst, std::size_t dst_size)
+      -> std::size_t {
+    std::size_t read_bytes_numb{0};
+
+    bool is_need_force_read{false};
+
+    for (std::size_t i = 0; i < ring_buff_numb_; ++i) {
+      auto& bf = ringbuff_[i];
+      const paraos::CriticalSection critical;
+      if (bf->Size() != 0u) {
+        buff_id = i;
+        read_bytes_numb = bf->Read(dst, dst_size);
+
+        // Read anything from buffer, when Read() will calls in next time,
+        // check again if any data available.
+        is_need_force_read = true;
+        break;
+      }
+    }
+    is_need_force_read_ = is_need_force_read;
+    return read_bytes_numb;
   }
 
   auto GetBuffNumb() const { return ring_buff_numb_; }
@@ -147,14 +180,15 @@ class IMultiRingBuff {
   IQueueBlocking<std::size_t>& queue_;
   ringbuff_pointer* ringbuff_;
   const std::size_t ring_buff_numb_;
+  etl::atomic_bool is_need_force_read_{false};
 };
 
 /// @brief Manage many ring buffers.
 ///
-/// @tparam QUEUE_SIZE: After any write operations in ring buffer successfully
-/// complete (by producer), MultiRingBuff send notify to    consumers using
-/// blocking queue. QUEUE_SIZE indicates how many notifications can queued in
-/// one time.
+/// @tparam QUEUE_SIZE: After any write operations in ring buffer
+/// successfully complete (by producer), MultiRingBuff send notify to
+/// consumers using blocking queue. QUEUE_SIZE indicates how many
+/// notifications can queued in one time.
 /// @tparam ...RINGBUFF: Parameter packs, each element contained one ring
 /// buffer.
 template <std::size_t QUEUE_SIZE, typename... RINGBUFF>
@@ -194,8 +228,8 @@ class MultiRingBuff : public IMultiRingBuff {
       TupleT& tp, std::index_sequence<Is...>) {
     int idx{0};
 
-    // SetPointerOnPolymorphicRingBuffClass() will calls as many times as there
-    // are ring buffers contained in the tuple.
+    // SetPointerOnPolymorphicRingBuffClass() will calls as many times as
+    // there are ring buffers contained in the tuple.
     (SetPointerOnPolymorphicRingBuffClass(std::get<Is>(tp), idx), ...);
   }
 
@@ -212,10 +246,10 @@ class MultiRingBuff : public IMultiRingBuff {
   /// @brief Tuple for contained ring buffers.
   std::tuple<RINGBUFF...> ringbuff_tuple_;
 
-  /// @brief Array of pointers for polymorphic classes, each element contained
-  /// address one ringbuff_ exemplar. Need for using in IMultiRingBuff class and
-  /// correctly access for each exemplars of ringbuff_ array by polymorphic
-  /// IRingBuff class.
+  /// @brief Array of pointers for polymorphic classes, each element
+  /// contained address one ringbuff_ exemplar. Need for using in
+  /// IMultiRingBuff class and correctly access for each exemplars of
+  /// ringbuff_ array by polymorphic IRingBuff class.
   iringbuff_pointer ring_buff_ptr[ring_buffs_numbs];
 };
 

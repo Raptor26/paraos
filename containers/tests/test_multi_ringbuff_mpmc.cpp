@@ -76,7 +76,7 @@ std::size_t total_read_bytes{0};
 
 constexpr std::size_t queue_size{2};
 constexpr std::size_t ring_buff_size{2048};
-constexpr std::size_t ring_buff_numb{5};
+constexpr std::size_t ring_buff_numb{4};
 
 std::size_t thread_total_numb{0};
 std::size_t thread_exit_cnt{0};
