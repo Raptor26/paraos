@@ -84,7 +84,12 @@ std::size_t thread_exit_cnt{0};
 std::size_t write_idx{0};
 std::size_t read_idx{0};
 
-paraos::MultiRingBuff<queue_size, ring_buff_size, ring_buff_numb>
+paraos::MultiRingBuff<
+    queue_size, paraos::RingBuff<std::uint8_t, ring_buff_size>,
+    paraos::RingBuff<std::uint8_t, ring_buff_size>,
+    paraos::RingBuff<std::uint8_t, ring_buff_size>,
+    paraos::RingBuff<std::uint8_t, ring_buff_size>,
+    paraos::RingBuff<std::uint8_t, ring_buff_size>>
     multi_ring_buff{};
 
 std::vector<std::string> split(const char *buf, std::size_t buff_size) {
