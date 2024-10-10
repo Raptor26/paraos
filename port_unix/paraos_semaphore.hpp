@@ -33,8 +33,8 @@
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
-#include "paroas_isr.hpp"
 
 namespace paraos {
 

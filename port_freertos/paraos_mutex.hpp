@@ -34,8 +34,8 @@
 #include "paraos_bool_atomic.hpp"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
-#include "paroas_isr.hpp"
 #include "semphr.h"
 
 #ifdef paraosTRACE_ENABLE

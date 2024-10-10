@@ -29,8 +29,8 @@
 #include <string_view>
 
 #include "FreeRTOS.h"
+#include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
-#include "paroas_isr.hpp"
 #include "timers.h"
 
 namespace paraos {

@@ -31,8 +31,8 @@
 #include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
-#include "paroas_isr.hpp"
 
 #ifdef paraosTRACE_ENABLE
 #include <iostream>

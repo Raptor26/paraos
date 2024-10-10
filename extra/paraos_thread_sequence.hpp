@@ -30,11 +30,11 @@
 #include "etl/delegate.h"
 #include "gsl/gsl"
 #include "paraos_bool_atomic.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
-#include "paroas_isr.hpp"
 
 namespace paraos {
 
@@ -137,8 +137,8 @@ class IThreadSequence : public Thread {
   /// executor.
   ///
   /// @return true if delegate successfully deleted, false in otherwise.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(
-      etl::timer::id::type timer_id) -> bool {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(etl::timer::id::type timer_id)
+      -> bool {
     paraos::CriticalSection critical;
     return timer_controller_.unregister_timer(timer_id);
   }
