@@ -31,7 +31,6 @@
 #include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
-#include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
 namespace paraos {
@@ -42,11 +41,7 @@ struct MutexAttr {
 
 class MutexBase {
  public:
-  virtual ~MutexBase() {
-    pthread_mutex_destroy(&m_obj_);
-
-    paraosTRACE_MESSAGE("Mutex deleted");
-  }
+  virtual ~MutexBase() { pthread_mutex_destroy(&m_obj_); }
 
   MutexBase(const MutexBase& other) = delete;
   MutexBase(MutexBase&& other) = delete;
@@ -79,7 +74,6 @@ class MutexBase {
     if (result == 0) {
       ++lock_cnt_;
       is_mutex_taken = true;
-      paraosTRACE_MESSAGE("Mutex locked");
     }
 
     return is_mutex_taken;
@@ -95,7 +89,6 @@ class MutexBase {
       if (pthread_mutex_unlock(&m_obj_) == 0) {
         --lock_cnt_;
         is_mutex_released = true;
-        paraosTRACE_MESSAGE("Mutex unlocked");
       }
     }
 
