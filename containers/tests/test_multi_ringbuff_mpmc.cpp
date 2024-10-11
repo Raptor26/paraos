@@ -76,7 +76,7 @@ std::size_t total_read_bytes{0};
 
 constexpr std::size_t queue_size{2};
 constexpr std::size_t ring_buff_size{2048};
-constexpr std::size_t ring_buff_numb{5};
+constexpr std::size_t ring_buff_numb{4};
 
 std::size_t thread_total_numb{0};
 std::size_t thread_exit_cnt{0};
@@ -84,7 +84,12 @@ std::size_t thread_exit_cnt{0};
 std::size_t write_idx{0};
 std::size_t read_idx{0};
 
-paraos::MultiRingBuff<queue_size, ring_buff_size, ring_buff_numb>
+paraos::MultiRingBuff<
+    queue_size, char, paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>>
     multi_ring_buff{};
 
 std::vector<std::string> split(const char *buf, std::size_t buff_size) {
@@ -132,8 +137,7 @@ struct Producer : public paraos::Thread {
 
       const std::size_t strl_len_with_null = str.size() + 1u;
       auto written_bytes_numb = multi_ring_buff.Write(
-          thread_id_, static_cast<const void *>(str.data()), strl_len_with_null,
-          write_delay_ms);
+          thread_id_, str.data(), strl_len_with_null, write_delay_ms);
 
       {
         const paraos::CriticalSection critical;

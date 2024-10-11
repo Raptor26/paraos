@@ -26,9 +26,9 @@
 #ifndef PARAOS_MUTEX_HPP
 #define PARAOS_MUTEX_HPP
 
+#include <atomic>
 #include <cassert>
 
-#include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_isr.hpp"
@@ -110,7 +110,7 @@ class MutexBase {
 
  private:
   bool is_recursive_{false};
-  etl::atomic_int lock_cnt_{0};
+  std::atomic_int lock_cnt_{0};
 };
 
 class Mutex final : public MutexBase {

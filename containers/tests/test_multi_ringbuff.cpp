@@ -32,19 +32,22 @@
 #include "paraos_multi_ringbuff.hpp"
 
 TEST(MultiRingBuff, Create) {
-  paraos::MultiRingBuff<10, 128, 5> multi_ring_buff{};
+  paraos::MultiRingBuff<2, std::uint8_t, paraos::RingBuff<std::uint8_t, 128>>
+      multi_ring_buff{};
+  ASSERT_EQ(1u, multi_ring_buff.GetBuffNumb());
 }
 
 TEST(MultiRingBuff, WriteDataToRingBufferThenRead) {
   constexpr std::size_t max_ring_buff_size{128};
-  constexpr std::size_t max_ring_buff_numb{5};
-  paraos::MultiRingBuff<10, max_ring_buff_size, max_ring_buff_numb>
+  paraos::MultiRingBuff<
+      10, char, paraos::RingBuff<char, max_ring_buff_size>,
+      paraos::RingBuff<char, max_ring_buff_size>>
       multi_ring_buff{};
   std::string str{"Hello world!"};
 
   constexpr std::size_t cbuff_id{0};
-  auto written_bytes_numb = multi_ring_buff.Write(
-      cbuff_id, static_cast<const void *>(str.data()), str.size(), 0u);
+  auto written_bytes_numb =
+      multi_ring_buff.Write(cbuff_id, str.data(), str.size(), 0u);
 
   ASSERT_EQ(str.size(), written_bytes_numb);
 
@@ -61,14 +64,22 @@ TEST(MultiRingBuff, WriteDataToRingBufferThenRead) {
 TEST(MultiRingBuff, WriteReadMultipleBuffers) {
   constexpr std::size_t max_ring_buff_size{128};
   constexpr std::size_t max_ring_buff_numb{5};
-  paraos::MultiRingBuff<10, max_ring_buff_size, max_ring_buff_numb>
+  paraos::MultiRingBuff<
+      10u, char, paraos::RingBuff<char, max_ring_buff_size>,
+      paraos::RingBuff<char, max_ring_buff_size * 2>,
+      paraos::RingBuff<char, max_ring_buff_size * 3>,
+      paraos::RingBuff<char, max_ring_buff_size * 4>,
+      paraos::RingBuff<char, max_ring_buff_size * 5>>
       multi_ring_buff{};
+
+  ASSERT_EQ(max_ring_buff_numb, multi_ring_buff.GetBuffNumb());
+
   std::string str{"Hello world!"};
 
   for (std::size_t i = 0; i < max_ring_buff_numb; i++) {
     std::string str_custom = str + " Id:" + std::to_string(i);
-    auto written_bytes_numb = multi_ring_buff.Write(
-        i, static_cast<const void *>(str_custom.data()), str_custom.size(), 0u);
+    auto written_bytes_numb =
+        multi_ring_buff.Write(i, str_custom.data(), str_custom.size(), 0u);
 
     ASSERT_EQ(str_custom.size(), written_bytes_numb);
   }
@@ -92,8 +103,9 @@ TEST(MultiRingBuff, WriteReadMultipleBuffers) {
 
 TEST(MultiRingBuff, WriteTwiceReadTwice) {
   constexpr std::size_t max_ring_buff_size{128};
-  constexpr std::size_t max_ring_buff_numb{5};
-  paraos::MultiRingBuff<10, max_ring_buff_size, max_ring_buff_numb>
+  paraos::MultiRingBuff<
+      10, char, paraos::RingBuff<char, max_ring_buff_size>,
+      paraos::RingBuff<char, max_ring_buff_size>>
       multi_ring_buff{};
   std::string str1{"Hello "};
   std::string str2{"world!"};
@@ -101,15 +113,15 @@ TEST(MultiRingBuff, WriteTwiceReadTwice) {
   constexpr std::size_t cbuff_id{0};
   std::size_t written_bytes_numb{0};
   {
-    written_bytes_numb += multi_ring_buff.Write(
-        cbuff_id, static_cast<const void *>(str1.data()), str1.size(), 0u);
+    written_bytes_numb +=
+        multi_ring_buff.Write(cbuff_id, str1.data(), str1.size(), 0u);
 
     ASSERT_EQ(str1.size(), written_bytes_numb);
   }
 
   {
-    auto written_bytes_numb_second = multi_ring_buff.Write(
-        cbuff_id, static_cast<const void *>(str2.data()), str2.size(), 0u);
+    auto written_bytes_numb_second =
+        multi_ring_buff.Write(cbuff_id, str2.data(), str2.size(), 0u);
 
     written_bytes_numb += written_bytes_numb_second;
     ASSERT_EQ(str2.size(), written_bytes_numb_second);
@@ -130,8 +142,9 @@ TEST(MultiRingBuff, WriteTwiceReadTwice) {
 
 TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
   constexpr std::size_t max_ring_buff_size{128};
-  constexpr std::size_t max_ring_buff_numb{5};
-  paraos::MultiRingBuff<10, max_ring_buff_size, max_ring_buff_numb>
+  paraos::MultiRingBuff<
+      10, uint8_t, paraos::RingBuff<uint8_t, max_ring_buff_size>,
+      paraos::RingBuff<uint8_t, max_ring_buff_size>>
       multi_ring_buff{};
   std::string str{"Hello world!"};
   // Каст строки в массив uint8_t для последующего преобразования в span.
@@ -153,4 +166,16 @@ TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
       0, memcmp(
              static_cast<const void *>(str.data()),
              static_cast<const void *>(dst_arr.data()), read_bytes_numb));
+}
+
+TEST(MultiRingBuff, WriteIteratorThenReadIterator) {
+  constexpr std::size_t max_ring_buff_size{128};
+  paraos::MultiRingBuff<
+      10, std::uint8_t, paraos::RingBuff<unsigned char, max_ring_buff_size>,
+      paraos::RingBuff<unsigned char, max_ring_buff_size>>
+      multi_ring_buff{};
+
+  std::array<unsigned char, 128> str{"Hello world!"};
+
+  multi_ring_buff.Write(0u, str.begin(), str.end(), 0u);
 }
