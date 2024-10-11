@@ -2,18 +2,22 @@ stages:
  - test_linux_posix_debug_clang
  - test_linux_posix_debug_clang_stress
  - test_linux_posix_debug_gcc
+ - test_linux_posix_debug_gcc_stress
  - test_linux_posix_release_clang
  - test_linux_freertos_debug_clang
  - test_linux_freertos_debug_clang_stress
  - test_linux_freertos_debug_gcc
+ - test_linux_freertos_debug_gcc_stress
  - test_linux_freertos_release_clang
  - test_windows_winapi_debug_clang
  - test_windows_winapi_debug_clang_stress
  - test_windows_winapi_debug_gcc
+ - test_windows_winapi_debug_gcc_stress
  - test_windows_winapi_release_clang
  - test_windows_freertos_debug_clang
  - test_windows_freertos_debug_clang_stress
  - test_windows_freertos_debug_gcc
+ - test_windows_freertos_debug_gcc_stress
  - test_windows_freertos_release_clang
 
 ## Linux -----------------------------------------------------------------------
@@ -53,6 +57,23 @@ ci:linux_posix_debug_gcc:
   - cmake --preset pc_debug_gcc
   - cmake --build build/pc_debug_gcc
   - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure --schedule-random -j4 --output-on-failure 
+
+ci:linux_posix_debug_gcc_stress:
+ stage: test_linux_posix_debug_gcc_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random -j4 --output-on-failure 
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+    when: always
+    allow_failure: false
 
 ci:linux_posix_release_clang:
  stage: test_linux_posix_release_clang
@@ -100,6 +121,23 @@ ci:linux_freertos_debug_gcc:
   - cmake --preset freertos_debug_gcc
   - cmake --build build/freertos_debug_gcc
   - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure --schedule-random -j4 --output-on-failure 
+
+ci:linux_freertos_debug_gcc_stress:
+ stage: test_linux_freertos_debug_gcc_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random -j4 --output-on-failure 
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+    when: always
+    allow_failure: false
 
 ci:linux_freertos_release_clang:
  stage: test_linux_freertos_release_clang
@@ -149,6 +187,23 @@ ci:windows_winapi_debug_gcc:
   - cmake --build build/pc_debug_gcc
   - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure --schedule-random -j4 --output-on-failure 
 
+ci:windows_winapi_debug_gcc_stress:
+ stage: test_windows_winapi_debug_gcc_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset pc_debug_gcc
+  - cmake --build build/pc_debug_gcc
+  - ctest --test-dir build/pc_debug_gcc --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random -j4 --output-on-failure 
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+    when: always
+    allow_failure: false
+
 ci:windows_winapi_release_clang:
  stage: test_windows_winapi_release_clang
  needs: []
@@ -195,6 +250,23 @@ ci:windows_freertos_debug_gcc:
   - cmake --preset freertos_debug_gcc
   - cmake --build build/freertos_debug_gcc
   - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure --schedule-random -j4 --output-on-failure 
+
+ci:windows_freertos_debug_gcc_stress:
+ stage: test_windows_freertos_debug_gcc_stress
+ needs: []
+ tags:
+  - linux
+ script:
+  - cmake --preset freertos_debug_gcc
+  - cmake --build build/freertos_debug_gcc
+  - ctest --test-dir build/freertos_debug_gcc --timeout 15 --stop-on-failure --repeat-until-fail 500 --schedule-random -j4 --output-on-failure 
+ rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+    when: always
+    allow_failure: false
 
 ci:windows_freertos_release_clang:
  stage: test_windows_freertos_release_clang
