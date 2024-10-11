@@ -31,9 +31,18 @@ include(GoogleTest)
 
 add_executable(paraos_core test_paraos_mutex.cpp test_paraos_semaphore.cpp)
 target_link_libraries(paraos_core PRIVATE paraos::paraos GTest::gtest_main)
-target_include_directories(paraos_core
-                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_include_directories(paraos_core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 target_compile_features(paraos_core PRIVATE cxx_std_20 c_std_11)
 target_compile_options(paraos_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
 add_test(NAME paraos_core COMMAND paraos_core)
+
+# Coverage ---------------------------------------------------------------------
+# ctest  --test-dir build/pc_debug_gcc  -T Test -T Coverage
+# https://stackoverflow.com/questions/52255589/code-coverage-analysis-using-codecoverage-cmake-with-multiple-targets
+if(CMAKE_COMPILER_IS_GNUCXX)
+  include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+  append_coverage_compiler_flags()
+  setup_target_for_coverage_lcov(NAME ${PROJECT_NAME}_coverage EXECUTABLE ctest
+                                 --schedule-random)
+endif()
