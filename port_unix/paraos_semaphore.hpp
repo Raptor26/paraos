@@ -145,6 +145,7 @@ struct SemaphoreBinary final : public SemaphoreBase {
 
     status = SemaphoreBase::Take(timeout_ms, from_isr);
 
+    const CriticalSection critical;
     if (status) {
       is_given_ = false;
     }
