@@ -35,7 +35,8 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++",
-                "UTEST": "true"
+                "UTEST": "true",
+                "CODE_COVERAGE":true
             }
         },
         {

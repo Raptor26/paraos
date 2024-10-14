@@ -29,7 +29,9 @@ endif()
 # Coverage ---------------------------------------------------------------------
 # ctest  --test-dir build/pc_debug_gcc  -T Test -T Coverage
 # https://stackoverflow.com/questions/52255589/code-coverage-analysis-using-codecoverage-cmake-with-multiple-targets
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX
+   AND CODE_COVERAGE
+   AND LCOV_PATH)
   include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
   append_coverage_compiler_flags()
   setup_target_for_coverage_lcov(NAME ${PROJECT_NAME}_coverage EXECUTABLE ctest
