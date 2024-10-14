@@ -36,7 +36,7 @@
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++",
                 "UTEST": "true",
-                "CODE_COVERAGE":true
+                "CODE_COVERAGE": "true"
             }
         },
         {
