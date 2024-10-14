@@ -43,7 +43,7 @@ add_test(NAME paraos_core COMMAND paraos_core)
 if(CMAKE_COMPILER_IS_GNUCXX
    AND CODE_COVERAGE
    AND LCOV_PATH)
-  include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+  include(CodeCoverage.cmake)
   append_coverage_compiler_flags()
   setup_target_for_coverage_lcov(NAME ${PROJECT_NAME}_coverage EXECUTABLE ctest
                                  --schedule-random)
