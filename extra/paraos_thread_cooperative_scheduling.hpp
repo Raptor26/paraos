@@ -146,21 +146,27 @@ class ICooperativeScheduling : protected Thread {
   etl::function<ICooperativeScheduling, void> idle_callback;
 };
 
+struct CooperativeSchedulingAttr {
+  std::string name{"Cooperative scheduler"};
+  std::size_t stack_depth = GetStackMinimumSizeInBytes();
+  ThreadPriority priority = ThreadPriority::kAboveNormal;
+  bool is_need_loop{true};
+  bool is_need_start{true};
+};
+
 template <
     size_t MAX_TASKS_,
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
 class CooperativeScheduling : public ICooperativeScheduling {
  public:
-  CooperativeScheduling(
-      const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, bool is_need_loop = true,
-      bool is_need_start = false)
-      : ICooperativeScheduling{name, stack_depth, priority, scheduler_} {
+  CooperativeScheduling(const CooperativeSchedulingAttr &attr)
+      : ICooperativeScheduling{
+            attr.name, attr.stack_depth, attr.priority, scheduler_} {
     // Run() method must call in forever loop periodical.
-    Thread::SetNeedWhile(is_need_loop);
+    Thread::SetNeedWhile(attr.is_need_loop);
 
     // Set 'is_need_start = false' useful for unit tests.
-    if (is_need_start) {
+    if (attr.is_need_start) {
       // Method below create thread and scheduling it's for execute in RTOS (or
       // windows/unix).
       Thread::Start();

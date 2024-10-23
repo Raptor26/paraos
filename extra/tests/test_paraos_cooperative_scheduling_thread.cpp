@@ -126,9 +126,9 @@ class Idle {
 // -----------------------------------------------------------------------------
 
 CooperativeScheduling<10, etl::scheduler_policy_highest_priority>
-    cooperative_scheduler{
+    cooperative_scheduler{CooperativeSchedulingAttr{
         "Cooperative", GetStackMinimumSizeInBytes() + 1024,
-        ThreadPriority::kNormal, false};
+        ThreadPriority::kNormal, false, true}};
 
 Idle idle_handle(cooperative_scheduler.GetScheduler());
 
