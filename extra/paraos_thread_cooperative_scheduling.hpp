@@ -46,7 +46,7 @@ class ICooperativeScheduling : protected Thread {
       : Thread{name, stack_depth, priority},
         scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
-    // scheduler_ will call all registered task while they has work.Only
+    // scheduler_ will call all registered task while they has work. Only
     // all registered tasks work complete, scheduler_ call idle function. Here
     // registered idle function which take semaphore and wait new program
     // cycle.
