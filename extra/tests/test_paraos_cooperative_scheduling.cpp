@@ -1,4 +1,4 @@
-/// @file test_paraos_cooperative_scheduling.cpp
+/// @file test_paraos_cooperative_scheduling_.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -23,143 +23,37 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#include <iostream>
+#include <gtest/gtest.h>
 
 #include "paraos_thread_cooperative_scheduling.hpp"
 
-using namespace paraos;
+TEST(Cooperative, Create) {
+  constexpr std::size_t max_task_numb{2};
 
-bool is_test_complete{false};
-
-class Task1 : public etl::task {
- public:
-  //*************************************
-  Task1() : task(10), work(3) {}
-
-  //*************************************
-  uint32_t task_request_work() const {
-    return work;  // How much work do we still have to do? This could be a
-                  // message queue length.
-  }
-
-  //*************************************
-  void task_process_work() {
-    std::cout << "Task1 : Process work : " << work << std::endl;
-    --work;
-  }
-
- private:
-  uint32_t work;
-};
-
-class Task2 : public etl::task {
- public:
-  //*************************************
-  Task2() : task(2), work(3) {}
-
-  //*************************************
-  uint32_t task_request_work() const {
-    return work;  // How much work do we still have to do? This could be a
-                  // message queue length.
-  }
-
-  //*************************************
-  void task_process_work() {
-    std::cout << "Task2 : Process work : " << work << std::endl;
-    --work;
-  }
-
- private:
-  uint32_t work;
-};
-
-class Task3 : public etl::task {
- public:
-  //*************************************
-  Task3() : task(3), work(1) {}
-
-  //*************************************
-  uint32_t task_request_work() const {
-    return work;  // How much work do we still have to do? This could be a
-                  // message queue length.
-  }
-
-  //*************************************
-  void task_process_work() {
-    std::cout << "Task3 : Process work : " << work << std::endl;
-    --work;
-  }
-
- private:
-  uint32_t work;
-};
-
-class Idle {
- public:
-  //*************************************
-  Idle(etl::ischeduler& scheduler_) : scheduler(scheduler_) {}
-
-  //*************************************
-  void IdleCallback() {
-    std::cout << "Idle callback" << std::endl;
-    scheduler.exit_scheduler();
-    std::cout << "Exiting the scheduler" << std::endl;
-
-    // Call exit(EXIT_SUCCESS) in ExitAfterTestComplete() for force break system
-    // process (in freertos port only).
-    is_test_complete = true;
-  }
-
- private:
-  etl::ischeduler& scheduler;
-};
-
-// -----------------------------------------------------------------------------
-// Global definitions for variables need for freertos port. When called
-// exit(EXIT_SUCCESS), global object call their destructions (for local object
-// nothing calls). It's help to reduced memory check warnings.
-// -----------------------------------------------------------------------------
-
-CooperativeScheduling<10, etl::scheduler_policy_highest_priority>
-    cooperative_scheduler{
-        "Cooperative", GetStackMinimumSizeInBytes() + 1024,
-        ThreadPriority::kNormal, false};
-
-Idle idle_handle(cooperative_scheduler.GetScheduler());
-
-etl::function_mv<Idle, &Idle::IdleCallback> idle_callback(idle_handle);
-
-Task1 task1;
-Task2 task2;
-Task3 task3;
-
-/// FreeRTOS can't stop scheduler. In this case we must manually call
-/// exit(EXIT_SUCCESS) after test complete.
-#if defined(FREERTOS)
-void ExitAfterTestComplete() {
-  if (is_test_complete) {
-    exit(EXIT_SUCCESS);
-  }
+  paraos::CooperativeSchedulingAttr attr;
+  attr.is_need_loop = false;
+  attr.is_need_start = false;
+  paraos::CooperativeScheduling<max_task_numb> cooperative{attr};
 }
-#endif
 
-int main() {
-#if defined(FREERTOS)
-  // ExitAfterTestComplete will be called by scheduler in idle task after no
-  // user task ready for execute.
-  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
-#endif
+TEST(Cooperative, TryPutOverflowTasks) {
+  constexpr std::size_t max_task_numb{2};
+  paraos::CooperativeSchedulingAttr attr;
+  attr.is_need_loop = false;
+  attr.is_need_start = false;
+  paraos::CooperativeScheduling<max_task_numb> cooperative{attr};
 
-  cooperative_scheduler.AddTask(task1);
-  cooperative_scheduler.AddTask(task3);
-  cooperative_scheduler.AddTask(task2);
+  struct test_task_t : public etl::task {
+    test_task_t() : etl::task{1} {}
+    uint32_t task_request_work() const override { return 0; }
+    void task_process_work() override {}
+  };
 
-  cooperative_scheduler.SetIdleCallback(idle_callback);
+  test_task_t test_task1;
 
-  cooperative_scheduler.NotifyGive();
+  ASSERT_TRUE(cooperative.AddTask(test_task1));
+  ASSERT_TRUE(cooperative.AddTask(test_task1));
 
-  Thread::StartScheduler();
-  Thread::DeleteAll();
-
-  return EXIT_SUCCESS;
+  // No more space in task list.
+  ASSERT_FALSE(cooperative.AddTask(test_task1));
 }
