@@ -31,10 +31,15 @@ using namespace paraos;
 
 bool is_test_complete{false};
 
+// Task 1 set highest priority in set. It will run first.
+etl::task_priority_t task1_priority{10};
+etl::task_priority_t task2_priority{9};
+etl::task_priority_t task3_priority{8};
+
 class Task1 : public etl::task {
  public:
   //*************************************
-  Task1() : task(10), work(3) {}
+  Task1() : task(task1_priority), work(3) {}
 
   //*************************************
   uint32_t task_request_work() const {
@@ -55,7 +60,7 @@ class Task1 : public etl::task {
 class Task2 : public etl::task {
  public:
   //*************************************
-  Task2() : task(2), work(3) {}
+  Task2() : task(task2_priority), work(3) {}
 
   //*************************************
   uint32_t task_request_work() const {
@@ -76,7 +81,7 @@ class Task2 : public etl::task {
 class Task3 : public etl::task {
  public:
   //*************************************
-  Task3() : task(3), work(1) {}
+  Task3() : task(task3_priority), work(1) {}
 
   //*************************************
   uint32_t task_request_work() const {
@@ -150,8 +155,10 @@ int main() {
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
 
-  cooperative_scheduler.AddTask(task1);
+  // When calling AddTask(), scheduler compare priority each task and sorted
+  // tasks references in private vector with tasks priority respect.
   cooperative_scheduler.AddTask(task3);
+  cooperative_scheduler.AddTask(task1);
   cooperative_scheduler.AddTask(task2);
 
   cooperative_scheduler.SetIdleCallback(idle_callback);
