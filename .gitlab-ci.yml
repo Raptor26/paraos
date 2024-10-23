@@ -13,7 +13,9 @@ ci:windows:
  tags:
   - windows
  script:
+  - cd Lib_builder_utils
   - pip install -r builder_requirements.txt
+  - cd ..
   - python -m builder -a 1
 
 ci:windows_stress_gcc:
@@ -22,7 +24,9 @@ ci:windows_stress_gcc:
  tags:
   - windows
  script:
+  - cd Lib_builder_utils
   - pip install -r builder_requirements.txt
+  - cd ..
   - python -m builder -a 5
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -38,7 +42,9 @@ ci:windows_stress_clang:
  tags:
   - windows
  script:
+  - cd Lib_builder_utils
   - pip install -r builder_requirements.txt
+  - cd ..
   - python -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -57,7 +63,9 @@ ci:linux:
  script:
   - python3 -m venv venv
   - source ./venv/bin/activate
+  - cd Lib_builder_utils
   - pip install -r builder_requirements.txt
+  - cd ..
   - deactivate
   - /home/gitlab-runner/venv/bin/python3 -m builder -a 1
   
@@ -69,7 +77,9 @@ ci:linux_stress_gcc:
  script:
   - python3 -m venv venv
   - source ./venv/bin/activate
+  - cd Lib_builder_utils
   - pip install -r builder_requirements.txt
+  - cd ..
   - deactivate
   - /home/gitlab-runner/venv/bin/python3 -m builder -a 5
  rules:
@@ -88,7 +98,9 @@ ci:linux_stress_clang:
  script:
   - python3 -m venv venv
   - source ./venv/bin/activate
+  - cd Lib_builder_utils
   - pip install -r builder_requirements.txt
+  - cd ..
   - deactivate
   - /home/gitlab-runner/venv/bin/python3 -m builder -a 6
  rules:
