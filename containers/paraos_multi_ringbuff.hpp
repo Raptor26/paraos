@@ -46,15 +46,14 @@ class IMultiRingBuff {
  public:
   virtual ~IMultiRingBuff() = default;
 
+  /// @brief Write objects from src in ring buff.
+  ///
+  /// @param[in] buff_id: Ring buffer id for write objects from src.
+  /// @param[in] src: Pointer on first object in array.
+  /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
+  ///
+  /// @return Returned number of written elements.
   auto Write(
-
-      /// @brief Write objects from src in ring buff.
-      ///
-      /// @param[in] buff_id: Ring buffer id for write objects from src.
-      /// @param[in] src: Pointer on first object in array.
-      /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
-      ///
-      /// @return Returned number of written elements.
       const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
     std::size_t written_elem_numb{0};
@@ -77,6 +76,42 @@ class IMultiRingBuff {
         const paraos::CriticalSection critical;
         bf->Skip(written_elem_numb);
         written_elem_numb = 0u;
+      }
+    }
+
+    return written_elem_numb;
+  }
+
+  /// @brief Try write data in buffer without delay. All operations in this
+  /// method execute atomically.
+  ///
+  /// @param[in] buff_id: Ring buffer id for write objects from src.
+  /// @param[in] src: Pointer on first object in array.
+  /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
+  /// @param[in] is_isr: Set true if call from isr.
+  ///
+  /// @return Returned number of written elements.
+  auto TryWrite(
+      const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
+      bool is_isr = false) -> std::size_t {
+    std::size_t written_elem_numb{0};
+    const paraos::CriticalSection critical;
+    if (!queue_.IsFull()) {
+      if (buff_id < ring_buff_numb_) {
+        auto& bf = ringbuff_[buff_id];
+        written_elem_numb = bf->Write(src, sizeof(T) * src_elem_numb);
+
+        if (written_elem_numb > 0u) {
+          constexpr std::size_t no_blocking_timeout{0};
+          auto is_pushed = queue_.Push(buff_id, no_blocking_timeout, is_isr);
+
+          // Reduce compile warning if PARAOS_CHECK_ASSERT() empty macros.
+          PARAOS_ATTR_UNUSED_VAR(is_pushed);
+
+          // queue_.Push() can't return false because we check inside critical
+          // section if queue full befor push.
+          PARAOS_CHECK_ASSERT(is_pushed);
+        }
       }
     }
 
