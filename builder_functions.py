@@ -1,15 +1,15 @@
 import os
 import sys
 import json
+import time
 import subprocess
 
 try:
     from python_on_whales import docker, DockerException
 except (ImportError, DockerException) as e:
     print(
-        f'Произошла ошибка ImportError: {e[0]}. '
-        'Возможно, зависимости скрипта builder.py не установлены, '
-        'попробуйте запустить файл-установщик: '
+        f'ImportError happened: {e[0]}. '
+        'Try to install builder.py dependencies: '
         '"python install_builder_dependencies.py"'
     )
 
@@ -44,7 +44,7 @@ def check_presets_existence():
         return False
 
 
-def parse_presets():
+def parse_presets(presets_filter: str = None):
     """
     Функция выполняет парсинг доступных пресетов из файла CMakePresets.json.
     :return: Возвращает кортеж пресетов, полученных в результате парсинга.
@@ -54,23 +54,41 @@ def parse_presets():
             presets_dict = json.load(presets_file)
             config_presets_list = presets_dict['configurePresets']
 
-            tests_errors_table.update(
-                {
-                    preset_data['name']: '' for preset_data in
-                    config_presets_list
+            if presets_filter is None:
+                tests_errors_table.update(
+                    {
+                        preset_data['name']: '' for preset_data in
+                        config_presets_list
+                        if preset_data['name'].find('_trace') == -1
+                        and preset_data['name'].find('_docker') == -1
+                    }
+                )
+                return tuple(
+                    preset_data['name']
+                    for preset_data in config_presets_list
                     if preset_data['name'].find('_trace') == -1
                     and preset_data['name'].find('_docker') == -1
-                }
-            )
-            return tuple(
-                preset_data['name']
-                for preset_data in config_presets_list
-                if preset_data['name'].find('_trace') == -1
-                and preset_data['name'].find('_docker') == -1
-            )
+                )
+            else:
+                tests_errors_table.update(
+                    {
+                        preset_data['name']: '' for preset_data in
+                        config_presets_list
+                        if preset_data['name'].find('_trace') == -1
+                        and preset_data['name'].find('_docker') == -1
+                        and preset_data['name'].find(presets_filter) != -1
+                    }
+                )
+                return tuple(
+                    preset_data['name']
+                    for preset_data in config_presets_list
+                    if preset_data['name'].find('_trace') == -1
+                    and preset_data['name'].find('_docker') == -1
+                    and preset_data['name'].find(presets_filter) != -1
+                )
 
     else:
-        print(FAIL, 'Не обнаружено файла CMakePresets.json', END_COLOR)
+        print(FAIL, 'NO CMakePresets.json was found!', END_COLOR)
 
 
 def _make_preset(make_command: list[str]):
@@ -145,27 +163,26 @@ def test_preset(
     :return: Возвращает результат тестирования пресета.
     """
     preset_name = make_command[2]
-    print(f'Фаза Make {preset_name}')
+    print(f'MAKE phase of the {preset_name}')
     _make_preset(make_command)
 
-    print(f'Фаза сборки {preset_name}')
+    print(f'BUILD phase of the {preset_name}')
     build_res = _build_preset(build_command)
     if build_res.returncode != 0:
         print(
-            f'{FAIL}Произошла ошибка при сборке '
-            f'{preset_name}!\n'
+            f'{FAIL}BUILD of the {preset_name} FAILED!\n'
             f'{tests_errors_table[preset_name]}{END_COLOR}'
         )
         return False
 
-    print(f'Фаза стресс-тестирования {preset_name}')
+    print(f'TEST phase of the {preset_name}')
     test_process = subprocess.Popen(
         [
             'ctest',
             '--test-dir',
             test_dir,
-            '-j16',
-            '--timeout', '15',
+            '-j4',
+            '--timeout', '30',
             '--repeat-until-fail', f'{repetitions_count}',
             '--stop-on-failure',
             '--output-on-failure'
@@ -194,6 +211,8 @@ def test_preset(
             if found_fail_test_out:
                 failed_test_output += out
 
+        time.sleep(0)
+
     if test_process.returncode != 0:
         print(test_process.stderr.readline())
 
@@ -203,6 +222,38 @@ def test_preset(
         return False
 
     return True
+
+
+def test_multiple_presets(repetitions_count=1, presets_filter: str = None):
+    presets_tuple = parse_presets(presets_filter)
+    final_res = False
+    if presets_tuple:
+        results_list = []
+
+        if presets_filter is not None:
+            print(f'For the following FILTER {presets_filter}:\n')
+
+        print(f'Found following presets:\n{presets_tuple}')
+
+        for preset in presets_tuple:
+            preset_res = test_preset(
+                ['cmake', '--preset', preset],
+                ['cmake', '--build', f'build/{preset}/'],
+                f'build/{preset}',
+                repetitions_count
+            )
+            results_list.append(preset_res)
+            if not preset_res:
+                break
+
+        final_res = True
+
+        for res in results_list:
+            final_res = final_res and res
+    else:
+        print('No presets was found!')
+
+    return final_res
 
 
 def _build_docker_image(image_tags: str):
@@ -361,7 +412,7 @@ def run_docker_test(image_name: str, image_tags: str):
     :param image_tags: Тег образа для сборки и запуска.
     :return: Возвращает результат выполнения операций сборки и запуска.
     """
-    print('Удаление "Dangling" образов...')
+    print('Removing "Dangling" images...')
     result = True
     dangling_remove_res = subprocess.run(
         [os.path.abspath('./docker/remove_dangling_images.sh')],
@@ -371,7 +422,7 @@ def run_docker_test(image_name: str, image_tags: str):
         shell=True
     )
     if dangling_remove_res.returncode == 0:
-        print('Сборка Docker образа, процесс может занять длительное время...')
+        print('BUILDING docker image, process may take a long time...')
 
         result = _build_docker_image(image_tags)
         if result:
