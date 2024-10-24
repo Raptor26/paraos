@@ -68,7 +68,11 @@ struct OsProfiler final {
     duration_ = duration_cast<time_resolution>(end_ - start_).count();
     return LastDuration();
   }
-  [[nodiscard]] std::size_t LastDuration() { return duration_; }
+  [[nodiscard]] std::size_t LastDuration() const { return duration_; }
+
+  [[nodiscard]] std::size_t LastDurationMs() const {
+    return LastDuration() / 1000;
+  }
 
  private:
   decltype(high_resolution_clock::now()) start_;

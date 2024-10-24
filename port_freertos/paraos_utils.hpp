@@ -28,6 +28,7 @@
 #define PARAOS_UTILS_HPP
 
 #include <cstddef>
+#include <limits>
 
 #include "FreeRTOS.h"
 #include "paraos_attr.h"
@@ -46,6 +47,17 @@ inline TickType_t PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) {
   }
 
   return (uDelayInMs);
+}
+
+inline std::size_t PARAOS_ConvertTicksToMs(TickType_t ticks) {
+  std::size_t time_ms;
+  if (ticks == portMAX_DELAY) {
+    time_ms = std::numeric_limits<decltype(time_ms)>::max();
+  } else {
+    time_ms = pdTICKS_TO_MS(ticks);
+  }
+
+  return time_ms;
 }
 
 using FreeRTOSIdleFncPtr = void (*)();
