@@ -36,7 +36,7 @@ namespace paraos {
 
 constexpr std::size_t max_delay{portMAX_DELAY};
 
-inline std::size_t PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) {
+inline TickType_t PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) {
   static_assert(
       sizeof(uDelayInMs) >= sizeof(TickType_t),
       "uDelayInMs must be more or equal TickType_t size");
