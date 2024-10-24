@@ -67,7 +67,7 @@ ci:linux:
   - pip install -r builder_requirements.txt
   - cd ..
   - deactivate
-  - /home/gitlab-runner/venv/bin/python3 -m builder -a 1
+  - venv/bin/python3 -m builder -a 1
   
 ci:linux_stress_gcc:
  stage: test_linux_stress_gcc
@@ -81,7 +81,7 @@ ci:linux_stress_gcc:
   - pip install -r builder_requirements.txt
   - cd ..
   - deactivate
-  - /home/gitlab-runner/venv/bin/python3 -m builder -a 5
+  - venv/bin/python3 -m builder -a 5
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -102,7 +102,7 @@ ci:linux_stress_clang:
   - pip install -r builder_requirements.txt
   - cd ..
   - deactivate
-  - /home/gitlab-runner/venv/bin/python3 -m builder -a 6
+  - venv/bin/python3 -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
