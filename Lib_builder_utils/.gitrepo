@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = D:/_SUBREPO/soft_vyhodcev/Lib_builder_utils.git
+	branch = develop
+	commit = 9f99f3ec9765a5f7438697577f32f386ac8d0b71
+	method = merge
+	cmdver = 0.4.6
+	parent = 1f93d25286758e88f958921423c03c314774fb12

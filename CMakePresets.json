@@ -41,7 +41,7 @@
         },
         {
             "name": "pc_release_clang",
-            "displayName": "PC Release Clang with trace",
+            "displayName": "PC Release Clang",
             "inherits": "pc_debug_clang",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"

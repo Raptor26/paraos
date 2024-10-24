@@ -1,9 +1,25 @@
 import os
 import shutil
-import builder_functions
+import argparse
+import Lib_builder_utils.builder_functions as builder_functions
 
+stress_test_repetitions_count = 500
+TEST_SUCCESS = 0
+TEST_FAIL = -1
 
-stress_test_repetitions_count = 555
+available_commands = (
+    'Доступные команды:\n'
+    ' 0 - Выход\n'
+    ' 1 - Запустить все сборки и тесты\n'
+    ' 2 - Запустить все сборки и стресс тест\n'
+    ' 3 - pc_debug_clang\n'
+    ' 4 - freertos_debug_clang\n'
+    ' 5 - Стресс тест всех сборок для компилятора gcc\n'
+    ' 6 - Стресс тест всех сборок для компилятора clang\n'
+    ' 7 - Memcheck only\n'
+    ' 11 - Запуск тестов в Docker\n'
+    ' 12 - Запуск стресс-тестов в Docker\n'
+)
 
 
 def show_result_output(result: bool):
@@ -13,8 +29,8 @@ def show_result_output(result: bool):
     """
     if not result and not builder_functions.build_failed_flag:
         print(
-            f'{builder_functions.FAIL}\nОшибки при тестировании '
-            'в следующих пресетах:'
+            f'{builder_functions.FAIL}TESTS FAILED '
+            'in the following presets:'
 
         )
         for preset, errors in builder_functions.tests_errors_table.items():
@@ -24,7 +40,7 @@ def show_result_output(result: bool):
 
     if builder_functions.memcheck_results_table:
         print(f'{builder_functions.WARNING}'
-              '\n--------- Обнаружены замечания MEMCHECK:\n')
+              '\n--------- MEMCHECK observations detected:\n')
         for preset, res in builder_functions.memcheck_results_table.items():
             print(preset)
             print(f'Defects:\n {res["defects"]}', end='')
@@ -45,14 +61,14 @@ def show_result_output(result: bool):
         if not result:
             print(
                 f'{builder_functions.FAIL}'
-                'Тестирование завершилось с ошибками, '
-                'подробности находятся выше в терминале.'
+                'Testing ended with FAIL, '
+                'more information shown above in the terminal!.'
                 f'{builder_functions.END_COLOR}\n'
             )
         else:
             print(
                 f'{builder_functions.OK_GREEN}'
-                'Все тесты завершились успешно!\n'
+                'All tests SUCCEEDED!!\n'
                 f'{builder_functions.END_COLOR}'
             )
 
@@ -71,66 +87,25 @@ def replace_docker_entrypoint(entrypoint_name: str):
     )
 
 
-if __name__ == '__main__':
-    print('Выберите необходимое действие:\n'
-          ' 0 - Выход\n'
-          ' 1 - Запустить все сборки и тесты\n'
-          ' 2 - Запустить все сборки и стресс тест\n'
-          ' 3 - pc_debug_clang\n'
-          ' 4 - freertos_debug_clang\n'
-          ' 5 - Memcheck only\n'
-          ' 11 - Запуск тестов в Docker\n'
-          ' 12 - Запуск стресс-тестов в Docker\n')
-
-    action = input()
+def action_matching(action: str):
+    result = False
     match action:
         case '0':
-            exit(0)
+            result = True
 
         case '1':
-            results_list = []
-            presets_tuple = builder_functions.parse_presets()
-            print(f'Обнаружены следующие пресеты:\n{presets_tuple}')
-            if presets_tuple:
-                for preset in presets_tuple:
-                    preset_res = builder_functions.test_preset(
-                        ['cmake', '--preset', preset],
-                        ['cmake', '--build', f'build/{preset}/'],
-                        f'build/{preset}'
-                    )
-                    results_list.append(preset_res)
-                    if not preset_res:
-                        break
+            test_result = builder_functions.test_multiple_presets()
+            show_result_output(test_result)
 
-                final_res = True
-
-                for res in results_list:
-                    final_res = final_res and res
-
-                show_result_output(final_res)
+            result = test_result
 
         case '2':
-            results_list = []
-            presets_tuple = builder_functions.parse_presets()
-            print(f'Обнаружены следующие пресеты:\n{presets_tuple}')
-            if presets_tuple:
-                for preset in presets_tuple:
-                    preset_res = builder_functions.test_preset(
-                        ['cmake', '--preset', preset],
-                        ['cmake', '--build', f'build/{preset}/'],
-                        f'build/{preset}',
-                        stress_test_repetitions_count
-                    )
-                    results_list.append(preset_res)
-                    if not preset_res:
-                        break
+            test_result = builder_functions.test_multiple_presets(
+                stress_test_repetitions_count
+            )
+            show_result_output(test_result)
 
-                final_res = True
-
-                for res in results_list:
-                    final_res = final_res and res
-
-                show_result_output(final_res)
+            result = test_result
 
         case '3':
             pc_debug_res = builder_functions.test_preset(
@@ -141,16 +116,38 @@ if __name__ == '__main__':
 
             show_result_output(pc_debug_res)
 
+            result = pc_debug_res
+
         case '4':
             rtos_debug_res = builder_functions.test_preset(
                 ['cmake', '--preset', 'freertos_debug_clang'],
-                ['cmake', '--build', 'build/freertos_debug_clang/'],
+                [
+                    'cmake', '--build', 'build/freertos_debug_clang/'
+                ],
                 'build/freertos_debug_clang'
             )
 
             show_result_output(rtos_debug_res)
 
+            result = rtos_debug_res
+
         case '5':
+            test_result = builder_functions.test_multiple_presets(
+                stress_test_repetitions_count, 'gcc'
+            )
+            show_result_output(test_result)
+
+            result = test_result
+
+        case '6':
+            test_result = builder_functions.test_multiple_presets(
+                stress_test_repetitions_count, 'clang'
+            )
+            show_result_output(test_result)
+
+            result = test_result
+
+        case '7':
             replace_docker_entrypoint('docker_tests_entrypoint_memcheck.sh')
 
             docker_test_result = builder_functions.run_docker_test(
@@ -159,6 +156,8 @@ if __name__ == '__main__':
             show_result_output(docker_test_result)
 
             remove_tmp_docker_entrypoint()
+
+            result = docker_test_result
 
         case '11':
             replace_docker_entrypoint('docker_tests_entrypoint_single.sh')
@@ -170,6 +169,8 @@ if __name__ == '__main__':
 
             remove_tmp_docker_entrypoint()
 
+            result = docker_test_result
+
         case '12':
             replace_docker_entrypoint('docker_tests_entrypoint_stress.sh')
 
@@ -180,11 +181,39 @@ if __name__ == '__main__':
 
             remove_tmp_docker_entrypoint()
 
+            result = docker_test_result
+
         case _:
             print(
                 f'{builder_functions.WARNING}'
-                'Указанное действие не поддерживается!'
+                'Chosen action is NOT SUPPORTED!'
                 f'{builder_functions.END_COLOR}'
             )
+            print(available_commands)
 
-    _ = input('Нажмите ENTER для завершения тестирования')
+    return result
+
+
+if __name__ == '__main__':
+    # Создание парсера аргументов
+    arg_parser = argparse.ArgumentParser(description='Builder console args')
+    arg_parser.add_argument(
+        '-a', '--action',
+        type=str,
+        help='Действие, которое необходимо выполнить.'
+             f' {available_commands}'
+    )
+    args = arg_parser.parse_args()
+
+    # Если скрипт запущен без аргументов (скорее всего в интерактивном режиме)
+    if args.action is None:
+        print(available_commands)
+
+        action = input()
+    else:
+        action = args.action
+
+    if action_matching(action):
+        exit(TEST_SUCCESS)
+    else:
+        exit(TEST_FAIL)
