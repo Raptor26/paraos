@@ -25,6 +25,16 @@ target_compile_features(example_paraos_timer PRIVATE cxx_std_17 c_std_11)
 target_compile_options(example_paraos_timer PRIVATE -Wall -Wextra -Wpedantic
                                                     -Werror)
 
+# Timeout check ----------------------------------------------------------------
+# It's not test, so not registered as test in Ctest
+add_executable(example_thread_check_timeout example_thread_check_timeout.cpp)
+target_link_libraries(example_thread_check_timeout PRIVATE paraos::paraos)
+
+target_compile_features(example_thread_check_timeout PRIVATE cxx_std_17
+                                                             c_std_11)
+target_compile_options(example_thread_check_timeout PRIVATE -Wall -Wextra
+                                                            -Wpedantic -Werror)
+
 # GTEST ------------------------------------------------------------------------
 find_package(GTest REQUIRED)
 include(GoogleTest)
