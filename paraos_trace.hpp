@@ -38,7 +38,7 @@
   }
 
 #else
-#define paraosTRACE_MESSAGE(message)
+#define paraosTRACE_MESSAGE(__message__)
 #endif
 
 #endif /* PARAOS_TRACE_HPP */
