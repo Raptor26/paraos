@@ -157,11 +157,13 @@ struct CooperativeSchedulingAttr {
 template <
     size_t MAX_TASKS_,
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
-class CooperativeScheduling : public ICooperativeScheduling {
+class CooperativeScheduling
+    : public etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
+      public ICooperativeScheduling {
  public:
   CooperativeScheduling(const CooperativeSchedulingAttr &attr)
       : ICooperativeScheduling{
-            attr.name, attr.stack_depth, attr.priority, scheduler_} {
+            attr.name, attr.stack_depth, attr.priority, *this} {
     // Run() method must call in forever loop periodical.
     Thread::SetNeedWhile(attr.is_need_loop);
 
@@ -174,9 +176,6 @@ class CooperativeScheduling : public ICooperativeScheduling {
   }
 
   virtual ~CooperativeScheduling() = default;
-
- private:
-  etl::scheduler<TSchedulerPolicy, MAX_TASKS_> scheduler_;
 };
 
 }  // namespace  paraos
