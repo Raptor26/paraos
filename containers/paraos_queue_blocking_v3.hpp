@@ -103,7 +103,7 @@ struct IQueueBlocking {
     auto timeout = Thread::GetCurrentTime();
 
     while (IsEmpty()) {
-      if (pop_sem_.Take(timeout_ms)) {
+      if (pop_sem_.Take(timeout_ms, is_isr)) {
         paraosTRACE_MESSAGE("Sem taken");
         break;
       } else {

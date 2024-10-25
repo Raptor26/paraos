@@ -34,6 +34,7 @@
 #include "etl/unordered_map.h"
 #include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
+#include "paraos_queue_blocking_v3.hpp"
 #include "paraos_ringbuff.hpp"
 
 namespace paraos {
@@ -66,8 +67,7 @@ class IMultiRingBuff {
         written_elem_numb = bf->Write(src, sizeof(T) * src_elem_numb);
 
         if (written_elem_numb > 0u) {
-          constexpr std::size_t no_blocking_timeout{0};
-          auto is_pushed = queue_.Push(buff_id, no_blocking_timeout, is_isr);
+          auto is_pushed = queue_.TryPush(buff_id, is_isr);
 
           // Reduce compile warning if PARAOS_CHECK_ASSERT() empty macros.
           PARAOS_ATTR_UNUSED_VAR(is_pushed);
@@ -109,7 +109,7 @@ class IMultiRingBuff {
 
     std::size_t read_bytes_numb{0};
     // queue_.Pop return std::optional
-    auto ring_buff_id = queue_.Pop(timeout_ms);
+    auto ring_buff_id = queue_.Pop(timeout_ms, is_isr);
     if (ring_buff_id) {
       const paraos::CriticalSection critical;
       buff_id = *ring_buff_id;
@@ -119,7 +119,7 @@ class IMultiRingBuff {
       // If not read all available bytes, push ring buffer id in queue for
       // read remaining bytes in next call Read().
       if (bf->Size() != 0u) {
-        if (!queue_.Push(buff_id, timeout_ms)) {
+        if (!queue_.TryPush(buff_id)) {
           // No space in queue. Set force read flag for read data from
           // buffer without request id from queue.
           is_need_force_read_ = true;
@@ -167,12 +167,12 @@ class IMultiRingBuff {
 
  protected:
   IMultiRingBuff(
-      IQueueBlocking<std::size_t>& queue, ringbuff_pointer* ringbuff,
-      std::size_t ring_buff_numb)
+      paraos::v3::IQueueBlocking<std::size_t>& queue,
+      ringbuff_pointer* ringbuff, std::size_t ring_buff_numb)
       : queue_{queue}, ringbuff_{ringbuff}, ring_buff_numb_{ring_buff_numb} {}
 
  private:
-  IQueueBlocking<std::size_t>& queue_;
+  paraos::v3::IQueueBlocking<std::size_t>& queue_;
   ringbuff_pointer* ringbuff_;
   const std::size_t ring_buff_numb_;
   etl::atomic_bool is_need_force_read_{false};
@@ -237,7 +237,7 @@ class MultiRingBuff : public IMultiRingBuff<T> {
   }
 
  private:
-  QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
+  paraos::v3::QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
 
   /// @brief Tuple for contained ring buffers.
   std::tuple<RINGBUFF...> ringbuff_tuple_;

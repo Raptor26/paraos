@@ -146,8 +146,8 @@ struct Producer : public paraos::Thread {
           break;
         } else {
           // try write again after small delay.
-          constexpr std::size_t delay_ms{20};
-          DelayMs(thread_id_ + delay_ms);
+          constexpr std::size_t delay_ms{1};
+          DelayMs(delay_ms);
         }
       }
     } else {
@@ -175,7 +175,8 @@ struct Consumer : public paraos::Thread {
   }
 
   void Run() override {
-    constexpr std::size_t read_delay_ms{10};
+    // Small delay for yeld recourses.
+    constexpr std::size_t read_delay_ms{1};
     constexpr std::size_t read_mem_size{2048};
 
     // All producers offline, no wait anymore.
@@ -265,8 +266,15 @@ auto main() -> int {
   Producer prod_4{3, "Prod 4"};
   producer_thread_numb += 4;
 
+  // ---------------------------------------------------------------------------
+  // Create consumers
+  // ---------------------------------------------------------------------------
   Consumer cons_1{"Cons 1"};
   consumer_thread_numb += 1;
+
+  Consumer cons_2{"Cons 2"};
+  consumer_thread_numb += 1;
+  // ---------------------------------------------------------------------------
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();

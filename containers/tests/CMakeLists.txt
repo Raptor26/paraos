@@ -50,9 +50,9 @@ if(THREAD_ENABLE)
 
   # ----------------------------------------------------------------------------
   # Тест закомментирован, поскольку не проходит пайплайн gitlab-runner.
-  # add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
-  # target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
-  # add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
+  add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
+  target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
+  add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
 
   # ----------------------------------------------------------------------------
   add_executable(test_queue_blocking_spmc_v3 test_queue_blocking_spmc_v3.cpp)
