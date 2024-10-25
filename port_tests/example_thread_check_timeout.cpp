@@ -27,6 +27,7 @@
 
 #include "iostream"
 #include "paraos_runtime_profiler.hpp"
+#include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
 
 using namespace paraos;
@@ -42,7 +43,8 @@ struct TestTimeout : public paraos::Thread {
   void Run() override {
     OsProfiler profiler;
 
-    std::size_t delay_ms{1000};
+    constexpr std::size_t expected_delay_ms{1000};
+    std::size_t delay_ms{expected_delay_ms};
 
     constexpr std::size_t delay_one_iteration{200};
 
@@ -53,18 +55,24 @@ struct TestTimeout : public paraos::Thread {
         break;
       }
 
-      std::cout << "Sleep inside cycle " << delay_one_iteration << " ms"
-                << std::endl;
-      Thread::SleepMs(delay_one_iteration);
+      // Wait sem, nobody give them, we check total delay (delay_ms).
+      sem_.Take(delay_one_iteration);
+
+      std::cout << "Sleep inside cycle " << delay_one_iteration << " ms."
+                << " New delay_ms is " << delay_ms << std::endl;
     }
 
     profiler.Stop();
 
-    std::cout << "--Cycle total time is " << profiler.LastDurationMs() << " ms"
+    std::cout << "--Cycle total time is " << profiler.LastDurationMs() << " ms."
+              << " Expected delay is " << expected_delay_ms << " ms."
               << std::endl;
 
     is_test_complete = true;
   }
+
+ private:
+  paraos::SemaphoreBinary sem_;
 };
 
 void ExitAfterTestComplete() {

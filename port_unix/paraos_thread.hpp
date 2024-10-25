@@ -182,6 +182,14 @@ class Thread {
 
     if (delay_ms > elapsed_time) {
       is_timeout = false;
+
+      // Reduced delay_ms. It's need for caller, which can again enter in
+      // blocking mode with updated timeout.
+      delay_ms -= elapsed_time;
+
+      // Update start point because delay_ms was modified. It's necessary for
+      // correct update delay_ms if CheckTimeout() will call again.
+      timeout.Start();
     }
 
     return is_timeout;
