@@ -107,6 +107,9 @@ class IMultiRingBuff {
     PARAOS_CHECK_ASSERT(dst);
     PARAOS_CHECK_ASSERT(dst_size != 0u);
 
+    // todo delete after tests
+    is_need_force_read_ = true;
+
     std::size_t read_bytes_numb{0};
     // queue_.Pop return std::optional
     auto ring_buff_id = queue_.Pop(timeout_ms, is_isr);
@@ -200,12 +203,15 @@ class MultiRingBuff : public IMultiRingBuff<T> {
       QUEUE_SIZE > 1u, "Queue size in MultiRingBuff must be greater then one");
 
  public:
-  MultiRingBuff() : IMultiRingBuff<T>{queue_, ring_buff_ptr, ring_buffs_numbs} {
+  constexpr MultiRingBuff()
+      : IMultiRingBuff<T>{queue_, ring_buff_ptr, ring_buffs_numbs} {
     // Copy ring buff addresses from tuple in ring_buff_ptr.
     SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }
 
   virtual ~MultiRingBuff() = default;
+
+  constexpr auto GetBuffNumb() const { return sizeof...(RINGBUFF); }
 
  private:
   /// --------------------------------------------------------------------------

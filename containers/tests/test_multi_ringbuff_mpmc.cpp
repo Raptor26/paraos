@@ -30,11 +30,18 @@
 #include <string>
 #include <vector>
 
+#include "etl/cyclic_value.h"
 #include "paraos_bool_atomic.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_multi_ringbuff.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
+
+#define PrintDebug(__message__)                   \
+  {                                               \
+    const paraos::CriticalSection macro_critical; \
+    std::cout << __message__ << std::endl;        \
+  }
 
 const std::vector<std::string> str_array{
     "1) We're talking away",
@@ -117,51 +124,51 @@ struct Producer : public paraos::Thread {
     Start();
   }
 
+  /// @brief Producer thread
   void Run() override {
     std::size_t str_idx = producer_actual_str_idx;
     ++producer_actual_str_idx;
 
-    if (str_idx < str_array.size()) {
-      while (true) {
-        // All consumers offline, need break thread.
-        if (consumer_thread_exit_cnt >= producer_thread_numb) {
-          SetNeedWhile(false);
-          break;
-        }
-
-        auto written_bytes_numb = multi_ring_buff.TryWrite(
-            thread_id_, str_array.at(str_idx).data(),
-            str_array.at(str_idx).length());
-
-        if (written_bytes_numb > 0) {
-          PARAOS_CHECK_ASSERT(
-              written_bytes_numb == str_array.at(str_idx).length() &&
-              "Written not all bytes in string");
-
-          producer_total_written_bytes += written_bytes_numb;
-          paraos::CriticalSection critical;
-          std::cout << "Producer with id " << thread_id_
-                    << " writing string: " << str_array.at(str_idx).c_str()
-                    << std::endl;
-          break;
-        } else {
-          // try write again after small delay.
-          constexpr std::size_t delay_ms{1};
-          DelayMs(delay_ms);
-        }
+    while (true) {
+      if (str_idx < str_array.size()) {
+      } else {
+        // All data already written, exit from thread.
+        SetNeedWhile(false);
+        ++producer_thread_exit_cnt;
+        PrintDebug(Name() << " exiting ... ");
+        break;
       }
-    } else {
-      SetNeedWhile(false);
-      ++producer_thread_exit_cnt;
-      std::cout << "Producer with id " << thread_id_ << " exiting ... "
-                << "total written bytes " << producer_total_written_bytes
-                << " expect written bytes "
-                << CalcTotalBytesInStringArray(str_array) << std::endl;
+
+      // try write data in buffer periodical.
+      auto written_len = multi_ring_buff.TryWrite(
+          buff_idx_, str_array.at(str_idx).c_str(),
+          str_array.at(str_idx).length());
+
+      if (written_len > 0) {
+        // Break trying write data in buff, in next iteration take new string
+        // idx for write in buff.
+        producer_total_written_bytes += written_len;
+        PrintDebug(
+            Name() << " string write successful: "
+                   << str_array.at(str_idx).c_str());
+        break;
+      } else {
+        PrintDebug(
+            Name() << "WARN: Nothin written, try again after delay. "
+                   << "String idx is " << str_idx);
+
+        // Small delay for yeld resources.
+        Thread::DelayMs(1);
+      }
     }
+
+    // cyclic increment buff idx.
+    ++buff_idx_;
   }
 
  private:
   const std::size_t thread_id_;
+  etl::cyclic_value<int, 0, multi_ring_buff.GetBuffNumb() - 1u> buff_idx_{0};
 };
 
 struct Consumer : public paraos::Thread {
@@ -174,38 +181,32 @@ struct Consumer : public paraos::Thread {
     Start();
   }
 
+  /// @brief Consumer thread.
   void Run() override {
-    // Small delay for yeld recourses.
-    constexpr std::size_t read_delay_ms{1};
-    constexpr std::size_t read_mem_size{2048};
-
-    // All producers offline, no wait anymore.
-    if (producer_thread_exit_cnt >= producer_thread_numb) {
+    // If all bytes read, break thread.
+    if (consumer_total_read_bytes >= CalcTotalBytesInStringArray(str_array)) {
       SetNeedWhile(false);
       ++consumer_thread_exit_cnt;
+      PrintDebug(Name() << " exiting ... ");
+    }
+
+    // Small delay for yeld recourses if no data available in buff.
+    constexpr std::size_t delay_ms{1};
+    constexpr std::size_t read_mem_size{2048};
+    std::size_t idx;
+    auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
+
+    auto read_size =
+        multi_ring_buff.Read(idx, read_mem->data(), read_mem->size(), delay_ms);
+
+    if (read_size > 0u) {
+      consumer_total_read_bytes += read_size;
+
+      PrintDebug(Name() << " read " << read_mem->data());
     } else {
-      std::size_t idx;
-      auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
-
-      auto read_bytes_numb = multi_ring_buff.Read(
-          idx, read_mem->data(), read_mem->size(), read_delay_ms);
-
-      if (read_bytes_numb > 0) {
-        consumer_total_read_bytes += read_bytes_numb;
-        paraos::CriticalSection critical;
-        std::cout << "Consumer " << Name()
-                  << " read string: " << read_mem->data() << std::endl;
-      } else if (
-          producer_total_written_bytes >=
-          CalcTotalBytesInStringArray(str_array)) {
-        // All bytes already written in buffer (by producers) and no data
-        // available in timeout. Will try read anything from buffer befor start
-        // checks in AssertsForTestComplete().
-        SetNeedWhile(false);
-        ++consumer_thread_exit_cnt;
-
-        std::cout << Name() << " exiting ..." << std::endl;
-      }
+      PrintDebug(
+          Name() << " Nothing read, try again. Already read total bytes is "
+                 << consumer_total_read_bytes);
     }
   }
 };
@@ -228,7 +229,8 @@ void AssertsForTestComplete() {
   }
 
   std::cout << "Total read bytes numb is " << consumer_total_read_bytes
-            << std::endl;
+            << " Expected bytes numb is "
+            << CalcTotalBytesInStringArray(str_array) << std::endl;
 
   PARAOS_CHECK_ASSERT(
       consumer_total_read_bytes == producer_total_written_bytes &&
@@ -260,19 +262,29 @@ auto main() -> int {
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
 
+  // ---------------------------------------------------------------------------
+  // Create producers
+  // ---------------------------------------------------------------------------
   Producer prod_1{0, "Prod 1"};
+  producer_thread_numb += 1;
+
   Producer prod_2{1, "Prod 2"};
+  producer_thread_numb += 1;
+
   Producer prod_3{2, "Prod 3"};
+  producer_thread_numb += 1;
+
   Producer prod_4{3, "Prod 4"};
-  producer_thread_numb += 4;
+  producer_thread_numb += 1;
+  // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
   // Create consumers
   // ---------------------------------------------------------------------------
-  Consumer cons_1{"Cons 1"};
+  Consumer cons_1{"--Cons 1"};
   consumer_thread_numb += 1;
 
-  Consumer cons_2{"Cons 2"};
+  Consumer cons_2{"--Cons 2"};
   consumer_thread_numb += 1;
   // ---------------------------------------------------------------------------
 
