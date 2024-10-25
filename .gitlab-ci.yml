@@ -13,10 +13,13 @@ ci:windows:
  tags:
   - windows
  script:
+  - python -m venv venv
+  - .\venv\Scripts\activate
   - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
-  - python -m builder -a 1
+  - deactivate
+  - .\venv\Scripts\python -m builder -a 1
 
 ci:windows_stress_gcc:
  stage: test_windows_stress_gcc
@@ -24,10 +27,13 @@ ci:windows_stress_gcc:
  tags:
   - windows
  script:
+  - python -m venv venv
+  - .\venv\Scripts\activate
   - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
-  - python -m builder -a 5
+  - deactivate
+  - .\venv\Scripts\python -m builder -a 5
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -42,10 +48,13 @@ ci:windows_stress_clang:
  tags:
   - windows
  script:
+  - python -m venv venv
+  - .\venv\Scripts\activate
   - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
-  - python -m builder -a 6
+  - deactivate
+  - .\venv\Scripts\python -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
