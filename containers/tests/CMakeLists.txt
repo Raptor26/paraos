@@ -53,6 +53,21 @@ if(THREAD_ENABLE)
   # add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
   # target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
   # add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
+
+  # ----------------------------------------------------------------------------
+  add_executable(test_queue_blocking_spmc_v3 test_queue_blocking_spmc_v3.cpp)
+  target_link_libraries(test_queue_blocking_spmc_v3 PRIVATE paraos::paraos)
+  add_test(NAME test_queue_blocking_spmc_v3 COMMAND test_queue_blocking_spmc_v3)
+
+  # ----------------------------------------------------------------------------
+  add_executable(test_queue_blocking_mpsc_v3 test_queue_blocking_mpsc_v3.cpp)
+  target_link_libraries(test_queue_blocking_mpsc_v3 PRIVATE paraos::paraos)
+  add_test(NAME test_queue_blocking_mpsc_v3 COMMAND test_queue_blocking_mpsc_v3)
+
+  # ----------------------------------------------------------------------------
+  add_executable(test_queue_blocking_mpmc_v3 test_queue_blocking_mpmc_v3.cpp)
+  target_link_libraries(test_queue_blocking_mpmc_v3 PRIVATE paraos::paraos)
+  add_test(NAME test_queue_blocking_mpmc_v3 COMMAND test_queue_blocking_mpmc_v3)
 endif()
 
 # Benchmark --------------------------------------------------------------------
