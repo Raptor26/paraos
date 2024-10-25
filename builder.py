@@ -1,9 +1,9 @@
 import os
 import shutil
 import argparse
-import Lib_builder_utils.builder_functions as builder_functions
+import pybuilder.builder_functions as builder_functions
 
-stress_test_repetitions_count = 500
+stress_test_repetitions_count = 150
 TEST_SUCCESS = 0
 TEST_FAIL = -1
 

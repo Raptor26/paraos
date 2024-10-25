@@ -13,6 +13,14 @@ except (ImportError, DockerException) as e:
         '"python install_builder_dependencies.py"'
     )
 
+# Список ключевых слов для исключения при поиске пресетов, пресеты,
+# содержащие данные слова не будут участвовать в тестировании.
+exclude_keywords_list = ['_trace', '_docker']
+
+# Список ключевых слов, используемых при поиске пресетов, для которых нет
+# необходимости запускать тестирование (выполняется только сборка).
+no_test_keywords_list = []
+
 tests_errors_table = {}
 
 # Таблица с результатами memcheck:
@@ -23,6 +31,7 @@ tests_errors_table = {}
 memcheck_results_table: dict = {}
 
 OK_GREEN = '\033[92m'
+BLUE = '\033[94m'
 WARNING = '\033[93m'
 FAIL = '\033[91m'
 END_COLOR = '\033[0m'
@@ -44,9 +53,11 @@ def check_presets_existence():
         return False
 
 
-def parse_presets(presets_filter: str = None):
+def parse_presets(presets_filter: str = ''):
     """
     Функция выполняет парсинг доступных пресетов из файла CMakePresets.json.
+    :param presets_filter: Фильтр пресетов - строка, используемая для
+        отбора только тех пресетов, которые содержат данную строку.
     :return: Возвращает кортеж пресетов, полученных в результате парсинга.
     """
     if check_presets_existence():
@@ -54,38 +65,31 @@ def parse_presets(presets_filter: str = None):
             presets_dict = json.load(presets_file)
             config_presets_list = presets_dict['configurePresets']
 
-            if presets_filter is None:
-                tests_errors_table.update(
-                    {
-                        preset_data['name']: '' for preset_data in
-                        config_presets_list
-                        if preset_data['name'].find('_trace') == -1
-                        and preset_data['name'].find('_docker') == -1
-                    }
+            # Добавление пресетов в список исключения, если в их cache
+            # variables содержится флаг "SCRIPT_BUILD_ONLY"
+            no_test_keywords_list.extend(
+                (
+                    preset_data['name'] for preset_data in config_presets_list
+                    if 'SCRIPT_BUILD_ONLY' in preset_data['cacheVariables']
                 )
-                return tuple(
-                    preset_data['name']
-                    for preset_data in config_presets_list
-                    if preset_data['name'].find('_trace') == -1
-                    and preset_data['name'].find('_docker') == -1
+            )
+
+            presets_tuple = tuple(
+                preset_data['name']
+                for preset_data in config_presets_list
+                if not any(
+                    string in preset_data['name']
+                    for string in exclude_keywords_list
                 )
-            else:
-                tests_errors_table.update(
-                    {
-                        preset_data['name']: '' for preset_data in
-                        config_presets_list
-                        if preset_data['name'].find('_trace') == -1
-                        and preset_data['name'].find('_docker') == -1
-                        and preset_data['name'].find(presets_filter) != -1
-                    }
-                )
-                return tuple(
-                    preset_data['name']
-                    for preset_data in config_presets_list
-                    if preset_data['name'].find('_trace') == -1
-                    and preset_data['name'].find('_docker') == -1
-                    and preset_data['name'].find(presets_filter) != -1
-                )
+                and preset_data['name'].find(presets_filter) != -1
+            )
+
+            tests_errors_table.update(
+                {
+                    preset_name: '' for preset_name in presets_tuple
+                }
+            )
+            return presets_tuple
 
     else:
         print(FAIL, 'NO CMakePresets.json was found!', END_COLOR)
@@ -104,6 +108,7 @@ def _make_preset(make_command: list[str]):
     )
 
     print(make_result.stdout)
+    print(make_result.stderr)
 
 
 def _build_preset(build_command: list[str]):
@@ -163,10 +168,10 @@ def test_preset(
     :return: Возвращает результат тестирования пресета.
     """
     preset_name = make_command[2]
-    print(f'MAKE phase of the {preset_name}')
+    print(f'{BLUE}{BOLD}MAKE phase of the {preset_name}{END_COLOR}')
     _make_preset(make_command)
 
-    print(f'BUILD phase of the {preset_name}')
+    print(f'{BLUE}{BOLD}BUILD phase of the {preset_name}{END_COLOR}')
     build_res = _build_preset(build_command)
     if build_res.returncode != 0:
         print(
@@ -175,63 +180,80 @@ def test_preset(
         )
         return False
 
-    print(f'TEST phase of the {preset_name}')
-    test_process = subprocess.Popen(
-        [
-            'ctest',
-            '--test-dir',
-            test_dir,
-            '-j4',
-            '--timeout', '30',
-            '--repeat-until-fail', f'{repetitions_count}',
-            '--stop-on-failure',
-            '--output-on-failure'
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    found_fail_test_out = False
-    failed_test_output = ''
-    while True:
-        out = test_process.stdout.readline()
-        if test_process.poll() is not None:
-            break
-        if out != '':
-            out = out.replace('  ', ' ')
-            if out.find('***') != -1:
-                found_fail_test_out = True
+    # Если имя текущего пресета не содержит подстрок, добавленных в список,
+    # исключающий тестирование.
+    if not any(string in preset_name for string in no_test_keywords_list):
+        print(f'{BLUE}{BOLD}TEST phase of the {preset_name}{END_COLOR}')
+        test_process = subprocess.Popen(
+            [
+                'ctest',
+                '--test-dir',
+                test_dir,
+                '-j4',
+                '--timeout', '30',
+                '--repeat-until-fail', f'{repetitions_count}',
+                '--stop-on-failure',
+                '--output-on-failure',
+                '--schedule-random'
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        found_fail_test_out = False
+        failed_test_output = ''
+        while True:
+            out = test_process.stdout.readline()
+            if test_process.poll() is not None:
+                break
+            if out != '':
+                out = out.replace('  ', ' ')
+                if out.find('***') != -1:
+                    found_fail_test_out = True
 
-            elif out.find('FAILED TEST') != -1 or out.find('Test #') != -1:
-                found_fail_test_out = False
+                elif out.find('FAILED TEST') != -1 or out.find('Test #') != -1:
+                    found_fail_test_out = False
 
-            sys.stdout.write(out)
-            sys.stdout.flush()
+                sys.stdout.write(out)
+                sys.stdout.flush()
 
-            if found_fail_test_out:
-                failed_test_output += out
+                if found_fail_test_out:
+                    failed_test_output += out
 
-        time.sleep(0)
+            time.sleep(0)
 
-    if test_process.returncode != 0:
-        print(test_process.stderr.readline())
+        if test_process.returncode != 0:
+            print(test_process.stderr.readline())
 
-    if failed_test_output != '':
-        tests_errors_table[preset_name] = failed_test_output
+        if failed_test_output != '':
+            tests_errors_table[preset_name] = failed_test_output
 
-        return False
+            return False
+    else:
+        print(
+            f'\n{WARNING}{BOLD}Preset {preset_name} has been SKIPPED from '
+            f'testing due to EXCLUSION LIST!{END_COLOR}\n'
+        )
 
     return True
 
 
-def test_multiple_presets(repetitions_count=1, presets_filter: str = None):
+def test_multiple_presets(repetitions_count=1, presets_filter: str = ''):
+    """
+    Метод выполняет поиск и тестирование нескольких выбранных пресетов.
+    :param repetitions_count: Количество повторений каждого теста.
+    :param presets_filter: Ключевое слово-фильтр, которое позволяет отбирать
+        только пресеты, содержащие данное слово.
+    :return: Возвращает True, если тесты всех пресетов завершились успешно,
+    иначе - False.
+    """
     presets_tuple = parse_presets(presets_filter)
     final_res = False
     if presets_tuple:
         results_list = []
 
-        if presets_filter is not None:
-            print(f'For the following FILTER {presets_filter}:\n')
+        if presets_filter != '':
+            print(f'For the following FILTER {presets_filter}:')
 
         print(f'Found following presets:\n{presets_tuple}')
 
@@ -412,7 +434,7 @@ def run_docker_test(image_name: str, image_tags: str):
     :param image_tags: Тег образа для сборки и запуска.
     :return: Возвращает результат выполнения операций сборки и запуска.
     """
-    print('Removing "Dangling" images...')
+    print(f'{BLUE}{BOLD}Removing "Dangling" images...{END_COLOR}')
     result = True
     dangling_remove_res = subprocess.run(
         [os.path.abspath('./docker/remove_dangling_images.sh')],
@@ -422,7 +444,8 @@ def run_docker_test(image_name: str, image_tags: str):
         shell=True
     )
     if dangling_remove_res.returncode == 0:
-        print('BUILDING docker image, process may take a long time...')
+        print(f'{BLUE}{BOLD}BUILDING docker image, process may take a long '
+              f'time...{END_COLOR}')
 
         result = _build_docker_image(image_tags)
         if result:

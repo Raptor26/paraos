@@ -13,10 +13,13 @@ ci:windows:
  tags:
   - windows
  script:
-  - cd Lib_builder_utils
+  - python -m venv venv
+  - .\venv\Scripts\activate
+  - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
-  - python -m builder -a 1
+  - deactivate
+  - .\venv\Scripts\python -m builder -a 1
 
 ci:windows_stress_gcc:
  stage: test_windows_stress_gcc
@@ -24,10 +27,13 @@ ci:windows_stress_gcc:
  tags:
   - windows
  script:
-  - cd Lib_builder_utils
+  - python -m venv venv
+  - .\venv\Scripts\activate
+  - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
-  - python -m builder -a 5
+  - deactivate
+  - .\venv\Scripts\python -m builder -a 5
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -42,10 +48,13 @@ ci:windows_stress_clang:
  tags:
   - windows
  script:
-  - cd Lib_builder_utils
+  - python -m venv venv
+  - .\venv\Scripts\activate
+  - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
-  - python -m builder -a 6
+  - deactivate
+  - .\venv\Scripts\python -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -63,11 +72,11 @@ ci:linux:
  script:
   - python3 -m venv venv
   - source ./venv/bin/activate
-  - cd Lib_builder_utils
+  - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
   - deactivate
-  - /home/gitlab-runner/venv/bin/python3 -m builder -a 1
+  - venv/bin/python3 -m builder -a 1
   
 ci:linux_stress_gcc:
  stage: test_linux_stress_gcc
@@ -77,11 +86,11 @@ ci:linux_stress_gcc:
  script:
   - python3 -m venv venv
   - source ./venv/bin/activate
-  - cd Lib_builder_utils
+  - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
   - deactivate
-  - /home/gitlab-runner/venv/bin/python3 -m builder -a 5
+  - venv/bin/python3 -m builder -a 5
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -98,11 +107,11 @@ ci:linux_stress_clang:
  script:
   - python3 -m venv venv
   - source ./venv/bin/activate
-  - cd Lib_builder_utils
+  - cd pybuilder
   - pip install -r builder_requirements.txt
   - cd ..
   - deactivate
-  - /home/gitlab-runner/venv/bin/python3 -m builder -a 6
+  - venv/bin/python3 -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
