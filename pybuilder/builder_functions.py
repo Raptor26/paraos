@@ -156,6 +156,8 @@ def test_preset(
         build_command: list[str],
         test_dir: str,
         repetitions_count: int = 2,
+        threads_count: int = 4,
+        test_timeout_sec: int = 30
 ):
     """
     Функция выполняет тестирование выбранного пресета.
@@ -165,6 +167,9 @@ def test_preset(
         которую необходимо запустить.
     :param test_dir: Путь к директории для тестов ctest.
     :param repetitions_count: Количество повторений каждого теста.
+    :param threads_count: Количество потоков для параллельного запуска тестов.
+    :param test_timeout_sec: Тайм-аут ожидания завершения каждого теста в
+        секундах.
     :return: Возвращает результат тестирования пресета.
     """
     preset_name = make_command[2]
@@ -189,8 +194,8 @@ def test_preset(
                 'ctest',
                 '--test-dir',
                 test_dir,
-                '-j4',
-                '--timeout', '30',
+                f'-j{threads_count}',
+                '--timeout', f'{test_timeout_sec}',
                 '--repeat-until-fail', f'{repetitions_count}',
                 '--stop-on-failure',
                 '--output-on-failure',
@@ -238,12 +243,17 @@ def test_preset(
     return True
 
 
-def test_multiple_presets(repetitions_count=1, presets_filter: str = ''):
+def test_multiple_presets(
+        presets_filter: str = '', repetitions_count: int = 1,
+        threads_count: int = 4, test_timeout_sec: int = 30):
     """
     Метод выполняет поиск и тестирование нескольких выбранных пресетов.
-    :param repetitions_count: Количество повторений каждого теста.
     :param presets_filter: Ключевое слово-фильтр, которое позволяет отбирать
         только пресеты, содержащие данное слово.
+    :param repetitions_count: Количество повторений каждого теста.
+    :param threads_count: Количество потоков для параллельного запуска тестов.
+    :param test_timeout_sec: Тайм-аут ожидания завершения каждого теста в
+        секундах.
     :return: Возвращает True, если тесты всех пресетов завершились успешно,
     иначе - False.
     """
@@ -262,7 +272,9 @@ def test_multiple_presets(repetitions_count=1, presets_filter: str = ''):
                 ['cmake', '--preset', preset],
                 ['cmake', '--build', f'build/{preset}/'],
                 f'build/{preset}',
-                repetitions_count
+                repetitions_count,
+                threads_count,
+                test_timeout_sec
             )
             results_list.append(preset_res)
             if not preset_res:
