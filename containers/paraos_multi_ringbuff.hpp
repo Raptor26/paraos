@@ -46,42 +46,6 @@ class IMultiRingBuff {
  public:
   virtual ~IMultiRingBuff() = default;
 
-  /// @brief Write objects from src in ring buff.
-  ///
-  /// @param[in] buff_id: Ring buffer id for write objects from src.
-  /// @param[in] src: Pointer on first object in array.
-  /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
-  ///
-  /// @return Returned number of written elements.
-  auto Write(
-      const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
-      std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
-    std::size_t written_elem_numb{0};
-
-    if (buff_id < ring_buff_numb_) {
-      auto& bf = ringbuff_[buff_id];
-
-      {
-        const paraos::CriticalSection critical;
-        written_elem_numb = bf->Write(src, sizeof(T) * src_elem_numb);
-      }
-
-      // Convert number of written bytes in written elements number.
-      written_elem_numb /= sizeof(T);
-
-      // If ring buffer id not pushed in queue, reader can't read these bytes.
-      // Therefore skip written in buffer bytes for free memory.
-      if ((written_elem_numb != 0) &&
-          (!queue_.Push(buff_id, timeout_ms, is_isr))) {
-        const paraos::CriticalSection critical;
-        bf->Skip(written_elem_numb);
-        written_elem_numb = 0u;
-      }
-    }
-
-    return written_elem_numb;
-  }
-
   /// @brief Try write data in buffer without delay. All operations in this
   /// method execute atomically.
   ///
@@ -119,20 +83,20 @@ class IMultiRingBuff {
   }
 
   template <class TIterator>
-  PARAOS_INLINE_TRIVIAL auto Write(
+  PARAOS_INLINE_TRIVIAL auto TryWrite(
       std::size_t buff_id, TIterator begin, TIterator end,
-      std::size_t timeout_ms, bool is_isr = false) {
+      bool is_isr = false) {
     // todo Only random_access_iterator supported. Need static check.
 
-    return Write(
+    return TryWrite(
         buff_id, begin, static_cast<lwrb_sz_t>(std::distance(begin, end)),
-        timeout_ms, is_isr);
+        is_isr);
   }
 
-  PARAOS_INLINE_TRIVIAL auto Write(
-      std::size_t buff_id, const gsl::span<T> src, std::size_t timeout_ms,
+  PARAOS_INLINE_TRIVIAL auto TryWrite(
+      std::size_t buff_id, const gsl::span<T> src,
       bool is_isr = false) -> std::size_t {
-    return Write(buff_id, src.data(), src.size(), timeout_ms, is_isr);
+    return TryWrite(buff_id, src.data(), src.size(), is_isr);
   }
 
   auto Read(

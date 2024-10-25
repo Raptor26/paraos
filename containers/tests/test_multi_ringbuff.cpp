@@ -47,7 +47,7 @@ TEST(MultiRingBuff, WriteDataToRingBufferThenRead) {
 
   constexpr std::size_t cbuff_id{0};
   auto written_bytes_numb =
-      multi_ring_buff.Write(cbuff_id, str.data(), str.size(), 0u);
+      multi_ring_buff.TryWrite(cbuff_id, str.data(), str.size());
 
   ASSERT_EQ(str.size(), written_bytes_numb);
 
@@ -79,7 +79,7 @@ TEST(MultiRingBuff, WriteReadMultipleBuffers) {
   for (std::size_t i = 0; i < max_ring_buff_numb; i++) {
     std::string str_custom = str + " Id:" + std::to_string(i);
     auto written_bytes_numb =
-        multi_ring_buff.Write(i, str_custom.data(), str_custom.size(), 0u);
+        multi_ring_buff.TryWrite(i, str_custom.data(), str_custom.size());
 
     ASSERT_EQ(str_custom.size(), written_bytes_numb);
   }
@@ -114,14 +114,14 @@ TEST(MultiRingBuff, WriteTwiceReadTwice) {
   std::size_t written_bytes_numb{0};
   {
     written_bytes_numb +=
-        multi_ring_buff.Write(cbuff_id, str1.data(), str1.size(), 0u);
+        multi_ring_buff.TryWrite(cbuff_id, str1.data(), str1.size());
 
     ASSERT_EQ(str1.size(), written_bytes_numb);
   }
 
   {
     auto written_bytes_numb_second =
-        multi_ring_buff.Write(cbuff_id, str2.data(), str2.size(), 0u);
+        multi_ring_buff.TryWrite(cbuff_id, str2.data(), str2.size());
 
     written_bytes_numb += written_bytes_numb_second;
     ASSERT_EQ(str2.size(), written_bytes_numb_second);
@@ -151,7 +151,7 @@ TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
   std::vector<uint8_t> myVector(str.begin(), str.end());
 
   constexpr std::size_t cbuff_id{0};
-  auto written_bytes_numb = multi_ring_buff.Write(cbuff_id, myVector, 0u);
+  auto written_bytes_numb = multi_ring_buff.TryWrite(cbuff_id, myVector);
 
   ASSERT_EQ(str.size(), written_bytes_numb);
 
@@ -177,5 +177,5 @@ TEST(MultiRingBuff, WriteIteratorThenReadIterator) {
 
   std::array<unsigned char, 128> str{"Hello world!"};
 
-  multi_ring_buff.Write(0u, str.begin(), str.end(), 0u);
+  multi_ring_buff.TryWrite(0u, str.begin(), str.end());
 }
