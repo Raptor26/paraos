@@ -38,6 +38,9 @@ ci:windows_stress_gcc:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
   - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false
@@ -57,6 +60,9 @@ ci:windows_stress_clang:
   - .\venv\Scripts\python -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
   - if: $CI_COMMIT_BRANCH == 'master'
@@ -95,6 +101,9 @@ ci:linux_stress_gcc:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
   - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false
@@ -114,6 +123,9 @@ ci:linux_stress_clang:
   - venv/bin/python3 -m builder -a 6
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
   - if: $CI_COMMIT_BRANCH == 'master'
