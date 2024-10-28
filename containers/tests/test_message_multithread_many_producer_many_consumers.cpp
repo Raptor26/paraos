@@ -118,16 +118,12 @@ struct Producer : public paraos::Thread {
       while (true) {
         bool is_push_success{false};
 
-        {
-          const paraos::CriticalSection critical;
-          auto write =
-              message_buff.Alloc(elems_vector.at(str_idx).length() + 1u);
+        auto write = message_buff.Alloc(elems_vector.at(str_idx).length() + 1u);
 
-          // If memory alloc successful.
-          if (write) {
-            memcpy(write.Addr(), elems_vector.at(str_idx).data(), write.Size());
-            is_push_success = write.Push();
-          }
+        // If memory alloc successful.
+        if (write) {
+          memcpy(write.Addr(), elems_vector.at(str_idx).data(), write.Size());
+          is_push_success = write.TryPush();
         }
 
         if (is_push_success) {
@@ -320,17 +316,17 @@ int main() {
       "Producer 3", 1024u, paraos::ThreadPriority::kNormal};
   producer_total_thread_numb += 1;
 
-  //   Producer elem_producer_4{
-  //       "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
-  //   producer_total_thread_numb += 1;
+  Producer elem_producer_4{
+      "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
+  producer_total_thread_numb += 1;
 
-  //   Producer elem_producer_5{
-  //       "Producer 5", 1024u, paraos::ThreadPriority::kBelowNormal};
-  //   producer_total_thread_numb += 1;
+  Producer elem_producer_5{
+      "Producer 5", 1024u, paraos::ThreadPriority::kBelowNormal};
+  producer_total_thread_numb += 1;
 
-  //   Producer elem_producer_6{
-  //       "Producer 6", 1024u, paraos::ThreadPriority::kBelowNormal};
-  //   producer_total_thread_numb += 1;
+  Producer elem_producer_6{
+      "Producer 6", 1024u, paraos::ThreadPriority::kBelowNormal};
+  producer_total_thread_numb += 1;
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();

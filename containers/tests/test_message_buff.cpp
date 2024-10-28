@@ -75,7 +75,7 @@ TEST(Message, PushToFull) {
 
   {
     auto message = buff.Alloc(sizeof(val));
-    ASSERT_FALSE(message.Push());
+    ASSERT_FALSE(message.TryPush());
   }
 }
 
