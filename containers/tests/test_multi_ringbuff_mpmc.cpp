@@ -87,9 +87,10 @@ constexpr std::size_t thread_stack_depth{1024};
 /// more than actual string numb in str_array.
 std::atomic_size_t producer_actual_str_idx{0};
 
-/// @brief After each successful write, producer update this value.
+/// @brief After each successful write, producer increment this value.
 std::atomic_size_t producer_total_written_bytes{0};
 
+/// @brief  After each successful read, consumer increment this value.
 std::atomic_size_t consumer_total_read_bytes{0};
 
 /// ----------------------------------------------------------------------------
@@ -133,9 +134,7 @@ struct Producer : public paraos::Thread {
       if (str_idx < str_array.size()) {
       } else {
         // All data already written, exit from thread.
-        SetNeedWhile(false);
-        ++producer_thread_exit_cnt;
-        PrintDebug(Name() << " exiting ... ");
+        ThreadExit();
         break;
       }
 
@@ -157,6 +156,13 @@ struct Producer : public paraos::Thread {
             Name() << "WARN: Nothin written, try again after delay. "
                    << "String idx is " << str_idx);
 
+        // If no consumers online, nobody read data from buffer and buffer
+        // always will full.
+        if (IsConsumersOffline()) {
+          ThreadExit();
+          break;
+        }
+
         // Small delay for yeld resources.
         Thread::DelayMs(1);
       }
@@ -164,6 +170,23 @@ struct Producer : public paraos::Thread {
 
     // cyclic increment buff idx.
     ++buff_idx_;
+  }
+
+ private:
+  void ThreadExit() {
+    SetNeedWhile(false);
+    ++producer_thread_exit_cnt;
+    PrintDebug(Name() << " exiting ... ");
+  }
+
+  bool IsConsumersOffline() {
+    bool is_need_exit{false};
+
+    if (consumer_thread_exit_cnt >= consumer_thread_numb) {
+      is_need_exit = true;
+    }
+
+    return is_need_exit;
   }
 
  private:
@@ -183,13 +206,6 @@ struct Consumer : public paraos::Thread {
 
   /// @brief Consumer thread.
   void Run() override {
-    // If all bytes read, break thread.
-    if (consumer_total_read_bytes >= CalcTotalBytesInStringArray(str_array)) {
-      SetNeedWhile(false);
-      ++consumer_thread_exit_cnt;
-      PrintDebug(Name() << " exiting ... ");
-    }
-
     // Small delay for yeld recourses if no data available in buff.
     constexpr std::size_t delay_ms{1};
     constexpr std::size_t read_mem_size{2048};
@@ -201,13 +217,33 @@ struct Consumer : public paraos::Thread {
 
     if (read_size > 0u) {
       consumer_total_read_bytes += read_size;
-
       PrintDebug(Name() << " read " << read_mem->data());
     } else {
       PrintDebug(
           Name() << " Nothing read, try again. Already read total bytes is "
                  << consumer_total_read_bytes);
     }
+
+    // No producers online, nobody write new data, need exit from thread.
+    if (IsProducersOffline()) {
+      ThreadExit();
+    }
+  }
+
+ private:
+  void ThreadExit() {
+    SetNeedWhile(false);
+    ++consumer_thread_exit_cnt;
+    PrintDebug(Name() << " exiting ... ");
+  }
+
+  bool IsProducersOffline() {
+    bool is_offline{true};
+    if (producer_thread_exit_cnt >= producer_thread_numb) {
+      is_offline = true;
+    }
+
+    return is_offline;
   }
 };
 
