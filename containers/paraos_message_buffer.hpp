@@ -31,6 +31,7 @@
 
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
 #include "paraos_queue_blocking_v3.hpp"
 #include "paraos_thread.hpp"
 
@@ -171,15 +172,23 @@ class IMessageBuffer {
   IMessageBuffer &operator=(const IMessageBuffer &other) = delete;
   IMessageBuffer &operator=(IMessageBuffer &&other) = delete;
 
-  PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes) {
-    const paraos::CriticalSection critical;
-
-    if (queue_.IsFull()) {
-      // if no space in queue no request any memory from heap in
-      // MessageWritable() ctor.
+  PARAOS_INLINE_TRIVIAL auto Alloc(
+      std::size_t size_in_bytes, std::size_t delay_ms = 0) {
+    // Lock mutex for guard buffer write operation. Mutes will unlock when data
+    // try to push in buffer (unlock in MessageWritable() class).
+    if (mutex_.Lock(delay_ms)) {
+      if (queue_.IsFull()) {
+        // if no space in queue no request any memory from heap in
+        // MessageWritable() ctor.
+        size_in_bytes = 0;
+      }
+    } else {
+      // We don't lock write operation, now MessageWritable() no request any
+      // memory from heap.
       size_in_bytes = 0;
     }
 
+    mutex_.Unlock();
     return MessageWritable(size_in_bytes, queue_);
   }
 
@@ -196,6 +205,7 @@ class IMessageBuffer {
 
  private:
   paraos::v3::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
+  MutexRecursive mutex_;
 };
 
 template <

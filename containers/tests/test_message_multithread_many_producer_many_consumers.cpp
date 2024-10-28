@@ -34,6 +34,8 @@
 #include <vector>
 
 #include "paraos_message_buffer.hpp"
+#include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
 #include "paraos_thread.hpp"
 
 using namespace paraos;
@@ -46,22 +48,27 @@ using namespace paraos;
 
 /// @brief Burning Heart
 const std::vector<std::string> elems_vector{
-    "1)  Two worlds collide", "2)  Rival nations", "3)  It's a primitive clash",
-    "4)  Venting years of frustration", "5)  Bravely we hope",
-    "6)  Against all hope", "7)  There is so much at stake",
-    "8)  Seems our freedom's up", "9)  Against the ropes",
-    // "10) Does the crowd understand?",
-    // "11) Is it East versus West",
-    // "12) Or man against man?",
-    // "13) Can any nation stand alone?",
-    // "14) In the burning Heart",
-    // "15) Just about to burst",
-    // "16) There's a quest for answers",
-    // "17) An unquenchable thirst",
-    // "18) In the darkest night",
-    // "19) Rising like a spire",
-    // "20) In the burning heart",
-    // "21) The unmistakable fire",
+    "1)  Two worlds collide",
+    "2)  Rival nations",
+    "3)  It's a primitive clash",
+    "4)  Venting years of frustration",
+    "5)  Bravely we hope",
+    "6)  Against all hope",
+    "7)  There is so much at stake",
+    "8)  Seems our freedom's up",
+    "9)  Against the ropes",
+    "10) Does the crowd understand?",
+    "11) Is it East versus West",
+    "12) Or man against man?",
+    "13) Can any nation stand alone?",
+    "14) In the burning Heart",
+    "15) Just about to burst",
+    "16) There's a quest for answers",
+    "17) An unquenchable thirst",
+    "18) In the darkest night",
+    "19) Rising like a spire",
+    "20) In the burning heart",
+    "21) The unmistakable fire",
     "22) -----------------------------"};
 
 /// @brief Контейнер в который записываются строки, считанные потоками
@@ -109,13 +116,18 @@ struct Producer : public paraos::Thread {
     if (str_idx < elems_vector.size()) {
       // Trying to write message in buffer will not work yet.
       while (true) {
-        auto write = message_buff.Alloc(elems_vector.at(str_idx).length() + 1u);
-
         bool is_push_success{false};
-        // If memory alloc successful.
-        if (write) {
-          memcpy(write.Addr(), elems_vector.at(str_idx).data(), write.Size());
-          is_push_success = write.Push();
+
+        {
+          const paraos::CriticalSection critical;
+          auto write =
+              message_buff.Alloc(elems_vector.at(str_idx).length() + 1u);
+
+          // If memory alloc successful.
+          if (write) {
+            memcpy(write.Addr(), elems_vector.at(str_idx).data(), write.Size());
+            is_push_success = write.Push();
+          }
         }
 
         if (is_push_success) {
@@ -125,6 +137,7 @@ struct Producer : public paraos::Thread {
 
           paraos::CriticalSection critical;
           producers_str_container.push_back(elems_vector.at(str_idx).c_str());
+
           break;
         } else {
           PrintDebug(
@@ -176,8 +189,8 @@ struct Consumer : public paraos::Thread {
 
   /// @brief Consumers thread.
   void Run() override {
-    // Small delay for yeld recourses.
-    constexpr std::size_t delay_ms{0};
+    // Small delay for yeld resources.
+    constexpr std::size_t delay_ms{1};
 
     {
       auto read_message = message_buff.Pop(delay_ms);
@@ -191,6 +204,8 @@ struct Consumer : public paraos::Thread {
         PrintDebug(
             Name() << " string read successful: "
                    << static_cast<char *>(read_message->Addr()));
+
+        read_message.reset();
 
         ++consumer_actual_read_str_idx;
       } else {
@@ -265,7 +280,8 @@ void CheckIfTestSuccessfullyComplete() {
 #if defined(FREERTOS)
 void ExitAfterTestComplete() {
   paraos::CriticalSection critical;
-  if (producer_thread_exit_cnt >= thread_total_numb) {
+  if ((producer_thread_exit_cnt >= producer_total_thread_numb) &&
+      (producer_total_thread_numb >= consumer_total_thread_numb)) {
     CheckIfTestSuccessfullyComplete();
     exit(EXIT_SUCCESS);
   }
@@ -300,9 +316,9 @@ int main() {
       "Producer 2", 1024u, paraos::ThreadPriority::kNormal};
   producer_total_thread_numb += 1;
 
-  //   Producer elem_producer_3{
-  //       "Producer 3", 1024u, paraos::ThreadPriority::kNormal};
-  //   producer_total_thread_numb += 1;
+  Producer elem_producer_3{
+      "Producer 3", 1024u, paraos::ThreadPriority::kNormal};
+  producer_total_thread_numb += 1;
 
   //   Producer elem_producer_4{
   //       "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};

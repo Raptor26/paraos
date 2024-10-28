@@ -109,7 +109,7 @@ class MutexBase {
   HANDLE handle_{nullptr};
 
  private:
-  bool is_recursive_{false};
+  const bool is_recursive_{false};
   std::atomic_int lock_cnt_{0};
 };
 
