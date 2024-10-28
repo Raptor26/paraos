@@ -35,13 +35,12 @@ if(THREAD_ENABLE)
   # test_queue_blocking_multithread_many_prod_and_cons)
 
   # ----------------------------------------------------------------------------
-  # Тест закомментирован, поскольку не проходит пайплайн gitlab-runner.
-  # add_executable(test_message_multithread_many_producer_many_consumers
-  # test_message_multithread_many_producer_many_consumers.cpp)
-  # target_link_libraries(test_message_multithread_many_producer_many_consumers
-  # PRIVATE paraos::paraos) add_test(NAME
-  # test_message_multithread_many_producer_many_consumers COMMAND
-  # test_message_multithread_many_producer_many_consumers)
+  add_executable(test_message_multithread_many_producer_many_consumers
+                 test_message_multithread_many_producer_many_consumers.cpp)
+  target_link_libraries(test_message_multithread_many_producer_many_consumers
+                        PRIVATE paraos::paraos)
+  add_test(NAME test_message_multithread_many_producer_many_consumers
+           COMMAND test_message_multithread_many_producer_many_consumers)
 
   # ----------------------------------------------------------------------------
   add_executable(test_lwrb_multithread_spsc test_lwrb_multithread_spsc.cpp)

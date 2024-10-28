@@ -53,7 +53,7 @@ static void MessageBufferPushThenPop(bm::State &state) {
   paraos::MessageBuffer<10> buff;
   assert(buff);
   for (auto _ : state) {
-    auto write = buff.Alloc(str.size(), 0u);
+    auto write = buff.Alloc(str.size());
     assert(write);
     memcpy(write.Addr(), static_cast<const void *>(str.data()), str.size());
     write.Push();

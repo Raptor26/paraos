@@ -45,7 +45,7 @@ TEST(Message, PushThenPop) {
 
   constexpr double val{12};
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
 
     auto *vector = static_cast<double *>(message.Addr());
     *vector = val;
@@ -63,18 +63,18 @@ TEST(Message, PushToFull) {
 
   constexpr double val{12};
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
   }
 
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
     ASSERT_TRUE(message);
   }
 
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
     ASSERT_FALSE(message.Push());
   }
 }
@@ -85,7 +85,7 @@ TEST(Message, CopyCtor) {
 
   constexpr double val{12};
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
 
@@ -107,7 +107,7 @@ TEST(Message, MoveCtor) {
 
   constexpr double val{12};
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
 
@@ -131,7 +131,7 @@ TEST(Message, PushButForceFree) {
   constexpr double val{12};
 
   {
-    auto message = buff.Alloc(sizeof(val), thread_delay);
+    auto message = buff.Alloc(sizeof(val));
     message.Free();
   }
 

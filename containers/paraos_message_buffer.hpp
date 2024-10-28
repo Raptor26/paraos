@@ -31,7 +31,7 @@
 
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
-#include "paraos_queue_blocking.hpp"
+#include "paraos_queue_blocking_v3.hpp"
 #include "paraos_thread.hpp"
 
 namespace paraos {
@@ -52,7 +52,10 @@ class Message {
 
   Message() : data_ptr_{nullptr}, size_in_bytes_{0} {}
 
-  virtual ~Message() { SafeDeallocate(); }
+  virtual ~Message() {
+    paraos::CriticalSection critical;
+    SafeDeallocate();
+  }
 
   Message(const Message &other)
       : data_ptr_{nullptr}, size_in_bytes_{other.size_in_bytes_} {
@@ -122,11 +125,10 @@ class MessageWritable final {
  public:
   MessageWritable(
       const std::size_t size_in_bytes,
-      paraos::IQueueBlocking<Message<ALLOCATOR>> &queue,
-      const std::size_t timeout_ms)
-      : message_{size_in_bytes}, queue_{queue}, timeout_ms_{timeout_ms} {}
+      paraos::v3::IQueueBlocking<Message<ALLOCATOR>> &queue)
+      : message_{size_in_bytes}, queue_{queue} {}
 
-  ~MessageWritable() { Push(timeout_ms_); }
+  ~MessageWritable() { Push(); }
 
   MessageWritable(const MessageWritable &other) = delete;
   MessageWritable(MessageWritable &&other) = delete;
@@ -138,16 +140,17 @@ class MessageWritable final {
   PARAOS_INLINE_TRIVIAL void *Addr() { return message_.Addr(); }
   PARAOS_INLINE_TRIVIAL size_t Size() { return message_.Size(); }
 
-  PARAOS_INLINE_OPERATIONS bool Push(std::size_t timeout_ms) {
+  PARAOS_INLINE_OPERATIONS bool Push(
+      std::size_t timeout_ms = 0, bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(timeout_ms);
+
     bool is_message_pushed{false};
     if (message_) {
-      is_message_pushed = queue_.Push(std::move(message_), timeout_ms);
+      is_message_pushed = queue_.TryPush(std::move(message_), is_isr);
     }
 
     return is_message_pushed;
   }
-
-  PARAOS_INLINE_TRIVIAL bool Push() { return Push(timeout_ms_); }
 
   /// @brief Пользователь может вызвать данный метод если передумал отправлять
   /// сообщение в буфер.
@@ -155,8 +158,7 @@ class MessageWritable final {
 
  private:
   Message<ALLOCATOR> message_;
-  paraos::IQueueBlocking<Message<ALLOCATOR>> &queue_;
-  const std::size_t timeout_ms_;
+  paraos::v3::IQueueBlocking<Message<ALLOCATOR>> &queue_;
 };
 
 template <typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
@@ -169,9 +171,16 @@ class IMessageBuffer {
   IMessageBuffer &operator=(const IMessageBuffer &other) = delete;
   IMessageBuffer &operator=(IMessageBuffer &&other) = delete;
 
-  PARAOS_INLINE_TRIVIAL auto Alloc(
-      const std::size_t size_in_bytes, const std::size_t timeout_ms) {
-    return MessageWritable(size_in_bytes, queue_, timeout_ms);
+  PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes) {
+    const paraos::CriticalSection critical;
+
+    if (queue_.IsFull()) {
+      // if no space in queue no request any memory from heap in
+      // MessageWritable() ctor.
+      size_in_bytes = 0;
+    }
+
+    return MessageWritable(size_in_bytes, queue_);
   }
 
   PARAOS_INLINE_TRIVIAL auto Pop(std::size_t timeout_ms) {
@@ -182,11 +191,11 @@ class IMessageBuffer {
   PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
 
  protected:
-  IMessageBuffer(paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
+  IMessageBuffer(paraos::v3::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
       : queue_{queue} {}
 
  private:
-  paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
+  paraos::v3::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
 };
 
 template <
@@ -209,7 +218,7 @@ class MessageBuffer final : public IMessageBuffer<BUFFER_ALLOCATOR> {
   operator bool() const { return queue_; }
 
  private:
-  paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;
+  paraos::v3::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;
 };
 
 }  // namespace paraos

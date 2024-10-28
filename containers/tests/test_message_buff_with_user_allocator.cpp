@@ -227,7 +227,7 @@ TEST(BufferUserAlloc, Create) {
   constexpr float val{123.456};
 
   {
-    auto message_area = buffer.Alloc(sizeof(val), thread_delay);
+    auto message_area = buffer.Alloc(sizeof(val));
     EXPECT_TRUE(message_area);
     EXPECT_EQ(sizeof(val), message_area.Size());
 

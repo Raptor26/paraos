@@ -3,6 +3,7 @@
 
 #include <execution>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "etl/queue.h"
@@ -23,6 +24,9 @@ struct IQueueBlocking {
 
   /// @brief Construct object "in place" in queue storage.
   ///
+  /// @note 'is_isr' set as first parameter because argument pack (args) must be
+  /// last in argument list.
+  ///
   /// @tparam Args: Arguments to be passed in ctor for construct object in
   /// place.
   /// @param[in] args: Arguments to be passed in ctor for construct object in
@@ -30,12 +34,12 @@ struct IQueueBlocking {
   ///
   /// @return true if object constructed, false otherwise.
   template <typename... Args>
-  auto TryEmplaceBack(Args&&... args, bool is_isr = false) -> bool {
+  auto TryEmplaceBack(bool is_isr, Args&&... args) -> bool {
     bool is_pushed{false};
 
     try {
       const paraos::CriticalSection critical;
-      queue_.emplace(etl::forward<Args>(args)...);
+      queue_.emplace(std::forward<Args>(args)...);
       pop_sem_.Give(is_isr);
       is_pushed = true;
     } catch (const etl::queue_full& e) {
@@ -58,7 +62,7 @@ struct IQueueBlocking {
   /// @return Return true if item successfully moved in queue. false in other
   /// wise.
   auto TryPush(T&& item, bool is_isr = false) -> bool {
-    return TryEmplaceBack(item, is_isr);
+    return TryEmplaceBack(is_isr, std::move(item));
   }
 
   /// @brief Try push copy item in queue. If queue full, nothing will push.
