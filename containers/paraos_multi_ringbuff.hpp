@@ -31,7 +31,6 @@
 #include <tuple>
 #include <type_traits>
 
-#include "etl/unordered_map.h"
 #include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_queue_blocking_v3.hpp"
@@ -164,8 +163,7 @@ class IMultiRingBuff {
     return read_bytes_numb;
   }
 
-  auto TryRead(
-      std::size_t& buff_id, gsl::span<T> dst, bool is_isr = false) {
+  auto TryRead(std::size_t& buff_id, gsl::span<T> dst, bool is_isr = false) {
     return TryRead(buff_id, dst.data(), dst.size(), is_isr);
   }
 
