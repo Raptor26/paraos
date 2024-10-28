@@ -171,11 +171,58 @@ TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
 TEST(MultiRingBuff, WriteIteratorThenReadIterator) {
   constexpr std::size_t max_ring_buff_size{128};
   paraos::MultiRingBuff<
-      10, std::uint8_t, paraos::RingBuff<unsigned char, max_ring_buff_size>,
+      10, unsigned char, paraos::RingBuff<unsigned char, max_ring_buff_size>,
       paraos::RingBuff<unsigned char, max_ring_buff_size>>
       multi_ring_buff{};
 
   std::array<unsigned char, 128> str{"Hello world!"};
 
   multi_ring_buff.TryWrite(0u, str.begin(), str.end());
+}
+
+TEST(MultiRingBuff, TryRead) {
+  constexpr std::size_t max_ring_buff_size{128};
+
+  paraos::MultiRingBuff<
+      10, char, paraos::RingBuff<char, max_ring_buff_size>,
+      paraos::RingBuff<char, max_ring_buff_size>>
+      multi_ring_buff{};
+
+  const std::vector<std::string> str_arr{{"Hello"}, {" world!"}};
+
+  ASSERT_EQ(multi_ring_buff.GetBuffNumb(), str_arr.size());
+
+  for (std::size_t i = 0; i < multi_ring_buff.GetBuffNumb(); ++i) {
+    EXPECT_LT(
+        i, multi_ring_buff.TryWrite(
+               i, str_arr.at(i).data(), str_arr.at(i).length()));
+  }
+
+  std::array<char, 128> dst{};
+  for (std::size_t i = 0; i < multi_ring_buff.GetBuffNumb(); ++i) {
+    std::size_t idx;
+    EXPECT_LT(0, multi_ring_buff.TryRead(idx, dst.data(), dst.size()));
+    EXPECT_EQ(0, str_arr.at(i).compare(dst.data()));
+  }
+
+  // Try read empty buff.
+  std::size_t idx;
+  EXPECT_EQ(0, multi_ring_buff.TryRead(idx, dst.data(), dst.size()));
+}
+
+TEST(MultiRingBuff, TryReadSpan) {
+  constexpr std::size_t max_ring_buff_size{128};
+
+  paraos::MultiRingBuff<
+      10, char, paraos::RingBuff<char, max_ring_buff_size>,
+      paraos::RingBuff<char, max_ring_buff_size>>
+      multi_ring_buff{};
+
+  std::string str{"Hello world!"};
+  EXPECT_LT(0, multi_ring_buff.TryWrite(0u, str.data(), str.length()));
+
+  std::array<char, 128> dst{};
+
+  std::size_t idx;
+  EXPECT_LT(0, multi_ring_buff.TryRead(idx, dst));
 }

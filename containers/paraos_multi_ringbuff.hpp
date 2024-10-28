@@ -88,9 +88,7 @@ class IMultiRingBuff {
       bool is_isr = false) {
     // todo Only random_access_iterator supported. Need static check.
 
-    return TryWrite(
-        buff_id, begin, static_cast<lwrb_sz_t>(std::distance(begin, end)),
-        is_isr);
+    return TryWrite(buff_id, begin, std::distance(begin, end), is_isr);
   }
 
   PARAOS_INLINE_TRIVIAL auto TryWrite(
@@ -102,8 +100,6 @@ class IMultiRingBuff {
   auto Read(
       std::size_t& buff_id, void* dst, std::size_t dst_size,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
-    PARAOS_ATTR_UNUSED_VAR(is_isr);
-
     PARAOS_CHECK_ASSERT(dst);
     PARAOS_CHECK_ASSERT(dst_size != 0u);
 
@@ -129,7 +125,7 @@ class IMultiRingBuff {
         }
       }
     } else if (is_need_force_read_ == true) {
-      read_bytes_numb = ForceRead(buff_id, dst, dst_size);
+      read_bytes_numb = TryRead(buff_id, dst, dst_size);
     }
 
     return read_bytes_numb;
@@ -143,8 +139,10 @@ class IMultiRingBuff {
         is_isr);
   }
 
-  auto ForceRead(std::size_t& buff_id, void* dst, std::size_t dst_size)
-      -> std::size_t {
+  auto TryRead(
+      std::size_t& buff_id, void* dst, std::size_t dst_size,
+      bool is_isr = false) -> std::size_t {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     std::size_t read_bytes_numb{0};
 
     bool is_need_force_read{false};
@@ -164,6 +162,11 @@ class IMultiRingBuff {
     }
     is_need_force_read_ = is_need_force_read;
     return read_bytes_numb;
+  }
+
+  auto TryRead(
+      std::size_t& buff_id, gsl::span<T> dst, bool is_isr = false) {
+    return TryRead(buff_id, dst.data(), dst.size(), is_isr);
   }
 
   auto GetBuffNumb() const { return ring_buff_numb_; }

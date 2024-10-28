@@ -255,7 +255,7 @@ void AssertsForTestComplete() {
 
   for (std::size_t i = 0u; i < multi_ring_buff.GetBuffNumb(); ++i) {
     auto read_bytes_numb =
-        multi_ring_buff.ForceRead(idx, read_mem->data(), read_mem->size());
+        multi_ring_buff.TryRead(idx, read_mem->data(), read_mem->size());
 
     if (read_bytes_numb > 0) {
       consumer_total_read_bytes += read_bytes_numb;
