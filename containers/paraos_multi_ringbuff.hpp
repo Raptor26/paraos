@@ -31,7 +31,6 @@
 #include <tuple>
 #include <type_traits>
 
-#include "etl/unordered_map.h"
 #include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_ringbuff.hpp"
@@ -46,37 +45,35 @@ class IMultiRingBuff {
  public:
   virtual ~IMultiRingBuff() = default;
 
-  auto Write(
-
-      /// @brief Write objects from src in ring buff.
-      ///
-      /// @param[in] buff_id: Ring buffer id for write objects from src.
-      /// @param[in] src: Pointer on first object in array.
-      /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
-      ///
-      /// @return Returned number of written elements.
+  /// @brief Try write data in buffer without delay. All operations in this
+  /// method execute atomically.
+  ///
+  /// @param[in] buff_id: Ring buffer id for write objects from src.
+  /// @param[in] src: Pointer on first object in array.
+  /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
+  /// @param[in] is_isr: Set true if call from isr.
+  ///
+  /// @return Returned number of written elements.
+  auto TryWrite(
       const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
-      std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
+      bool is_isr = false) -> std::size_t {
     std::size_t written_elem_numb{0};
-
-    if (buff_id < ring_buff_numb_) {
-      auto& bf = ringbuff_[buff_id];
-
-      {
-        const paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
+    if (!queue_.IsFull()) {
+      if (buff_id < ring_buff_numb_) {
+        auto& bf = ringbuff_[buff_id];
         written_elem_numb = bf->Write(src, sizeof(T) * src_elem_numb);
-      }
 
-      // Convert number of written bytes in written elements number.
-      written_elem_numb /= sizeof(T);
+        if (written_elem_numb > 0u) {
+          auto is_pushed = queue_.TryPush(buff_id, is_isr);
 
-      // If ring buffer id not pushed in queue, reader can't read these bytes.
-      // Therefore skip written in buffer bytes for free memory.
-      if ((written_elem_numb != 0) &&
-          (!queue_.Push(buff_id, timeout_ms, is_isr))) {
-        const paraos::CriticalSection critical;
-        bf->Skip(written_elem_numb);
-        written_elem_numb = 0u;
+          // Reduce compile warning if PARAOS_CHECK_ASSERT() empty macros.
+          PARAOS_ATTR_UNUSED_VAR(is_pushed);
+
+          // queue_.Push() can't return false because we check inside critical
+          // section if queue full befor push.
+          PARAOS_CHECK_ASSERT(is_pushed);
+        }
       }
     }
 
@@ -84,33 +81,32 @@ class IMultiRingBuff {
   }
 
   template <class TIterator>
-  PARAOS_INLINE_TRIVIAL auto Write(
+  PARAOS_INLINE_TRIVIAL auto TryWrite(
       std::size_t buff_id, TIterator begin, TIterator end,
-      std::size_t timeout_ms, bool is_isr = false) {
+      bool is_isr = false) {
     // todo Only random_access_iterator supported. Need static check.
 
-    return Write(
-        buff_id, begin, static_cast<lwrb_sz_t>(std::distance(begin, end)),
-        timeout_ms, is_isr);
+    return TryWrite(buff_id, begin, std::distance(begin, end), is_isr);
   }
 
-  PARAOS_INLINE_TRIVIAL auto Write(
-      std::size_t buff_id, const gsl::span<T> src, std::size_t timeout_ms,
+  PARAOS_INLINE_TRIVIAL auto TryWrite(
+      std::size_t buff_id, const gsl::span<T> src,
       bool is_isr = false) -> std::size_t {
-    return Write(buff_id, src.data(), src.size(), timeout_ms, is_isr);
+    return TryWrite(buff_id, src.data(), src.size(), is_isr);
   }
 
   auto Read(
       std::size_t& buff_id, void* dst, std::size_t dst_size,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
-    PARAOS_ATTR_UNUSED_VAR(is_isr);
-
     PARAOS_CHECK_ASSERT(dst);
     PARAOS_CHECK_ASSERT(dst_size != 0u);
 
+    // todo delete after tests
+    is_need_force_read_ = true;
+
     std::size_t read_bytes_numb{0};
     // queue_.Pop return std::optional
-    auto ring_buff_id = queue_.Pop(timeout_ms);
+    auto ring_buff_id = queue_.Pop(timeout_ms, is_isr);
     if (ring_buff_id) {
       const paraos::CriticalSection critical;
       buff_id = *ring_buff_id;
@@ -120,14 +116,14 @@ class IMultiRingBuff {
       // If not read all available bytes, push ring buffer id in queue for
       // read remaining bytes in next call Read().
       if (bf->Size() != 0u) {
-        if (!queue_.Push(buff_id, timeout_ms)) {
+        if (!queue_.TryPush(buff_id)) {
           // No space in queue. Set force read flag for read data from
           // buffer without request id from queue.
           is_need_force_read_ = true;
         }
       }
     } else if (is_need_force_read_ == true) {
-      read_bytes_numb = ForceRead(buff_id, dst, dst_size);
+      read_bytes_numb = TryRead(buff_id, dst, dst_size);
     }
 
     return read_bytes_numb;
@@ -141,8 +137,10 @@ class IMultiRingBuff {
         is_isr);
   }
 
-  auto ForceRead(std::size_t& buff_id, void* dst, std::size_t dst_size)
-      -> std::size_t {
+  auto TryRead(
+      std::size_t& buff_id, void* dst, std::size_t dst_size,
+      bool is_isr = false) -> std::size_t {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     std::size_t read_bytes_numb{0};
 
     bool is_need_force_read{false};
@@ -164,16 +162,20 @@ class IMultiRingBuff {
     return read_bytes_numb;
   }
 
+  auto TryRead(std::size_t& buff_id, gsl::span<T> dst, bool is_isr = false) {
+    return TryRead(buff_id, dst.data(), dst.size(), is_isr);
+  }
+
   auto GetBuffNumb() const { return ring_buff_numb_; }
 
  protected:
   IMultiRingBuff(
-      IQueueBlocking<std::size_t>& queue, ringbuff_pointer* ringbuff,
-      std::size_t ring_buff_numb)
+      paraos::IQueueBlocking<std::size_t>& queue,
+      ringbuff_pointer* ringbuff, std::size_t ring_buff_numb)
       : queue_{queue}, ringbuff_{ringbuff}, ring_buff_numb_{ring_buff_numb} {}
 
  private:
-  IQueueBlocking<std::size_t>& queue_;
+  paraos::IQueueBlocking<std::size_t>& queue_;
   ringbuff_pointer* ringbuff_;
   const std::size_t ring_buff_numb_;
   etl::atomic_bool is_need_force_read_{false};
@@ -201,12 +203,15 @@ class MultiRingBuff : public IMultiRingBuff<T> {
       QUEUE_SIZE > 1u, "Queue size in MultiRingBuff must be greater then one");
 
  public:
-  MultiRingBuff() : IMultiRingBuff<T>{queue_, ring_buff_ptr, ring_buffs_numbs} {
+  constexpr MultiRingBuff()
+      : IMultiRingBuff<T>{queue_, ring_buff_ptr, ring_buffs_numbs} {
     // Copy ring buff addresses from tuple in ring_buff_ptr.
     SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }
 
   virtual ~MultiRingBuff() = default;
+
+  constexpr auto GetBuffNumb() const { return sizeof...(RINGBUFF); }
 
  private:
   /// --------------------------------------------------------------------------
@@ -238,7 +243,7 @@ class MultiRingBuff : public IMultiRingBuff<T> {
   }
 
  private:
-  QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
+  paraos::QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
 
   /// @brief Tuple for contained ring buffers.
   std::tuple<RINGBUFF...> ringbuff_tuple_;
