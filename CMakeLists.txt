@@ -32,6 +32,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
          ON)
 endif()
 
+if(IS_PARAOS_STAND_ALONE_PROJECT)
+  option(PARAOS_TESTS "Enable testing" ON)
+endif()
+
 # Boost::leaf ------------------------------------------------------------------
 if(NOT TARGET Boost::leaf)
   add_subdirectory(leaf)
@@ -89,7 +93,7 @@ elseif(UNIX)
   add_subdirectory(port_unix)
 endif()
 
-if(UTEST)
+if(PARAOS_TESTS)
   add_subdirectory(port_tests)
 endif()
 

@@ -15,6 +15,6 @@ if(IS_PARAOS_STAND_ALONE_PROJECT)
                              INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/config/")
 endif()
 
-if(UTEST)
+if(PARAOS_TESTS)
   add_subdirectory(tests)
 endif()

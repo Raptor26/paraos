@@ -10,7 +10,7 @@
         "SUBLANG",
         "threadable",
         "tmain",
-        "UTEST",
+        "PARAOS_TESTS",
         "ZEROINIT",
         "инвалидирует"
     ],
