@@ -55,10 +55,7 @@ class Message {
 
   Message() : data_ptr_{nullptr}, size_in_bytes_{0} {}
 
-  virtual ~Message() {
-    paraos::CriticalSection critical;
-    SafeDeallocate();
-  }
+  virtual ~Message() { SafeDeallocate(); }
 
   Message(const Message &other)
       : data_ptr_{nullptr}, size_in_bytes_{other.size_in_bytes_} {
