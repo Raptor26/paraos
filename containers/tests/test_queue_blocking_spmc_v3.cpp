@@ -26,7 +26,7 @@
 #include <atomic>
 #include <cstdint>
 
-#include "paraos_queue_blocking_v3.hpp"
+#include "paraos_queue_blocking.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_trace.hpp"
@@ -38,7 +38,7 @@ constexpr std::size_t one_producer_expected_push_items_numb{3};
 std::atomic_size_t push_item_cnt{0};
 std::atomic_size_t pop_item_cnt{0};
 
-paraos::v3::QueueBlocking<char, max_queue_size> queue;
+paraos::QueueBlocking<char, max_queue_size> queue;
 
 struct Producer : public paraos::Thread {
   Producer(

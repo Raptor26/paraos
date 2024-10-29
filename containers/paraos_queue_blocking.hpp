@@ -16,7 +16,6 @@
 #include "paraos_thread.hpp"
 
 namespace paraos {
-namespace v3 {
 
 template <typename T>
 struct IQueueBlocking {
@@ -193,7 +192,6 @@ class QueueBlocking final : public IQueueBlocking<T> {
   SemaphoreBinary pop_sem_;
   Mutex mutex_;
 };
-}  // namespace v3
 }  // namespace paraos
 
 #endif /* PARAOS_QUEUE_LOCKING_V3_HPP */

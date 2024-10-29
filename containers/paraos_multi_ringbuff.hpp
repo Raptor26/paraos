@@ -32,7 +32,7 @@
 #include <type_traits>
 
 #include "paraos_attr.h"
-#include "paraos_queue_blocking_v3.hpp"
+#include "paraos_queue_blocking.hpp"
 #include "paraos_ringbuff.hpp"
 
 namespace paraos {
@@ -170,12 +170,12 @@ class IMultiRingBuff {
 
  protected:
   IMultiRingBuff(
-      paraos::v3::IQueueBlocking<std::size_t>& queue,
+      paraos::IQueueBlocking<std::size_t>& queue,
       ringbuff_pointer* ringbuff, std::size_t ring_buff_numb)
       : queue_{queue}, ringbuff_{ringbuff}, ring_buff_numb_{ring_buff_numb} {}
 
  private:
-  paraos::v3::IQueueBlocking<std::size_t>& queue_;
+  paraos::IQueueBlocking<std::size_t>& queue_;
   ringbuff_pointer* ringbuff_;
   const std::size_t ring_buff_numb_;
   etl::atomic_bool is_need_force_read_{false};
@@ -243,7 +243,7 @@ class MultiRingBuff : public IMultiRingBuff<T> {
   }
 
  private:
-  paraos::v3::QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
+  paraos::QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
 
   /// @brief Tuple for contained ring buffers.
   std::tuple<RINGBUFF...> ringbuff_tuple_;

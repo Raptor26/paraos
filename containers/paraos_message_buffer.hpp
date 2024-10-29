@@ -32,7 +32,7 @@
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_mutex_raii.hpp"
-#include "paraos_queue_blocking_v3.hpp"
+#include "paraos_queue_blocking.hpp"
 #include "paraos_thread.hpp"
 
 namespace paraos {
@@ -130,7 +130,7 @@ class MessageWritable final {
  public:
   MessageWritable(
       const std::size_t size_in_bytes,
-      paraos::v3::IQueueBlocking<Message<ALLOCATOR>> &queue)
+      paraos::IQueueBlocking<Message<ALLOCATOR>> &queue)
       : message_{size_in_bytes}, queue_{queue} {}
 
   ~MessageWritable() { TryPush(); }
@@ -183,7 +183,7 @@ class MessageWritable final {
 
  private:
   Message<ALLOCATOR> message_;
-  paraos::v3::IQueueBlocking<Message<ALLOCATOR>> &queue_;
+  paraos::IQueueBlocking<Message<ALLOCATOR>> &queue_;
 };
 
 /// @brief Message buffer base class. Contained API for buffer.
@@ -226,11 +226,11 @@ class IMessageBuffer {
   PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
 
  protected:
-  IMessageBuffer(paraos::v3::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
+  IMessageBuffer(paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
       : queue_{queue} {}
 
  private:
-  paraos::v3::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
+  paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
 };
 
 /// @brief Message buffer class.
@@ -258,7 +258,7 @@ class MessageBuffer final : public IMessageBuffer<BUFFER_ALLOCATOR> {
   operator bool() const { return queue_; }
 
  private:
-  paraos::v3::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;
+  paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;
 };
 
 }  // namespace paraos

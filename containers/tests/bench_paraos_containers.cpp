@@ -29,7 +29,7 @@
 #include <string>
 
 #include "paraos_message_buffer.hpp"
-#include "paraos_queue_blocking_v3.hpp"
+#include "paraos_queue_blocking.hpp"
 
 namespace bm = benchmark;
 using namespace paraos;
@@ -39,7 +39,7 @@ BENCHMARK_MAIN();
 static void QueueBlockingPushThenPop(bm::State &state) {
   std::string str{"Hello world"};
   constexpr std::size_t max_elem{10};
-  paraos::v3::QueueBlocking<std::string, max_elem> queue;
+  paraos::QueueBlocking<std::string, max_elem> queue;
   assert(queue);
   for (auto _ : state) {
     benchmark::DoNotOptimize(queue.TryPush(str));
