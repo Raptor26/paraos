@@ -32,7 +32,6 @@
 #include <type_traits>
 
 #include "paraos_attr.h"
-#include "paraos_queue_blocking.hpp"
 #include "paraos_queue_blocking_v3.hpp"
 #include "paraos_ringbuff.hpp"
 

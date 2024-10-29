@@ -12,8 +12,7 @@ include(GoogleTest)
 # GTEST ------------------------------------------------------------------------
 add_executable(
   ${PROJECT_NAME}
-  test_message_buff.cpp test_queue_blocking.cpp
-  test_message_buff_with_user_allocator.cpp test_lwrb.cpp
+  test_message_buff.cpp test_message_buff_with_user_allocator.cpp test_lwrb.cpp
   test_multi_ringbuff.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
@@ -26,14 +25,6 @@ gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS CONTAINERS]:")
 
 # Multithread ------------------------------------------------------------------
 if(THREAD_ENABLE)
-  # Тест закомментирован, поскольку не проходит пайплайн gitlab-runner.
-  # add_executable(test_queue_blocking_multithread_many_prod_and_cons
-  # test_queue_blocking_multithread_many_prod_and_cons.cpp)
-  # target_link_libraries(test_queue_blocking_multithread_many_prod_and_cons
-  # PRIVATE paraos::paraos) add_test(NAME
-  # test_queue_blocking_multithread_many_prod_and_cons COMMAND
-  # test_queue_blocking_multithread_many_prod_and_cons)
-
   # ----------------------------------------------------------------------------
   add_executable(test_message_multithread_many_producer_many_consumers
                  test_message_multithread_many_producer_many_consumers.cpp)
