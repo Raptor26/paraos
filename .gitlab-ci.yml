@@ -38,7 +38,10 @@ ci:windows_stress_gcc:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false
 
@@ -59,7 +62,10 @@ ci:windows_stress_clang:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false
 
@@ -95,7 +101,10 @@ ci:linux_stress_gcc:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false
 
@@ -116,6 +125,9 @@ ci:linux_stress_clang:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false

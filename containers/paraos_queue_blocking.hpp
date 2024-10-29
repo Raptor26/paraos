@@ -1,42 +1,19 @@
-/// @file paraos_queue_blocking.hpp
-/// @author Mickle Isaev (mrraptor26@gmail.com)
-/// @author VyhodcevEgor <vyhodcev@internet.ru>
-///
-/// @copyright (c) 2024 Stilsoft
-///
-/// MIT License:
-///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-/// IN THE SOFTWARE.
+#ifndef PARAOS_QUEUE_LOCKING_V3_HPP
+#define PARAOS_QUEUE_LOCKING_V3_HPP
 
-#ifndef PARAOS_QUEUE_BLOCKING_HPP
-#define PARAOS_QUEUE_BLOCKING_HPP
-
+#include <execution>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include "etl/queue.h"
-#include "gsl/gsl"
-#include "paraos_attr.h"
-#include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
+#include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_trace.hpp"
+#include "paraos_thread.hpp"
 
 namespace paraos {
 
@@ -46,57 +23,69 @@ struct IQueueBlocking {
 
   /// @brief Construct object "in place" in queue storage.
   ///
+  /// @note 'is_isr' set as first parameter because argument pack (args) must be
+  /// last in argument list.
+  ///
   /// @tparam Args: Arguments to be passed in ctor for construct object in
   /// place.
   /// @param[in] args: Arguments to be passed in ctor for construct object in
   /// place.
+  ///
   /// @return true if object constructed, false otherwise.
   template <typename... Args>
-  auto EmplaceBack(Args&&... args) -> bool {
-    bool is_pushed{false};
-    if (pop_sem_.Take(0u)) {
-      if (!queue_.IsFull()) {
-        is_pushed = queue_.EmplaceBack(std::forward<Args>(args)...);
-      }
-      push_sem_.Give();
-    }
-    return is_pushed;
-  }
-
-  auto Push(T&& item, std::size_t timeout_ms, bool is_isr = false) -> bool {
-    paraosTRACE_MESSAGE("BlockingQueue full, POP semaphore waiting...");
-
+  auto TryEmplaceBack(bool is_isr, Args&&... args) -> bool {
     bool is_pushed{false};
 
-    if (pop_sem_.Take(timeout_ms, is_isr)) {
-      paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-      try {
-        const paraos::CriticalSection critical;
-        queue_.push(std::move(item));
-        is_pushed = true;
-        push_sem_.Give(is_isr);
-      } catch (etl::queue_full& e) {
-        paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
-      }
+    try {
+      const paraos::CriticalSection critical;
+      queue_.emplace(std::forward<Args>(args)...);
+      pop_sem_.Give(is_isr);
+      is_pushed = true;
+    } catch (const etl::queue_full& e) {
+      // queue full. Nothing push in queue. In IQueueBlocking API it's not
+      // problem. TryPush() return false.
+    } catch (const std::exception& e) {
+      // moved object throw exception. Best what we can in this case - print
+      // debug message.
+      paraosTRACE_MESSAGE(e.what());
     }
 
     return is_pushed;
   }
 
-  auto Push(const T& item, std::size_t timeout_ms, bool is_isr = false)
-      -> bool {
+  /// @brief Try move item in queue. If queue full, nothing will move.
+  ///
+  /// @param[in] item: lvalue item for move in queue.
+  /// @param[in] is_isr: Set true if TryPush() calls from isr.
+  ///
+  /// @return Return true if item successfully moved in queue. false in other
+  /// wise.
+  auto TryPush(T&& item, bool is_isr = false) -> bool {
+    return TryEmplaceBack(is_isr, std::move(item));
+  }
+
+  /// @brief Try push copy item in queue. If queue full, nothing will push.
+  ///
+  /// @param[in] item: rvalue item for move in queue.
+  /// @param[in] is_isr: Set true if TryPush() calls from isr.
+  ///
+  /// @return Return true if item successfully copied in queue. false in other
+  /// wise.
+  auto TryPush(const T& item, bool is_isr = false) -> bool {
     bool is_pushed{false};
 
-    if (pop_sem_.Take(timeout_ms, is_isr)) {
-      paraosTRACE_MESSAGE("BlockingQueue POP semaphore taken, pushing...");
-      try {
-        const paraos::CriticalSection critical;
-        queue_.push(item);
-        is_pushed = true;
-        push_sem_.Give(is_isr);
-      } catch (etl::queue_full& e) {
-        paraosTRACE_MESSAGE(e.file_name() << e.line_number() << e.what());
-      }
+    try {
+      const paraos::CriticalSection critical;
+      queue_.push(item);
+      pop_sem_.Give(is_isr);
+      is_pushed = true;
+    } catch (const etl::queue_full& e) {
+      // queue full. Nothing push in queue. In IQueueBlocking API it's not
+      // problem. TryPush() return false.
+    } catch (const std::exception& e) {
+      // moved object throw exception. Best what we can in this case - print
+      // debug message.
+      paraosTRACE_MESSAGE(e.what());
     }
 
     return is_pushed;
@@ -108,18 +97,43 @@ struct IQueueBlocking {
   /// @return Read object, contained in std::optional. If no object read,
   /// std::optional not contained any value.
   auto Pop(std::size_t timeout_ms, bool is_isr = false) -> std::optional<T> {
-    paraosTRACE_MESSAGE("BlockingQueue taking PUSH semaphore");
+    std::optional<T> optional;
 
-    if (push_sem_.Take(timeout_ms, is_isr)) {
-      const paraos::CriticalSection critical;
-      // pop_sem_.Give() will be called after return.
-      auto sem_give = gsl::finally([&] { pop_sem_.Give(is_isr); });
+    MutexGuard mutex(mutex_);
 
-      // Moved value from queue in std::optional<T>.
-      return FrontAndPop();
+    bool is_need_take{true};
+
+    auto timeout = Thread::GetCurrentTime();
+
+    while (IsEmpty()) {
+      if (pop_sem_.Take(timeout_ms, is_isr)) {
+        paraosTRACE_MESSAGE("Sem taken");
+        break;
+      } else {
+        paraosTRACE_MESSAGE("Sem not taken!!!");
+
+        // recalculate timeout. timeout_ms value will corrected in
+        // CheckTimeout().
+        if (Thread::CheckTimeout(timeout, timeout_ms)) {
+          is_need_take = false;
+          break;
+        }
+      }
     }
 
-    return std::nullopt;
+    if (is_need_take) {
+      try {
+        const paraos::CriticalSection critical;
+        paraosTRACE_MESSAGE("Try pop form queue");
+        optional.emplace(std::move(queue_.front()));
+        queue_.pop();
+        paraosTRACE_MESSAGE("Queue Pop success");
+      } catch (const etl::queue_empty e) {
+        optional.reset();
+      }
+    }
+
+    return optional;
   }
 
   PARAOS_INLINE_TRIVIAL void Erase() {
@@ -143,42 +157,22 @@ struct IQueueBlocking {
   }
 
  protected:
-  IQueueBlocking(
-      etl::iqueue<T>& queue, SemaphoreCounting& push_sem,
-      SemaphoreCounting& pop_sem)
-      : queue_{queue}, push_sem_{push_sem}, pop_sem_{pop_sem} {}
-
- private:
-  auto FrontAndPop() -> std::optional<T> {
-    // When FrontAndPop() called in Pop(), semaphore contained information about
-    // items numb in queue. In this case, we don't need check is queue empty.
-    if (!queue_.empty()) {
-      // Lambda below will called after return operator.
-      auto pop_from_queue = gsl::finally([&] {
-        // We check is queue empty above, exertion can't be throw.
-        queue_.pop();
-      });
-
-      // Move object from queue, then, after return, lambda above delete object
-      // from queue with pop() operation.
-      return std::move(queue_.front());
-    }
-
-    return std::nullopt;
-  }
+  IQueueBlocking(etl::iqueue<T>& queue, SemaphoreBinary& pop_sem, Mutex& mutex)
+      : queue_{queue}, pop_sem_{pop_sem}, mutex_{mutex} {}
 
  private:
   etl::iqueue<T>& queue_;
-  SemaphoreCounting& push_sem_;
-  SemaphoreCounting& pop_sem_;
+  SemaphoreBinary& pop_sem_;
+  Mutex& mutex_;
 };
 
 template <typename T, const std::size_t SIZE>
 class QueueBlocking final : public IQueueBlocking<T> {
+  static_assert(SIZE > 1u, "Queue size must be greater then 1 item");
+
  public:
   QueueBlocking()
-      : IQueueBlocking<T>{queue_, push_sem_, pop_sem_},
-        push_sem_{SemaphoreAttr{SIZE, 0}},
+      : IQueueBlocking<T>{queue_, pop_sem_, mutex_},
         pop_sem_{SemaphoreAttr{SIZE, SIZE}} {}
 
   virtual ~QueueBlocking() = default;
@@ -186,7 +180,7 @@ class QueueBlocking final : public IQueueBlocking<T> {
   operator bool() const {
     bool queue_ready{false};
 
-    if (push_sem_ && pop_sem_ && (queue_.capacity() == SIZE)) {
+    if (pop_sem_ && (queue_.capacity() == SIZE)) {
       queue_ready = true;
     }
 
@@ -195,10 +189,9 @@ class QueueBlocking final : public IQueueBlocking<T> {
 
  private:
   etl::queue<T, SIZE> queue_;
-  SemaphoreCounting push_sem_;
-  SemaphoreCounting pop_sem_;
+  SemaphoreBinary pop_sem_;
+  Mutex mutex_;
 };
-
 }  // namespace paraos
 
-#endif /* PARAOS_QUEUE_BLOCKING_HPP */
+#endif /* PARAOS_QUEUE_LOCKING_V3_HPP */

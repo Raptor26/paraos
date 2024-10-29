@@ -3,7 +3,13 @@ import shutil
 import argparse
 import pybuilder.builder_functions as builder_functions
 
+# Количество повторений каждого теста в режиме стресс-тестирования.
 stress_test_repetitions_count = 150
+# Количество потоков для параллельного запуска тестов.
+threads_count = 4
+# Тайм-аут ожидания завершения каждого теста в секундах.
+test_timeout_sec = 30
+
 TEST_SUCCESS = 0
 TEST_FAIL = -1
 
@@ -94,14 +100,19 @@ def action_matching(action: str):
             result = True
 
         case '1':
-            test_result = builder_functions.test_multiple_presets()
+            test_result = builder_functions.test_multiple_presets(
+                threads_count=threads_count,
+                test_timeout_sec=test_timeout_sec
+            )
             show_result_output(test_result)
 
             result = test_result
 
         case '2':
             test_result = builder_functions.test_multiple_presets(
-                stress_test_repetitions_count
+                repetitions_count=stress_test_repetitions_count,
+                threads_count=threads_count,
+                test_timeout_sec=test_timeout_sec
             )
             show_result_output(test_result)
 
@@ -111,7 +122,9 @@ def action_matching(action: str):
             pc_debug_res = builder_functions.test_preset(
                 ['cmake', '--preset', 'pc_debug_clang'],
                 ['cmake', '--build', 'build/pc_debug_clang/'],
-                'build/pc_debug_clang'
+                'build/pc_debug_clang',
+                threads_count=threads_count,
+                test_timeout_sec=test_timeout_sec
             )
 
             show_result_output(pc_debug_res)
@@ -124,7 +137,9 @@ def action_matching(action: str):
                 [
                     'cmake', '--build', 'build/freertos_debug_clang/'
                 ],
-                'build/freertos_debug_clang'
+                'build/freertos_debug_clang',
+                threads_count=threads_count,
+                test_timeout_sec=test_timeout_sec
             )
 
             show_result_output(rtos_debug_res)
@@ -133,7 +148,10 @@ def action_matching(action: str):
 
         case '5':
             test_result = builder_functions.test_multiple_presets(
-                stress_test_repetitions_count, 'gcc'
+                'gcc',
+                stress_test_repetitions_count,
+                threads_count,
+                test_timeout_sec
             )
             show_result_output(test_result)
 
@@ -141,7 +159,10 @@ def action_matching(action: str):
 
         case '6':
             test_result = builder_functions.test_multiple_presets(
-                stress_test_repetitions_count, 'clang'
+                'clang',
+                stress_test_repetitions_count,
+                threads_count,
+                test_timeout_sec
             )
             show_result_output(test_result)
 

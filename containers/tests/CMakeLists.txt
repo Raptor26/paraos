@@ -12,7 +12,7 @@ include(GoogleTest)
 # GTEST ------------------------------------------------------------------------
 add_executable(
   ${PROJECT_NAME}
-  test_message_buff.cpp test_queue_blocking.cpp
+  test_queue_blocking.cpp test_message_buff.cpp
   test_message_buff_with_user_allocator.cpp test_lwrb.cpp
   test_multi_ringbuff.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
@@ -26,22 +26,13 @@ gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS CONTAINERS]:")
 
 # Multithread ------------------------------------------------------------------
 if(THREAD_ENABLE)
-  # Тест закомментирован, поскольку не проходит пайплайн gitlab-runner.
-  # add_executable(test_queue_blocking_multithread_many_prod_and_cons
-  # test_queue_blocking_multithread_many_prod_and_cons.cpp)
-  # target_link_libraries(test_queue_blocking_multithread_many_prod_and_cons
-  # PRIVATE paraos::paraos) add_test(NAME
-  # test_queue_blocking_multithread_many_prod_and_cons COMMAND
-  # test_queue_blocking_multithread_many_prod_and_cons)
-
   # ----------------------------------------------------------------------------
-  # Тест закомментирован, поскольку не проходит пайплайн gitlab-runner.
-  # add_executable(test_message_multithread_many_producer_many_consumers
-  # test_message_multithread_many_producer_many_consumers.cpp)
-  # target_link_libraries(test_message_multithread_many_producer_many_consumers
-  # PRIVATE paraos::paraos) add_test(NAME
-  # test_message_multithread_many_producer_many_consumers COMMAND
-  # test_message_multithread_many_producer_many_consumers)
+  add_executable(test_message_multithread_many_producer_many_consumers
+                 test_message_multithread_many_producer_many_consumers.cpp)
+  target_link_libraries(test_message_multithread_many_producer_many_consumers
+                        PRIVATE paraos::paraos)
+  add_test(NAME test_message_multithread_many_producer_many_consumers
+           COMMAND test_message_multithread_many_producer_many_consumers)
 
   # ----------------------------------------------------------------------------
   add_executable(test_lwrb_multithread_spsc test_lwrb_multithread_spsc.cpp)
@@ -50,9 +41,9 @@ if(THREAD_ENABLE)
 
   # ----------------------------------------------------------------------------
   # Тест закомментирован, поскольку не проходит пайплайн gitlab-runner.
-  # add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
-  # target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
-  # add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
+  add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
+  target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
+  add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
 
   # ----------------------------------------------------------------------------
   add_executable(test_queue_blocking_spmc_v3 test_queue_blocking_spmc_v3.cpp)

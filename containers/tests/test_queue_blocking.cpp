@@ -32,7 +32,7 @@
 
 using namespace paraos;
 
-constexpr size_t block_time_ms{0};
+constexpr std::size_t block_time_ms{0};
 
 TEST(QueueBlocking, Create) { QueueBlocking<int, 20> queue; }
 
@@ -40,10 +40,10 @@ TEST(QueueBlocking, EmplaceThenRead) {
   constexpr std::size_t max_elem{3};
   QueueBlocking<int, max_elem> queue;
 
-  ASSERT_TRUE(queue.Push(1, block_time_ms));
-  ASSERT_TRUE(queue.Push(2, block_time_ms));
-  ASSERT_TRUE(queue.Push(3, block_time_ms));
-  ASSERT_FALSE(queue.Push(4, block_time_ms));
+  ASSERT_TRUE(queue.TryPush(1));
+  ASSERT_TRUE(queue.TryPush(2));
+  ASSERT_TRUE(queue.TryPush(3));
+  ASSERT_FALSE(queue.TryPush(4));
 
   {
     auto result = queue.Pop(block_time_ms);
@@ -69,14 +69,14 @@ TEST(QueueBlocking, EmplaceThenRead) {
   }
 }
 
-TEST(QueueBlocking, PushThenRead) {
+TEST(QueueBlocking, TryPushThenRead) {
   constexpr std::size_t max_elem{2};
   QueueBlocking<int, max_elem> queue;
 
   int val{1};
-  ASSERT_TRUE(queue.Push(val, block_time_ms));     // push lvalue
-  ASSERT_TRUE(queue.Push(int{2}, block_time_ms));  // push rvalue
-  ASSERT_FALSE(queue.Push(3, block_time_ms));
+  ASSERT_TRUE(queue.TryPush(val));     // TryPush lvalue
+  ASSERT_TRUE(queue.TryPush(int{2}));  // TryPush rvalue
+  ASSERT_FALSE(queue.TryPush(3));
 
   {
     auto result = queue.Pop(block_time_ms);
@@ -95,7 +95,7 @@ TEST(QueueBlocking, PushThenRead) {
     ASSERT_FALSE(result);
   }
 
-  ASSERT_TRUE(queue.Push(int{7}, block_time_ms));
+  ASSERT_TRUE(queue.TryPush(int{7}));
 }
 
 TEST(QueueBlocking, PopOnEmptyQueue) {
@@ -103,7 +103,7 @@ TEST(QueueBlocking, PopOnEmptyQueue) {
   QueueBlocking<int, max_elem> queue;
 
   {
-    // Метод Pop() не дождётся семафора push_sem (не было выполнено вставок) и
+    // Метод Pop() не дождётся семафора TryPush_sem (не было выполнено вставок) и
     // вернёт значение по умолчанию для указанного типа данных.
     auto result = queue.Pop(block_time_ms);
     ASSERT_FALSE(result);
