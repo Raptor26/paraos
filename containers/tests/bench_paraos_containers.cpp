@@ -55,7 +55,7 @@ static void MessageBufferPushThenPop(bm::State &state) {
   for (auto _ : state) {
     auto write = buff.Alloc(str.size());
     assert(write);
-    memcpy(write.Addr(), static_cast<const void *>(str.data()), str.size());
+    memcpy(write.Data(), static_cast<const void *>(str.data()), str.size());
     write.TryPush();
 
     auto read = buff.Pop(0);

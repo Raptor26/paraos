@@ -122,7 +122,7 @@ struct Producer : public paraos::Thread {
 
         // If memory alloc successful.
         if (write) {
-          memcpy(write.Addr(), elems_vector.at(str_idx).data(), write.Size());
+          memcpy(write.Data(), elems_vector.at(str_idx).data(), write.Size());
           is_push_success = write.TryPush();
         }
 
@@ -195,11 +195,11 @@ struct Consumer : public paraos::Thread {
         const paraos::CriticalSection critical;
 
         consumers_str_container.push_back(
-            static_cast<char *>(read_message->Addr()));
+            static_cast<char *>(read_message->Data()));
 
         PrintDebug(
             Name() << " string read successful: "
-                   << static_cast<char *>(read_message->Addr()));
+                   << static_cast<char *>(read_message->Data()));
 
         read_message.reset();
 

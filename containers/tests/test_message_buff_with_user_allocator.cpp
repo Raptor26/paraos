@@ -52,9 +52,9 @@ class MyAllocBuffer {
     typedef MyAllocBuffer<U> other;
   };
 
-  // return address of values
-  pointer address(reference value) const { return &value; }
-  const_pointer address(const_reference value) const { return &value; }
+  // return Dataess of values
+  pointer Dataess(reference value) const { return &value; }
+  const_pointer Dataess(const_reference value) const { return &value; }
 
   /* constructors and destructor
    * - nothing to do because the allocator has no state
@@ -135,9 +135,9 @@ class MyAllocQueue {
     typedef MyAllocQueue<U> other;
   };
 
-  // return address of values
-  pointer address(reference value) const { return &value; }
-  const_pointer address(const_reference value) const { return &value; }
+  // return Dataess of values
+  pointer Dataess(reference value) const { return &value; }
+  const_pointer Dataess(const_reference value) const { return &value; }
 
   /* constructors and destructor
    * - nothing to do because the allocator has no state
@@ -231,7 +231,7 @@ TEST(BufferUserAlloc, Create) {
     EXPECT_TRUE(message_area);
     EXPECT_EQ(sizeof(val), message_area.Size());
 
-    auto float_ptr = static_cast<float *>(message_area.Addr());
+    auto float_ptr = static_cast<float *>(message_area.Data());
     *float_ptr = val;
 
     // деструктор "message_area' автоматически отправит сообщение в буфер.
@@ -241,7 +241,7 @@ TEST(BufferUserAlloc, Create) {
     auto read = buffer.Pop(thread_delay);
     ASSERT_TRUE(read);
 
-    auto float_ptr = static_cast<float *>(read->Addr());
+    auto float_ptr = static_cast<float *>(read->Data());
 
     EXPECT_NEAR(val, *float_ptr, 0.001);
     EXPECT_EQ(sizeof(val), read->Size());

@@ -47,13 +47,13 @@ TEST(Message, PushThenPop) {
   {
     auto message = buff.Alloc(sizeof(val));
 
-    auto *vector = static_cast<double *>(message.Addr());
+    auto *vector = static_cast<double *>(message.Data());
     *vector = val;
   }
 
   auto message = buff.Pop(thread_delay);
 
-  auto *vector = static_cast<double *>(message->Addr());
+  auto *vector = static_cast<double *>(message->Data());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 
@@ -89,7 +89,7 @@ TEST(Message, CopyCtor) {
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
 
-    auto *vector = static_cast<double *>(message.Addr());
+    auto *vector = static_cast<double *>(message.Data());
     *vector = val;
   }
 
@@ -97,7 +97,7 @@ TEST(Message, CopyCtor) {
   ASSERT_TRUE(received_message);
   auto received_message_copy = received_message.value();
 
-  auto *vector = static_cast<double *>(received_message_copy.Addr());
+  auto *vector = static_cast<double *>(received_message_copy.Data());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 
@@ -111,7 +111,7 @@ TEST(Message, MoveCtor) {
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
 
-    auto *vector = static_cast<double *>(message.Addr());
+    auto *vector = static_cast<double *>(message.Data());
     *vector = val;
   }
 
@@ -119,7 +119,7 @@ TEST(Message, MoveCtor) {
   ASSERT_TRUE(received_message);
   auto received_message_copy = std::move(received_message.value());
 
-  auto *vector = static_cast<double *>(received_message_copy.Addr());
+  auto *vector = static_cast<double *>(received_message_copy.Data());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 

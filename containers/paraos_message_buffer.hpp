@@ -88,7 +88,7 @@ class Message {
 
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
-  PARAOS_INLINE_TRIVIAL void *Addr() const {
+  PARAOS_INLINE_TRIVIAL void *Data() const {
     return static_cast<void *>(data_ptr_);
   }
 
@@ -142,7 +142,7 @@ class MessageWritable final {
 
   operator bool() const { return message_; }
 
-  PARAOS_INLINE_TRIVIAL void *Addr() { return message_.Addr(); }
+  PARAOS_INLINE_TRIVIAL void *Data() { return message_.Data(); }
   PARAOS_INLINE_TRIVIAL size_t Size() { return message_.Size(); }
 
   /// @brief Try push message in buffer. Message will push if queue has space.
