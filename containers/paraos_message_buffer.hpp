@@ -37,6 +37,8 @@
 
 namespace paraos {
 
+/// @brief Message container. Manage memory, requested from ALLOCATOR.
+/// @tparam ALLOCATOR - Allocator for request memory.
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class Message {
   ALLOCATOR allocator_;
@@ -89,12 +91,14 @@ class Message {
 
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
-  PARAOS_INLINE_TRIVIAL void *Addr() { return static_cast<void *>(data_ptr_); }
+  PARAOS_INLINE_TRIVIAL void *Addr() const {
+    return static_cast<void *>(data_ptr_);
+  }
 
   /// @brief Возвращает размер выделенной области памяти в байтах.
   /// @return Количество байт, выделенные по адресу, который возвращает метод
   /// Addr().
-  PARAOS_INLINE_TRIVIAL size_t Size() { return size_in_bytes_; }
+  PARAOS_INLINE_TRIVIAL size_t Size() const { return size_in_bytes_; }
 
   /// @brief Принудительно освобождает область памяти, выделенную под сообщение.
   /// После вызова данного метода, объект становиться не валидным.
@@ -146,7 +150,17 @@ class MessageWritable final {
 
   /// @brief Try push message in buffer. Message will push if queue has space.
   ///
-  /// @note This method automatically calls in dtor.
+  /// @note  User code not necessary call this method. TryPush() automaticaly
+  /// calls in dtor.
+  ///
+  /// @details If user successfully alloc space for message, this does not mean
+  /// that this message will be successfully move in buffer. If between
+  /// IMessageBuffer.Alloc() and TryPush() any thread full queue, TryPush()
+  /// can't push this message in buffer and return false. In any case, resources
+  /// will automaticaly free.
+  ///
+  /// @note If need alloc and push message atomy, user code need call
+  /// IMessageBuffer.Alloc() and TryPush() inside one critical section.
   ///
   /// @param[in] is_isr: Set true if calls from isr.
   ///
@@ -155,6 +169,8 @@ class MessageWritable final {
   PARAOS_INLINE_OPERATIONS bool TryPush(bool is_isr = false) {
     bool is_message_pushed{false};
 
+    // If user calls TryPush(), that's mean when calls dtor, TryPush() will
+    // calls again. For this reason need check message_ validation.
     if (message_) {
       is_message_pushed = queue_.TryPush(std::move(message_), is_isr);
       // Nothin to push again, free resources.
@@ -187,10 +203,24 @@ class IMessageBuffer {
   IMessageBuffer &operator=(const IMessageBuffer &other) = delete;
   IMessageBuffer &operator=(IMessageBuffer &&other) = delete;
 
+  /// @brief  Request memory from allocator, witch set in MessageBuffer ctor.
+  ///
+  /// @param[in] size_in_bytes: Requested memory size in bytes.
+  ///
+  /// @return Return container. Note - container way not contained requested
+  /// memory. Befor start any operations with MessageWritable object, check his
+  /// validation (use operator bool).
   PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes) {
     return MessageWritable(size_in_bytes, queue_);
   }
 
+  /// @brief Return message container if any data available in buffer.
+  ///
+  /// @param[in] timeout_ms: Timeout for wait any data in buffer if no data
+  /// available in calls time.
+  ///
+  /// @return Return std::optional object. If no data was read, std::optional
+  /// will empty. In otherwise std::optional contained message.
   PARAOS_INLINE_TRIVIAL auto Pop(std::size_t timeout_ms) {
     return queue_.Pop(timeout_ms);
   }
