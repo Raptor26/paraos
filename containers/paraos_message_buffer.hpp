@@ -147,14 +147,14 @@ class MessageWritable final {
 
   /// @brief Try push message in buffer. Message will push if queue has space.
   ///
-  /// @note  User code not necessary call this method. TryPush() automaticaly
+  /// @note  User code not necessary call this method. TryPush() automatically
   /// calls in dtor.
   ///
   /// @details If user successfully alloc space for message, this does not mean
   /// that this message will be successfully move in buffer. If between
   /// IMessageBuffer.Alloc() and TryPush() any thread full queue, TryPush()
   /// can't push this message in buffer and return false. In any case, resources
-  /// will automaticaly free.
+  /// will automatically free.
   ///
   /// @note If need alloc and push message atomy, user code need call
   /// IMessageBuffer.Alloc() and TryPush() inside one critical section.
