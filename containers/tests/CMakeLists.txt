@@ -46,19 +46,19 @@ if(THREAD_ENABLE)
   add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
 
   # ----------------------------------------------------------------------------
-  add_executable(test_queue_blocking_spmc_v3 test_queue_blocking_spmc_v3.cpp)
-  target_link_libraries(test_queue_blocking_spmc_v3 PRIVATE paraos::paraos)
-  add_test(NAME test_queue_blocking_spmc_v3 COMMAND test_queue_blocking_spmc_v3)
+  add_executable(test_queue_blocking_spmc test_queue_blocking_spmc.cpp)
+  target_link_libraries(test_queue_blocking_spmc PRIVATE paraos::paraos)
+  add_test(NAME test_queue_blocking_spmc COMMAND test_queue_blocking_spmc)
 
   # ----------------------------------------------------------------------------
-  add_executable(test_queue_blocking_mpsc_v3 test_queue_blocking_mpsc_v3.cpp)
-  target_link_libraries(test_queue_blocking_mpsc_v3 PRIVATE paraos::paraos)
-  add_test(NAME test_queue_blocking_mpsc_v3 COMMAND test_queue_blocking_mpsc_v3)
+  add_executable(test_queue_blocking_mpsc test_queue_blocking_mpsc.cpp)
+  target_link_libraries(test_queue_blocking_mpsc PRIVATE paraos::paraos)
+  add_test(NAME test_queue_blocking_mpsc COMMAND test_queue_blocking_mpsc)
 
   # ----------------------------------------------------------------------------
-  add_executable(test_queue_blocking_mpmc_v3 test_queue_blocking_mpmc_v3.cpp)
-  target_link_libraries(test_queue_blocking_mpmc_v3 PRIVATE paraos::paraos)
-  add_test(NAME test_queue_blocking_mpmc_v3 COMMAND test_queue_blocking_mpmc_v3)
+  add_executable(test_queue_blocking_mpmc test_queue_blocking_mpmc.cpp)
+  target_link_libraries(test_queue_blocking_mpmc PRIVATE paraos::paraos)
+  add_test(NAME test_queue_blocking_mpmc COMMAND test_queue_blocking_mpmc)
 endif()
 
 # Benchmark --------------------------------------------------------------------

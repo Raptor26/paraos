@@ -127,8 +127,12 @@ struct Producer : public paraos::Thread {
 
   /// @brief Producer thread
   void Run() override {
-    std::size_t str_idx = producer_actual_str_idx;
-    ++producer_actual_str_idx;
+    std::size_t str_idx;
+    {
+      const paraos::CriticalSection critical;
+      str_idx = producer_actual_str_idx;
+      ++producer_actual_str_idx;
+    }
 
     while (true) {
       if (str_idx < str_array.size()) {
