@@ -141,7 +141,7 @@ struct Producer : public paraos::Thread {
                      << "String idx is " << str_idx);
 
           // Small delay for yeld resources.
-          Thread::DelayMs(1);
+          Thread::DelayMs(10);
         }
 
         // No consumers online, nobody read read data from buffer, don't try
@@ -298,7 +298,7 @@ int main() {
       "--Consumer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
   consumer_total_thread_numb += 1;
   Consumer elem_consumer_3{
-      "--Consumer 3", 1024u, paraos::ThreadPriority::kNormal};
+      "--Consumer 3", 1024u, paraos::ThreadPriority::kRealTime};
   consumer_total_thread_numb += 1;
 
   // ---------------------------------------------------------------------------
@@ -309,7 +309,7 @@ int main() {
   producer_total_thread_numb += 1;
 
   Producer elem_producer_2{
-      "Producer 2", 1024u, paraos::ThreadPriority::kNormal};
+      "Producer 2", 1024u, paraos::ThreadPriority::kBelowNormal};
   producer_total_thread_numb += 1;
 
   Producer elem_producer_3{
@@ -317,15 +317,11 @@ int main() {
   producer_total_thread_numb += 1;
 
   Producer elem_producer_4{
-      "Producer 4", 1024u, paraos::ThreadPriority::kBelowNormal};
+      "Producer 4", 1024u, paraos::ThreadPriority::kAboveNormal};
   producer_total_thread_numb += 1;
 
   Producer elem_producer_5{
-      "Producer 5", 1024u, paraos::ThreadPriority::kBelowNormal};
-  producer_total_thread_numb += 1;
-
-  Producer elem_producer_6{
-      "Producer 6", 1024u, paraos::ThreadPriority::kBelowNormal};
+      "Producer 5", 1024u, paraos::ThreadPriority::kHighest};
   producer_total_thread_numb += 1;
 
   paraos::Thread::StartScheduler();
