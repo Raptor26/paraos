@@ -62,7 +62,7 @@ class ICooperativeScheduling : protected Thread {
   ///
   /// @param[in] task: task for put in private list. That's mean task will
   /// scheduling for execute when Run() calls in paraos thread context.
-  auto AddTask(etl::task &task) {
+  virtual bool AddTask(etl::task &task) {
     bool is_task_add{false};
     try {
       paraos::CriticalSection critical;
