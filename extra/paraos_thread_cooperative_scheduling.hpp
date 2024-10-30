@@ -37,6 +37,7 @@
 
 namespace paraos {
 
+/// @brief Интерфейс для управления расписанием потоков.
 class ICooperativeScheduling : protected Thread {
   using idle_delegate = etl::delegate<void(void)>;
 
