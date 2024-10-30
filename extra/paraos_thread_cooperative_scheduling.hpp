@@ -30,6 +30,7 @@
 #include "etl/function.h"
 #include "etl/scheduler.h"
 #include "etl/task.h"
+#include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_trace.hpp"
@@ -53,7 +54,26 @@ class ICooperativeScheduling : protected Thread {
     SetIdleCallback(idle_callback);
   }
 
-  virtual ~ICooperativeScheduling() { scheduler_.exit_scheduler(); }
+  virtual ~ICooperativeScheduling() { Exit(); }
+
+  /// @brief Stop any tasks executions in cooperative scheduler.
+  ///
+  /// @note Useful in unit tests when need exit from cooperative scheduler.
+  void Exit() {
+    const paraos::CriticalSection critical;
+
+    if (!is_exit_calls_) {
+      SetNeedWhile(false);
+      scheduler_.exit_scheduler();
+
+      // Force give notify for leave while cycle inside cooperative scheduler.
+      // Need because if Exit() calls cooperative scheduler may wait notify
+      // forever in Idle().
+      NotifyGive();
+
+      is_exit_calls_ = true;
+    }
+  }
 
   /// @brief Added task in list for execute when Run() calls. 'task' position in
   /// list depend by task priority (task priority set in task ctor). That's
@@ -144,6 +164,8 @@ class ICooperativeScheduling : protected Thread {
   /// @brief Member function object, Need for registered Idle() method in
   /// scheduler_.
   etl::function<ICooperativeScheduling, void> idle_callback;
+
+  bool is_exit_calls_{false};
 };
 
 struct CooperativeSchedulingAttr {
