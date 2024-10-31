@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = D:/_SUBREPO/soft_vyhodcev/pybuilder.git
+	remote = http://192.168.100.242:88/uav/pybuilder.git
 	branch = develop
-	commit = 7869f5f34e0fbee6117ee3049e80480abd737af5
-	parent = 7072c8787f9c49a3ff2dfd972c17196ddc341a17
+	commit = 928c8e115097815928c68040b350128df7ff08d5
 	method = merge
 	cmdver = 0.4.6
+	parent = 7f2bd529b2ead3e4f42c45478c2edaa2ec154381

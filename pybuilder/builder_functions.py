@@ -82,6 +82,7 @@ def parse_presets(presets_filter: str = ''):
                     for string in exclude_keywords_list
                 )
                 and preset_data['name'].find(presets_filter) != -1
+                and not 'hidden' in preset_data
             )
 
             tests_errors_table.update(
