@@ -8,7 +8,14 @@ cmake_minimum_required(VERSION 3.20)
 
 include(setup.cmake)
 
-project(paraos VERSION 0.2.0)
+project(
+  paraos
+  VERSION 0.3.0
+  DESCRIPTION
+    "Cross-platform wrapper over operating system primitives with an emphasis on embedded systems"
+  LANGUAGES C CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Is paraos standalone project?
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -23,6 +30,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
   option(IS_PARAOS_STAND_ALONE_PROJECT "Use paraos version for etl_profile.h"
          ON)
+endif()
+
+if(IS_PARAOS_STAND_ALONE_PROJECT)
+  option(PARAOS_TESTS "Enable testing" ON)
 endif()
 
 # Boost::leaf ------------------------------------------------------------------
@@ -80,6 +91,10 @@ elseif(WIN32)
 elseif(UNIX)
   option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_unix)
+endif()
+
+if(PARAOS_TESTS)
+  add_subdirectory(port_tests)
 endif()
 
 add_subdirectory(containers)

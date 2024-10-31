@@ -31,7 +31,7 @@
 
 #include "etl/delegate.h"
 #include "paraos_check.h"
-#include "paroas_isr.hpp"
+#include "paraos_isr.hpp"
 
 namespace paraos {
 

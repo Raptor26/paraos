@@ -1,20 +1,20 @@
 /// @file paraos_socket_udp.hpp
 /// @author Vyhodcev Egor (vyhodcev@internet.ru)
-/// 
+///
 /// @copyright (c) 2024 Stilsoft
-/// 
+///
 /// MIT License:
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the 'Software'), to
 /// deal in the Software without restriction, including without limitation the
 /// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 /// sell copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -37,12 +37,16 @@
 #include <string>
 
 #include "paraos_iserial.hpp"
+#include "paraos_thread.hpp"
 
 namespace paraos {
 
 /// @brief Порт по умолчанию, который прослушивают НСУ (QGroundControl,
 /// MissionPlanner)
 inline constexpr uint16_t default_gcs_port = 14550;
+/// @brief Тайм-аут на приём данных по умолчанию, мс. (Значение 0 означает, что
+/// время ожидания будет бесконечно).
+inline constexpr int default_recv_timeout_ms = 0;
 
 /// @brief Атрибуты класса UDP сокета, передаваемые ему при инициализации.
 struct UDPSocketAttrs {
@@ -50,6 +54,8 @@ struct UDPSocketAttrs {
   std::string ip_address = "127.0.0.1";
   /// @brief Порт, который прослушивает сервер.
   uint16_t port = default_gcs_port;
+  /// @brief Тайм-аут на приём данных, мс.
+  int recv_timeout_ms = default_recv_timeout_ms;
 };
 
 /// @brief Класс UDP сокета, реализующего интерфейс, описывающий методы
@@ -66,9 +72,19 @@ class UDPSocket : public paraos::ISerial {
       if (client_socket_ == INVALID_SOCKET) {
         is_init_succeeded_ = false;
       } else {
-        server_.sin_family = AF_INET;
-        server_.sin_addr.s_addr = inet_addr(attrs.ip_address.c_str());
-        server_.sin_port = htons(attrs.port);
+        // Установка тайм-аута на приём данных из сокета.
+        auto result = setsockopt(
+            client_socket_, SOL_SOCKET, SO_RCVTIMEO,
+            (const char *)&attrs.recv_timeout_ms,
+            sizeof(attrs.recv_timeout_ms));
+
+        if (result != SOCKET_ERROR) {
+          server_.sin_family = AF_INET;
+          server_.sin_addr.s_addr = inet_addr(attrs.ip_address.c_str());
+          server_.sin_port = htons(attrs.port);
+        } else {
+          is_init_succeeded_ = false;
+        }
       }
     }
   }
@@ -84,6 +100,12 @@ class UDPSocket : public paraos::ISerial {
     size_t read_bytes_num = 0;
     int slen = sizeof(sockaddr_in);
 
+    // When socket not connected, recvfrom (see below) return control
+    // immediately. We want wait some time before check connection again.
+    if (!is_connected_) {
+      paraos::Thread::SleepMs(500u);
+    }
+
     // If no incoming data is available at the socket, the recvfrom function
     // blocks and waits for data to arrive according to the blocking rules
     // defined for WSARecv with the MSG_PARTIAL flag not set unless the socket
@@ -96,6 +118,9 @@ class UDPSocket : public paraos::ISerial {
       std::cout << "recvfrom() failed with error code: " << WSAGetLastError()
                 << "\n";
       read_bytes_num = 0;
+      is_connected_ = false;
+    } else {
+      is_connected_ = true;
     }
 
     return read_bytes_num;
@@ -128,6 +153,8 @@ class UDPSocket : public paraos::ISerial {
   sockaddr_in server_{};
 
   bool is_init_succeeded_ = true;
+
+  bool is_connected_{false};
 };
 
 }  // namespace paraos

@@ -46,20 +46,42 @@ class ICooperativeScheduling : protected Thread {
       : Thread{name, stack_depth, priority},
         scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
-    // scheduler_ will call all registered task while they has work.Only
+    // scheduler_ will call all registered task while they has work. Only
     // all registered tasks work complete, scheduler_ call idle function. Here
     // registered idle function which take semaphore and wait new program
     // cycle.
     SetIdleCallback(idle_callback);
   }
 
-  virtual ~ICooperativeScheduling() {}
+  virtual ~ICooperativeScheduling() { scheduler_.exit_scheduler(); }
 
-  void AddTask(etl::task &task) {
-    paraos::CriticalSection critical;
-    scheduler_.add_task(task);
+  /// @brief Added task in list for execute when Run() calls. 'task' position in
+  /// list depend by task priority (task priority set in task ctor). That's
+  /// mean, task with higher priority will call first on each scheduler
+  /// iteration.
+  ///
+  /// @param[in] task: task for put in private list. That's mean task will
+  /// scheduling for execute when Run() calls in paraos thread context.
+  auto AddTask(etl::task &task) {
+    bool is_task_add{false};
+    try {
+      paraos::CriticalSection critical;
+      scheduler_.add_task(task);
+      is_task_add = true;
+    } catch (const etl::scheduler_too_many_tasks_exception &e) {
+      paraosTRACE_MESSAGE(
+          e.file_name() << "; --line: " << e.line_number()
+                        << "; --what: " << e.what());
+    }
+
+    return is_task_add;
   }
 
+  /// @brief After all tasks work complete in one iteration, scheduler call idle
+  /// task. User can set custom idle function for calling by scheduler when no
+  /// anymore work in one iteration.
+  ///
+  /// @param[in] callback: User function, which calls after all works complete.
   void SetIdleCallback(etl::ifunction<void> &callback) {
     paraos::CriticalSection critical;
     scheduler_.set_idle_callback(callback);
@@ -67,7 +89,8 @@ class ICooperativeScheduling : protected Thread {
 
   void Run() override {
     try {
-      // Method below has internal loop.
+      // Method below has internal forever loop (for break internal forever loop
+      // need call scheduler_.exit_scheduler()).
       scheduler_.start();
     } catch (etl::scheduler_no_tasks_exception &e) {
       paraosTRACE_MESSAGE(
@@ -90,7 +113,13 @@ class ICooperativeScheduling : protected Thread {
     }
   }
 
-  bool NotifyGive(bool is_isr = false) {
+  /// @brief Cooperative scheduler run periodical. That's mean user code must
+  /// give notify periodical.
+  ///
+  /// @param[in] is_isr: Set true if calls from interrupt.
+  ///
+  /// @return Return true if notify successfully given.
+  bool NotifyGive(const bool is_isr = false) {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
@@ -117,27 +146,36 @@ class ICooperativeScheduling : protected Thread {
   etl::function<ICooperativeScheduling, void> idle_callback;
 };
 
+struct CooperativeSchedulingAttr {
+  std::string name{"Cooperative scheduler"};
+  std::size_t stack_depth = GetStackMinimumSizeInBytes();
+  ThreadPriority priority = ThreadPriority::kAboveNormal;
+  bool is_need_loop{true};
+  bool is_need_start{true};
+};
+
 template <
     size_t MAX_TASKS_,
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
-class CooperativeScheduling : public ICooperativeScheduling {
+class CooperativeScheduling
+    : public etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
+      public ICooperativeScheduling {
  public:
-  CooperativeScheduling(
-      const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, bool is_need_loop = true)
-      : ICooperativeScheduling{name, stack_depth, priority, scheduler_} {
+  CooperativeScheduling(const CooperativeSchedulingAttr &attr)
+      : ICooperativeScheduling{
+            attr.name, attr.stack_depth, attr.priority, *this} {
     // Run() method must call in forever loop periodical.
-    Thread::SetNeedWhile(is_need_loop);
+    Thread::SetNeedWhile(attr.is_need_loop);
 
-    // Method below create thread and scheduling it's for execute in RTOS (or
-    // windows/unix).
-    Thread::Start();
+    // Set 'is_need_start = false' useful for unit tests.
+    if (attr.is_need_start) {
+      // Method below create thread and scheduling it's for execute in RTOS (or
+      // windows/unix).
+      Thread::Start();
+    }
   }
 
   virtual ~CooperativeScheduling() = default;
-
- private:
-  etl::scheduler<TSchedulerPolicy, MAX_TASKS_> scheduler_;
 };
 
 }  // namespace  paraos

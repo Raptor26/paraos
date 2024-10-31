@@ -14,8 +14,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "UTEST": "true"
+                "CMAKE_CXX_COMPILER": "clang++"
             }
         },
         {
@@ -35,12 +34,12 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++",
-                "UTEST": "true"
+                "CODE_COVERAGE": "true"
             }
         },
         {
             "name": "pc_release_clang",
-            "displayName": "PC Release Clang with trace",
+            "displayName": "PC Release Clang",
             "inherits": "pc_debug_clang",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"

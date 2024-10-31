@@ -34,27 +34,20 @@
 
 namespace paraos {
 
-class CriticalSectionFactory final {
- public:
-  CriticalSectionFactory() noexcept {}
-
-  ~CriticalSectionFactory() {}
-
- private:
-};
-
 class CriticalSection final {
  public:
   /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
   /// @param is_isr
-  CriticalSection(bool is_isr = false) : is_isr_{is_isr} { mutex_.Lock(); }
+  CriticalSection(bool is_isr = false) : is_isr_{is_isr} {
+    mutex_.Lock(max_delay, is_isr_);
+  }
 
   /// @brief Деструктор обеспечивает автоматический выход из критической секции.
-  ~CriticalSection() { mutex_.Unlock(); }
+  ~CriticalSection() { mutex_.Unlock(is_isr_); }
 
  private:
-  [[maybe_unused]] const bool is_isr_;
-  static inline MutexBase mutex_;
+  const bool is_isr_;
+  static inline MutexRecursive mutex_;
 };
 
 }  // namespace paraos

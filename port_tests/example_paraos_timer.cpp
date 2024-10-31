@@ -1,4 +1,4 @@
-/// @file example_timer.cpp
+/// @file test_paraos_timer.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -23,11 +23,16 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#include "iostream"
+#include <iostream>
+#include <string>
+#include <string_view>
+
+#include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_timer.hpp"
 
-constexpr std::size_t period_ms{100};
+paraos::SemaphoreBinary sem;
+constexpr std::size_t period_ms{10};
 
 struct UserTimer : public paraos::Timer {
   UserTimer(std::string_view str, std::size_t period_ms)
@@ -52,7 +57,7 @@ struct UserTimerWithCnt : public paraos::Timer {
     cnt += period_ms;
 
     if (cnt > runtime_max_ms_) {
-      exit(0);
+      sem.Give();
     }
   }
 
@@ -62,12 +67,19 @@ struct UserTimerWithCnt : public paraos::Timer {
   static constexpr std::size_t runtime_max_ms_{1000};
 };
 
+UserTimer user_timer{"Global timer", 500u};
+
 int main() {
-  UserTimerWithCnt use_timer{"local timer", 100};
-  use_timer.Start();
+  UserTimer user_timer{"Local timer", 100u};
+  UserTimerWithCnt local_timer("Local timer repetition", period_ms);
+  auto is_timer_started = local_timer.Start();
+  PARAOS_CHECK_ASSERT(is_timer_started);
+  PARAOS_ATTR_UNUSED_VAR(is_timer_started);
+  paraos::Thread::SleepMs(100);
+  local_timer.Stop();
+  std::cout << " timer is stopped " << std::endl;
+  local_timer.Start();
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
-
+  sem.Take();
   return 0;
 }

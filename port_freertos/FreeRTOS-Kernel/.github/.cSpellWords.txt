@@ -924,7 +924,7 @@ Usart
 USART
 USPRG
 USRIO
-utest
+PARAOS_TESTS
 utilises
 utilising
 VDDCORE

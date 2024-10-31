@@ -30,14 +30,28 @@
 #include "etl/delegate.h"
 #include "gsl/gsl"
 #include "paraos_bool_atomic.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
-#include "paroas_isr.hpp"
 
 namespace paraos {
 
+#if PARAOS_THREAD_SEQUENCE_USING_VIRTUAL
+#define PARAOS_THREAD_SEQUENCE_VIRTUAL virtual
+#else
+#define PARAOS_THREAD_SEQUENCE_VIRTUAL
+#endif
+
+/// @brief Provided thread for execute delegates.
+///
+/// @warning No delegates should use blocking paraos API. For example,
+/// - sem.Take(100) - bad idea, because all delegates in the thread will blocked
+///                   for 100 ms.
+/// - sem.Take(0) - good. If no semaphore for take, method return control to
+///                 delegate immediately. Remember, all blocking api return
+///                 status, indicates is API calls successfully.
 class IThreadSequence : public Thread {
   typedef etl::delegate<void(void)> callback_type;
   using try_lock_type = etl::delegate<bool(void)>;
@@ -53,11 +67,9 @@ class IThreadSequence : public Thread {
         period_in_us_{period_in_us},
         timer_controller_{timer_controller} {}
 
-  virtual ~IThreadSequence() {}
-
   /// @brief Run is called in loop wrapper in separate RTOS thread until
   /// anything call Break().
-  void Run() override {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Run() override {
     // Wait semaphore before try run all methods in array. It's allows call
     // methods with a user-defined period (period with witch user code calls
     // the method NotifyGive()).
@@ -71,7 +83,7 @@ class IThreadSequence : public Thread {
   }
 
   /// @brief Force break thread execute. Useful in unit tests.
-  void Break() {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Break() {
     const paraos::CriticalSection critical;
 
     // Run() no more called.
@@ -87,15 +99,27 @@ class IThreadSequence : public Thread {
 
  public:
   /// @brief Register delegate for periodic execute.
+  ///
+  /// @warning All registered delegates execute in one thread. That's mean, no
+  /// delegate should use blocking API.
+  /// For example, if delegate call 'sem.Take(delay_ms)' and 'delay_ms > 0', all
+  /// delegates in the thread will blocked for specfied period (most likely,
+  /// this is not behavior you need). Timeout in all paraos API must be set as
+  /// zero!
+  /// - sem.Take(100) - bad;
+  /// - sem.Take(0) - good;
+  ///
   /// @param[in] callback: Delegate that needs to be registered.
   /// @param[in] freq: If set 0.0, callback will be called on each user called
   /// NotifyGive().
   /// @param[in] repeating: true if need periodic call, false if need call at
   /// once.
+  ///
   /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
   /// other case return valid timer id in range [0 .. 254].
-  auto Register(callback_type& callback, float freq, bool repeating)
-      -> etl::timer::id::type {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
+      callback_type& callback, float freq,
+      bool repeating) -> etl::timer::id::type {
     paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
@@ -107,12 +131,27 @@ class IThreadSequence : public Thread {
     return timer_id;
   }
 
-  auto Unregister(etl::timer::id::type timer_id) {
+  /// @brief Delete delegate from periodic execute.
+  ///
+  /// @param[in] timer_id: Delegate id, which needs for delete from queue
+  /// executor.
+  ///
+  /// @return true if delegate successfully deleted, false in otherwise.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(etl::timer::id::type timer_id)
+      -> bool {
     paraos::CriticalSection critical;
     return timer_controller_.unregister_timer(timer_id);
   }
 
-  auto SetFreq(etl::timer::id::type timer_id, float freq_) {
+  /// @brief Change freq for delegate execution.
+  ///
+  /// @param[in] timer_id: Delegate id whose execution frequency will be
+  /// changed.
+  /// @param[in] freq_: new frequency for periodic call delegate.
+  ///
+  /// @return true if frequency changed successfully, false in otherwise.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto SetFreq(
+      etl::timer::id::type timer_id, float freq_) -> bool {
     bool is_period_updated{false};
 
     paraos::CriticalSection critical;
@@ -131,16 +170,23 @@ class IThreadSequence : public Thread {
   /// @note User code must call this method at regular intervals, for example -
   /// in a timer overflow interrupt.
   /// @return
-  auto NotifyGive(bool is_isr = false) -> ISRbool {
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto NotifyGive(bool is_isr = false)
+      -> ISRbool {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
-  auto GetMainFreq() const -> float {
+  /// @brief Return frequency which thread execute. Relative to this frequency,
+  /// the periods for calling delegates are calculated.
+  ///
+  /// @return Main frequency in Hz.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const -> float {
     // Convert microseconds to sec.
     const float main_freq = (static_cast<float>(period_in_us_)) * 0.000001;
 
     return static_cast<float>(1.0) / main_freq;
   }
+
+  virtual ~IThreadSequence() {}
 
   /// Methods definitions ------------------------------------------------------
  private:

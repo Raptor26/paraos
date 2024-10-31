@@ -84,6 +84,8 @@ class Thread {
   /// поток.
   void DelayMs(std::size_t sleep_ms);
 
+  static void SleepMs(std::size_t sleep_ms);
+
   /// @brief After "Thread' complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
   /// instance.
@@ -125,6 +127,40 @@ class Thread {
   /// @return Возвращает статус планировщика - запущен или нет.
   static auto IsSchedulerStarted() -> bool;
 
+  /// @brief Return current tine in ticks. Useful when need periodical check
+  /// timeout in blocking operations with elapsed time correction.
+  ///
+  /// @return Return object with current time. Returned value used in
+  /// CheckTimeout().
+  static auto GetCurrentTime() -> TimeOut_t {
+    TimeOut_t xTimeOut;
+    vTaskInternalSetTimeOutState(&xTimeOut);
+    return xTimeOut;
+  }
+
+  /// @brief Check timeout with elapsed time correction.
+  ///
+  /// @details If a task enters and exits the Blocked state more than once while
+  /// it is waiting for the event to occur then the timeout used each time the
+  /// task enters the Blocked state must be adjusted to ensure the total of all
+  /// the time spent in the Blocked state does not exceed the originally
+  /// specified timeout period. xTaskCheckForTimeOut() performs the adjustment,
+  /// taking into account occasional occurrences such as tick count overflows,
+  /// which would otherwise make a manual adjustment prone to error.
+  ///
+  /// @param[in] pxTimeOut: Returned by GetCurrentTime() value.
+  /// GetCurrentTimeInTicks() using at once before need periodical checking
+  /// timeout by CheckTimeout().
+  /// @param[in,out] ticks_to_wait: Wait time in ticks.
+  ///
+  /// @return Return true if need break waiting, false if no timeout elapsed.
+  static auto CheckTimeout(TimeOut_t &xTimeOut, std::size_t &delay_ms) -> bool {
+    TickType_t ticks = PARAOS_ConvertMsToTicks(delay_ms);
+    auto is_timeout = xTaskCheckForTimeOut(&xTimeOut, &ticks);
+    delay_ms = PARAOS_ConvertTicksToMs(ticks);
+    return is_timeout;
+  }
+
   Thread(const Thread &other) = delete;
   Thread(Thread &&other) = delete;
   Thread &operator=(const Thread &other) = delete;
@@ -163,7 +199,7 @@ class Thread {
   /// @brief If semaphore given, that's mean perform_work() complete execute and
   /// Dtor can safely free resources.
   SemaphoreBinary is_thread_complete_sem_;
-  MutexBaseBinary join_mutex_;
+  Mutex join_mutex_;
 };
 }  // namespace paraos
 

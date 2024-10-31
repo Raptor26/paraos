@@ -29,10 +29,12 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_critical.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
-#include "paroas_isr.hpp"
 
 namespace paraos {
 
@@ -45,7 +47,8 @@ constexpr std::size_t initial_count = 0u;
 
 class SemaphoreBase {
  public:
-  ISRbool Take(std::size_t timeout_ms = max_delay, bool from_isr = false) {
+  virtual ISRbool Take(
+      std::size_t timeout_ms = max_delay, bool from_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
     // PARAOS wrapper for POSIX not provided isr functions.
@@ -75,7 +78,7 @@ class SemaphoreBase {
     return is_sem_taken;
   }
 
-  ISRbool Give(bool from_isr = false) {
+  virtual ISRbool Give(bool from_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
     bool is_sem_given{false};
     auto result = sem_post(&handle_);
@@ -121,7 +124,39 @@ struct SemaphoreBinary final : public SemaphoreBase {
     }
   }
 
+  ISRbool Give(bool from_isr = false) override {
+    ISRbool status;
+
+    const CriticalSection critical;
+    if (!is_given_) {
+      status = SemaphoreBase::Give(from_isr);
+
+      if (status) {
+        is_given_ = true;
+      }
+    }
+
+    return status;
+  }
+
+  ISRbool Take(
+      std::size_t timeout_ms = max_delay, bool from_isr = false) override {
+    ISRbool status;
+
+    status = SemaphoreBase::Take(timeout_ms, from_isr);
+
+    const CriticalSection critical;
+    if (status) {
+      is_given_ = false;
+    }
+
+    return status;
+  }
+
   ~SemaphoreBinary() = default;
+
+ private:
+  etl::atomic_bool is_given_{false};
 };
 }  // namespace paraos
 

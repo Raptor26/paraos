@@ -35,6 +35,7 @@
 #include "lwrb/lwrb.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_config.hpp"
 
 namespace paraos {
 
@@ -80,38 +81,38 @@ class IRingBuff {
 
   operator bool() { return lwrb_is_ready(&lwrb_); }
 
-  auto Write(const void* src, lwrb_sz_t size_in_bytes) {
-    return lwrb_write(&lwrb_, src, size_in_bytes);
+  PARAOS_INLINE_TRIVIAL auto Write(const void* src, lwrb_sz_t size_in_bytes) {
+    lwrb_sz_t written{0};
+    lwrb_write_ex(&lwrb_, src, size_in_bytes, &written, LWRB_FLAG_WRITE_ALL);
+    return written;
   }
 
-  auto Write(const gsl::span<T> src) {
-    return lwrb_write(&lwrb_, static_cast<void*>(src.data()), src.size());
+  PARAOS_INLINE_TRIVIAL auto Write(const gsl::span<T> src) {
+    return Write(static_cast<void*>(src.data()), src.size_bytes());
   }
 
   template <class TIterator>
-  auto Write(TIterator begin, TIterator end) {
+  PARAOS_INLINE_TRIVIAL auto Write(TIterator begin, TIterator end) {
     return Write(
         static_cast<const void*>(begin),
         static_cast<lwrb_sz_t>(std::distance(begin, end)));
   }
 
-  auto Read(void* dst, lwrb_sz_t dst_size_in_bytes) {
+  PARAOS_INLINE_TRIVIAL auto Read(void* dst, lwrb_sz_t dst_size_in_bytes) {
     return lwrb_read(&lwrb_, dst, dst_size_in_bytes);
   }
 
-  auto Read(gsl::span<T> dst) {
-    return lwrb_read(&lwrb_, static_cast<void*>(dst.data()), dst.size());
+  PARAOS_INLINE_TRIVIAL auto Read(gsl::span<T> dst) {
+    return Read(
+        static_cast<void*>(dst.data()),
+        static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
-  auto Read(iterator begin, iterator end) {
-    return Read(begin, std::distance(begin, end));
-  }
-
-  auto Skip(lwrb_sz_t size_in_bytes) {
+  PARAOS_INLINE_TRIVIAL auto Skip(lwrb_sz_t size_in_bytes) {
     return lwrb_skip(&lwrb_, size_in_bytes);
   }
 
-  auto Free() { return lwrb_get_free(&lwrb_); }
+  PARAOS_INLINE_TRIVIAL auto Free() { return lwrb_get_free(&lwrb_); }
 
   /// @brief Return numbers of bytes currently available in buffer.
   /// @return Number of bytes ready to be read

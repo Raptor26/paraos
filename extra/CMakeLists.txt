@@ -11,6 +11,6 @@ target_sources(${PROJECT_NAME} PRIVATE paraos_status_led.cpp)
 target_include_directories(${PROJECT_NAME}
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-if(UTEST)
+if(PARAOS_TESTS)
   add_subdirectory(tests)
 endif()

@@ -30,11 +30,18 @@
 #include <string>
 #include <vector>
 
+#include "etl/cyclic_value.h"
 #include "paraos_bool_atomic.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_multi_ringbuff.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
+
+#define PrintDebug(__message__)                   \
+  {                                               \
+    const paraos::CriticalSection macro_critical; \
+    std::cout << __message__ << std::endl;        \
+  }
 
 const std::vector<std::string> str_array{
     "1) We're talking away",
@@ -62,156 +69,227 @@ const std::vector<std::string> str_array{
     "23) I'll be comin' for you anyway",
     "24) -------------------------------------------"};
 
-std::vector<std::string> read_array;
+std::size_t CalcTotalBytesInStringArray(
+    const std::vector<std::string> &str_arr) {
+  std::size_t total_bytes_numb{0};
+
+  for (auto &str : str_arr) {
+    total_bytes_numb += str.length();
+  }
+  return total_bytes_numb;
+}
 
 constexpr std::size_t queue_size{2};
-constexpr std::size_t ring_buff_size{512};
-constexpr std::size_t ring_buff_numb{5};
+constexpr std::size_t ring_buff_size{2048};
+constexpr std::size_t thread_stack_depth{1024};
 
-std::size_t thread_total_numb{0};
-std::size_t thread_exit_cnt{0};
+/// @brief String index ready to write in buffer. By test design, value may be
+/// more than actual string numb in str_array.
+std::atomic_size_t producer_actual_str_idx{0};
 
-std::size_t write_idx{0};
-std::size_t read_idx{0};
+/// @brief After each successful write, producer increment this value.
+std::atomic_size_t producer_total_written_bytes{0};
 
-paraos::MultiRingBuff<queue_size, ring_buff_size, ring_buff_numb>
+/// @brief  After each successful read, consumer increment this value.
+std::atomic_size_t consumer_total_read_bytes{0};
+
+/// ----------------------------------------------------------------------------
+/// Variable above need in FreeRTOS port for check conditions when need call
+/// exit().
+/// ----------------------------------------------------------------------------
+
+std::atomic_size_t consumer_thread_numb{0};
+
+std::atomic_size_t producer_thread_numb{0};
+
+std::atomic_size_t producer_thread_exit_cnt{0};
+
+std::atomic_size_t consumer_thread_exit_cnt{0};
+/// ----------------------------------------------------------------------------
+
+paraos::MultiRingBuff<
+    queue_size, char, paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>,
+    paraos::RingBuff<char, ring_buff_size>>
     multi_ring_buff{};
-
-std::vector<std::string> split(const char *buf, std::size_t buff_size) {
-  std::vector<std::string> drives;
-  std::string tmp_str = "";
-  for (std::size_t i = 0; i < buff_size; i++) {
-    auto chr = buf[i];
-    if (int(chr) == 0) {
-      drives.push_back(tmp_str);
-      tmp_str = "";
-    }
-    // Символ "[", которым заполняется весь массив перед записью строки. В
-    // данном случае обозначает "незанятую" ячейку.
-    else if (int(chr) == 91) {
-      break;
-    } else {
-      tmp_str += chr;
-    }
-  }
-  return drives;
-}
 
 struct Producer : public paraos::Thread {
   Producer(
       const std::size_t thread_id, const std::string name = "Producer",
-      std::size_t stack_depth = 1024,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      std::size_t stack_depth = thread_stack_depth,
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kLowest)
       : paraos::Thread{name, stack_depth, priority}, thread_id_{thread_id} {
     paraos::Thread::SetNeedWhile(true);
     Start();
   }
 
+  /// @brief Producer thread
   void Run() override {
-    std::size_t idx;
-    constexpr std::size_t write_delay_ms{100};
-
+    std::size_t str_idx;
     {
       const paraos::CriticalSection critical;
-      idx = write_idx;
-      ++write_idx;
+      str_idx = producer_actual_str_idx;
+      ++producer_actual_str_idx;
     }
 
-    if (idx < str_array.size()) {
-      auto str = str_array[idx];
-      {
-        const paraos::CriticalSection critical;
-        std::cout << "Producer with id " << thread_id_
-                  << " writing string: " << str << std::endl;
+    while (true) {
+      if (str_idx < str_array.size()) {
+      } else {
+        // All data already written, exit from thread.
+        ThreadExit();
+        break;
       }
 
-      const std::size_t strl_len_with_null = str.size() + 1u;
-      auto written_bytes_numb = multi_ring_buff.Write(
-          thread_id_, static_cast<const void *>(str.data()), strl_len_with_null,
-          write_delay_ms);
+      // try write data in buffer periodical.
+      auto written_len = multi_ring_buff.TryWrite(
+          buff_idx_, str_array.at(str_idx).c_str(),
+          str_array.at(str_idx).length());
 
-      PARAOS_CHECK_ASSERT(
-          written_bytes_numb == strl_len_with_null &&
-          "Don't write string in ring buffer");
-      paraos::Thread::DelayMs(1);
-    } else {
-      paraos::Thread::SetNeedWhile(false);
-      const paraos::CriticalSection critical;
-      std::cout << "Producer with id " << thread_id_ << " Exiting ... "
-                << std::endl;
-      ++thread_exit_cnt;
+      if (written_len > 0) {
+        // Break trying write data in buff, in next iteration take new string
+        // idx for write in buff.
+        producer_total_written_bytes += written_len;
+        PrintDebug(
+            Name() << " string write successful: "
+                   << str_array.at(str_idx).c_str());
+        break;
+      } else {
+        PrintDebug(
+            Name() << "WARN: Nothin written, try again after delay. "
+                   << "String idx is " << str_idx);
+
+        // If no consumers online, nobody read data from buffer and buffer
+        // always will full.
+        if (IsConsumersOffline()) {
+          ThreadExit();
+          break;
+        }
+
+        // Small delay for yeld resources.
+        Thread::DelayMs(1);
+      }
     }
+
+    // cyclic increment buff idx.
+    ++buff_idx_;
   }
 
  private:
-  std::size_t thread_id_;
+  void ThreadExit() {
+    SetNeedWhile(false);
+    ++producer_thread_exit_cnt;
+    PrintDebug(Name() << " exiting ... ");
+  }
+
+  bool IsConsumersOffline() {
+    bool is_need_exit{false};
+
+    if (consumer_thread_exit_cnt >= consumer_thread_numb) {
+      is_need_exit = true;
+    }
+
+    return is_need_exit;
+  }
+
+ private:
+  const std::size_t thread_id_;
+  etl::cyclic_value<int, 0, multi_ring_buff.GetBuffNumb() - 1u> buff_idx_{0};
 };
 
 struct Consumer : public paraos::Thread {
   Consumer(
-      const std::string name = "Consumer", std::size_t stack_depth = 1024,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
+      const std::string name = "Consumer",
+      std::size_t stack_depth = thread_stack_depth,
+      paraos::ThreadPriority priority = paraos::ThreadPriority::kRealTime)
       : paraos::Thread{name, stack_depth, priority} {
     paraos::Thread::SetNeedWhile(true);
     Start();
   }
 
+  /// @brief Consumer thread.
   void Run() override {
+    // Small delay for yeld recourses if no data available in buff.
+    constexpr std::size_t delay_ms{1};
+    constexpr std::size_t read_mem_size{2048};
     std::size_t idx;
-    constexpr std::size_t read_delay_ms{100u};
-    constexpr std::size_t read_mem_size{128u};
+    auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
 
-    auto read_mem = std::make_unique<std::array<std::uint8_t, read_mem_size>>();
-    read_mem->fill('[');
-    auto read_bytes_numb = multi_ring_buff.Read(
-        idx, static_cast<void *>(read_mem->data()), read_mem->size(),
-        read_delay_ms);
+    auto read_size =
+        multi_ring_buff.Read(idx, read_mem->data(), read_mem->size(), delay_ms);
 
-    auto str_container =
-        split(reinterpret_cast<const char *>(read_mem->data()), read_mem_size);
-
-    {
-      const paraos::CriticalSection critical;
-      std::cout << "Consumer " << Name()
-                << " got str container with size: " << str_container.size()
-                << std::endl;
-      for (auto &str : str_container) {
-        std::cout << "Consumer " << Name() << " read string: " << str
-                  << std::endl;
-      }
+    if (read_size > 0u) {
+      consumer_total_read_bytes += read_size;
+      PrintDebug(Name() << " read " << read_mem->data());
+    } else {
+      PrintDebug(
+          Name() << " Nothing read, try again. Already read total bytes is "
+                 << consumer_total_read_bytes);
     }
 
-    const paraos::CriticalSection critical;
-    if (read_bytes_numb != 0) {
-      read_array.push_back(reinterpret_cast<const char *>(read_mem->data()));
-
-      read_idx += str_container.size();
-    }
-
-    if (!(read_idx < str_array.size())) {
-      paraos::Thread::SetNeedWhile(false);
-      ++thread_exit_cnt;
+    // No producers online, nobody write new data, need exit from thread.
+    if (IsProducersOffline()) {
+      ThreadExit();
     }
   }
+
+ private:
+  void ThreadExit() {
+    SetNeedWhile(false);
+    ++consumer_thread_exit_cnt;
+    PrintDebug(Name() << " exiting ... ");
+  }
+
+  bool IsProducersOffline() {
+    bool is_offline{true};
+    if (producer_thread_exit_cnt >= producer_thread_numb) {
+      is_offline = true;
+    }
+
+    return is_offline;
+  }
 };
+
+void AssertsForTestComplete() {
+  constexpr std::size_t read_mem_size{2048};
+  std::size_t idx;
+
+  auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
+
+  for (std::size_t i = 0u; i < multi_ring_buff.GetBuffNumb(); ++i) {
+    auto read_bytes_numb =
+        multi_ring_buff.TryRead(idx, read_mem->data(), read_mem->size());
+
+    if (read_bytes_numb > 0) {
+      consumer_total_read_bytes += read_bytes_numb;
+      std::cout << "Read some data befor after all threads works complete"
+                << std::endl;
+    }
+  }
+
+  std::cout << "Total read bytes numb is " << consumer_total_read_bytes
+            << " Expected bytes numb is "
+            << CalcTotalBytesInStringArray(str_array) << std::endl;
+
+  PARAOS_CHECK_ASSERT(
+      consumer_total_read_bytes == producer_total_written_bytes &&
+      "Total read and written bytes not equal");
+}
 
 #if defined(FREERTOS)
 void ExitAfterTestComplete() {
   auto is_need_exit{false};
   {
     paraos::CriticalSection critical;
-    if (thread_exit_cnt == thread_total_numb) {
+    if ((consumer_thread_exit_cnt >= consumer_thread_numb) &&
+        (producer_thread_exit_cnt >= producer_thread_numb)) {
       is_need_exit = true;
     }
   }
 
   if (is_need_exit) {
-    for (auto &str : read_array) {
-      assert(
-          std::find(str_array.begin(), str_array.end(), str) !=
-              str_array.end() &&
-          "Can't find consumer string in source container");
-    }
+    AssertsForTestComplete();
     exit(EXIT_SUCCESS);
   }
 }
@@ -224,25 +302,36 @@ auto main() -> int {
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
 
+  // ---------------------------------------------------------------------------
+  // Create producers
+  // ---------------------------------------------------------------------------
   Producer prod_1{0, "Prod 1"};
-  Producer prod_2{1, "Prod 2"};
-  Producer prod_3{2, "Prod 3"};
-  Producer prod_4{2, "Prod 4"};
-  thread_total_numb += 4;
+  producer_thread_numb += 1;
 
-  Consumer cons_1{"Cons 1"};
-  Consumer cons_2{"Cons 2"};
-  Consumer cons_3{"Cons 3"};
-  thread_total_numb += 3;
+  Producer prod_2{1, "Prod 2"};
+  producer_thread_numb += 1;
+
+  Producer prod_3{2, "Prod 3"};
+  producer_thread_numb += 1;
+
+  Producer prod_4{3, "Prod 4"};
+  producer_thread_numb += 1;
+  // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // Create consumers
+  // ---------------------------------------------------------------------------
+  Consumer cons_1{"--Cons 1"};
+  consumer_thread_numb += 1;
+
+  Consumer cons_2{"--Cons 2"};
+  consumer_thread_numb += 1;
+  // ---------------------------------------------------------------------------
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
-  for (auto &str : read_array) {
-    assert(
-        std::find(str_array.begin(), str_array.end(), str) != str_array.end() &&
-        "Can't find consumer string in source container");
-  }
+  AssertsForTestComplete();
 
   return 0;
 }

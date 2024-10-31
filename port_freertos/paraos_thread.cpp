@@ -83,6 +83,10 @@ void Thread::DelayMs(std::size_t sleep_ms) {
   vTaskDelay(static_cast<TickType_t>(PARAOS_ConvertMsToTicks(sleep_ms)));
 }
 
+void Thread::SleepMs(std::size_t sleep_ms) {
+  vTaskDelay(static_cast<TickType_t>(PARAOS_ConvertMsToTicks(sleep_ms)));
+}
+
 void Thread::Start() {
   // if condition below true, destructor not called and we cal make thread.
   if (is_thread_makeable_) {

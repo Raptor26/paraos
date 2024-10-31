@@ -31,11 +31,14 @@
 
 #include "paraos_config.hpp"
 #include "paraos_mutex.hpp"
+#include "paraos_mutex_raii.hpp"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_thread.hpp"
 
 namespace paraos {
 
+/// @brief Message container. Manage memory, requested from ALLOCATOR.
+/// @tparam ALLOCATOR - Allocator for request memory.
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class Message {
   ALLOCATOR allocator_;
@@ -85,12 +88,14 @@ class Message {
 
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
-  PARAOS_INLINE_TRIVIAL void *Addr() { return static_cast<void *>(data_ptr_); }
+  PARAOS_INLINE_TRIVIAL void *Data() const {
+    return static_cast<void *>(data_ptr_);
+  }
 
   /// @brief Возвращает размер выделенной области памяти в байтах.
   /// @return Количество байт, выделенные по адресу, который возвращает метод
   /// Addr().
-  PARAOS_INLINE_TRIVIAL size_t Size() { return size_in_bytes_; }
+  PARAOS_INLINE_TRIVIAL size_t Size() const { return size_in_bytes_; }
 
   /// @brief Принудительно освобождает область памяти, выделенную под сообщение.
   /// После вызова данного метода, объект становиться не валидным.
@@ -117,16 +122,18 @@ class Message {
   const std::size_t size_in_bytes_;
 };
 
+/// @brief Message object, returned by MessageBuffer when user code calls
+/// Alloc().
+/// @tparam ALLOCATOR
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class MessageWritable final {
  public:
   MessageWritable(
       const std::size_t size_in_bytes,
-      paraos::IQueueBlocking<Message<ALLOCATOR>> &queue,
-      const std::size_t timeout_ms)
-      : message_{size_in_bytes}, queue_{queue}, timeout_ms_{timeout_ms} {}
+      paraos::IQueueBlocking<Message<ALLOCATOR>> &queue)
+      : message_{size_in_bytes}, queue_{queue} {}
 
-  ~MessageWritable() { Push(timeout_ms_); }
+  ~MessageWritable() { TryPush(); }
 
   MessageWritable(const MessageWritable &other) = delete;
   MessageWritable(MessageWritable &&other) = delete;
@@ -135,19 +142,40 @@ class MessageWritable final {
 
   operator bool() const { return message_; }
 
-  PARAOS_INLINE_TRIVIAL void *Addr() { return message_.Addr(); }
+  PARAOS_INLINE_TRIVIAL void *Data() { return message_.Data(); }
   PARAOS_INLINE_TRIVIAL size_t Size() { return message_.Size(); }
 
-  PARAOS_INLINE_OPERATIONS bool Push(std::size_t timeout_ms) {
+  /// @brief Try push message in buffer. Message will push if queue has space.
+  ///
+  /// @note  User code not necessary call this method. TryPush() automatically
+  /// calls in dtor.
+  ///
+  /// @details If user successfully alloc space for message, this does not mean
+  /// that this message will be successfully move in buffer. If between
+  /// IMessageBuffer.Alloc() and TryPush() any thread full queue, TryPush()
+  /// can't push this message in buffer and return false. In any case, resources
+  /// will automatically free.
+  ///
+  /// @note If need alloc and push message atomy, user code need call
+  /// IMessageBuffer.Alloc() and TryPush() inside one critical section.
+  ///
+  /// @param[in] is_isr: Set true if calls from isr.
+  ///
+  /// @return Return true if message successfully pushed in buffer, false in
+  /// otherwise.
+  PARAOS_INLINE_OPERATIONS bool TryPush(bool is_isr = false) {
     bool is_message_pushed{false};
+
+    // If user calls TryPush(), that's mean when calls dtor, TryPush() will
+    // calls again. For this reason need check message_ validation.
     if (message_) {
-      is_message_pushed = queue_.Push(std::move(message_), timeout_ms);
+      is_message_pushed = queue_.TryPush(std::move(message_), is_isr);
+      // Nothin to push again, free resources.
+      Free();
     }
 
     return is_message_pushed;
   }
-
-  PARAOS_INLINE_TRIVIAL bool Push() { return Push(timeout_ms_); }
 
   /// @brief Пользователь может вызвать данный метод если передумал отправлять
   /// сообщение в буфер.
@@ -156,9 +184,12 @@ class MessageWritable final {
  private:
   Message<ALLOCATOR> message_;
   paraos::IQueueBlocking<Message<ALLOCATOR>> &queue_;
-  const std::size_t timeout_ms_;
 };
 
+/// @brief Message buffer base class. Contained API for buffer.
+///
+/// @tparam BUFFER_ALLOCATOR: Memory allocator for request memory for each
+/// message.
 template <typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
 class IMessageBuffer {
  public:
@@ -169,11 +200,24 @@ class IMessageBuffer {
   IMessageBuffer &operator=(const IMessageBuffer &other) = delete;
   IMessageBuffer &operator=(IMessageBuffer &&other) = delete;
 
-  PARAOS_INLINE_TRIVIAL auto Alloc(
-      const std::size_t size_in_bytes, const std::size_t timeout_ms) {
-    return MessageWritable(size_in_bytes, queue_, timeout_ms);
+  /// @brief  Request memory from allocator, witch set in MessageBuffer ctor.
+  ///
+  /// @param[in] size_in_bytes: Requested memory size in bytes.
+  ///
+  /// @return Return container. Note - container way not contained requested
+  /// memory. Befor start any operations with MessageWritable object, check his
+  /// validation (use operator bool).
+  PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes) {
+    return MessageWritable(size_in_bytes, queue_);
   }
 
+  /// @brief Return message container if any data available in buffer.
+  ///
+  /// @param[in] timeout_ms: Timeout for wait any data in buffer if no data
+  /// available in calls time.
+  ///
+  /// @return Return std::optional object. If no data was read, std::optional
+  /// will empty. In otherwise std::optional contained message.
   PARAOS_INLINE_TRIVIAL auto Pop(std::size_t timeout_ms) {
     return queue_.Pop(timeout_ms);
   }
@@ -189,6 +233,11 @@ class IMessageBuffer {
   paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
 };
 
+/// @brief Message buffer class.
+///
+/// @tparam QUEUE_SIZE: Max message numb for contained in buffer in same time.
+/// @tparam BUFFER_ALLOCATOR: Memory allocator for request memory for each
+/// message.
 template <
     const std::size_t QUEUE_SIZE,
     typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
