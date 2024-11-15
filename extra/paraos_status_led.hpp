@@ -43,8 +43,8 @@ enum class StatusLedMode {
 };
 
 struct IStatusLed {
-  virtual void Enable() const = 0;
-  virtual void Disable() const = 0;
+  virtual void Enable() = 0;
+  virtual void Disable() = 0;
 };
 
 class StatusLed {
