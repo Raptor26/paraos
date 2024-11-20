@@ -61,6 +61,9 @@ extern "C" void vApplicationStackOverflowHook(
    * or pxCurrentTCB if pcTaskName has itself been corrupted. */
   (void)xTask;
   (void)pcTaskName;
+
+  // Loop program to attract attention.
+  PARAOS_CHECK_LOOP();
 }
 #endif
 
