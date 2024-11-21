@@ -111,6 +111,11 @@ struct IEmbeddedTimer {
   virtual cnt_t GiveCntOverflowValue() const = 0;
 };
 
+struct EmbeddedTimerEmpty final : public IEmbeddedTimer {
+  cnt_t GiveCnt() const override { return 0u; };
+  cnt_t GiveCntOverflowValue() const override { return 0u; };
+};
+
 struct HightCntDefault {};
 
 /// @brief Шаблон 32-х битного счетчика.
@@ -239,12 +244,34 @@ struct EmbeddedProfiler final : public IProfiler,
   cnt_t overflow_cnt_{0u};
 };
 
+/// @brief Instance of EmbeddedTimerEmpty with override interface methods which
+/// return zero values.
+inline EmbeddedTimerEmpty embedded_timer_empty;
+
 /// @brief Runtime profiler based on user definition counter.
 struct TimerProfiler final : public IProfiler {
-  TimerProfiler(const IEmbeddedTimer &timer) : timer_{timer} {}
+  /// @brief Ctor with embedded timer reference.
 
+  /// @note Many TimerProfiler instances can use one IEmbeddedTimer instance.
+  ///
+  /// @param[in] timer: New timer for connect to the profiler. If use default
+  /// value, Stop() and LastDuration() return zero value. For this reason user
+  /// code must call SetEmbeddedTimer() and set valid embedded timer reference.
+  TimerProfiler(const IEmbeddedTimer &timer = embedded_timer_empty)
+      : timer_{&timer} {}
+
+  /// @brief Connect new embedded timer to the profiler.
+  ///
+  /// @note User code must call this method if Ctor use default params. In
+  /// otherwise Stop() and LastDuration() return zero value.
+  ///
+  /// @param[in] timer: New timer for connect to the profiler.
+  void SetEmbeddedTimer(const IEmbeddedTimer &timer) { timer_ = &timer; }
+
+  /// @brief Start
+  /// @return
   PARAOS_INLINE_OPERATIONS void Start() override {
-    start_ = timer_.GiveCnt();
+    start_ = timer_->GiveCnt();
 
     // Необходимо сбросить счетчик переполнений чтобы при повторном вызове
     // Stop() не учитывать уже учтенное переполнение.
@@ -252,14 +279,14 @@ struct TimerProfiler final : public IProfiler {
   }
 
   cnt_t Stop() override {
-    cnt_t stop = timer_.GiveCnt();
+    cnt_t stop = timer_->GiveCnt();
 
     if (start_ > stop) {
       ++overflow_cnt_;
     }
 
     // Вычисление периода между вызовами Start() и Stop() с учетом переполнения.
-    const auto &overflow_value = timer_.GiveCntOverflowValue();
+    const auto &overflow_value = timer_->GiveCntOverflowValue();
     duration_ = static_cast<cnt_t>(
         (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_);
 
@@ -276,7 +303,7 @@ struct TimerProfiler final : public IProfiler {
   cnt_t overflow_cnt_{0u};
 
   /// @brief  Interface for get actual counter value on each time.
-  const IEmbeddedTimer &timer_;
+  const IEmbeddedTimer *timer_;
 };
 
 }  // namespace paraos
