@@ -37,6 +37,7 @@ using namespace std::chrono_literals;
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 #include "paraos_config.hpp"
 
@@ -59,6 +60,24 @@ struct IProfiler {
   virtual auto LastDuration() -> cnt_t = 0;
 };
 
+/// @brief Embedded timer interface. Need for get actual timer value and use it
+/// for calculate runtime in EmbeddedProfiler() and TimerProfiler().
+///
+/// @note In more cases, user code create one instance of IEmbeddedTimer
+/// inteface and use it with many instances of EmbeddedProfiler() and
+/// TimerProfiler().
+struct IEmbeddedTimer {
+  virtual ~IEmbeddedTimer() = default;
+  virtual cnt_t GiveCnt() const = 0;
+  virtual cnt_t GiveCntOverflowValue() const = 0;
+};
+
+/// @brief Override IEmbeddedTimer interface with zero values.
+struct EmbeddedTimerEmpty final : public IEmbeddedTimer {
+  cnt_t GiveCnt() const override { return 0u; };
+  cnt_t GiveCntOverflowValue() const override { return 0u; };
+};
+
 /// Empty profiler -------------------------------------------------------------
 
 /// @brief "Пустой" профилировщик. Используется в качестве профилировщика "по
@@ -69,7 +88,7 @@ struct EmptyProfiler final : public IProfiler {
   PARAOS_INLINE_TRIVIAL auto LastDuration() -> cnt_t override { return 0u; }
 };
 
-/// @brief Empty profiler class exemplar. Use if need set reference on IProfiler
+/// @brief Empty profiler instance. Use if need set reference on IProfiler
 /// without real profiler.
 inline EmptyProfiler empty_profiler;
 
@@ -104,17 +123,6 @@ struct OsProfiler final {
         // defined(__unix__)
 
 /// Embedded Profiler ----------------------------------------------------------
-
-struct IEmbeddedTimer {
-  virtual ~IEmbeddedTimer() = default;
-  virtual cnt_t GiveCnt() const = 0;
-  virtual cnt_t GiveCntOverflowValue() const = 0;
-};
-
-struct EmbeddedTimerEmpty final : public IEmbeddedTimer {
-  cnt_t GiveCnt() const override { return 0u; };
-  cnt_t GiveCntOverflowValue() const override { return 0u; };
-};
 
 struct HightCntDefault {};
 
@@ -248,7 +256,11 @@ struct EmbeddedProfiler final : public IProfiler,
 /// return zero values.
 inline EmbeddedTimerEmpty embedded_timer_empty;
 
-/// @brief Runtime profiler based on user definition counter.
+/// @brief Runtime profiler based on user definition counter. User code use
+/// Ctor() or SetEmbeddedTimer() for connect one embedded timer to the
+/// TimerProfiler instance.
+///
+/// @note TimerProfiler don't use any template argument.
 struct TimerProfiler final : public IProfiler {
   /// @brief Ctor with embedded timer reference.
 
@@ -269,7 +281,8 @@ struct TimerProfiler final : public IProfiler {
   void SetEmbeddedTimer(const IEmbeddedTimer &timer) { timer_ = &timer; }
 
   /// @brief Start
-  /// @return
+  ///
+  /// @return None
   PARAOS_INLINE_OPERATIONS void Start() override {
     start_ = timer_->GiveCnt();
 
@@ -278,6 +291,9 @@ struct TimerProfiler final : public IProfiler {
     overflow_cnt_ = 0u;
   }
 
+  /// @brief Stop timer.
+  ///
+  /// @return Value between Start() and Stop() calls.
   cnt_t Stop() override {
     cnt_t stop = timer_->GiveCnt();
 
@@ -293,6 +309,9 @@ struct TimerProfiler final : public IProfiler {
     return LastDuration();
   }
 
+  /// @brief Return value between Start() and Stop() calls.
+  ///
+  /// @return Value between Start() and Stop() calls.
   PARAOS_INLINE_TRIVIAL cnt_t LastDuration() override {
     return static_cast<cnt_t>(duration_);
   }
@@ -302,7 +321,7 @@ struct TimerProfiler final : public IProfiler {
   cnt_t duration_{0u};
   cnt_t overflow_cnt_{0u};
 
-  /// @brief  Interface for get actual counter value on each time.
+  /// @brief Interface for get actual counter value on each time.
   const IEmbeddedTimer *timer_;
 };
 

@@ -30,8 +30,8 @@
 #include "etl/function.h"
 #include "etl/scheduler.h"
 #include "etl/task.h"
-#include "paraos_runtime_profiler.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_trace.hpp"
@@ -148,8 +148,8 @@ class ICooperativeScheduling : protected Thread {
   /// @return Return true if notify successfully given.
   bool NotifyGive(const bool is_isr = false) {
     // Sequence below need for calculate period between calls NotifyGive();
-    runtime.period_.Start();
     runtime.period_.Stop();
+    runtime.period_.Start();
 
     return new_cycle_ready_sem_.Give(is_isr);
   }
@@ -177,7 +177,7 @@ class ICooperativeScheduling : protected Thread {
   etl::function<ICooperativeScheduling, void> idle_callback;
 
   bool is_exit_calls_{false};
-  
+
   struct {
     TimerProfiler period_;
   } runtime;
@@ -187,10 +187,11 @@ struct CooperativeSchedulingAttr {
   std::string name{"Cooperative scheduler"};
   std::size_t stack_depth = GetStackMinimumSizeInBytes();
   ThreadPriority priority = ThreadPriority::kAboveNormal;
-  bool is_need_loop{true};
-  bool is_need_start{true};
 
   const IEmbeddedTimer &embedded_timer_ = embedded_timer_empty;
+
+  bool is_need_loop{true};
+  bool is_need_start{true};
 };
 
 template <
