@@ -57,3 +57,66 @@ TEST_F(Profiler, TimerProfiler) {
   TimerProfiler profiler{embedded_timer};
   EXPECT_EQ(0u, profiler.LastDuration());
 }
+
+TEST_F(Profiler, LongCnt) {
+  std::uint16_t increment{2};
+  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+
+  profiler.Start();
+  low += increment;
+  EXPECT_EQ(increment, profiler.Stop());
+}
+
+TEST_F(Profiler, ShortCnt) {
+  std::uint16_t increment{2};
+  EmbeddedProfiler<LowCnt, HightCntDefault> profiler;
+  EmbeddedProfiler<LowCnt> profiler_high_default;
+
+  profiler.Start();
+  profiler_high_default.Start();
+  low += increment;
+  EXPECT_EQ(increment, profiler.Stop());
+  EXPECT_EQ(increment, profiler_high_default.Stop());
+}
+
+TEST_F(Profiler, ShortCntOneOverflow) {
+  low = std::numeric_limits<std::uint16_t>::max();
+  std::uint16_t increment{3};
+  EmbeddedProfiler<LowCnt> profiler;
+
+  profiler.Start();
+  low += increment;
+  EXPECT_EQ(increment, profiler.Stop());
+  EXPECT_EQ(increment, profiler.LastDuration());
+}
+
+TEST_F(Profiler, ShortCntTwoOverflow) {
+  low = std::numeric_limits<std::uint16_t>::max();
+  constexpr std::uint16_t first_increment{3};
+  EmbeddedProfiler<LowCnt> profiler;
+
+  profiler.Start();
+  low += first_increment;
+  EXPECT_EQ(
+      static_cast<decltype(profiler.Stop())>(first_increment), profiler.Stop());
+
+  constexpr std::uint16_t second_increment{
+      std::numeric_limits<std::uint16_t>::max()};
+  low += second_increment;
+  EXPECT_EQ(
+      static_cast<decltype(profiler.Stop())>(
+          first_increment + second_increment),
+      profiler.Stop());
+}
+
+TEST_F(Profiler, LongCntOneOverflow) {
+  low = std::numeric_limits<std::uint16_t>::max();
+  high = std::numeric_limits<std::uint16_t>::max();
+  std::uint16_t increment{3};
+  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+
+  profiler.Start();
+  low += increment;
+  high = 0u;
+  EXPECT_EQ(increment, profiler.Stop());
+}
