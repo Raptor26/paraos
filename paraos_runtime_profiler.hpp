@@ -52,12 +52,12 @@ struct IProfiler {
   /// @brief Stop timer and calculate time between Start() and Stop() calls.
   ///
   /// @return Time between Start() and Stop() calls.
-  virtual auto Stop() -> cnt_t = 0;
+  virtual cnt_t Stop() = 0;
 
   /// @brief Returned value, which calculated wen user calls Stop().
   ///
   /// @return Time between last Start() and Stop() calls.
-  virtual auto LastDuration() -> cnt_t = 0;
+  virtual cnt_t LastDuration() = 0;
 };
 
 /// @brief Embedded timer interface. Need for get actual timer value and use it
@@ -98,26 +98,57 @@ inline EmptyProfiler empty_profiler;
     defined(__unix__)
 /// @brief Профилировщик, предназначенный для использования в операционных
 /// системах общего назначения.
-struct OsProfiler final {
+struct OsProfiler final : public IProfiler {
   PARAOS_INLINE_OPERATIONS void Start() {
     start_ = high_resolution_clock::now();
   }
 
-  std::size_t Stop() {
+  cnt_t Stop() override {
     end_ = high_resolution_clock::now();
     duration_ = duration_cast<time_resolution>(end_ - start_).count();
     return LastDuration();
   }
-  [[nodiscard]] std::size_t LastDuration() const { return duration_; }
 
-  [[nodiscard]] std::size_t LastDurationMs() const {
-    return LastDuration() / 1000;
-  }
+  cnt_t LastDuration() override { return duration_; }
+
+  cnt_t LastDurationMs() { return static_cast<cnt_t>(LastDuration() / 1000); }
 
  private:
   decltype(high_resolution_clock::now()) start_;
   decltype(high_resolution_clock::now()) end_;
   decltype(duration_cast<time_resolution>(end_ - start_).count()) duration_{0u};
+};
+
+/// @brief Profiler timer if run on operation system (like as windows or linux).
+struct OsTimer final : public IEmbeddedTimer {
+  OsTimer() {
+    // Write current time in private field. Useful when user calls GiveCnt().
+    start_ = high_resolution_clock::now();
+  }
+
+  ~OsTimer() = default;
+
+  cnt_t GiveCnt() const override {
+    auto end = high_resolution_clock::now();
+
+    // Calculate durations between OsTimer constructor and now time when
+    // user code calls GiveCnt(). We don't use
+    // 'high_resolution_clock::now().time_since_epoch().count()' because in this
+    // case return value be in ticks, but we want microseconds.
+    auto duration = duration_cast<time_resolution>(end - start_).count();
+
+    // In this case we tracking counter overflow, because duration has large bit
+    // depth relative cnt_t type (imitate cnt_t type bits counter with hardware
+    // overflow).
+    return static_cast<cnt_t>(duration % std::numeric_limits<cnt_t>::max());
+  };
+
+  cnt_t GiveCntOverflowValue() const override {
+    return std::numeric_limits<cnt_t>::max();
+  };
+
+ private:
+  decltype(high_resolution_clock::now()) start_;
 };
 #endif  // #if defined(_WIN32) || defined(_WIN64) || defined(__linux__) ||
         // defined(__unix__)
@@ -263,7 +294,6 @@ inline EmbeddedTimerEmpty embedded_timer_empty;
 /// @note TimerProfiler don't use any template argument.
 struct TimerProfiler final : public IProfiler {
   /// @brief Ctor with embedded timer reference.
-
   /// @note Many TimerProfiler instances can use one IEmbeddedTimer instance.
   ///
   /// @param[in] timer: New timer for connect to the profiler. If use default
