@@ -42,15 +42,36 @@ using namespace std::chrono_literals;
 
 namespace paraos {
 
+using cnt_t = std::uint32_t;
+
+struct IProfiler {
+  /// @brief Start timer.
+  virtual void Start() = 0;
+
+  /// @brief Stop timer and calculate time between Start() and Stop() calls.
+  ///
+  /// @return Time between Start() and Stop() calls.
+  virtual auto Stop() -> cnt_t = 0;
+
+  /// @brief Returned value, which calculated wen user calls Stop().
+  ///
+  /// @return Time between last Start() and Stop() calls.
+  virtual auto LastDuration() -> cnt_t = 0;
+};
+
 /// Empty profiler -------------------------------------------------------------
 
 /// @brief "Пустой" профилировщик. Используется в качестве профилировщика "по
 /// умолчанию".
-struct EmptyProfiler final {
-  PARAOS_INLINE_TRIVIAL void Start() {}
-  PARAOS_INLINE_TRIVIAL std::size_t Stop() { return 0u; }
-  PARAOS_INLINE_TRIVIAL std::size_t LastDuration() { return 0u; }
+struct EmptyProfiler final : public IProfiler {
+  PARAOS_INLINE_TRIVIAL void Start() override {}
+  PARAOS_INLINE_TRIVIAL auto Stop() -> cnt_t override { return 0u; }
+  PARAOS_INLINE_TRIVIAL auto LastDuration() -> cnt_t override { return 0u; }
 };
+
+/// @brief Empty profiler class exemplar. Use if need set reference on IProfiler
+/// without real profiler.
+inline EmptyProfiler empty_profiler;
 
 /// Operation system high resolution timer profiler ----------------------------
 
@@ -84,36 +105,43 @@ struct OsProfiler final {
 
 /// Embedded Profiler ----------------------------------------------------------
 
+struct IEmbeddedTimer {
+  virtual ~IEmbeddedTimer() = default;
+  virtual cnt_t GiveCnt() const = 0;
+  virtual cnt_t GiveCntOverflowValue() const = 0;
+};
+
 struct HightCntDefault {};
 
 /// @brief Шаблон 32-х битного счетчика.
+///
 /// @warning Пользовательский код не использует данную структуру, она
 /// применяется в 'EmbeddedProfiler'.
+///
 /// @tparam LOW_ADDR Структура, используемая для получения указателя на младшие
 /// 16 бит счетчика.
 /// @tparam HIGHT_ADDR Структура, используемая для получения указателя на
 /// старшие 16 бит счетчика.
 template <typename LOW_ADDR, typename HIGHT_ADDR>
-struct EmbeddedProfilerCnt {
-  using cnt_t = std::uint32_t;
-  EmbeddedProfilerCnt() = default;
+struct EmbeddedTimer : public IEmbeddedTimer {
+  EmbeddedTimer() = default;
 
   /// @brief Деструктор "по умолчанию".
-  /// @note Деструктор явно не объявлен виртуальным т.к. "EmbeddedProfilerCnt" и
+  /// @note Деструктор явно не объявлен виртуальным т.к. "EmbeddedTimer" и
   /// "EmbeddedProfiler" не выделяют динамических ресурсов.
-  ~EmbeddedProfilerCnt() = default;
+  ~EmbeddedTimer() = default;
 
-  EmbeddedProfilerCnt(const EmbeddedProfilerCnt &other) = default;
-  EmbeddedProfilerCnt &operator=(const EmbeddedProfilerCnt &other) = default;
+  EmbeddedTimer(const EmbeddedTimer &other) = default;
+  EmbeddedTimer &operator=(const EmbeddedTimer &other) = default;
 
-  EmbeddedProfilerCnt(EmbeddedProfilerCnt &&other) = default;
-  EmbeddedProfilerCnt &operator=(EmbeddedProfilerCnt &&other) = default;
+  EmbeddedTimer(EmbeddedTimer &&other) = default;
+  EmbeddedTimer &operator=(EmbeddedTimer &&other) = default;
 
   /// @brief Возвращает значение 32-х битного аппаратного счетчика на момент
   /// вызова.
   /// @return Возвращает переменную типа 'cnt_t' содержащую значение аппаратного
   /// счетчика на момент вызова.
-  PARAOS_INLINE_TRIVIAL cnt_t GiveCnt() {
+  PARAOS_INLINE_TRIVIAL cnt_t GiveCnt() const override {
     constexpr cnt_t hight_mask = 0xFFFF0000;
     constexpr cnt_t low_mask = 0x0000FFFF;
     constexpr cnt_t bites_shift = 16u;
@@ -122,8 +150,7 @@ struct EmbeddedProfilerCnt {
         ((static_cast<cnt_t>(*low)) & low_mask));
   }
 
- protected:
-  PARAOS_INLINE_TRIVIAL constexpr cnt_t GiveCntOverflowValue() {
+  PARAOS_INLINE_TRIVIAL cnt_t GiveCntOverflowValue() const override {
     return std::numeric_limits<std::uint32_t>::max();
   }
 
@@ -139,30 +166,29 @@ struct EmbeddedProfilerCnt {
 /// @tparam LOW_ADDR Структура, используемая для получения указателя на младшие
 /// 16 бит счетчика.
 template <typename LOW_ADDR>
-struct EmbeddedProfilerCnt<LOW_ADDR, HightCntDefault> {
-  using cnt_t = std::uint32_t;
-
-  EmbeddedProfilerCnt() = default;
+struct EmbeddedTimer<LOW_ADDR, HightCntDefault> : public IEmbeddedTimer {
+  EmbeddedTimer() = default;
 
   /// @brief Деструктор "по умолчанию".
-  /// @note Деструктор явно не объявлен виртуальным т.к. "EmbeddedProfilerCnt" и
+  /// @note Деструктор явно не объявлен виртуальным т.к. "EmbeddedTimer" и
   /// "EmbeddedProfiler" не выделяют динамических ресурсов.
-  ~EmbeddedProfilerCnt() = default;
+  ~EmbeddedTimer() = default;
 
-  EmbeddedProfilerCnt(const EmbeddedProfilerCnt &other) = default;
-  EmbeddedProfilerCnt &operator=(const EmbeddedProfilerCnt &other) = default;
+  EmbeddedTimer(const EmbeddedTimer &other) = default;
+  EmbeddedTimer &operator=(const EmbeddedTimer &other) = default;
 
-  EmbeddedProfilerCnt(EmbeddedProfilerCnt &&other) = default;
-  EmbeddedProfilerCnt &operator=(EmbeddedProfilerCnt &&other) = default;
+  EmbeddedTimer(EmbeddedTimer &&other) = default;
+  EmbeddedTimer &operator=(EmbeddedTimer &&other) = default;
 
   /// @brief Возвращает значение 16-х битного аппаратного счетчика на момент
   /// вызова.
   /// @return Возвращает переменную типа 'cnt_t' содержащую значение аппаратного
   /// счетчика на момент вызова.
-  PARAOS_INLINE_TRIVIAL cnt_t GiveCnt() { return static_cast<cnt_t>(*low); }
+  PARAOS_INLINE_TRIVIAL cnt_t GiveCnt() const override {
+    return static_cast<cnt_t>(*low);
+  }
 
- protected:
-  PARAOS_INLINE_TRIVIAL constexpr cnt_t GiveCntOverflowValue() {
+  PARAOS_INLINE_TRIVIAL cnt_t GiveCntOverflowValue() const override {
     return std::numeric_limits<std::uint16_t>::max();
   }
 
@@ -177,20 +203,18 @@ struct EmbeddedProfilerCnt<LOW_ADDR, HightCntDefault> {
 /// @tparam HIGHT_ADDR Структура, используемая для получения указателя на
 /// старшие 16 бит счетчика.
 template <typename LOW_ADDR, typename HIGHT_ADDR = HightCntDefault>
-struct EmbeddedProfiler final
-    : public EmbeddedProfilerCnt<LOW_ADDR, HIGHT_ADDR> {
-  using cnt_t = std::uint32_t;
-
-  PARAOS_INLINE_OPERATIONS void Start() {
-    start_ = EmbeddedProfilerCnt<LOW_ADDR, HIGHT_ADDR>::GiveCnt();
+struct EmbeddedProfiler final : public IProfiler,
+                                public EmbeddedTimer<LOW_ADDR, HIGHT_ADDR> {
+  PARAOS_INLINE_OPERATIONS void Start() override {
+    start_ = EmbeddedTimer<LOW_ADDR, HIGHT_ADDR>::GiveCnt();
 
     // Необходимо сбросить счетчик переполнений чтобы при повторном вызове
     // Stop() не учитывать уже учтенное переполнение.
     overflow_cnt_ = 0u;
   }
 
-  cnt_t Stop() {
-    cnt_t stop = EmbeddedProfilerCnt<LOW_ADDR, HIGHT_ADDR>::GiveCnt();
+  cnt_t Stop() override {
+    cnt_t stop = EmbeddedTimer<LOW_ADDR, HIGHT_ADDR>::GiveCnt();
 
     if (start_ > stop) {
       ++overflow_cnt_;
@@ -198,14 +222,14 @@ struct EmbeddedProfiler final
 
     // Вычисление периода между вызовами Start() и Stop() с учетом переполнения.
     const auto &overflow_value =
-        EmbeddedProfilerCnt<LOW_ADDR, HIGHT_ADDR>::GiveCntOverflowValue();
+        EmbeddedTimer<LOW_ADDR, HIGHT_ADDR>::GiveCntOverflowValue();
     duration_ = static_cast<cnt_t>(
         (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_);
 
     return LastDuration();
   }
 
-  PARAOS_INLINE_TRIVIAL cnt_t LastDuration() {
+  PARAOS_INLINE_TRIVIAL cnt_t LastDuration() override {
     return static_cast<cnt_t>(duration_);
   }
 
@@ -213,6 +237,46 @@ struct EmbeddedProfiler final
   cnt_t start_{0u};
   cnt_t duration_{0u};
   cnt_t overflow_cnt_{0u};
+};
+
+/// @brief Runtime profiler based on user definition counter.
+struct TimerProfiler final : public IProfiler {
+  TimerProfiler(const IEmbeddedTimer &timer) : timer_{timer} {}
+
+  PARAOS_INLINE_OPERATIONS void Start() override {
+    start_ = timer_.GiveCnt();
+
+    // Необходимо сбросить счетчик переполнений чтобы при повторном вызове
+    // Stop() не учитывать уже учтенное переполнение.
+    overflow_cnt_ = 0u;
+  }
+
+  cnt_t Stop() override {
+    cnt_t stop = timer_.GiveCnt();
+
+    if (start_ > stop) {
+      ++overflow_cnt_;
+    }
+
+    // Вычисление периода между вызовами Start() и Stop() с учетом переполнения.
+    const auto &overflow_value = timer_.GiveCntOverflowValue();
+    duration_ = static_cast<cnt_t>(
+        (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_);
+
+    return LastDuration();
+  }
+
+  PARAOS_INLINE_TRIVIAL cnt_t LastDuration() override {
+    return static_cast<cnt_t>(duration_);
+  }
+
+ private:
+  cnt_t start_{0u};
+  cnt_t duration_{0u};
+  cnt_t overflow_cnt_{0u};
+
+  /// @brief  Interface for get actual counter value on each time.
+  const IEmbeddedTimer &timer_;
 };
 
 }  // namespace paraos
