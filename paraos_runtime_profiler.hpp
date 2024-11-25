@@ -99,7 +99,7 @@ inline EmptyProfiler empty_profiler;
 /// @brief Профилировщик, предназначенный для использования в операционных
 /// системах общего назначения.
 struct OsProfiler final : public IProfiler {
-  PARAOS_INLINE_OPERATIONS void Start() {
+  PARAOS_INLINE_OPERATIONS void Start() override {
     start_ = high_resolution_clock::now();
   }
 
