@@ -30,8 +30,8 @@
 #include "etl/function.h"
 #include "etl/scheduler.h"
 #include "etl/task.h"
-#include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_trace.hpp"
@@ -39,14 +39,14 @@
 namespace paraos {
 
 /// @brief Интерфейс для управления расписанием потоков.
-template <typename PROFILER = paraos::EmptyProfiler>
 class ICooperativeScheduling : protected Thread {
   using idle_delegate = etl::delegate<void(void)>;
 
  public:
-  ICooperativeScheduling<PROFILER>(
+  ICooperativeScheduling(
       const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, etl::ischeduler &scheduler)
+      const ThreadPriority priority, etl::ischeduler &scheduler,
+      const IEmbeddedTimer &embedded_timer)
       : Thread{name, stack_depth, priority},
         scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
@@ -55,6 +55,10 @@ class ICooperativeScheduling : protected Thread {
     // registered idle function which take semaphore and wait new program
     // cycle.
     SetIdleCallback(idle_callback);
+
+    // Connect embedded timers for each profiler, using in a
+    // ICooperativeScheduling.
+    runtime.period_.SetEmbeddedTimer(embedded_timer);
   }
 
   virtual ~ICooperativeScheduling() { Exit(); }
@@ -175,9 +179,9 @@ class ICooperativeScheduling : protected Thread {
   etl::function<ICooperativeScheduling, void> idle_callback;
 
   bool is_exit_calls_{false};
-
+  
   struct {
-    PROFILER period_;
+    TimerProfiler period_;
   } runtime;
 };
 
@@ -193,15 +197,15 @@ struct CooperativeSchedulingAttr {
 
 template <
     size_t MAX_TASKS_,
-    typename TSchedulerPolicy = etl::scheduler_policy_sequential_single,
-    typename PROFILER = paraos::EmptyProfiler>
+    typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
 class CooperativeScheduling
     : public etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
-      public ICooperativeScheduling<PROFILER> {
+      public ICooperativeScheduling {
  public:
   CooperativeScheduling(const CooperativeSchedulingAttr &attr)
-      : ICooperativeScheduling<PROFILER>(
-            attr.name, attr.stack_depth, attr.priority, *this) {
+      : ICooperativeScheduling{
+            attr.name, attr.stack_depth, attr.priority, *this,
+            attr.embedded_timer_} {
     // Run() method must call in forever loop periodical.
     Thread::SetNeedWhile(attr.is_need_loop);
 
