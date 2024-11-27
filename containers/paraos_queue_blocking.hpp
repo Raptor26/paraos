@@ -1,20 +1,20 @@
 /// @file paraos_queue_blocking.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
-/// 
+///
 /// @copyright (c) 2024 Stilsoft
-/// 
+///
 /// MIT License:
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the 'Software'), to
 /// deal in the Software without restriction, including without limitation the
 /// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 /// sell copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "etl/queue.h"
+#include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_mutex.hpp"
@@ -155,6 +156,14 @@ struct IQueueBlocking {
         paraosTRACE_MESSAGE("Queue Pop success");
       } catch (const etl::queue_empty e) {
         optional.reset();
+      } catch (...) {
+        // When move object from queue, maybe throw exception if queue_
+        // contained object with move ctor, which can throw exception.
+        optional.reset();
+
+        // Use loop for indicate that object, contained in queue throw
+        // exception when moved him from queue.
+        PARAOS_CHECK_LOOP();
       }
     }
 
