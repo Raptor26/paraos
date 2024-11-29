@@ -126,6 +126,7 @@ class IThreadSequence : public Thread {
 
     if (timer_id != etl::timer::id::NO_TIMER) {
       timer_controller_.start(timer_id);
+      ++registered_delegates_numb;
     }
 
     return timer_id;
@@ -140,7 +141,12 @@ class IThreadSequence : public Thread {
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(etl::timer::id::type timer_id)
       -> bool {
     paraos::CriticalSection critical;
-    return timer_controller_.unregister_timer(timer_id);
+    auto is_unregistered = timer_controller_.unregister_timer(timer_id);
+
+    if (is_unregistered) {
+      --registered_delegates_numb;
+    }
+    return is_unregistered;
   }
 
   /// @brief Change freq for delegate execution.
@@ -163,6 +169,11 @@ class IThreadSequence : public Thread {
     }
 
     return is_period_updated;
+  }
+
+  auto GiveRegisteredDelegatesNumb() {
+    paraos::CriticalSection critical;
+    return registered_delegates_numb;
   }
 
   /// @brief Give notify for start new cycle of scheduling tasks, written in
@@ -216,6 +227,9 @@ class IThreadSequence : public Thread {
   // if set nticks_ to zero, delegate will be called after delay
   // period_in_us_. It's not useful for tests.
   uint32_t nticks_{period_in_us_};
+
+  /// @brief Indicates how many delegates registered in thread sequence.
+  std::size_t registered_delegates_numb{0};
 };
 
 /// @brief Create separate thread for execute registered delegates.
