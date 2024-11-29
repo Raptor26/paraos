@@ -38,6 +38,34 @@
 
 namespace paraos {
 
+// =============================================================================
+// Scheduling policies.
+// =============================================================================
+
+/// @brief This policy run all tasks in list sequence despite having job in
+/// task.
+///
+/// @note Maybe useful when need run all tasks in list when start new tact in
+/// cooperative scheduler.
+///
+/// @author Simakov Matvey.
+struct cooperative_scheduler_policy_run_all_at_once {
+  bool schedule_tasks(etl::ivector<etl::task *> &task_list) {
+    for (size_t index = 0UL; index < task_list.size(); ++index) {
+      etl::task &task = *(task_list[index]);
+      task.task_process_work();
+    }
+
+    // Always return true for indicate that scheduler must call idle callback
+    // method.
+    return true;
+  }
+};
+
+// =============================================================================
+// Cooperative scheduler realization.
+// =============================================================================
+
 /// @brief Интерфейс для управления расписанием потоков.
 class ICooperativeScheduling : protected Thread {
   using idle_delegate = etl::delegate<void(void)>;
