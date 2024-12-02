@@ -112,15 +112,38 @@ class IRingBuff {
     return lwrb_skip(&lwrb_, size_in_bytes);
   }
 
+  /// @brief Return how many elements can be written.
+  ///
+  /// @return How many elements can be written before buffer be full.
   PARAOS_INLINE_TRIVIAL auto Free() { return lwrb_get_free(&lwrb_); }
 
   /// @brief Return numbers of bytes currently available in buffer.
   /// @return Number of bytes ready to be read
   auto Size() { return lwrb_get_full(&lwrb_); }
 
+  /// @brief Return how many elements of T type buffer can contained in each
+  /// time.
+  ///
+  /// @note lwrb buff can contained 'size - 1' bytes numb
+  ///
+  /// @return Buffer capacity in 'T' object type.
+  auto Capacity() { return lwrb_.size - 1; }
+
   /// @brief Reset ring buffer is inital state. Invalidate all data in ring
   /// buffer.
   void Clear() { lwrb_reset(&lwrb_); }
+
+  /// @brief Check is buffer empty. If buffer empty, thats mean user code can
+  /// write elements numb, equal Capacity().
+  ///
+  /// @return Return tue if buffer empty, false in otherwise.
+  auto IsEmpty() { return Size() == 0 ? true : false; }
+
+  /// @brief Check is buffer full. If full, thats mean user code must read or
+  /// Clear() buffer before write anything again.
+  ///
+  /// @return Return full if buffer is full, false in otherwise.
+  auto IsFull() { return Size() == Capacity() ? true : false; }
 
  protected:
   IRingBuff(void* buff, lwrb_sz_t buff_size_in_bytes) {
@@ -145,13 +168,18 @@ class RingBuff : public IRingBuff<T> {
       SIZE > 1, "Size of ring buffer must be greater than one element");
 
  public:
-  RingBuff() : IRingBuff<T>(static_cast<void*>(storage), SIZE) {}
+  /// @brief Construct ring buff wrapper over lwrb.
+  ///
+  /// @note lwrb need one more byte.
+  RingBuff() : IRingBuff<T>(static_cast<void*>(storage), SIZE + 1) {}
 
  private:
   /// @brief Use raw array for contained bytes in ring buff. If we used
   /// std::array, when call IRingBuff ctor std::array will not initialized yet.
   /// For this reason used raw array.
-  T storage[SIZE];
+  ///
+  /// @note lwrb need one more byte.
+  T storage[SIZE + 1];
 };
 
 }  // namespace paraos

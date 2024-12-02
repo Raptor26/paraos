@@ -38,14 +38,42 @@ TEST(RingBuff, Create) {
   }
 }
 
+TEST(RingBuff, Capacity) {
+  paraos::RingBuff<char, 2> ring_buff;
+  ASSERT_EQ(2, ring_buff.Capacity());
+  ASSERT_EQ(2, ring_buff.Free());
+}
+
+TEST(RingBuff, IsEmpty) {
+  paraos::RingBuff<char, 2> ring_buff;
+  ASSERT_TRUE(ring_buff.IsEmpty());
+
+  const char symb{'h'};
+  ASSERT_EQ(sizeof(symb), ring_buff.Write(&symb, sizeof(symb)));
+  ASSERT_FALSE(ring_buff.IsEmpty());
+
+  ring_buff.Clear();
+  ASSERT_TRUE(ring_buff.IsEmpty());
+}
+
+TEST(RingBuff, IsFull) {
+  paraos::RingBuff<char, 2> ring_buff;
+  const char symb{'h'};
+
+  ASSERT_EQ(sizeof(symb), ring_buff.Write(&symb, sizeof(symb)));
+  ASSERT_FALSE(ring_buff.IsFull());
+
+  ASSERT_EQ(sizeof(symb), ring_buff.Write(&symb, sizeof(symb)));
+  ASSERT_TRUE(ring_buff.IsFull());
+}
+
 TEST(RingBuff, WriteThenRead) {
   std::string src{"Hello World!"};
   constexpr std::size_t ringbuff_size_in_bytes{100};
 
   paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
 
-  // Free bytes less at one bytes from size.
-  ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
+  ASSERT_EQ(ringbuff_size_in_bytes, ring_buff.Free());
 
   auto written_bytes_numb =
       ring_buff.Write(static_cast<const void *>(src.c_str()), src.size());
@@ -61,8 +89,8 @@ TEST(RingBuff, WriteThenRead) {
              static_cast<const void *>(src.data()),
              static_cast<const void *>(dst_.data()), src.size()));
 
-  // All date read. Free bytes less at one bytes from size.
-  ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
+  // All date read.
+  ASSERT_EQ(ringbuff_size_in_bytes, ring_buff.Free());
 }
 
 TEST(RingBuff, WriteThenReadIterator) {
@@ -139,8 +167,8 @@ TEST(RingBuff, WriteSpanThenReadSpan) {
              static_cast<const void *>(src.data()),
              static_cast<const void *>(dst_.data()), src.size()));
 
-  // All data was read. Free bytes must be one byte less than buffer size.
-  ASSERT_EQ(ringbuff_size_in_bytes - 1, ring_buff.Free());
+  // All data was read.
+  ASSERT_EQ(ringbuff_size_in_bytes, ring_buff.Free());
 }
 
 TEST(RingBuff, WriteOverflow) {
