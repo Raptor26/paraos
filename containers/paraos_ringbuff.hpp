@@ -39,7 +39,7 @@
 
 namespace paraos {
 
-#define RINGBUFF_FILE_ID (100)
+#define RINGBUFF_FILE_ID ("100")
 
 /// The base class for ring buffer exceptions.
 class ringbuff_exception : public etl::exception {
