@@ -90,8 +90,8 @@ class IMultiRingBuff {
   }
 
   PARAOS_INLINE_TRIVIAL auto TryWrite(
-      std::size_t buff_id, const gsl::span<T> src,
-      bool is_isr = false) -> std::size_t {
+      std::size_t buff_id, const gsl::span<const T> src, bool is_isr = false)
+      -> std::size_t {
     return TryWrite(buff_id, src.data(), src.size(), is_isr);
   }
 
@@ -170,8 +170,8 @@ class IMultiRingBuff {
 
  protected:
   IMultiRingBuff(
-      paraos::IQueueBlocking<std::size_t>& queue,
-      ringbuff_pointer* ringbuff, std::size_t ring_buff_numb)
+      paraos::IQueueBlocking<std::size_t>& queue, ringbuff_pointer* ringbuff,
+      std::size_t ring_buff_numb)
       : queue_{queue}, ringbuff_{ringbuff}, ring_buff_numb_{ring_buff_numb} {}
 
  private:
