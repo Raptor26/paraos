@@ -87,8 +87,8 @@ class IRingBuff {
     return written;
   }
 
-  PARAOS_INLINE_TRIVIAL auto Write(const gsl::span<T> src) {
-    return Write(static_cast<void*>(src.data()), src.size_bytes());
+  PARAOS_INLINE_TRIVIAL auto Write(const gsl::span<const T> src) {
+    return Write(static_cast<const void*>(src.data()), src.size_bytes());
   }
 
   template <class TIterator>
