@@ -118,8 +118,8 @@ class IThreadSequence : public Thread {
   /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
   /// other case return valid timer id in range [0 .. 254].
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
-      callback_type& callback, float freq,
-      bool repeating) -> etl::timer::id::type {
+      callback_type& callback, float freq, bool repeating)
+      -> etl::timer::id::type {
     paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
@@ -219,7 +219,9 @@ class IThreadSequence : public Thread {
 };
 
 /// @brief Create separate thread for execute registered delegates.
+///
 /// @tparam MAX_TASKS - Max registered delegates in one time.
+///
 /// @param[in] name: Thread name, whose  context is provided for execute
 /// registered delegates.
 /// @param[in] stack_depth: Stack depth in bytes for thread.
@@ -227,20 +229,26 @@ class IThreadSequence : public Thread {
 /// @param[in] period_in_us: Period in microseconds, between user code call
 /// NotifyGive(). User code responsible for specifying this parameter, which
 /// corresponding to the actual call period NotifyGive().
+/// @param[in] is_need_start: If set true, thread will creat in Ctor, if set
+/// false, thread will not created. Sef false may be useful in unit tests.
 template <uint_least8_t MAX_TASKS = 4>
 class ThreadSequence : public IThreadSequence {
  public:
   ThreadSequence(
       const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, uint32_t period_in_us)
+      const ThreadPriority priority, uint32_t period_in_us,
+      bool is_need_start = true)
       : IThreadSequence{
             name, stack_depth, priority, period_in_us, timer_controller_} {
     // Run() method must call in forever loop periodical.
     Thread::SetNeedWhile(true);
 
-    // Method below create thread and scheduling it's for execute in RTOS (or
-    // windows/unix).
-    Thread::Start();
+    // In unit test is_need_start == false,
+    if (is_need_start) {
+      // Method below create thread and scheduling it's for execute in RTOS (or
+      // windows/unix).
+      Thread::Start();
+    }
 
     // Allow execute all timers, registered in timer_controller_.
     timer_controller_.enable(true);
