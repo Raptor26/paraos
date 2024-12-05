@@ -108,6 +108,18 @@ class IRingBuff {
         static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
+  PARAOS_INLINE_TRIVIAL auto Peek(void* dst, lwrb_sz_t dst_size_in_bytes) {
+    // how many bytes need skip before peek data from ring buff.
+    constexpr lwrb_sz_t skip_count{0};
+    return lwrb_peek(&lwrb_, skip_count, dst, dst_size_in_bytes);
+  }
+
+  PARAOS_INLINE_TRIVIAL auto Peek(gsl::span<T> dst) {
+    return Peek(
+        static_cast<void*>(dst.data()),
+        static_cast<lwrb_sz_t>(dst.size_bytes()));
+  }
+
   PARAOS_INLINE_TRIVIAL auto Skip(lwrb_sz_t size_in_bytes) {
     return lwrb_skip(&lwrb_, size_in_bytes);
   }
