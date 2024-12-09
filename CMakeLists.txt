@@ -59,6 +59,8 @@ endif()
 if(NOT TARGET lwrb_ex)
   add_subdirectory(lwrb)
 
+  target_link_libraries(lwrb PUBLIC paraos_setup)
+
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Fixed build error when gcc can't resolve lwrb_sz_atomic_t type
     target_compile_definitions(lwrb PUBLIC -DLWRB_DISABLE_ATOMIC)
@@ -69,7 +71,7 @@ add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft.GSL::GSL etl::etl
-                                             Boost::leaf paraos_setup lwrb)
+                                             Boost::leaf paraos_setup lwrb_ex)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17 c_std_11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)

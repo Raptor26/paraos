@@ -29,6 +29,7 @@
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_utils.hpp"
+#include "task.h"
 
 #if (configUSE_MALLOC_FAILED_HOOK == 1)
 extern "C" PARAOS_ATTR_WEAK void vApplicationMallocFailedHook(void) {
@@ -60,6 +61,9 @@ extern "C" void vApplicationStackOverflowHook(
    * or pxCurrentTCB if pcTaskName has itself been corrupted. */
   (void)xTask;
   (void)pcTaskName;
+
+  // Loop program to attract attention.
+  PARAOS_CHECK_LOOP();
 }
 #endif
 
