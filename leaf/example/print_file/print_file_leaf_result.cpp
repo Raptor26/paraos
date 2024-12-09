@@ -1,17 +1,17 @@
-// Copyright 2018-2023 Emil Dotchevski and Reverge Studios, Inc.
-
+// Copyright 2018-2024 Emil Dotchevski and Reverge Studios, Inc.
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // This is the program presented in
-// https://boostorg.github.io/leaf/#introduction-eh.
+// https://boostorg.github.io/leaf/#introduction-result.
 
 // It reads a text file in a buffer and prints it to std::cout, using LEAF to
-// handle errors. This version uses exception handling. The version that does
-// not use exception handling is in print_file_result.cpp.
+// handle errors. This version does not use exception handling. The version that
+// does use exception handling is in print_file_exceptions.cpp.
 
 #include <boost/leaf.hpp>
 #include <iostream>
+#include <memory>
 #include <stdio.h>
 
 namespace leaf = boost::leaf;
@@ -29,45 +29,49 @@ enum error_code
 };
 
 
+template <class T>
+using result = leaf::result<T>;
+
+
 // We will handle all failures in our main function, but first, here are the
-// declarations of the functions it calls, each communicating failures by
-// throwing exceptions
+// declarations of the functions it calls, each communicating failures using
+// result<T>:
 
 // Parse the command line, return the file name.
-char const * parse_command_line( int argc, char const * argv[] );
+result<char const *> parse_command_line( int argc, char const * argv[] );
 
 // Open a file for reading.
-std::shared_ptr<FILE> file_open( char const * file_name );
+result<std::shared_ptr<FILE>> file_open( char const * file_name );
 
 // Return the size of the file.
-std::size_t file_size( FILE & f );
+result<std::size_t> file_size( FILE & f );
 
 // Read size bytes from f into buf.
-void file_read( FILE & f, void * buf, std::size_t size );
+result<void> file_read( FILE & f, void * buf, std::size_t size );
 
 
 // The main function, which handles all errors.
 int main( int argc, char const * argv[] )
 {
-    return leaf::try_catch(
+    return leaf::try_handle_all(
 
-        [&]
+        [&]() -> result<int>
         {
-            char const * file_name = parse_command_line(argc,argv);
+            BOOST_LEAF_AUTO(file_name, parse_command_line(argc,argv));
 
             auto load = leaf::on_error( leaf::e_file_name{file_name} );
 
-            std::shared_ptr<FILE> f = file_open(file_name);
+            BOOST_LEAF_AUTO(f, file_open(file_name));
 
-            std::size_t s = file_size(*f);
+            BOOST_LEAF_AUTO(s, file_size(*f));
 
             std::string buffer(1 + s, '\0');
-            file_read(*f, &buffer[0], buffer.size()-1);
+            BOOST_LEAF_CHECK(file_read(*f, &buffer[0], buffer.size()-1));
 
             std::cout << buffer;
             std::cout.flush();
             if( std::cout.fail() )
-                leaf::throw_exception(output_error, leaf::e_errno{errno});
+                return leaf::new_error(output_error, leaf::e_errno{errno});
 
             return 0;
         },
@@ -147,52 +151,75 @@ int main( int argc, char const * argv[] )
 
 
 // Parse the command line, return the file name.
-char const * parse_command_line( int argc, char const * argv[] )
+result<char const *> parse_command_line( int argc, char const * argv[] )
 {
-    if( argc==2 )
+    if( argc == 2 )
         return argv[1];
     else
-        leaf::throw_exception(bad_command_line);
+        return leaf::new_error(bad_command_line);
 }
 
 
 // Open a file for reading.
-std::shared_ptr<FILE> file_open( char const * file_name )
+result<std::shared_ptr<FILE>> file_open( char const * file_name )
 {
     if( FILE * f = fopen(file_name, "rb") )
         return std::shared_ptr<FILE>(f, &fclose);
     else
-        leaf::throw_exception(open_error, leaf::e_errno{errno});
+        return leaf::new_error(open_error, leaf::e_errno{errno});
 }
 
 
 // Return the size of the file.
-std::size_t file_size( FILE & f )
+result<std::size_t> file_size( FILE & f )
 {
     auto load = leaf::on_error([] { return leaf::e_errno{errno}; });
 
     if( fseek(&f, 0, SEEK_END) )
-        leaf::throw_exception(size_error);
+        return leaf::new_error(size_error);
 
     long s = ftell(&f);
-    if( s==-1L )
-        leaf::throw_exception(size_error);
+    if( s == -1L )
+        return leaf::new_error(size_error);
 
     if( fseek(&f,0,SEEK_SET) )
-        leaf::throw_exception(size_error);
+        return leaf::new_error(size_error);
 
     return std::size_t(s);
 }
 
 
 // Read size bytes from f into buf.
-void file_read( FILE & f, void * buf, std::size_t size )
+result<void> file_read( FILE & f, void * buf, std::size_t size )
 {
     std::size_t n = fread(buf, 1, size, &f);
 
     if( ferror(&f) )
-        leaf::throw_exception(read_error, leaf::e_errno{errno});
+        return leaf::new_error(read_error, leaf::e_errno{errno});
 
-    if( n!=size )
-        leaf::throw_exception(eof_error);
+    if( n != size )
+        return leaf::new_error(eof_error);
+
+    return { };
 }
+
+////////////////////////////////////////
+
+#ifdef BOOST_LEAF_NO_EXCEPTIONS
+
+namespace boost
+{
+    [[noreturn]] void throw_exception( std::exception const & e )
+    {
+        std::cerr << "Terminating due to a C++ exception under BOOST_LEAF_NO_EXCEPTIONS: " << e.what();
+        std::terminate();
+    }
+
+    struct source_location;
+    [[noreturn]] void throw_exception( std::exception const & e, boost::source_location const & )
+    {
+        throw_exception(e);
+    }
+}
+
+#endif

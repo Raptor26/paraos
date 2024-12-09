@@ -1,5 +1,4 @@
-// Copyright 2018-2023 Emil Dotchevski and Reverge Studios, Inc.
-
+// Copyright 2018-2024 Emil Dotchevski and Reverge Studios, Inc.
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -8,10 +7,13 @@
 
 // It reads a text file in a buffer and prints it to std::cout, using LEAF to
 // handle errors. This version does not use exception handling. The version that
-// does use exception handling is in print_file_eh.cpp.
+// does use exception handling is in print_file_exceptions.cpp.
+
 
 #include <boost/leaf.hpp>
+#include <boost/system/result.hpp>
 #include <iostream>
+#include <memory>
 #include <stdio.h>
 
 namespace leaf = boost::leaf;
@@ -30,7 +32,13 @@ enum error_code
 
 
 template <class T>
-using result = leaf::result<T>;
+using result = boost::system::result<T, std::error_code>;
+
+// To enable LEAF to work with boost::system::result, we need to specialize the
+// is_result_type template:
+namespace boost { namespace leaf {
+    template <class T> struct is_result_type<boost::system::result<T, std::error_code>>: std::true_type { };
+} }
 
 
 // We will handle all failures in our main function, but first, here are the
@@ -153,7 +161,7 @@ int main( int argc, char const * argv[] )
 // Parse the command line, return the file name.
 result<char const *> parse_command_line( int argc, char const * argv[] )
 {
-    if( argc==2 )
+    if( argc == 2 )
         return argv[1];
     else
         return leaf::new_error(bad_command_line);
@@ -179,7 +187,7 @@ result<std::size_t> file_size( FILE & f )
         return leaf::new_error(size_error);
 
     long s = ftell(&f);
-    if( s==-1L )
+    if( s == -1L )
         return leaf::new_error(size_error);
 
     if( fseek(&f,0,SEEK_SET) )
@@ -197,7 +205,7 @@ result<void> file_read( FILE & f, void * buf, std::size_t size )
     if( ferror(&f) )
         return leaf::new_error(read_error, leaf::e_errno{errno});
 
-    if( n!=size )
+    if( n != size )
         return leaf::new_error(eof_error);
 
     return { };
@@ -209,14 +217,14 @@ result<void> file_read( FILE & f, void * buf, std::size_t size )
 
 namespace boost
 {
-    [[noreturn]] void throw_exception( std::exception const & e )
+    BOOST_NORETURN void throw_exception( std::exception const & e )
     {
         std::cerr << "Terminating due to a C++ exception under BOOST_LEAF_NO_EXCEPTIONS: " << e.what();
         std::terminate();
     }
 
     struct source_location;
-    [[noreturn]] void throw_exception( std::exception const & e, boost::source_location const & )
+    BOOST_NORETURN void throw_exception( std::exception const & e, boost::source_location const & )
     {
         throw_exception(e);
     }
