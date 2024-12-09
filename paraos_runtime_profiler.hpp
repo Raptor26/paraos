@@ -60,6 +60,30 @@ struct IProfiler {
   virtual cnt_t LastDuration() = 0;
 };
 
+/// @brief RAII class for automaticaly start and stop profiler.
+///
+/// @note In some cases, we need profiler some section. In this case user
+/// manually run Start() and Stop() methods. Disadvantage of this approach:
+/// - if throw exception between Start() and Stop(), Stop() never will calling.
+/// - if need get full runtime of some method, we can't get runtime with return
+/// operator.
+///
+/// Using RAII class you will overcome these disadvantages.
+///
+/// @example For usage example see TEST_F(Profiler, RAII) in
+/// test_runtime_profiler.cpp
+class ProfilerRAII final {
+ public:
+  explicit ProfilerRAII(IProfiler &profiler) : profiler_{profiler} {
+    profiler_.Start();
+  }
+
+  ~ProfilerRAII() { profiler_.Stop(); }
+
+ private:
+  IProfiler &profiler_;
+};
+
 /// @brief Embedded timer interface. Need for get actual timer value and use it
 /// for calculate runtime in EmbeddedProfiler() and TimerProfiler().
 ///
