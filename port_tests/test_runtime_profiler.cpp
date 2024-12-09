@@ -120,3 +120,12 @@ TEST_F(Profiler, LongCntOneOverflow) {
   high = 0u;
   EXPECT_EQ(increment, profiler.Stop());
 }
+
+TEST_F(Profiler, RAII) {
+  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  {
+    ProfilerRAII profiler_raii(profiler);
+
+    // ... some long code block
+  }
+}
