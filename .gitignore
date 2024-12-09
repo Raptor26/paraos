@@ -12,3 +12,6 @@ docker_tests_entrypoint.sh
 
 # Python virtual environment
 venv/
+
+# subrepo
+.git-rewrite/*
