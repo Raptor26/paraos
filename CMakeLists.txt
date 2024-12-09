@@ -10,7 +10,7 @@ include(setup.cmake)
 
 project(
   paraos
-  VERSION 0.3.0
+  VERSION 0.4.0
   DESCRIPTION
     "Cross-platform wrapper over operating system primitives with an emphasis on embedded systems"
   LANGUAGES C CXX)
