@@ -49,7 +49,6 @@ class SwitchContext final {
   /// @param[in] primitive_state: ISRbool return Take()/Give()  Semaphore/mutex
   /// API.
   void WritePrimitiveState(const ISRbool &primitive_state) {
-    PARAOS_ATTR_UNUSED_VAR(primitive_state);
     if (primitive_state.is_need_switch_context_) {
       is_need_switch_context = true;
     }
