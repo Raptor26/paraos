@@ -91,6 +91,22 @@ class ICooperativeScheduling : protected Thread {
 
   virtual ~ICooperativeScheduling() { Exit(); }
 
+  /// @brief Cooperative scheduler run periodical. That's mean user code must
+  /// give notify periodical.
+  ///
+  /// @param[in] is_isr: Set true if calls from interrupt.
+  ///
+  /// @return Return true if notify successfully given.
+  auto NotifyGive(const bool is_isr = false) {
+    auto is_notify_given = new_cycle_ready_sem_.Give(is_isr);
+
+    // Sequence below need for calculate period between calls NotifyGive();
+    runtime.period_.Stop();
+    runtime.period_.Start();
+
+    return is_notify_given;
+  }
+
   /// @brief Stop any tasks executions in cooperative scheduler.
   ///
   /// @note Useful in unit tests when need exit from cooperative scheduler.
@@ -166,22 +182,6 @@ class ICooperativeScheduling : protected Thread {
           e.file_name() << "; --line: " << e.line_number()
                         << "; --what: " << e.what());
     }
-  }
-
-  /// @brief Cooperative scheduler run periodical. That's mean user code must
-  /// give notify periodical.
-  ///
-  /// @param[in] is_isr: Set true if calls from interrupt.
-  ///
-  /// @return Return true if notify successfully given.
-  bool NotifyGive(const bool is_isr = false) {
-    auto is_notify_given = new_cycle_ready_sem_.Give(is_isr);
-
-    // Sequence below need for calculate period between calls NotifyGive();
-    runtime.period_.Stop();
-    runtime.period_.Start();
-
-    return is_notify_given;
   }
 
   auto &GetScheduler() { return scheduler_; }
