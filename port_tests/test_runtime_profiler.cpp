@@ -122,10 +122,17 @@ TEST_F(Profiler, LongCntOneOverflow) {
 }
 
 TEST_F(Profiler, RAII) {
+  std::uint16_t increment{3};
   EmbeddedProfiler<LowCnt, HightCnt> profiler;
   {
     ProfilerRAII profiler_raii(profiler);
 
+    low += increment;
+
     // ... some long code block
+
+    // Dtor of profiler_raii stop the timer.
   }
+
+  EXPECT_EQ(increment, profiler.LastDuration());
 }

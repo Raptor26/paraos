@@ -140,7 +140,9 @@ namespace details
 
         constexpr span_iterator(pointer begin, pointer end, pointer current)
             : begin_(begin), end_(end), current_(current)
-        {}
+        {
+            Expects(begin_ <= current_ && current <= end_);
+        }
 
         constexpr operator span_iterator<const Type>() const noexcept
         {
@@ -149,21 +151,18 @@ namespace details
 
         constexpr reference operator*() const noexcept
         {
-            Expects(begin_ && end_);
-            Expects(begin_ <= current_ && current_ < end_);
+            Expects(current_ != end_);
             return *current_;
         }
 
         constexpr pointer operator->() const noexcept
         {
-            Expects(begin_ && end_);
-            Expects(begin_ <= current_ && current_ < end_);
+            Expects(current_ != end_);
             return current_;
         }
         constexpr span_iterator& operator++() noexcept
         {
-            Expects(begin_ && current_ && end_);
-            Expects(current_ < end_);
+            Expects(current_ != end_);
             // clang-format off
             GSL_SUPPRESS(bounds.1) // NO-FORMAT: attribute
             // clang-format on
@@ -180,8 +179,7 @@ namespace details
 
         constexpr span_iterator& operator--() noexcept
         {
-            Expects(begin_ && end_);
-            Expects(begin_ < current_);
+            Expects(begin_ != current_);
             --current_;
             return *this;
         }
@@ -854,7 +852,6 @@ as_writable_bytes(span<ElementType, Extent> s) noexcept
 #pragma GCC diagnostic pop
 #endif // __GNUC__ > 6
 
-// Turn off clang unsafe buffer warnings as all accessed are guarded by runtime checks
 #if defined(__clang__)
 #if __has_warning("-Wunsafe-buffer-usage")
 #pragma clang diagnostic pop
