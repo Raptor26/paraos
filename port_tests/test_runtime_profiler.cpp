@@ -136,3 +136,16 @@ TEST_F(Profiler, RAII) {
 
   EXPECT_EQ(increment, profiler.LastDuration());
 }
+
+TEST_F(Profiler, RAII_period) {
+  std::uint16_t increment{3};
+  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  {
+    /// now profiler will indicates period between calling code below.
+    ProfilerPeriodRAII period_calling(profiler);
+
+    low += increment;
+
+    // ... some long code block
+  }
+}
