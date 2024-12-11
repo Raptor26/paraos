@@ -102,7 +102,7 @@ class ICooperativeScheduling : protected Thread {
   auto NotifyGive(const bool is_isr = false) {
     auto is_notify_given = new_cycle_ready_sem_.Give(is_isr);
 
-    paraos::ProfilerRAII(profiler_.period_);
+    paraos::ProfilerPeriodRAII(profiler_.period_);
 
     // Start runtime profiling. Complete runtime when idle will calling.
     profiler_.runtime_.Start();
