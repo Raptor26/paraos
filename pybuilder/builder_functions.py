@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import time
 import subprocess
 
 try:
@@ -22,6 +21,8 @@ exclude_keywords_list = ['_trace', '_docker']
 no_test_keywords_list = []
 
 tests_errors_table = {}
+
+test_out_file_name = 'pybuilder_test_output.txt'
 
 # Таблица с результатами memcheck:
 # 'preset_name': {
@@ -53,7 +54,7 @@ def check_presets_existence():
         return False
 
 
-def parse_presets(presets_filter: str = ''):
+def parse_presets(presets_filter: str = '', stress_test_flag: bool = False):
     """
     Функция выполняет парсинг доступных пресетов из файла CMakePresets.json.
     :param presets_filter: Фильтр пресетов - строка, используемая для
@@ -74,6 +75,11 @@ def parse_presets(presets_filter: str = ''):
                 )
             )
 
+            # В случае стресс тестирования нет необходимости собирать
+            # повторно пресеты, которые, затем, не запускаются в тестировании.
+            if stress_test_flag:
+                exclude_keywords_list.extend(no_test_keywords_list)
+
             presets_tuple = tuple(
                 preset_data['name']
                 for preset_data in config_presets_list
@@ -82,7 +88,7 @@ def parse_presets(presets_filter: str = ''):
                     for string in exclude_keywords_list
                 )
                 and preset_data['name'].find(presets_filter) != -1
-                and not 'hidden' in preset_data
+                and 'hidden' not in preset_data
             )
 
             tests_errors_table.update(
@@ -114,7 +120,7 @@ def _make_preset(make_command: list[str]):
 
 def _build_preset(build_command: list[str]):
     """
-    Функция выполняет сборку проекта, выполняя запуск соответствующе команды с
+    Функция выполняет сборку проекта, выполняя запуск соответствующей команды с
     заданными аргументами.
     :param build_command: Команда для сборки проекта,
         которую необходимо запустить.
@@ -157,7 +163,6 @@ def test_preset(
         build_command: list[str],
         test_dir: str,
         repetitions_count: int = 2,
-        threads_count: int = 4,
         test_timeout_sec: int = 30
 ):
     """
@@ -168,7 +173,6 @@ def test_preset(
         которую необходимо запустить.
     :param test_dir: Путь к директории для тестов ctest.
     :param repetitions_count: Количество повторений каждого теста.
-    :param threads_count: Количество потоков для параллельного запуска тестов.
     :param test_timeout_sec: Тайм-аут ожидания завершения каждого теста в
         секундах.
     :return: Возвращает результат тестирования пресета.
@@ -190,46 +194,44 @@ def test_preset(
     # исключающий тестирование.
     if not any(string in preset_name for string in no_test_keywords_list):
         print(f'{BLUE}{BOLD}TEST phase of the {preset_name}{END_COLOR}')
-        test_process = subprocess.Popen(
+
+        subprocess.run(
             [
                 'ctest',
                 '--test-dir',
                 test_dir,
-                f'-j{threads_count}',
+                # Вывод ctest дублируется в текстовый документ для его
+                # дальнейшего анализа.
+                '--output-log', test_out_file_name,
                 '--timeout', f'{test_timeout_sec}',
                 '--repeat-until-fail', f'{repetitions_count}',
                 '--stop-on-failure',
                 '--output-on-failure',
                 '--schedule-random'
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
             text=True
         )
+
         found_fail_test_out = False
         failed_test_output = ''
-        while True:
-            out = test_process.stdout.readline()
-            if test_process.poll() is not None:
-                break
-            if out != '':
-                out = out.replace('  ', ' ')
-                if out.find('***') != -1:
-                    found_fail_test_out = True
 
-                elif out.find('FAILED TEST') != -1 or out.find('Test #') != -1:
-                    found_fail_test_out = False
+        with (open(test_out_file_name, 'r')) as f:
+            for line in f.readlines():
 
-                sys.stdout.write(out)
-                sys.stdout.flush()
+                if line != '':
+                    line = line.replace('  ', ' ')
+                    if line.find('***') != -1:
+                        found_fail_test_out = True
 
-                if found_fail_test_out:
-                    failed_test_output += out
+                    elif line.find('FAILED TEST') != -1 or line.find(
+                            'Test #') != -1:
+                        found_fail_test_out = False
 
-            time.sleep(0)
+                    if found_fail_test_out:
+                        failed_test_output += line
 
-        if test_process.returncode != 0:
-            print(test_process.stderr.readline())
+        if os.path.isfile(test_out_file_name):
+            os.remove(test_out_file_name)
 
         if failed_test_output != '':
             tests_errors_table[preset_name] = failed_test_output
@@ -246,19 +248,18 @@ def test_preset(
 
 def test_multiple_presets(
         presets_filter: str = '', repetitions_count: int = 1,
-        threads_count: int = 4, test_timeout_sec: int = 30):
+        test_timeout_sec: int = 30, stress_test_flag: bool = False):
     """
     Метод выполняет поиск и тестирование нескольких выбранных пресетов.
     :param presets_filter: Ключевое слово-фильтр, которое позволяет отбирать
         только пресеты, содержащие данное слово.
     :param repetitions_count: Количество повторений каждого теста.
-    :param threads_count: Количество потоков для параллельного запуска тестов.
     :param test_timeout_sec: Тайм-аут ожидания завершения каждого теста в
         секундах.
     :return: Возвращает True, если тесты всех пресетов завершились успешно,
     иначе - False.
     """
-    presets_tuple = parse_presets(presets_filter)
+    presets_tuple = parse_presets(presets_filter, stress_test_flag)
     final_res = False
     if presets_tuple:
         results_list = []
@@ -274,7 +275,6 @@ def test_multiple_presets(
                 ['cmake', '--build', f'build/{preset}/'],
                 f'build/{preset}',
                 repetitions_count,
-                threads_count,
                 test_timeout_sec
             )
             results_list.append(preset_res)
