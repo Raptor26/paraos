@@ -190,10 +190,10 @@ class ICooperativeScheduling : protected Thread {
   auto &GetScheduler() { return scheduler_; }
 
  private:
-  /// @brief scheduler_ will call all registered task while they has work. Only
-  /// all registered tasks work complete, scheduler_ call idle function. 'void
-  /// Idle()' provide code for wait new program cycle and start new scheduling
-  /// step.
+  /// @brief scheduler_ will call all registered task while they has work.
+  /// Only all registered tasks work complete, scheduler_ call idle function.
+  /// 'void Idle()' provide code for wait new program cycle and start new
+  /// scheduling step.
   void Idle() {
     // Start runtime profiling when give notify and complete runtime here.
     profiler_.runtime_.Stop();
@@ -247,8 +247,8 @@ class CooperativeScheduling
 
     // Set 'is_need_start = false' useful for unit tests.
     if (attr.is_need_start) {
-      // Method below create thread and scheduling it's for execute in RTOS (or
-      // windows/unix).
+      // Method below create thread and scheduling it's for execute in RTOS
+      // (or windows/unix).
       Thread::Start();
     }
   }
