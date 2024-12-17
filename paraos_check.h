@@ -46,8 +46,13 @@
 #endif
 #else
 
+#ifndef PARAOS_CHECK_LOOP
 #define PARAOS_CHECK_LOOP()
+#endif
+
+#ifndef PARAOS_CHECK_ASSERT
 #define PARAOS_CHECK_ASSERT(x)
+#endif
 
 #endif /* #ifdef PARAOS_CHECK_LOOP_ENABLE */
 
