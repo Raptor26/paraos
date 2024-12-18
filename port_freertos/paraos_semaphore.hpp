@@ -127,7 +127,7 @@ class SemaphoreBase {
   SemaphoreHandle_t handle_;
 };
 
-/// @brief Counting semaphore. Mqx call Give() determine in attr.max_count.
+/// @brief Counting semaphore. Max call Give() determine in attr.max_count.
 struct SemaphoreCounting final : public SemaphoreBase {
   SemaphoreCounting(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
     handle_ = xSemaphoreCreateCounting(attr.max_count, attr.initial_count);
