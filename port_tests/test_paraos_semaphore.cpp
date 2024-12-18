@@ -55,3 +55,9 @@ TEST(Semaphore, GiveThanTakeTwiceButSemIsBinary) {
   ASSERT_TRUE(sem.Take(0));
   ASSERT_FALSE(sem.Take(0));
 }
+
+TEST(Semaphore, BinarySemaphoreCreateNotGivenState) {
+  auto sem = SemaphoreBinary();
+  ASSERT_TRUE(sem);
+  ASSERT_FALSE(sem.Take(0));
+}
