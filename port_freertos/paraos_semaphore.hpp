@@ -52,11 +52,15 @@ class SemaphoreBase {
  public:
   operator bool() const noexcept { return handle_ != nullptr ? true : false; }
 
-  /// @brief Метод уменьшает счётчик семафора на 1, если значение счётчика равно
-  /// 0, произойдёт блокировка вызывающего потока на указанное время, либо, пока
-  /// другой поток не увеличит счётчик.
-  /// @param[in] timeout_ms: Время ожидания счётчика семафора в мс.
-  /// @return Возвращает результат ожидания счётчика семафора.
+  /// @brief Take Semaphore.
+  ///
+  /// @param[in] timeout_ms: If nothing given semaphore, Take() will wait while
+  /// anything Give() semaphore with timeout, set in timeout_ms variable.
+  ///
+  /// @param[in] from_isr: Set true, if called from isr.
+  ///
+  /// @return Return true if semaphore was taken under timeout, false in
+  /// otherwise.
   ISRbool Take(
       std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept {
     PARAOS_CHECK_ASSERT(handle_);
@@ -87,7 +91,9 @@ class SemaphoreBase {
   }
 
   /// @brief Release semaphore.
+  ///
   /// @param[in] from_isr: Set true, if called from isr.
+  ///
   /// @return Return operation status. ISRbool contained value indicate is need
   /// switch context. Useful when Give() called from isr.
   ISRbool Give(bool from_isr = false) noexcept {
