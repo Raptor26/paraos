@@ -38,6 +38,7 @@
 
 #include <cstdint>
 
+#include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_isr.hpp"
 
@@ -91,10 +92,10 @@ class TestingSemaphore {
 
     bool give_result{true};
 
-    semaphore_counter_++;
+    ++semaphore_counter_;
 
     if (semaphore_counter_ > max_count_) {
-      semaphore_counter_ = max_count_;
+      semaphore_counter_.store(max_count_);
       give_result = false;
     }
 
@@ -102,9 +103,9 @@ class TestingSemaphore {
   }
 
  private:
-  size_t semaphore_counter_{0};
+  etl::atomic<std::size_t> semaphore_counter_;
 
-  size_t max_count_{255};
+  etl::atomic<std::size_t> max_count_;
 };
 
 /// @brief Класс бинарного семафора.
