@@ -63,7 +63,7 @@ class TestingSemaphore {
   /// @param[in] attrs: Attributes for class initialization.
   TestingSemaphore(const TestingSemaphoreAttr& attrs)
       : semaphore_counter_{attrs.initial_count}, max_count_{attrs.max_count} {
-    if (max_count_ > 0 && semaphore_counter_ <= max_count_) {
+    if ((max_count_ > 0) && (semaphore_counter_ <= max_count_)) {
       is_init_succeeded_ = true;
     }
   }
