@@ -44,31 +44,38 @@
 
 namespace paraos {
 
-/// @brief Аттрибуты семафора, передаваемые ему при инициализации.
+/// @brief Semaphore attributes for it's initialization.
 struct TestingSemaphoreAttr {
-  /// @brief Максимальное количество потоков, которые одновременно могут иметь
-  /// доступ к участку кода, защищённому семафором.
+  /// @brief Maximum number of threads that can execute the code protected by
+  /// semaphore at a time.
   size_t max_count{1u};
 
-  /// @brief Начальное значение счётчика семафора.
+  /// @brief Semaphore counter initial value.
   size_t initial_count{0u};
 };
 
-/// @brief Класс семафора, используемого при тестировании различных объектов.
+/// @brief Testing semaphore class.
 ///
-/// @note Его методы являются неблокирующими.
+/// @note This class methods are non-blocking.
 class TestingSemaphore {
  public:
-  /// @brief Конструктор класса TestingSemaphore.
-  /// @param[in] attrs: Атрибуты, необходимые для инициализации.
+  /// @brief Testing semaphore constructor.
+  /// @param[in] attrs: Attributes for class initialization.
   TestingSemaphore(const TestingSemaphoreAttr& attrs)
-      : semaphore_counter_{attrs.initial_count}, max_count_{attrs.max_count} {}
+      : semaphore_counter_{attrs.initial_count}, max_count_{attrs.max_count} {
+    if (max_count_ > 0 && semaphore_counter_ <= max_count_) {
+      is_init_succeeded_ = true;
+    }
+  }
 
-  /// @brief Метод выполняет взятие семафора.
-  /// @param[in] timeout_ms: Не используется в текущей реализации.
-  /// @param[in] from_isr: Не используется в текущей реализации.
-  /// @return Возвращает true, если на момент вызова данного метода счётчик
-  /// семафора имел значение больше нуля, иначе - false.
+  /// @brief Take Semaphore.
+  ///
+  /// @param[in] timeout_ms: Not used in current realization.
+  ///
+  /// @param[in] from_isr: Not used in current realization.
+  ///
+  /// @return Return ISRbool with true state if semaphore counter was greater
+  /// than zero, false state in otherwise.
   ISRbool Take(std::size_t timeout_ms = 0, bool from_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(timeout_ms);
     PARAOS_ATTR_UNUSED_VAR(from_isr);
@@ -83,10 +90,12 @@ class TestingSemaphore {
     return ISRbool{take_result};
   }
 
-  /// @brief Метод выполняет отдачу семафора.
-  /// @param[in] from_isr: Не используется в текущей реализации.
-  /// @return Возвращает true, если в момент вызова данного метода значение
-  /// счётчика семафора было меньше максимального.
+  /// @brief Release semaphore.
+  ///
+  /// @param[in] from_isr: Not used in current realization.
+  ///
+  /// @return Return operation status. ISRbool with true state if semaphore
+  /// counter was less than max count, otherwise - false.
   ISRbool Give(bool from_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
@@ -102,19 +111,22 @@ class TestingSemaphore {
     return ISRbool{give_result};
   }
 
+  operator bool() const { return is_init_succeeded_; }
+
  private:
   etl::atomic<std::size_t> semaphore_counter_;
 
   etl::atomic<std::size_t> max_count_;
+
+  bool is_init_succeeded_{false};
 };
 
-/// @brief Класс бинарного семафора.
+/// @brief Binary semaphore class.
 ///
-/// @note Только один поток может выполнять код в участке кода, защищённом
-/// бинарным семафором.
+/// @note Only one thread can execute the code protected with binary semaphore.
 class BinaryTestingSemaphore : public TestingSemaphore {
  public:
-  /// @brief Конструктор класса бинарного семафора.
+  /// @brief Binary semaphore constructor.
   BinaryTestingSemaphore() : BinaryTestingSemaphore{TestingSemaphoreAttr{}} {}
 
  private:

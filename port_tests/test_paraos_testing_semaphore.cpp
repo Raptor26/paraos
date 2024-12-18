@@ -27,10 +27,34 @@
 
 #include "paraos_testing_semaphore.hpp"
 
+TEST(TestingSemaphore, CreateWithIncorrectMaxCount) {
+  paraos::TestingSemaphoreAttr attrs{};
+
+  attrs.max_count = 0;
+  attrs.initial_count = 0;
+
+  paraos::TestingSemaphore semaphore{attrs};
+
+  ASSERT_FALSE(semaphore);
+}
+
+TEST(TestingSemaphore, CreateWithIncorrectInitialCount) {
+  paraos::TestingSemaphoreAttr attrs{};
+
+  attrs.max_count = 0;
+  attrs.initial_count = 5;
+
+  paraos::TestingSemaphore semaphore{attrs};
+
+  ASSERT_FALSE(semaphore);
+}
+
 TEST(TestingSemaphore, CreateDefault) {
   paraos::TestingSemaphoreAttr attrs{};
 
   paraos::TestingSemaphore semaphore{attrs};
+
+  ASSERT_TRUE(semaphore);
 }
 
 TEST(TestingSemaphore, TakeWithoutGive) {
@@ -39,6 +63,8 @@ TEST(TestingSemaphore, TakeWithoutGive) {
   attrs.initial_count = 0;
 
   paraos::TestingSemaphore semaphore{attrs};
+
+  ASSERT_TRUE(semaphore);
 
   ASSERT_FALSE(semaphore.Take());
 }
@@ -50,6 +76,8 @@ TEST(TestingSemaphore, MultipleGiveAndTake) {
   attrs.initial_count = 0;
 
   paraos::TestingSemaphore semaphore{attrs};
+
+  ASSERT_TRUE(semaphore);
 
   // Поскольку максимальное значение счётчика семафора равно 3, отдать семафор
   // можно не более 3 раз.
@@ -75,6 +103,8 @@ TEST(TestingSemaphore, MultipleGiveAndTake) {
 TEST(BinaryTestingSemaphore, MultipleGiveAndTake) {
   paraos::BinaryTestingSemaphore binary_semaphore{};
 
+  ASSERT_TRUE(binary_semaphore);
+
   ASSERT_FALSE(binary_semaphore.Take());
 
   ASSERT_TRUE(binary_semaphore.Give());
@@ -88,8 +118,8 @@ TEST(BinaryTestingSemaphore, MultipleGiveAndTake) {
 
 TEST(BinaryTestingSemaphore, BinarySemaphoreCreateNotGivenState) {
   paraos::BinaryTestingSemaphore binary_semaphore{};
-#if 0
+
   ASSERT_TRUE(binary_semaphore);
-#endif
+
   ASSERT_FALSE(binary_semaphore.Take(0));
 }
