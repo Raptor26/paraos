@@ -85,3 +85,11 @@ TEST(BinaryTestingSemaphore, MultipleGiveAndTake) {
 
   ASSERT_FALSE(binary_semaphore.Take());
 }
+
+TEST(BinaryTestingSemaphore, BinarySemaphoreCreateNotGivenState) {
+  paraos::BinaryTestingSemaphore binary_semaphore{};
+#if 0
+  ASSERT_TRUE(binary_semaphore);
+#endif
+  ASSERT_FALSE(binary_semaphore.Take(0));
+}
