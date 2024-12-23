@@ -107,3 +107,6 @@ endif()
 
 add_subdirectory(containers)
 add_subdirectory(extra)
+
+configure_file(${CMAKE_SOURCE_DIR}/paraos_version.hpp.in
+               ${CMAKE_SOURCE_DIR}/paraos_version.hpp @ONLY)
