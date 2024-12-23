@@ -84,6 +84,20 @@ class ProfilerRAII final {
   IProfiler &profiler_;
 };
 
+/// @brief RAII class for calculate period between ProfilerPeriodRAII calls.
+///
+/// @note If you need calculate period calling some bloc code, use
+/// ProfilerPeriodRAII class.
+class ProfilerPeriodRAII final {
+ public:
+  explicit ProfilerPeriodRAII(IProfiler &profiler) {
+    profiler.Stop();
+    profiler.Start();
+  }
+
+  ~ProfilerPeriodRAII() = default;
+};
+
 /// @brief Embedded timer interface. Need for get actual timer value and use it
 /// for calculate runtime in EmbeddedProfiler() and TimerProfiler().
 ///

@@ -39,8 +39,11 @@ target_compile_options(example_thread_check_timeout PRIVATE -Wall -Wextra
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(paraos_core test_paraos_mutex.cpp test_paraos_semaphore.cpp
-                           test_runtime_profiler.cpp)
+add_executable(
+  paraos_core
+  test_paraos_mutex.cpp test_paraos_semaphore.cpp test_runtime_profiler.cpp
+  test_paraos_switch_context.cpp test_paraos_testing_semaphore.cpp
+  test_paraos_version.cpp)
 target_link_libraries(paraos_core PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(paraos_core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
