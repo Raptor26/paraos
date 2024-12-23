@@ -1,3 +1,9 @@
+## v0.5.2 (2024-12-23)
+
+### Fix
+
+- **paraos**: Now cmake in paraos generate paraos_version.hpp if paraos using as no stand alone project
+
 ## v0.5.1 (2024-12-23)
 
 ### Fix
