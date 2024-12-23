@@ -8,9 +8,15 @@ cmake_minimum_required(VERSION 3.20)
 
 include(setup.cmake)
 
+# Read project version from commitizen config file.
+# https://stackoverflow.com/questions/68759588/parse-a-config-file-ini-or-cfg-with-cmake-to-create-a-header-file
+file(READ "${CMAKE_CURRENT_LIST_DIR}/.cz.json" commitizen_json)
+string(JSON paraos_project_version GET "${commitizen_json}" commitizen version)
+message(STATUS "PARAOS project version is ${paraos_project_version}")
+
 project(
   paraos
-  VERSION 0.4.0
+  VERSION ${paraos_project_version}
   DESCRIPTION
     "Cross-platform wrapper over operating system primitives with an emphasis on embedded systems"
   LANGUAGES C CXX)
@@ -101,3 +107,6 @@ endif()
 
 add_subdirectory(containers)
 add_subdirectory(extra)
+
+configure_file(${CMAKE_SOURCE_DIR}/paraos_version.hpp.in
+               ${CMAKE_SOURCE_DIR}/paraos_version.hpp @ONLY)
