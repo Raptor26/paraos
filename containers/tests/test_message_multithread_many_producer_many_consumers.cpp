@@ -94,10 +94,10 @@ std::atomic_size_t consumer_actual_read_str_idx{0};
 /// @brief Set actual value in main.
 std::size_t thread_total_numb{0};
 
-std::size_t producer_total_thread_numb{0};
-std::size_t producer_thread_exit_cnt{0};
-std::size_t consumer_thread_exit_cnt{0};
-std::size_t consumer_total_thread_numb{0};
+std::atomic_size_t producer_total_thread_numb{0};
+std::atomic_size_t producer_thread_exit_cnt{0};
+std::atomic_size_t consumer_thread_exit_cnt{0};
+std::atomic_size_t consumer_total_thread_numb{0};
 
 struct Producer : public paraos::Thread {
   Producer(
