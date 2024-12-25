@@ -38,6 +38,7 @@
 
 #include "paraos_iserial.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_utils.hpp"
 
 namespace paraos {
 
@@ -46,16 +47,18 @@ namespace paraos {
 inline constexpr uint16_t default_gcs_port = 14550;
 /// @brief Тайм-аут на приём данных по умолчанию, мс. (Значение 0 означает, что
 /// время ожидания будет бесконечно).
-inline constexpr int default_recv_timeout_ms = 0;
+inline constexpr decltype(paraos::max_delay) default_recv_timeout_ms = 0;
 
 /// @brief Атрибуты класса UDP сокета, передаваемые ему при инициализации.
 struct UDPSocketAttrs {
   /// @brief IP адрес UDP соединения (сервера).
   std::string ip_address = "127.0.0.1";
+
   /// @brief Порт, который прослушивает сервер.
   uint16_t port = default_gcs_port;
+
   /// @brief Тайм-аут на приём данных, мс.
-  int recv_timeout_ms = default_recv_timeout_ms;
+  decltype(paraos::max_delay) recv_timeout_ms = paraos::default_recv_timeout_ms;
 };
 
 /// @brief Класс UDP сокета, реализующего интерфейс, описывающий методы
@@ -75,8 +78,8 @@ class UDPSocket : public paraos::ISerial {
         // Установка тайм-аута на приём данных из сокета.
         auto result = setsockopt(
             client_socket_, SOL_SOCKET, SO_RCVTIMEO,
-            (const char *)&attrs.recv_timeout_ms,
-            sizeof(attrs.recv_timeout_ms));
+            static_cast<const char *>(&attrs.recv_timeout_ms),
+            static_cast<int>(sizeof(attrs.recv_timeout_ms)));
 
         if (result != SOCKET_ERROR) {
           server_.sin_family = AF_INET;
