@@ -58,7 +58,8 @@ struct UDPSocketAttrs {
   uint16_t port = default_gcs_port;
 
   /// @brief Тайм-аут на приём данных, мс.
-  decltype(paraos::max_delay) recv_timeout_ms = paraos::default_recv_timeout_ms;
+  std::remove_cv_t<decltype(paraos::max_delay)> recv_timeout_ms =
+      paraos::default_recv_timeout_ms;
 };
 
 /// @brief Класс UDP сокета, реализующего интерфейс, описывающий методы
@@ -78,7 +79,7 @@ class UDPSocket : public paraos::ISerial {
         // Установка тайм-аута на приём данных из сокета.
         auto result = setsockopt(
             client_socket_, SOL_SOCKET, SO_RCVTIMEO,
-            static_cast<const char *>(&attrs.recv_timeout_ms),
+            reinterpret_cast<const char *>(&attrs.recv_timeout_ms),
             static_cast<int>(sizeof(attrs.recv_timeout_ms)));
 
         if (result != SOCKET_ERROR) {

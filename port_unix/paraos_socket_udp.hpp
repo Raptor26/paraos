@@ -31,7 +31,8 @@ struct UDPSocketAttrs {
   uint16_t port = default_gcs_port;
 
   /// @brief Тайм-аут на приём данных, мс.
-  decltype(paraos::max_delay) recv_timeout_ms = default_recv_timeout_ms;
+  std::remove_cv_t<decltype(paraos::max_delay)> recv_timeout_ms =
+      paraos::default_recv_timeout_ms;
 };
 
 /// @brief Класс UDP сокета, реализующего интерфейс, описывающий методы
