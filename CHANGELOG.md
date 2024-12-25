@@ -1,3 +1,9 @@
+## v0.5.4 (2024-12-25)
+
+### Fix
+
+- **paraos**: fixed decltype in socket udp
+
 ## v0.5.3 (2024-12-25)
 
 ### Fix
