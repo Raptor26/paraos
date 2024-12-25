@@ -1,3 +1,9 @@
+## v0.5.3 (2024-12-25)
+
+### Fix
+
+- **socket**: delay variable has type as paraos::max_delay
+
 ## v0.5.2 (2024-12-23)
 
 ### Fix
