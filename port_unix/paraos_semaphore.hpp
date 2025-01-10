@@ -97,11 +97,37 @@ class SemaphoreBase {
   virtual ~SemaphoreBase() {
     if (is_sem_created_) {
       sem_destroy(&handle_);
+      is_sem_created_ = false;
     }
   }
 
+  /// @brief Move ctor.
+  SemaphoreBase(SemaphoreBase &&other) {
+    if (this != &other) {
+      this->handle_ = other.handle_;
+      this->is_sem_created_ =  other.is_sem_created_.load();
+      other.is_sem_created_ = false;
+    }
+  }
+
+  /// @brief Move assignment.
+  SemaphoreBase &operator=(SemaphoreBase &&other) {
+    if (this != &other) {
+      this->~SemaphoreBase();
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      other.is_sem_created_ = false;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBase(const SemaphoreBase &other) = delete;
+  SemaphoreBase &operator=(const SemaphoreBase &other) = delete;
+
   sem_t handle_;
-  bool is_sem_created_;
+  etl::atomic<bool> is_sem_created_;
 };
 
 struct SemaphoreCounting final : public SemaphoreBase {
@@ -113,6 +139,26 @@ struct SemaphoreCounting final : public SemaphoreBase {
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
   ~SemaphoreCounting() = default;
+
+  /// @brief Move ctor.
+  SemaphoreCounting(SemaphoreCounting &&other)
+      : SemaphoreBase(std::move(other)) {}
+
+  /// @brief Move assignment.
+  SemaphoreCounting &operator=(SemaphoreCounting &&other) {
+    if (this != &other) {
+      this->~SemaphoreCounting();
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      other.is_sem_created_ = false;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreCounting(const SemaphoreCounting &other) = delete;
+  SemaphoreCounting &operator=(const SemaphoreCounting &other) = delete;
 };
 
 struct SemaphoreBinary final : public SemaphoreBase {
@@ -155,8 +201,30 @@ struct SemaphoreBinary final : public SemaphoreBase {
 
   ~SemaphoreBinary() = default;
 
+  /// @brief Move ctor.
+  SemaphoreBinary(SemaphoreBinary &&other) : SemaphoreBase(std::move(other)) {}
+
+  /// @brief Move assignment.
+  SemaphoreBinary &operator=(SemaphoreBinary &&other) {
+    if (this != &other) {
+      this->~SemaphoreBinary();
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      this->is_given_ = other.is_given_.load();
+
+      other.is_sem_created_ = false;
+      other.is_given_ = false;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBinary(const SemaphoreBinary &other) = delete;
+  SemaphoreBinary &operator=(const SemaphoreBinary &other) = delete;
+
  private:
-  etl::atomic_bool is_given_{false};
+  etl::atomic<bool> is_given_{false};
 };
 }  // namespace paraos
 
