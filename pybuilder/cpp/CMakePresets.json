@@ -1,0 +1,169 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "stavpilot_f405_gcc_debug",
+            "displayName": "Stavpilot board STM32F405 debug with GCC",
+            "description": "Debug version for stavpilot with STM32F405RGT6",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "NEED_ELF_OUTPUT": true,
+                "FREERTOS": true,
+                "STAVPILOT_STM32F405_BOARD": true,
+                "SCRIPT_BUILD_ONLY": true,
+                "HOST_TYPE": "MCU",
+                "PRESET_NAME": "${presetName}"
+            }
+        },
+        {
+            "name": "stavpilot_f405_gcc_release",
+            "displayName": "Stavpilot board STM32F405 release with GCC",
+            "description": "Release version for stavpilot with STM32F405RGT6",
+            "inherits": "stavpilot_f405_gcc_debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "pc_debug_gcc",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "PC_BOARD": true,
+                "PRESET_NAME": "${presetName}"
+            }
+        },
+        {
+            "name": "pc_debug_clang",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "PC_BOARD": true,
+                "PRESET_NAME": "${presetName}"
+            }
+        },
+        {
+            "name": "pc_debug_clang_native",
+            "displayName": "PC platform debug with clang and winapi/posix",
+            "description": "Debug version for stavpilot",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "UTEST": true
+            }
+        },
+        {
+            "name": "pc_debug_gcc_native",
+            "displayName": "PC platform debug with GCC and winapi/posix",
+            "description": "Debug version for stavpilot",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "UTEST": true
+            }
+        },
+        {
+            "name": "pc_debug_gcc_native_with_coverage",
+            "displayName": "PC platform debug with GCC and winapi/posix (with code coverage)",
+            "description": "Debug version for stavpilot",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "UTEST": true,
+                "CODE_COVERAGE": true,
+                "SCRIPT_BUILD_ONLY": true
+            }
+        },
+        {
+            "name": "pc_debug_gcc_native_clang_tidy",
+            "displayName": "PC platform debug with GCC and winapi/posix with clang-tidy checks",
+            "description": "Debug version for stavpilot",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "UTEST": true,
+                "CLANG_TIDY_ENABLE": true,
+                "SCRIPT_BUILD_ONLY": true
+            }
+        },
+        {
+            "name": "pc_gcc_debug_native_trace",
+            "displayName": "PC platform debug with GCC and winapi/posix with trace",
+            "description": "Debug version for stavpilot",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "UTEST": true,
+                "TRACE": true,
+                "SCRIPT_BUILD_ONLY": true
+            }
+        },
+        {
+            "name": "pc_gcc_with_simulation_cpp",
+            "displayName": "PC platform configuration with simulation from C++-model",
+            "description": "Version for communicating with model from stavpilot",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "SIM_MODE": "CPP_SITL",
+                "SCRIPT_BUILD_ONLY": true
+            }
+        },
+        {
+            "name": "pc_gcc_with_simulation_cpp_flightgear",
+            "displayName": "PC platform configuration with simulation from C++-model and FlightGear",
+            "description": "Version for communicating with model from stavpilot",
+            "inherits": "pc_gcc_with_simulation_cpp",
+            "cacheVariables": {
+                "VIS_ENABLE": true,
+                "SCRIPT_BUILD_ONLY": true
+            }
+        },
+        {
+            "name": "pc_gcc_with_simulation_udp",
+            "displayName": "PC platform configuration with simulation and UDP",
+            "description": "Version for communicating with model through UDP",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "SIM_MODE": "UDP_SITL",
+                "SCRIPT_BUILD_ONLY": true,
+                "TRACE_SITL": "true"
+            }
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "pc_debug_gcc_native",
+            "description": "Run All tests in windows/linux with gcc",
+            "configurePreset": "pc_debug_gcc_native",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "default",
+                "shortProgress": true,
+                "labelSummary": true,
+                "quiet": false
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true,
+                "scheduleRandom": true,
+                "timeout": 15,
+                "jobs": 3
+            }
+        }
+    ]
+}

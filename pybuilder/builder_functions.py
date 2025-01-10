@@ -59,6 +59,8 @@ def parse_presets(presets_filter: str = '', stress_test_flag: bool = False):
     Функция выполняет парсинг доступных пресетов из файла CMakePresets.json.
     :param presets_filter: Фильтр пресетов - строка, используемая для
         отбора только тех пресетов, которые содержат данную строку.
+    :param stress_test_flag: Флаг, который равен true на этапе
+        стресс-тестирования.
     :return: Возвращает кортеж пресетов, полученных в результате парсинга.
     """
     if check_presets_existence():
