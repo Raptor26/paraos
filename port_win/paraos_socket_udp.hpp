@@ -45,9 +45,9 @@ namespace paraos {
 /// @brief Порт по умолчанию, который прослушивают НСУ (QGroundControl,
 /// MissionPlanner)
 inline constexpr uint16_t default_gcs_port = 14550;
-/// @brief Тайм-аут на приём данных по умолчанию, мс. (Значение 0 означает, что
-/// время ожидания будет бесконечно).
-inline constexpr decltype(paraos::max_delay) default_recv_timeout_ms = 0;
+/// @brief Тайм-аут на приём данных по умолчанию, мс.
+inline constexpr decltype(paraos::max_delay) default_recv_timeout_ms =
+    paraos::max_delay;
 
 /// @brief Атрибуты класса UDP сокета, передаваемые ему при инициализации.
 struct UDPSocketAttrs {
@@ -58,6 +58,9 @@ struct UDPSocketAttrs {
   uint16_t port = default_gcs_port;
 
   /// @brief Тайм-аут на приём данных, мс.
+  ///
+  /// @note Если указать значение тайм-аута равное 0, то сокет будет работать в
+  /// неблокирующем режиме.
   std::remove_cv_t<decltype(paraos::max_delay)> recv_timeout_ms =
       paraos::default_recv_timeout_ms;
 };
@@ -76,11 +79,27 @@ class UDPSocket : public paraos::ISerial {
       if (client_socket_ == INVALID_SOCKET) {
         is_init_succeeded_ = false;
       } else {
-        // Установка тайм-аута на приём данных из сокета.
-        auto result = setsockopt(
-            client_socket_, SOL_SOCKET, SO_RCVTIMEO,
-            reinterpret_cast<const char *>(&attrs.recv_timeout_ms),
-            static_cast<int>(sizeof(attrs.recv_timeout_ms)));
+        int result = 0;
+
+        // Если значение тайм-аута в атрибутах сокета не равно 0.
+        if (attrs.recv_timeout_ms != 0) {
+          // Установка тайм-аута на приём данных из сокета.
+          result = setsockopt(
+              client_socket_, SOL_SOCKET, SO_RCVTIMEO,
+              reinterpret_cast<const char *>(&attrs.recv_timeout_ms),
+              static_cast<int>(sizeof(attrs.recv_timeout_ms)));
+        } else {
+          // Если тайм-аут указан как 0, необходимо выключить блокирующий режим
+          // для созданного сокета.
+          unsigned long block_mode_val = 1;
+
+          // Set the socket I/O mode: In this case FIONBIO
+          // enables or disables the blocking mode for the
+          // socket based on the numerical value of block_mode_val.
+          // If block_mode_val = 0, blocking is enabled;
+          // If block_mode_val != 0, non-blocking mode is enabled.
+          result = ioctlsocket(client_socket_, FIONBIO, &block_mode_val);
+        }
 
         if (result != SOCKET_ERROR) {
           server_.sin_family = AF_INET;
@@ -145,6 +164,9 @@ class UDPSocket : public paraos::ISerial {
 
     return transmitted_bytes_num;
   }
+
+  /// @brief Перегрузка оператора bool.
+  operator bool() const { return is_init_succeeded_; }
 
   ~UDPSocket() override {
     closesocket(client_socket_);

@@ -35,6 +35,16 @@ target_compile_features(example_thread_check_timeout PRIVATE cxx_std_17
 target_compile_options(example_thread_check_timeout PRIVATE -Wall -Wextra
                                                             -Wpedantic -Werror)
 
+if(NOT FREERTOS)
+  # UDP Socket -----------------------------------------------------------------
+  add_executable(example_paraos_socket_udp example_paraos_socket_udp.cpp)
+  target_link_libraries(example_paraos_socket_udp PRIVATE paraos::paraos)
+
+  target_compile_features(example_paraos_socket_udp PRIVATE cxx_std_17 c_std_11)
+  target_compile_options(example_paraos_socket_udp PRIVATE -Wall -Wextra
+                                                           -Wpedantic -Werror)
+endif()
+
 # GTEST ------------------------------------------------------------------------
 find_package(GTest REQUIRED)
 include(GoogleTest)

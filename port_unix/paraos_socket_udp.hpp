@@ -2,6 +2,7 @@
 #define PARAOS_SOCKET_UDP_HPP
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -18,9 +19,9 @@ namespace paraos {
 /// @brief Порт по умолчанию, который прослушивают НСУ (QGroundControl,
 /// MissionPlanner)
 inline constexpr uint16_t default_gcs_port = 14550;
-/// @brief Тайм-аут на приём данных по умолчанию, мс. (Значение 0 означает, что
-/// время ожидания будет бесконечно).
-inline constexpr decltype(paraos::max_delay) default_recv_timeout_ms = 0;
+/// @brief Тайм-аут на приём данных по умолчанию, мс.
+inline constexpr decltype(paraos::max_delay) default_recv_timeout_ms =
+    paraos::max_delay;
 
 /// @brief Атрибуты класса UDP сокета, передаваемые ему при инициализации.
 struct UDPSocketAttrs {
@@ -30,7 +31,8 @@ struct UDPSocketAttrs {
   /// @brief Порт, который прослушивает сервер.
   uint16_t port = default_gcs_port;
 
-  /// @brief Тайм-аут на приём данных, мс.
+  /// @brief Тайм-аут на приём данных, мс. По умолчанию равен максимальной
+  /// задержке для платформы, использующей сокет.
   std::remove_cv_t<decltype(paraos::max_delay)> recv_timeout_ms =
       paraos::default_recv_timeout_ms;
 };
@@ -46,13 +48,18 @@ class UDPSocket : public paraos::ISerial {
     if (client_socket_ == -1) {
       is_init_succeeded_ = false;
     } else {
-      // Установка тайм-аута на приём данных из сокета.
-      struct timeval tv;
-      tv.tv_sec = attrs.recv_timeout_ms / 1000;
-      tv.tv_usec = 0;
-      auto result = setsockopt(
-          client_socket_, SOL_SOCKET, SO_RCVTIMEO, (const void *)&tv,
-          sizeof(tv));
+      int result = 0;
+      if (attrs.recv_timeout_ms != 0) {
+        // Установка тайм-аута на приём данных из сокета.
+        struct timeval tv;
+        tv.tv_sec = attrs.recv_timeout_ms / 1000;
+        tv.tv_usec = 0;
+        result = setsockopt(
+            client_socket_, SOL_SOCKET, SO_RCVTIMEO, (const void *)&tv,
+            sizeof(tv));
+      } else {
+        result = fcntl(client_socket_, F_SETFL, O_NONBLOCK);
+      }
 
       if (result != -1) {
         server_.sin_family = AF_INET;
@@ -90,7 +97,7 @@ class UDPSocket : public paraos::ISerial {
         (sockaddr *)&server_, &slen);
 
     if (read_bytes_num == -1) {
-      std::cout << "recvfrom() failed." << std::endl;
+      std::cout << "recvfrom() failed with code: " << errno << std::endl;
       read_bytes_num = 0;
       is_connected_ = false;
     } else {
@@ -115,6 +122,9 @@ class UDPSocket : public paraos::ISerial {
 
     return transmitted_bytes_num;
   }
+
+  /// @brief Перегрузка оператора bool.
+  operator bool() const { return is_init_succeeded_; }
 
   ~UDPSocket() override { close(client_socket_); }
 
