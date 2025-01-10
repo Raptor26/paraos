@@ -46,10 +46,6 @@ class CriticalSection final {
     } else {
       uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Open critical section" << std::endl;
-#endif
   }
 
   /// @brief Деструктор обеспечивает автоматический выход из критической секции.
@@ -59,10 +55,6 @@ class CriticalSection final {
     } else {
       taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Close critical section" << std::endl;
-#endif
   }
 
   CriticalSection(const CriticalSection &other) = delete;

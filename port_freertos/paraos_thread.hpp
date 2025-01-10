@@ -27,10 +27,6 @@
 #ifndef PARAOS_THREAD_HPP
 #define PARAOS_THREAD_HPP
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
-
 #include <cstring>
 #include <deque>
 #include <string>
@@ -38,6 +34,7 @@
 #include "FreeRTOS.h"
 #include "paraos_mutex.hpp"
 #include "paraos_semaphore.hpp"
+#include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 #include "task.h"
 
