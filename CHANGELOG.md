@@ -1,3 +1,17 @@
+## v0.6.0 (2025-01-10)
+
+### Feat
+
+- **unix-sem**: addded move semantic
+- **win-sem**: added move semantic
+- **freertos-sem**: added move semantic
+- **win-mutex**: added move semantic
+- **freertos-mutex**: added move semantic
+
+### Fix
+
+- **freertos-mutex**: Added atomic variables in mutex class
+
 ## v0.5.4 (2024-12-25)
 
 ### Fix
