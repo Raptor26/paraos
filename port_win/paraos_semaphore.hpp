@@ -98,6 +98,29 @@ class SemaphoreBase {
 #endif
   }
 
+  /// @brief Move ctor.
+  SemaphoreBase(SemaphoreBase &&other) {
+    if (this != &other) {
+      this->handle_ = other.handle_;
+      other.handle_ = nullptr;
+    }
+  }
+
+  /// @brief Move assignment.
+  SemaphoreBase &operator=(SemaphoreBase &&other) {
+    if (this != &other) {
+      this->~SemaphoreBase();
+      this->handle_ = other.handle_;
+      other.handle_ = nullptr;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBase(const SemaphoreBase &other) = delete;
+  SemaphoreBase &operator=(const SemaphoreBase &other) = delete;
+
   HANDLE handle_{nullptr};
 };
 
@@ -109,6 +132,25 @@ struct SemaphoreCounting final : public SemaphoreBase {
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
   ~SemaphoreCounting() = default;
+
+  /// @brief Move ctor.
+  SemaphoreCounting(SemaphoreCounting &&other)
+      : SemaphoreBase(std::move(other)) {}
+
+  /// @brief Move assignment.
+  SemaphoreCounting &operator=(SemaphoreCounting &&other) {
+    if (this != &other) {
+      this->~SemaphoreCounting();
+      this->handle_ = other.handle_;
+      other.handle_ = nullptr;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreCounting(const SemaphoreCounting &other) = delete;
+  SemaphoreCounting &operator=(const SemaphoreCounting &other) = delete;
 };
 
 /// @brief Класс-реализация бинарного семафора.
@@ -125,6 +167,24 @@ struct SemaphoreBinary final : public SemaphoreBase {
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
   ~SemaphoreBinary() = default;
+
+  /// @brief Move ctor.
+  SemaphoreBinary(SemaphoreBinary &&other) : SemaphoreBase(std::move(other)) {}
+
+  /// @brief Move assignment.
+  SemaphoreBinary &operator=(SemaphoreBinary &&other) {
+    if (this != &other) {
+      this->~SemaphoreBinary();
+      this->handle_ = other.handle_;
+      other.handle_ = nullptr;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBinary(const SemaphoreBinary &other) = delete;
+  SemaphoreBinary &operator=(const SemaphoreBinary &other) = delete;
 };
 
 }  // namespace paraos
