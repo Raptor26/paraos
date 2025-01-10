@@ -115,7 +115,8 @@ class MutexBase {
   }
 
  protected:
-  MutexBase(bool is_recursive) : is_recursive_{is_recursive} {};
+  MutexBase(bool is_recursive = false)
+      : is_recursive_{is_recursive}, recursive_holder_take_cnt_{0} {};
 
  private:
   ISRbool LockNormal(std::size_t timeout_ms = max_delay) {
@@ -187,10 +188,10 @@ class MutexBase {
 
  protected:
   SemaphoreHandle_t handle_{nullptr};
-  bool is_recursive_{false};
+  etl::atomic<bool> is_recursive_;
 
   /// @brief Watch for symmetric call Lock() and Unlock() for recursive mutex.
-  int recursive_holder_take_cnt_{0};
+  etl::atomic<size_t> recursive_holder_take_cnt_;
 };
 
 class Mutex final : public MutexBase {
