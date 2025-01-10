@@ -56,8 +56,36 @@ TEST(Semaphore, GiveThanTakeTwiceButSemIsBinary) {
   ASSERT_FALSE(sem.Take(0));
 }
 
+TEST(SemaphoreBinary, MoveCtor) {
+  auto sem_one = SemaphoreBinary();
+  auto sem_two = SemaphoreBinary(std::move(sem_one));
+}
+
+TEST(SemaphoreBinary, MoveAssignment) {
+  auto sem_one = SemaphoreBinary();
+  auto sem_two = SemaphoreBinary();
+
+  sem_one = std::move(sem_two);
+}
+
 TEST(Semaphore, BinarySemaphoreCreateNotGivenState) {
   auto sem = SemaphoreBinary();
   ASSERT_TRUE(sem);
   ASSERT_FALSE(sem.Take(0));
+}
+
+TEST(SemaphoreCounting, MoveCtor) {
+  SemaphoreAttr attr;
+  attr.max_count = 2u;
+  auto sem_one = SemaphoreCounting(attr);
+  auto sem_two = SemaphoreCounting(std::move(sem_one));
+}
+
+TEST(SemaphoreCounting, MoveAssignment) {
+  SemaphoreAttr attr;
+  attr.max_count = 2u;
+  auto sem_one = SemaphoreCounting(attr);
+  auto sem_two = SemaphoreCounting(attr);
+
+  sem_one = std::move(sem_two);
 }

@@ -40,16 +40,18 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 add_executable(
-  paraos_core
+  test_paraos_core
   test_paraos_mutex.cpp test_paraos_semaphore.cpp test_runtime_profiler.cpp
   test_paraos_switch_context.cpp test_paraos_testing_semaphore.cpp
   test_paraos_version.cpp)
-target_link_libraries(paraos_core PRIVATE paraos::paraos GTest::gtest_main)
-target_include_directories(paraos_core PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_link_libraries(test_paraos_core PRIVATE paraos::paraos GTest::gtest_main)
+target_include_directories(test_paraos_core
+                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-target_compile_features(paraos_core PRIVATE cxx_std_20 c_std_11)
-target_compile_options(paraos_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
-add_test(NAME paraos_core COMMAND paraos_core)
+target_compile_features(test_paraos_core PRIVATE cxx_std_20 c_std_11)
+target_compile_options(test_paraos_core PRIVATE -Wall -Wextra -Wpedantic
+                                                -Werror)
+add_test(NAME test_paraos_core COMMAND test_paraos_core)
 
 # Coverage ---------------------------------------------------------------------
 # ctest  --test-dir build/pc_debug_gcc  -T Test -T Coverage
