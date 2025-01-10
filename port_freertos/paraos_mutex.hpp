@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include "FreeRTOS.h"
+#include "etl/atomic.h"
 #include "paraos_bool_atomic.hpp"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
@@ -61,12 +62,6 @@ class MutexBase {
     std::cout << "MutexBase Dtor" << std::endl;
 #endif
   }
-
-  MutexBase(const MutexBase& other) = delete;
-  MutexBase(MutexBase&& other) = delete;
-
-  MutexBase& operator=(const MutexBase& other) = delete;
-  MutexBase& operator=(MutexBase&& other) = delete;
 
   operator bool() const { return handle_ != nullptr ? true : false; }
 
@@ -117,6 +112,40 @@ class MutexBase {
  protected:
   MutexBase(bool is_recursive = false)
       : is_recursive_{is_recursive}, recursive_holder_take_cnt_{0} {};
+
+  /// @brief Move Ctor,
+  MutexBase(MutexBase&& other) {
+    if (this != &other) {
+      paraos::CriticalSection critical;
+      this->handle_ = other.handle_;
+      this->is_recursive_ = other.is_recursive_.load();
+      this->recursive_holder_take_cnt_ =
+          other.recursive_holder_take_cnt_.load();
+
+      other.handle_ = nullptr;
+    }
+  }
+
+  /// @brief Move assignment.
+  MutexBase& operator=(MutexBase&& other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    paraos::CriticalSection critical;
+    this->~MutexBase();
+    this->handle_ = other.handle_;
+    this->is_recursive_ = other.is_recursive_.load();
+    this->recursive_holder_take_cnt_ = other.recursive_holder_take_cnt_.load();
+
+    other.handle_ = nullptr;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable
+  MutexBase& operator=(const MutexBase& other) = delete;
+  MutexBase(const MutexBase& other) = delete;
 
  private:
   ISRbool LockNormal(std::size_t timeout_ms = max_delay) {
@@ -198,13 +227,31 @@ class Mutex final : public MutexBase {
  public:
   Mutex() : MutexBase{false} { handle_ = xSemaphoreCreateMutex(); }
 
-  ~Mutex() {}
+  ~Mutex() = default;
 
-  Mutex(const Mutex& other) = delete;
-  Mutex(Mutex&& other) = delete;
+  /// @brief Move Ctor,
+  Mutex(Mutex&& other) : MutexBase(std::move(other)) {};
 
+  /// @brief Move assignment.
+  Mutex& operator=(Mutex&& other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    paraos::CriticalSection critical;
+    this->~Mutex();
+    this->handle_ = other.handle_;
+    this->is_recursive_ = other.is_recursive_.load();
+    this->recursive_holder_take_cnt_ = other.recursive_holder_take_cnt_.load();
+
+    other.handle_ = nullptr;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable.
   Mutex& operator=(const Mutex& other) = delete;
-  Mutex& operator=(Mutex&& other) = delete;
+  Mutex(const Mutex& other) = delete;
 };
 
 /// @brief
@@ -216,13 +263,31 @@ class MutexRecursive final : public MutexBase {
     handle_ = xSemaphoreCreateRecursiveMutex();
   }
 
-  ~MutexRecursive() {}
+  ~MutexRecursive() = default;
 
+  /// @brief Move Ctor,
+  MutexRecursive(MutexRecursive&& other) : MutexBase(std::move(other)) {};
+
+  /// @brief Move assignment.
+  MutexRecursive& operator=(MutexRecursive&& other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    paraos::CriticalSection critical;
+    this->~MutexRecursive();
+    this->handle_ = other.handle_;
+    this->is_recursive_ = other.is_recursive_.load();
+    this->recursive_holder_take_cnt_ = other.recursive_holder_take_cnt_.load();
+
+    other.handle_ = nullptr;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable.
   MutexRecursive(const MutexRecursive& other) = delete;
-  MutexRecursive(MutexRecursive&& other) = delete;
-
   MutexRecursive& operator=(const MutexRecursive& other) = delete;
-  MutexRecursive& operator=(MutexRecursive&& other) = delete;
 };
 
 }  // namespace paraos

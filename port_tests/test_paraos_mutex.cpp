@@ -57,7 +57,20 @@ TEST(Mutex, LockThenUnlock) {
 TEST(Mutex, LockThenUnlockWithRAII) {
   auto default_ctor = Mutex();
 
-  { auto mutex_raii = MutexGuard(default_ctor); }
+  {
+    auto mutex_raii = MutexGuard(default_ctor);
+  }
+}
+
+TEST(Mutex, MoveCtor) {
+  auto mutex = Mutex();
+  auto move_to_me = std::move(mutex);
+}
+
+TEST(Mutex, MoveAssignment) {
+  auto mutex_one = Mutex();
+  auto mutex_two = Mutex();
+  mutex_two = std::move(mutex_one);
 }
 
 TEST(MutexRecursive, LockThenUnlockTwice) {
@@ -71,4 +84,15 @@ TEST(MutexRecursive, LockThenUnlockTwice) {
 
   // Mutex lock twice, and unlock twice too, next release not succeed.
   ASSERT_FALSE(default_ctor.Unlock());
+}
+
+TEST(MutexRecursive, MoveCtor) {
+  auto mutex = MutexRecursive();
+  auto move_to_me = std::move(mutex);
+}
+
+TEST(MutexRecursive, MoveAssignment) {
+  auto mutex_one = MutexRecursive();
+  auto mutex_two = MutexRecursive();
+  mutex_two = std::move(mutex_one);
 }
