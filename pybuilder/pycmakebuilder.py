@@ -75,7 +75,7 @@ def compute_binary_dir(root_dir: str, config_presets_list: str, preset_name: str
             break
 
     if binary_dir is not None:
-        binary_dir = binary_dir.replace("/", "\\")
+        # binary_dir = binary_dir.replace("/", "\\")
         binary_dir = binary_dir.replace("${sourceDir}", root_dir)
         binary_dir = binary_dir.replace("${presetName}", current_preset_name)
 
@@ -93,7 +93,7 @@ def configure_preset(args: str, preset_name: str):
         configure_cmd = f"cmake --preset {preset_name}"
         if (
             subprocess.run(
-                args=configure_cmd, cwd=args.cmake_project_dir, shell=False
+                args=configure_cmd, cwd=args.cmake_project_dir, shell=True
             ).returncode
             == 0
         ):
@@ -111,7 +111,7 @@ def build_preset(args: str, binary_dir: str):
     build_cmd = f"cmake --build {binary_dir}"
     if (
         subprocess.run(
-            args=build_cmd, cwd=args.cmake_project_dir, shell=False
+            args=build_cmd, cwd=args.cmake_project_dir, shell=True
         ).returncode
         == 0
     ):
@@ -123,7 +123,7 @@ def test_preset(args: str, binary_dir: str):
     test_cmd = f"ctest --test-dir {binary_dir} {args.ctest_options}"
     if (
         subprocess.run(
-            args=test_cmd, cwd=args.cmake_project_dir, shell=False
+            args=test_cmd, cwd=args.cmake_project_dir, shell=True
         ).returncode
         == 0
     ):
@@ -132,7 +132,7 @@ def test_preset(args: str, binary_dir: str):
 
 
 def load_configure_presets(path_to_cmake_json: str = "cpp"):
-    path_to_cmake_json = f"{path_to_cmake_json}\\CMakePresets.json"
+    path_to_cmake_json = f"{path_to_cmake_json}/CMakePresets.json"
     if os.path.exists(path_to_cmake_json):
         with open(path_to_cmake_json) as cmake_presets:
             return json.load(cmake_presets)["configurePresets"]
@@ -145,7 +145,10 @@ def compute_actual_configure_presets_subset(config_presets_lst: list, args: str)
     for config_preset in config_presets_lst:
         configure_name_set.add(config_preset.get(NAME_PRESET_FIELD))
 
-    excluded = args.exclude.split(" ")
+    excluded = set()
+    if args.exclude is not None:
+        excluded = args.exclude.split(" ")
+        
     excluded_set = set()
 
     for excluded_name in excluded:

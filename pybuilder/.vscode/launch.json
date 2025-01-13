@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "-d=${workspaceFolder}\\cpp", "-e=stavpilot_f405_gcc_debug stavpilot_f405_gcc_release pc_gcc_debug_native_trace"
+                "-d=${workspaceFolder}\\cpp", "-t=--output-on-failure --stop-on-failure", "-e=pc_gcc_debug_native_trace"
             ]
         }
     ]
