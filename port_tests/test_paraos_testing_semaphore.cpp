@@ -123,3 +123,56 @@ TEST(BinaryTestingSemaphore, BinarySemaphoreCreateNotGivenState) {
 
   ASSERT_FALSE(binary_semaphore.Take(0));
 }
+
+TEST(TestingSemaphore, MoveCtor) {
+  paraos::TestingSemaphoreAttr attrs{};
+  attrs.initial_count = 0;
+  attrs.max_count = 10;
+
+  paraos::TestingSemaphore semaphore_one{attrs};
+
+  semaphore_one.Give();
+
+  paraos::TestingSemaphore semaphore_two{std::move(semaphore_one)};
+}
+
+TEST(TestingSemaphore, MoveAssignment) {
+  paraos::TestingSemaphoreAttr attrs{};
+  attrs.initial_count = 0;
+  attrs.max_count = 10;
+
+  paraos::TestingSemaphore semaphore_one{attrs};
+
+  ASSERT_TRUE(semaphore_one.Give());
+
+  paraos::TestingSemaphoreAttr sem_two_attrs{};
+  sem_two_attrs.initial_count = 2;
+  sem_two_attrs.max_count = 7;
+
+  paraos::TestingSemaphore semaphore_two{sem_two_attrs};
+
+  semaphore_two = std::move(semaphore_one);
+}
+
+TEST(BinaryTestingSemaphore, MoveCtor) {
+  paraos::BinaryTestingSemaphore binary_semaphore_one{};
+
+  ASSERT_TRUE(binary_semaphore_one.Give());
+
+  paraos::BinaryTestingSemaphore binary_semaphore_two{
+      std::move(binary_semaphore_one)};
+
+  ASSERT_TRUE(binary_semaphore_two.Take());
+}
+
+TEST(BinaryTestingSemaphore, MoveAssignment) {
+  paraos::BinaryTestingSemaphore binary_semaphore_one{};
+
+  ASSERT_TRUE(binary_semaphore_one.Give());
+
+  paraos::BinaryTestingSemaphore binary_semaphore_two{};
+
+  binary_semaphore_two = std::move(binary_semaphore_one);
+
+  ASSERT_TRUE(binary_semaphore_two.Take());
+}

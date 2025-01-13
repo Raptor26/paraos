@@ -29,6 +29,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#include <utility>
+
 #include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
@@ -105,7 +107,7 @@ class SemaphoreBase {
   SemaphoreBase(SemaphoreBase &&other) {
     if (this != &other) {
       this->handle_ = other.handle_;
-      this->is_sem_created_ =  other.is_sem_created_.load();
+      this->is_sem_created_ = other.is_sem_created_.load();
       other.is_sem_created_ = false;
     }
   }

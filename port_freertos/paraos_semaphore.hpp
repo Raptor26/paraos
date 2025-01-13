@@ -29,6 +29,8 @@
 
 #include <stddef.h>
 
+#include <utility>
+
 #include "FreeRTOS.h"
 #include "paraos_check.h"
 #include "paraos_isr.hpp"
