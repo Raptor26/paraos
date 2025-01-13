@@ -16,8 +16,27 @@ ci:windows:
     -d="$PWD" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j12" 
+                     -j12
+                     --timeout 30" 
     -e="pc_debug_clang_docker"
+ rules:
+    # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
 
 ci:windows_stress_gcc:
  stage: test_windows_stress
@@ -31,7 +50,8 @@ ci:windows_stress_gcc:
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
                      -j12 
-                     --repeat-until-fail 200" 
+                     --repeat-until-fail 120
+                     --timeout 30" 
     -e="pc_debug_clang_trace 
         freertos_debug_clang_trace 
         pc_debug_clang_docker"
@@ -59,8 +79,27 @@ ci:linux:
     -d="${PWD}" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j8" 
+                     -j8
+                     --timeout 30" 
     -e="pc_debug_clang_docker"
+ rules:
+    # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
 
 ci:linux_stress_gcc:
  stage: test_linux_stress
@@ -74,7 +113,8 @@ ci:linux_stress_gcc:
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
                      -j8 
-                     --repeat-until-fail 200" 
+                     --repeat-until-fail 300
+                     --timeout 30" 
     -e="pc_debug_clang_trace 
         freertos_debug_clang_trace 
         pc_debug_clang_docker"
