@@ -52,7 +52,7 @@ ci:windows_stress_gcc:
                      -j12 
                      --repeat-until-fail 120
                      --timeout 30
-                     -L '[stress]'" 
+                     -L [stress]" 
     -e="pc_debug_clang_trace 
         freertos_debug_clang_trace 
         pc_debug_clang_docker"
@@ -119,7 +119,7 @@ ci:linux_stress_gcc:
                      -j8 
                      --repeat-until-fail 300
                      --timeout 30
-                     -L '[stress]'" 
+                     -L [stress]" 
     -e="pc_debug_clang_trace 
         freertos_debug_clang_trace 
         pc_debug_clang_docker"
