@@ -1,11 +1,9 @@
 stages:
  - test_windows
  - test_linux
- - test_windows_stress_gcc
- - test_windows_stress_clang
- - test_linux_stress_gcc
- - test_linux_stress_clang
-
+ - test_windows_stress
+ - test_linux_stress
+ 
 ## windows ---------------------------------------------------------------------
 ci:windows:
  stage: test_windows
@@ -14,26 +12,49 @@ ci:windows:
   - windows
  script:
   - python -m venv venv
-  - .\venv\Scripts\activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - .\venv\Scripts\python -m builder -a 1
+  - .\\venv\\Scripts\\python pybuilder\\pycmakebuilder.py 
+    -d="$PWD" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j12
+                     --timeout 30" 
+    -e="pc_debug_clang_docker"
+ rules:
+    # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
 
 ci:windows_stress_gcc:
- stage: test_windows_stress_gcc
+ stage: test_windows_stress
  needs: []
  tags:
   - windows
  script:
   - python -m venv venv
-  - .\venv\Scripts\activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - .\venv\Scripts\python -m builder -a 5
+  - .\\venv\\Scripts\\python pybuilder\\pycmakebuilder.py
+    -d="$PWD" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j12 
+                     --repeat-until-fail 120
+                     --timeout 30" 
+    -e="pc_debug_clang_trace 
+        freertos_debug_clang_trace 
+        pc_debug_clang_docker"
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -45,29 +66,6 @@ ci:windows_stress_gcc:
     when: always
     allow_failure: false
 
-ci:windows_stress_clang:
- stage: test_windows_stress_clang
- needs: []
- tags:
-  - windows
- script:
-  - python -m venv venv
-  - .\venv\Scripts\activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - .\venv\Scripts\python -m builder -a 6
- rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: always
-    allow_failure: false
-  - if: $CI_PIPELINE_SOURCE == "schedule"
-    when: always
-    allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
-    when: always
-    allow_failure: false
 
 ## Linux -----------------------------------------------------------------------
 ci:linux:
@@ -77,50 +75,49 @@ ci:linux:
   - linux
  script:
   - python3 -m venv venv
-  - source ./venv/bin/activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - venv/bin/python3 -m builder -a 1
-  
-ci:linux_stress_gcc:
- stage: test_linux_stress_gcc
- needs: []
- tags:
-  - linux
- script:
-  - python3 -m venv venv
-  - source ./venv/bin/activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - venv/bin/python3 -m builder -a 5
+  - venv/bin/python3 pybuilder/pycmakebuilder.py 
+    -d="${PWD}" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j8
+                     --timeout 30" 
+    -e="pc_debug_clang_docker"
  rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: always
     allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
   - if: $CI_COMMIT_BRANCH == 'master'
     when: always
     allow_failure: false
+  - when: never
 
-ci:linux_stress_clang:
- stage: test_linux_stress_clang
+ci:linux_stress_gcc:
+ stage: test_linux_stress
  needs: []
  tags:
   - linux
  script:
   - python3 -m venv venv
-  - source ./venv/bin/activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - venv/bin/python3 -m builder -a 6
+  - venv/bin/python3 pybuilder/pycmakebuilder.py 
+    -d="${PWD}" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j8 
+                     --repeat-until-fail 300
+                     --timeout 30" 
+    -e="pc_debug_clang_trace 
+        freertos_debug_clang_trace 
+        pc_debug_clang_docker"
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
