@@ -52,10 +52,6 @@ class MutexBase {
       // need for debug only
       handle_ = nullptr;
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "MutexBase Dtor" << std::endl;
-#endif
   }
 
   operator bool() const { return handle_ != nullptr ? true : false; }
