@@ -1,11 +1,9 @@
 stages:
  - test_windows
  - test_linux
- - test_windows_stress_gcc
- - test_windows_stress_clang
- - test_linux_stress_gcc
- - test_linux_stress_clang
-
+ - test_windows_stress
+ - test_linux_stress
+ 
 ## windows ---------------------------------------------------------------------
 ci:windows:
  stage: test_windows
@@ -14,26 +12,29 @@ ci:windows:
   - windows
  script:
   - python -m venv venv
-  - .\venv\Scripts\activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - .\venv\Scripts\python -m builder -a 1
+  - .\\venv\\Scripts\\python pybuilder\\pycmakebuilder.py 
+    -d="$PWD" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j12" 
+    -e="pc_debug_clang_docker"
 
 ci:windows_stress_gcc:
- stage: test_windows_stress_gcc
+ stage: test_windows_stress
  needs: []
  tags:
   - windows
  script:
   - python -m venv venv
-  - .\venv\Scripts\activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - .\venv\Scripts\python -m builder -a 5
+  - .\\venv\\Scripts\\python pybuilder\\pycmakebuilder.py
+    -d="$PWD" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j12 
+                     --repeat-until-fail 200" 
+    -e="pc_debug_clang_trace 
+        freertos_debug_clang_trace 
+        pc_debug_clang_docker"
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
@@ -45,29 +46,6 @@ ci:windows_stress_gcc:
     when: always
     allow_failure: false
 
-ci:windows_stress_clang:
- stage: test_windows_stress_clang
- needs: []
- tags:
-  - windows
- script:
-  - python -m venv venv
-  - .\venv\Scripts\activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - .\venv\Scripts\python -m builder -a 6
- rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: always
-    allow_failure: false
-  - if: $CI_PIPELINE_SOURCE == "schedule"
-    when: always
-    allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
-    when: always
-    allow_failure: false
 
 ## Linux -----------------------------------------------------------------------
 ci:linux:
@@ -77,50 +55,29 @@ ci:linux:
   - linux
  script:
   - python3 -m venv venv
-  - source ./venv/bin/activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - venv/bin/python3 -m builder -a 1
-  
-ci:linux_stress_gcc:
- stage: test_linux_stress_gcc
- needs: []
- tags:
-  - linux
- script:
-  - python3 -m venv venv
-  - source ./venv/bin/activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - venv/bin/python3 -m builder -a 5
- rules:
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    when: always
-    allow_failure: false
-  - if: $CI_PIPELINE_SOURCE == "schedule"
-    when: always
-    allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
-    when: always
-    allow_failure: false
+  - venv/bin/python3 pybuilder/pycmakebuilder.py 
+    -d="${PWD}" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j8" 
+    -e="pc_debug_clang_docker"
 
-ci:linux_stress_clang:
- stage: test_linux_stress_clang
+ci:linux_stress_gcc:
+ stage: test_linux_stress
  needs: []
  tags:
   - linux
  script:
   - python3 -m venv venv
-  - source ./venv/bin/activate
-  - cd pybuilder
-  - pip install -r builder_requirements.txt
-  - cd ..
-  - deactivate
-  - venv/bin/python3 -m builder -a 6
+  - venv/bin/python3 pybuilder/pycmakebuilder.py 
+    -d="${PWD}" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j8 
+                     --repeat-until-fail 200" 
+    -e="pc_debug_clang_trace 
+        freertos_debug_clang_trace 
+        pc_debug_clang_docker"
  rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
