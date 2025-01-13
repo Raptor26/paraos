@@ -57,6 +57,9 @@ ci:windows_stress_gcc:
         freertos_debug_clang_trace 
         pc_debug_clang_docker"
  rules:
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: never
+    allow_failure: false
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
@@ -121,6 +124,9 @@ ci:linux_stress_gcc:
         freertos_debug_clang_trace 
         pc_debug_clang_docker"
  rules:
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: never
+    allow_failure: false
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: always
     allow_failure: false
