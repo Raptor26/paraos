@@ -47,8 +47,37 @@
 #include <cstring>
 #include <iostream>
 
+#include "paraos_critical.hpp"
+#include "paraos_runtime_profiler.hpp"
 #include "paraos_socket_udp.hpp"
 #include "paraos_thread.hpp"
+
+/// @brief Время ожидания входных данных, задаваемое для неблокирующего сокета,
+/// мс.
+inline constexpr size_t nonblocking_socket_timeout_ms{0};
+
+/// @brief Время ожидания входных данных, задаваемое для "пустого" сокета, мс.
+inline constexpr size_t empty_socket_timeout_ms{0};
+
+/// @brief Время ожидания входных данных, задаваемое для блокирующего сокета с
+/// ограниченным временем ожидания, мс.
+inline constexpr size_t blocking_socket_timeout_ms{1500};
+
+/// @brief Профилировщик для замера задержки ожидания входных данных у
+/// неблокирующего сокета.
+paraos::OsProfiler nonblocking_socket_profiler{};
+
+/// @brief Профилировщик для замера задержки ожидания входных данных у
+/// "пустого" сокета.
+paraos::OsProfiler empty_socket_profiler{};
+
+/// @brief Профилировщик для замера задержки ожидания входных данных у
+/// сокета с заданным временем ожидания.
+paraos::OsProfiler blocking_socket_profiler{};
+
+/// @brief Профилировщик для замера задержки ожидания входных данных у
+/// сокета с неограниченным временем ожидания.
+paraos::OsProfiler forever_blocking_socket_profiler{};
 
 /// @brief Размер массива для хранения принятых данных.
 inline constexpr size_t array_size = 50;
@@ -84,30 +113,110 @@ struct NonBlockingSocketThread : public paraos::Thread {
     socket_ptr_->Transmit(
         static_cast<void*>(handshake_data.data()), handshake_data.size());
 
+    nonblocking_socket_profiler.Start();
     // Для получения данных через сокет используется метод Receive().
     auto received_bytes_num = socket_ptr_->Receive(
         static_cast<void*>(receiver_array_.data()), receiver_array_.size());
 
+    nonblocking_socket_profiler.Stop();
+
+    auto waiting_time = nonblocking_socket_profiler.LastDurationMs();
+
     if (received_bytes_num == 0) {
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "NON BLOCKING SOCKET TIMED OUT:" << std::endl;
+        std::cout << "\tEXPECTED WAITING FOR " << nonblocking_socket_timeout_ms
+                  << " ms." << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
+
       timed_out_counter_++;
       if (timed_out_counter_ == 10) {
         socket_ptr_->Transmit(
             static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
-        std::cout << "Non blocking thread exiting" << std::endl;
+        std::cout << "\t~NON BLOCKING thread EXITING~" << std::endl;
         SetNeedWhile(false);
         nonblocking_thread_exit_flag = true;
       }
     } else {
-      std::cout << "Non blocking thread got data from server: "
-                << receiver_array_.data() << std::endl;
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "NON BLOCKING SOCKET GOT DATA FROM THE SERVER: "
+                  << receiver_array_.data() << std::endl;
+        std::cout << "\tEXPECTED WAITING FOR " << nonblocking_socket_timeout_ms
+                  << " ms." << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
     }
+
+    paraos::Thread::SleepMs(70);
   }
 
  private:
   paraos::UDPSocket* socket_ptr_;
   std::array<uint8_t, array_size> receiver_array_{0};
   size_t timed_out_counter_{0};
+};
+
+/// @brief Структура потока, использующего "пустой" неблокирующий сокет,
+/// необходима для проверки неблокирующего режима у сокета.
+struct EmptySocketThread : public paraos::Thread {
+  EmptySocketThread(
+      paraos::UDPSocket* socket_ptr,
+      const std::string thread_name = "Empty thread")
+      : paraos::Thread{thread_name, 512, paraos::ThreadPriority::kBelowNormal},
+        socket_ptr_{socket_ptr} {
+    SetNeedWhile(true);
+    Start();
+  }
+
+  void Run() override {
+    empty_socket_profiler.Start();
+    // Для получения данных через сокет используется метод Receive().
+    auto received_bytes_num = socket_ptr_->Receive(
+        static_cast<void*>(receiver_array_.data()), receiver_array_.size());
+
+    empty_socket_profiler.Stop();
+
+    auto waiting_time = empty_socket_profiler.LastDurationMs();
+
+    if (received_bytes_num == 0) {
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "EMPTY SOCKET TIMED OUT:" << std::endl;
+        std::cout << "\tEXPECTED WAITING FOR " << empty_socket_timeout_ms
+                  << " ms." << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
+    }
+
+    cycle_counter_++;
+
+    if (cycle_counter_ == 20) {
+      std::cout << "\t~EMPTY SOCKET EXITING.~" << std::endl;
+      SetNeedWhile(false);
+    }
+
+    paraos::Thread::SleepMs(800);
+  }
+
+ private:
+  paraos::UDPSocket* socket_ptr_;
+
+  std::array<uint8_t, array_size> receiver_array_{0};
+
+  size_t cycle_counter_{0};
 };
 
 /// @brief Структура потока, использующего сокет с заданным временем ожидания
@@ -127,23 +236,52 @@ struct BlockingSocketThread : public paraos::Thread {
     socket_ptr_->Transmit(
         static_cast<void*>(handshake_data.data()), handshake_data.size());
 
+    blocking_socket_profiler.Start();
+
     // Для получения данных через сокет используется метод Receive().
     auto received_bytes_num = socket_ptr_->Receive(
         static_cast<void*>(receiver_array_.data()), receiver_array_.size());
 
+    blocking_socket_profiler.Stop();
+
+    auto waiting_time = blocking_socket_profiler.LastDurationMs();
+
     if (received_bytes_num != 0) {
-      std::cout << "Blocking thread got data from server: "
-                << receiver_array_.data() << std::endl;
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "BLOCKING SOCKET GOT DATA FROM THE SERVER: "
+                  << receiver_array_.data() << std::endl;
+        std::cout << "\tEXPECTED WAITING FOR " << blocking_socket_timeout_ms
+                  << " ms." << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
+
       data_counter_++;
       if (data_counter_ == 7) {
         socket_ptr_->Transmit(
             static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
-        std::cout << "Blocking thread exiting" << std::endl;
+        std::cout << "\t~BLOCKING THREAD EXITING~" << std::endl;
         SetNeedWhile(false);
         blocking_thread_exit_flag = true;
       }
+    } else {
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "BLOCKING SOCKET TIMED OUT:" << std::endl;
+        std::cout << "\tEXPECTED WAITING FOR " << blocking_socket_timeout_ms
+                  << " ms." << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
     }
+
+    paraos::Thread::SleepMs(50);
   }
 
  private:
@@ -157,7 +295,7 @@ struct BlockingSocketThread : public paraos::Thread {
 struct ForeverBlockingSocketThread : public paraos::Thread {
   ForeverBlockingSocketThread(
       paraos::UDPSocket* socket_ptr,
-      const std::string thread_name = "Non blocking thread")
+      const std::string thread_name = "Forever blocking thread")
       : paraos::Thread{thread_name, 512, paraos::ThreadPriority::kNormal},
         socket_ptr_{socket_ptr} {
     SetNeedWhile(true);
@@ -169,13 +307,40 @@ struct ForeverBlockingSocketThread : public paraos::Thread {
     socket_ptr_->Transmit(
         static_cast<void*>(handshake_data.data()), handshake_data.size());
 
+    forever_blocking_socket_profiler.Start();
+
     // Для получения данных через сокет используется метод Receive().
     auto received_bytes_num = socket_ptr_->Receive(
-        static_cast<void*>(receiver_array.data()), receiver_array.size());
+        static_cast<void*>(receiver_array_.data()), receiver_array_.size());
+
+    forever_blocking_socket_profiler.Stop();
+
+    auto waiting_time = forever_blocking_socket_profiler.LastDurationMs();
 
     if (received_bytes_num != 0) {
-      std::cout << "Forever blocking thread got data from server: "
-                << receiver_array.data() << std::endl;
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "FOREVER BLOCKING SOCKET GOT DATA FROM THE SERVER: "
+                  << receiver_array_.data() << std::endl;
+        std::cout << "\tEXPECTED WAITING FOREVER" << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
+
+    } else {
+      // Данный участок кода никогда не должен быть вызван, поскольку сокет
+      // имеет неограниченное время ожидания входных данных.
+      {
+        const paraos::CriticalSection critical_section;
+        std::cout << std::endl;
+
+        std::cout << "FOREVER BLOCKING SOCKET TIMED OUT:" << std::endl;
+        std::cout << "\tEXPECTED WAITING FOREVER" << std::endl;
+        std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
+                  << std::endl;
+      }
     }
 
     // Если потоки с ограниченным временем ожидания завершили свою работу,
@@ -185,15 +350,16 @@ struct ForeverBlockingSocketThread : public paraos::Thread {
       socket_ptr_->Transmit(
           static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
-      std::cout << "Other threads finished, forever blocking thread exiting. "
-                << std::endl;
+      std::cout
+          << "\t~Other threads finished, FOREVER BLOCKING THREAD EXITING.~"
+          << std::endl;
       SetNeedWhile(false);
     }
   }
 
  private:
   paraos::UDPSocket* socket_ptr_;
-  std::array<uint8_t, array_size> receiver_array{0};
+  std::array<uint8_t, array_size> receiver_array_{0};
 };
 
 auto main() -> int {
@@ -202,17 +368,30 @@ auto main() -> int {
 
   nonblocking_attrs.port = 8080;
   // Необходимо указать значение времени ожидания входных данных равное нулю.
-  nonblocking_attrs.recv_timeout_ms = 0;
+  nonblocking_attrs.recv_timeout_ms = nonblocking_socket_timeout_ms;
 
   // Инициализация неблокирующего сокета.
   paraos::UDPSocket nonblocking_socket{nonblocking_attrs};
+
+  // Инициализация "пустого" неблокирующего сокета, который, в рамках данного
+  // примера, не должен получать никаких данных. В таком случае можно будет
+  // проверить работу сокета в неблокирующем режиме.
+  paraos::UDPSocketAttrs empty_socket_attrs{};
+
+  // Порт "пустого" сервера, который не будет отправлять никакие данные.
+  empty_socket_attrs.port = 9090;
+  // Необходимо указать значение времени ожидания входных данных равное нулю.
+  empty_socket_attrs.recv_timeout_ms = empty_socket_timeout_ms;
+
+  // Инициализация неблокирующего сокета.
+  paraos::UDPSocket empty_socket{empty_socket_attrs};
 
   // Аттрибуты для инициализации сокета с заданным временем ожидания в мс.
   paraos::UDPSocketAttrs blocking_attrs{};
 
   blocking_attrs.port = 8080;
   // Время ожидания для каждой итерации получения входных данных - полсекунды.
-  blocking_attrs.recv_timeout_ms = 500;
+  blocking_attrs.recv_timeout_ms = blocking_socket_timeout_ms;
 
   // Инициализация сокета с заданным временем ожидания входных данных.
   paraos::UDPSocket blocking_socket{blocking_attrs};
@@ -234,6 +413,7 @@ auto main() -> int {
 
   // Инициализация потоков, работающих с созданными сокетами.
   NonBlockingSocketThread non_blocking_thread{&nonblocking_socket};
+  EmptySocketThread empty_socket_thread{&empty_socket};
   BlockingSocketThread blocking_thread{&blocking_socket};
   ForeverBlockingSocketThread forever_blocking_thread{&forever_blocking_socket};
 

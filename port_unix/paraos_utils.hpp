@@ -39,7 +39,7 @@ constexpr std::size_t max_delay{std::numeric_limits<std::size_t>::max()};
 #define MICROSECONDS_PER_SECOND (1000000LL)   /**< Microseconds per second. */
 #define NANOSECONDS_PER_SECOND (1000000000LL) /**< Nanoseconds per second. */
 #define NANOSECONDS_PER_MILISECONDS \
-  (1000000LL) /**< Nanoseconds per microseconds. */
+  (1000000LL) /**< Nanoseconds per miliseconds. */
 #define MILISECONDS_PER_SECOND (1000LL)
 
 #define MICROSECONDS_PER_MILISECONDS (1000LL)

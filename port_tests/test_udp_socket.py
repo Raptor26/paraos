@@ -7,13 +7,23 @@ if __name__ == '__main__':
     clients_set = set()
     # Время "сна" потока сервера. Данный параметр необходим для эмуляции
     # задержек при ожидании клиентами входных данных.
-    program_timeout_sec = 0.9
+    program_timeout_sec = 2
+
+    # Счётчик количества итераций цикла сервера. Необходим для ускорения
+    # его работы после определённого количества итераций.
+    iterations_counter = 0
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_socket.bind(('127.0.0.1', 8080))
 
+    # Инициализация "пустого" сервера, который не будет выполнять отправку
+    # данных. Необходим для проверки неблокирующего режима сокета.
+    empty_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    empty_server_socket.bind(('127.0.0.1', 9090))
+
     while True:
         client_data = server_socket.recvfrom(512)
+
         # Если получены валидные данные от клиента
         if client_data:
             print(f'Got data from client: {client_data}')
@@ -25,7 +35,7 @@ if __name__ == '__main__':
 
                 # Поскольку клиенты из примера начинают отключаться,
                 # можно ускорить работу скрипта.
-                program_timeout_sec = 0.3
+                program_timeout_sec = 0.01
             else:
                 # В случае получения валидных данных от клиента необходимо
                 # запомнить его адрес для отправки ответа
@@ -39,13 +49,19 @@ if __name__ == '__main__':
                     server_socket.sendto(
                         str.encode(f'Server data for client {client}'), client
                     )
+                    # Вызов метода для принудительного "сна" потока для
+                    # эмуляции задержек на сервере.
+                    time.sleep(program_timeout_sec)
             # Если все клиенты отключились
             else:
                 print('All clients disconnected!')
                 break
 
-        # Вызов метода для принудительного "сна" потока для эмуляции
-        # задержек на сервере.
-        time.sleep(program_timeout_sec)
+        iterations_counter += 1
+
+        # Ускорение работы сервера
+        if iterations_counter == 5:
+            program_timeout_sec = 0.2
 
     server_socket.close()
+    empty_server_socket.close()
