@@ -37,6 +37,7 @@
 #define PARAOS_TESTING_SEMAPHORE_HPP
 
 #include <cstdint>
+#include <utility>
 
 #include "etl/atomic.h"
 #include "paraos_attr.h"
@@ -61,12 +62,39 @@ class TestingSemaphore {
  public:
   /// @brief Testing semaphore constructor.
   /// @param[in] attrs: Attributes for class initialization.
-  TestingSemaphore(const TestingSemaphoreAttr& attrs)
+  TestingSemaphore(const TestingSemaphoreAttr &attrs)
       : semaphore_counter_{attrs.initial_count}, max_count_{attrs.max_count} {
     if ((max_count_ > 0) && (semaphore_counter_ <= max_count_)) {
       is_init_succeeded_ = true;
     }
   }
+
+  /// @brief Move ctor.
+  TestingSemaphore(TestingSemaphore &&other) {
+    if (this != &other) {
+      this->is_init_succeeded_ = other.is_init_succeeded_;
+      this->semaphore_counter_ = other.semaphore_counter_.load();
+      this->max_count_ = other.max_count_.load();
+    }
+  }
+
+  /// @brief Move assignment.
+  TestingSemaphore &operator=(TestingSemaphore &&other) {
+    if (this != &other) {
+      this->~TestingSemaphore();
+      this->is_init_succeeded_ = other.is_init_succeeded_;
+      this->semaphore_counter_ = other.semaphore_counter_.load();
+      this->max_count_ = other.max_count_.load();
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  TestingSemaphore(const TestingSemaphore &other) = delete;
+  TestingSemaphore &operator=(const TestingSemaphore &other) = delete;
+
+  virtual ~TestingSemaphore() = default;
 
   /// @brief Take Semaphore.
   ///
@@ -113,7 +141,7 @@ class TestingSemaphore {
 
   operator bool() const { return is_init_succeeded_; }
 
- private:
+ protected:
   etl::atomic<std::size_t> semaphore_counter_;
 
   etl::atomic<std::size_t> max_count_;
@@ -124,13 +152,36 @@ class TestingSemaphore {
 /// @brief Binary semaphore class.
 ///
 /// @note Only one thread can execute the code protected with binary semaphore.
-class BinaryTestingSemaphore : public TestingSemaphore {
+class BinaryTestingSemaphore final : public TestingSemaphore {
  public:
   /// @brief Binary semaphore constructor.
   BinaryTestingSemaphore() : BinaryTestingSemaphore{TestingSemaphoreAttr{}} {}
 
+  /// @brief Move ctor.
+  BinaryTestingSemaphore(BinaryTestingSemaphore &&other)
+      : TestingSemaphore{std::move(other)} {}
+
+  /// @brief Move assignment.
+  BinaryTestingSemaphore &operator=(BinaryTestingSemaphore &&other) {
+    if (this != &other) {
+      this->~BinaryTestingSemaphore();
+      this->is_init_succeeded_ = other.is_init_succeeded_;
+      this->semaphore_counter_ = other.semaphore_counter_.load();
+      this->max_count_ = other.max_count_.load();
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  BinaryTestingSemaphore(const BinaryTestingSemaphore &other) = delete;
+  BinaryTestingSemaphore &operator=(const BinaryTestingSemaphore &other) =
+      delete;
+
+  ~BinaryTestingSemaphore() = default;
+
  private:
-  BinaryTestingSemaphore(const TestingSemaphoreAttr& attrs)
+  BinaryTestingSemaphore(const TestingSemaphoreAttr &attrs)
       : TestingSemaphore{attrs} {}
 };
 
