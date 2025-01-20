@@ -41,18 +41,20 @@ namespace paraos {
 
 /// @brief Аттрибуты семафора, передаваемые ему при инициализации.
 struct SemaphoreAttr {
-  std::size_t max_count{1u};
-  std::size_t initial_count{0u};
+  std::size_t max_count{1U};
+  std::size_t initial_count{0U};
 };
 
-constexpr std::size_t initial_count = 0u;
+constexpr std::size_t initial_count = 0U;
 
 /// @brief Base semaphore class. Provides Take and Give operations. Designed for
 /// inheritance only, for example, by classes such as SemaphoreCounting and
 /// SemaphoreBinary.
 class SemaphoreBase {
  public:
-  operator bool() const noexcept { return handle_ != nullptr ? true : false; }
+  explicit operator bool() const noexcept {
+    return static_cast<bool>(handle_ != nullptr);
+  }
 
   /// @brief Take Semaphore.
   ///
@@ -63,8 +65,8 @@ class SemaphoreBase {
   ///
   /// @return Return true if semaphore was taken under timeout, false in
   /// otherwise.
-  ISRbool Take(
-      std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept {
+  auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept
+      -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
 
     ISRbool status;
@@ -74,18 +76,18 @@ class SemaphoreBase {
       // Not need call xSemaphoreTakeRecursive().
       // xSemaphoreTake() may used with SemaphoreCounting and SemaphoreBinary
       // classes.
-      status.is_success_ =
-          xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms));
+      status.SetSuccessStatus(static_cast<bool>(
+          xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms))));
     } else {
       BaseType_t xHigherPriorityTaskWoken{pdFALSE};
 
       // xSemaphoreTakeFromISR() may used with SemaphoreCounting and
       // SemaphoreBinary classes.
-      status.is_success_ =
-          xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken);
+      status.SetSuccessStatus(static_cast<bool>(
+          xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken)));
 
       if (xHigherPriorityTaskWoken == pdTRUE) {
-        status.is_need_switch_context_ = true;
+        status.SetSwitchContextStatus(true);
       }
     }
 
@@ -98,7 +100,7 @@ class SemaphoreBase {
   ///
   /// @return Return operation status. ISRbool contained value indicate is need
   /// switch context. Useful when Give() called from isr.
-  ISRbool Give(bool from_isr = false) noexcept {
+  auto Give(bool from_isr = false) noexcept -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
 
     ISRbool status;
@@ -108,34 +110,39 @@ class SemaphoreBase {
       // Not need call xSemaphoreGiveRecursive().
       // xSemaphoreGive() may used with SemaphoreCounting and SemaphoreBinary
       // classes.
-      status.is_success_ = xSemaphoreGive(handle_);
+      status.SetSuccessStatus(static_cast<bool>(xSemaphoreGive(handle_)));
     } else {
       BaseType_t higher_priority_task_woken{pdFALSE};
 
       // xSemaphoreGiveFromISR() may used with SemaphoreCounting and
       // SemaphoreBinary classes.
-      status.is_success_ =
-          xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken);
+      status.SetSuccessStatus(static_cast<bool>(
+          xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken)));
 
       if (higher_priority_task_woken == pdTRUE) {
-        status.is_need_switch_context_ = true;
+        status.SetSwitchContextStatus(true);
       }
     }
 
     return status;
   }
 
+  /// @brief Semaphore non-copyable
+  SemaphoreBase(const SemaphoreBase &other) = delete;
+  auto operator=(const SemaphoreBase &other) -> SemaphoreBase & = delete;
+
  protected:
   SemaphoreBase() = default;
+
   virtual ~SemaphoreBase() {
-    if (handle_) {
+    if (handle_ != nullptr) {
       vSemaphoreDelete(handle_);
       handle_ = nullptr;
     }
   }
 
   /// @brief Move ctor.
-  SemaphoreBase(SemaphoreBase &&other) {
+  SemaphoreBase(SemaphoreBase &&other) noexcept {
     if (this != &other) {
       this->handle_ = other.handle_;
       other.handle_ = nullptr;
@@ -143,7 +150,7 @@ class SemaphoreBase {
   }
 
   /// @brief Move assignment.
-  SemaphoreBase &operator=(SemaphoreBase &&other) {
+  auto operator=(SemaphoreBase &&other) noexcept -> SemaphoreBase & {
     if (this != &other) {
       this->~SemaphoreBase();
       this->handle_ = other.handle_;
@@ -153,28 +160,28 @@ class SemaphoreBase {
     return *this;
   }
 
-  /// @brief Semaphore non-copyable
-  SemaphoreBase(const SemaphoreBase &other) = delete;
-  SemaphoreBase &operator=(const SemaphoreBase &other) = delete;
-
-  SemaphoreHandle_t handle_;
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put this variable into private section, because it's used in
+  // derived classes.
+  SemaphoreHandle_t handle_{nullptr};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 /// @brief Counting semaphore. Max call Give() determine in attr.max_count.
 struct SemaphoreCounting final : public SemaphoreBase {
-  SemaphoreCounting(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
+  explicit SemaphoreCounting(const SemaphoreAttr &attr) noexcept {
     handle_ = xSemaphoreCreateCounting(attr.max_count, attr.initial_count);
   }
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
-  ~SemaphoreCounting() = default;
+  ~SemaphoreCounting() override = default;
 
   /// @brief Move ctor.
-  SemaphoreCounting(SemaphoreCounting &&other)
+  SemaphoreCounting(SemaphoreCounting &&other) noexcept
       : SemaphoreBase(std::move(other)) {}
 
   /// @brief Move assignment.
-  SemaphoreCounting &operator=(SemaphoreCounting &&other) {
+  auto operator=(SemaphoreCounting &&other) noexcept -> SemaphoreCounting & {
     if (this != &other) {
       this->~SemaphoreCounting();
       this->handle_ = other.handle_;
@@ -186,7 +193,8 @@ struct SemaphoreCounting final : public SemaphoreBase {
 
   /// @brief Semaphore non-copyable
   SemaphoreCounting(const SemaphoreCounting &other) = delete;
-  SemaphoreCounting &operator=(const SemaphoreCounting &other) = delete;
+  auto operator=(const SemaphoreCounting &other)
+      -> SemaphoreCounting & = delete;
 };
 
 /// @brief The binary semaphore is created in the 'empty' state,
@@ -200,7 +208,7 @@ struct SemaphoreCounting final : public SemaphoreBase {
 struct SemaphoreBinary final : public SemaphoreBase {
   SemaphoreBinary() noexcept : SemaphoreBinary{SemaphoreAttr{}} {}
 
-  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
+  explicit SemaphoreBinary(const SemaphoreAttr &attr) noexcept {
     handle_ = xSemaphoreCreateBinary();
 
     if (attr.initial_count > 0) {
@@ -209,13 +217,14 @@ struct SemaphoreBinary final : public SemaphoreBase {
   }
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
-  ~SemaphoreBinary() = default;
+  ~SemaphoreBinary() override = default;
 
   /// @brief Move ctor.
-  SemaphoreBinary(SemaphoreBinary &&other) : SemaphoreBase(std::move(other)) {}
+  SemaphoreBinary(SemaphoreBinary &&other) noexcept
+      : SemaphoreBase(std::move(other)) {}
 
   /// @brief Move assignment.
-  SemaphoreBinary &operator=(SemaphoreBinary &&other) {
+  auto operator=(SemaphoreBinary &&other) noexcept -> SemaphoreBinary & {
     if (this != &other) {
       this->~SemaphoreBinary();
       this->handle_ = other.handle_;
@@ -227,7 +236,7 @@ struct SemaphoreBinary final : public SemaphoreBase {
 
   /// @brief Semaphore non-copyable
   SemaphoreBinary(const SemaphoreBinary &other) = delete;
-  SemaphoreBinary &operator=(const SemaphoreBinary &other) = delete;
+  auto operator=(const SemaphoreBinary &other) -> SemaphoreBinary & = delete;
 };
 }  // namespace paraos
 

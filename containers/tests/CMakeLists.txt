@@ -77,6 +77,38 @@ if(benchmark_FOUND)
                                                       paraos::paraos)
 endif()
 
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY
+                                                     "${DO_CLANG_TIDY}")
+
+    if(THREAD_ENABLE)
+      set_target_properties(
+        test_message_multithread_many_producer_many_consumers
+        PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_lwrb_multithread_spsc
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_multi_ringbuff_mpmc
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_queue_blocking_spmc
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_queue_blocking_mpsc
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_queue_blocking_mpmc
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+    endif()
+  else()
+    message(STATUS "clang-tidy not found.")
+  endif()
+endif()
+
 # Coverage ---------------------------------------------------------------------
 # ctest  --test-dir build/pc_debug_gcc  -T Test -T Coverage
 # https://stackoverflow.com/questions/52255589/code-coverage-analysis-using-codecoverage-cmake-with-multiple-targets

@@ -26,28 +26,33 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "paraos_critical.hpp"
 #include "paraos_thread.hpp"
 
-static std::size_t cnt{0};
+constexpr std::size_t thread_default_stack_depth{3072};
 
+namespace {
+std::vector<const paraos::Thread*> thread_ptr;
+std::size_t cnt{0};
+
+#if defined(FREERTOS)
 /// @brief Hack for unit test. When used freeRTOS, we can't return from main
-/// regular way after  paraos::Thread::StartScheduler() called. For finish test
-/// program, we need call exit(). But in this case, sanitizer print warning with
-/// `Potential Memory Leak`. For reduced sanitizer warnings, forced call dtor
-/// for complete threads. Container below needed to force Dtor call for threads
-/// that have complete their execution in ExitAfterTestComplete().
-std::vector<paraos::Thread*> thread_ptr;
-
+/// regular way after  paraos::Thread::StartScheduler() called. For finish
+/// test program, we need call exit(). But in this case, sanitizer print
+/// warning with `Potential Memory Leak`. For reduced sanitizer warnings,
+/// forced call dtor for complete threads. Container below needed to force
+/// Dtor call for threads that have complete their execution in
+/// ExitAfterTestComplete().
 void ExitAfterTestComplete() {
   static bool threads_deleted_flag{false};
 
   if (cnt == 3) {
-    std::cout << "Deleting all threads..." << std::endl;
+    std::cout << "Deleting all threads..." << "\n";
 
-    for (auto thread : thread_ptr) {
+    for (const auto* thread : thread_ptr) {
       // Force call Dtor for registered threads befor call exit(EXIT_SUCCESS);
       thread->~Thread();
     }
@@ -56,43 +61,53 @@ void ExitAfterTestComplete() {
     cnt++;
   }
 
-  if (cnt == 4 && threads_deleted_flag == true) {
-    std::cout << "Exiting program..." << std::endl;
+  if (cnt == 4 && threads_deleted_flag) {
+    std::cout << "Exiting program..." << "\n";
     exit(EXIT_SUCCESS);
   }
 }
+#endif
+}  // namespace
 
+// String copy here is needed because of the delayed thread initialization -
+// address of it's name could be invalid later.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 struct TestMessage : public paraos::Thread {
-  TestMessage(const std::string name = "default thread name")
-      : paraos::Thread{name, 3072ull, paraos::ThreadPriority::kNormal, true} {
+  explicit TestMessage(const std::string name = "default thread name")
+      : paraos::Thread{
+            name, thread_default_stack_depth, paraos::ThreadPriority::kNormal,
+            true} {
     Start();
   }
   void Run() override {
     const paraos::CriticalSection critical;
-    std::cout << Name() << " RTOS thread Cnt is " << cnt << std::endl;
+    std::cout << Name() << " RTOS thread Cnt is " << cnt << "\n";
     ++cnt;
   }
 };
+// NOLINTEND(performance-unnecessary-value-param)
 
-int main() {
+auto main() -> int {
 #if defined(FREERTOS)
+#include "paraos_utils.hpp"
+
   // ExitAfterTestComplete will be called by scheduler in idle task after no
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
 
-  TestMessage print1{"Thread 1"};
+  const TestMessage print1{"Thread 1"};
   thread_ptr.push_back(&print1);
 
-  TestMessage print2{"Thread 2"};
+  const TestMessage print2{"Thread 2"};
   thread_ptr.push_back(&print2);
 
-  TestMessage print3{"Thread 3"};
+  const TestMessage print3{"Thread 3"};
   thread_ptr.push_back(&print3);
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
 
-  std::cout << "Exiting program..." << std::endl;
+  std::cout << "Exiting program..." << "\n";
   return EXIT_SUCCESS;
 }

@@ -25,6 +25,10 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <cstdint>
+
+#include "etl/task.h"
 #include "paraos_thread_cooperative_scheduling.hpp"
 
 TEST(Cooperative, Create) {
@@ -33,7 +37,7 @@ TEST(Cooperative, Create) {
   paraos::CooperativeSchedulingAttr attr;
   attr.is_need_loop = false;
   attr.is_need_start = false;
-  paraos::CooperativeScheduling<max_task_numb> cooperative{attr};
+  const paraos::CooperativeScheduling<max_task_numb> cooperative{attr};
 }
 
 TEST(Cooperative, TryPutOverflowTasks) {
@@ -45,7 +49,9 @@ TEST(Cooperative, TryPutOverflowTasks) {
 
   struct test_task_t : public etl::task {
     test_task_t() : etl::task{1} {}
-    uint32_t task_request_work() const override { return 0; }
+    [[nodiscard]] auto task_request_work() const -> uint32_t override {
+      return 0;
+    }
     void task_process_work() override {}
   };
 

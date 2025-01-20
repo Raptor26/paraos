@@ -23,18 +23,32 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 
+// Useless check here because static analyzer cant see usage of some headers,
+// but they're actually used in tis file.
+// NOLINTBEGIN(misc-include-cleaner)
+#include "etl/function.h"
+#include "etl/scheduler.h"
+#include "etl/task.h"
+#include "paraos_runtime_profiler.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_thread_cooperative_scheduling.hpp"
+#include "paraos_utils.hpp"
+// NOLINTEND(misc-include-cleaner)
 
-using namespace paraos;
-
+namespace {
 bool is_test_complete{false};
 
 // Task 1 set highest priority in set. It will run first.
-etl::task_priority_t task1_priority{10};
-etl::task_priority_t task2_priority{9};
-etl::task_priority_t task3_priority{8};
+constexpr etl::task_priority_t task1_priority{10};
+constexpr etl::task_priority_t task2_priority{9};
+constexpr etl::task_priority_t task3_priority{8};
+
+constexpr size_t max_tasks_number{10};
+}  // namespace
 
 class Task1 : public etl::task {
  public:
@@ -42,19 +56,19 @@ class Task1 : public etl::task {
   Task1() : task(task1_priority), work(3) {}
 
   //*************************************
-  uint32_t task_request_work() const {
+  [[nodiscard]] auto task_request_work() const -> uint32_t override {
     return work;  // How much work do we still have to do? This could be a
                   // message queue length.
   }
 
   //*************************************
-  void task_process_work() {
-    std::cout << "Task1 : Process work : " << work << std::endl;
+  void task_process_work() override {
+    std::cout << "Task1 : Process work : " << work << "\n";
     --work;
   }
 
  private:
-  uint32_t work;
+  uint32_t work{0};
 };
 
 class Task2 : public etl::task {
@@ -63,19 +77,19 @@ class Task2 : public etl::task {
   Task2() : task(task2_priority), work(3) {}
 
   //*************************************
-  uint32_t task_request_work() const {
+  [[nodiscard]] auto task_request_work() const -> uint32_t override {
     return work;  // How much work do we still have to do? This could be a
                   // message queue length.
   }
 
   //*************************************
-  void task_process_work() {
-    std::cout << "Task2 : Process work : " << work << std::endl;
+  void task_process_work() override {
+    std::cout << "Task2 : Process work : " << work << "\n";
     --work;
   }
 
  private:
-  uint32_t work;
+  uint32_t work{0};
 };
 
 class Task3 : public etl::task {
@@ -84,31 +98,31 @@ class Task3 : public etl::task {
   Task3() : task(task3_priority), work(1) {}
 
   //*************************************
-  uint32_t task_request_work() const {
+  [[nodiscard]] auto task_request_work() const -> uint32_t override {
     return work;  // How much work do we still have to do? This could be a
                   // message queue length.
   }
 
   //*************************************
-  void task_process_work() {
-    std::cout << "Task3 : Process work : " << work << std::endl;
+  void task_process_work() override {
+    std::cout << "Task3 : Process work : " << work << "\n";
     --work;
   }
 
  private:
-  uint32_t work;
+  uint32_t work{0};
 };
 
 class Idle {
  public:
   //*************************************
-  Idle(etl::ischeduler& scheduler_) : scheduler(scheduler_) {}
+  explicit Idle(etl::ischeduler& scheduler_) : scheduler(scheduler_) {}
 
   //*************************************
   void IdleCallback() {
-    std::cout << "Idle callback" << std::endl;
+    std::cout << "Idle callback" << "\n";
     scheduler.exit_scheduler();
-    std::cout << "Exiting the scheduler" << std::endl;
+    std::cout << "Exiting the scheduler" << "\n";
 
     // Call exit(EXIT_SUCCESS) in ExitAfterTestComplete() for force break system
     // process (in freertos port only).
@@ -125,10 +139,13 @@ class Idle {
 // nothing calls). It's help to reduced memory check warnings.
 // -----------------------------------------------------------------------------
 
-CooperativeScheduling<10, etl::scheduler_policy_highest_priority>
-    cooperative_scheduler{CooperativeSchedulingAttr{
-        "Cooperative", GetStackMinimumSizeInBytes() + 1024,
-        ThreadPriority::kNormal, embedded_timer_empty, false, true}};
+namespace {
+paraos::CooperativeScheduling<
+    max_tasks_number, etl::scheduler_policy_highest_priority>
+    cooperative_scheduler{paraos::CooperativeSchedulingAttr{
+        "Cooperative", paraos::GetStackMinimumSizeInBytes(),
+        paraos::ThreadPriority::kNormal, paraos::embedded_timer_empty, false,
+        true}};
 
 Idle idle_handle(cooperative_scheduler.GetScheduler());
 
@@ -147,8 +164,9 @@ void ExitAfterTestComplete() {
   }
 }
 #endif
+}  // namespace
 
-int main() {
+auto main() -> int {
 #if defined(FREERTOS)
   // ExitAfterTestComplete will be called by scheduler in idle task after no
   // user task ready for execute.
@@ -165,8 +183,8 @@ int main() {
 
   cooperative_scheduler.NotifyGive();
 
-  Thread::StartScheduler();
-  Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return EXIT_SUCCESS;
 }

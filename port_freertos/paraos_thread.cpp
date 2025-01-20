@@ -26,12 +26,22 @@
 
 #include "paraos_thread.hpp"
 
-#include "gsl/gsl"
+#include <cstddef>
+#include <string>
+#include <string_view>
+
+#include "paraos_attr.h"
+#include "paraos_check.h"
+#include "paraos_critical.hpp"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
+#include "portmacro.h"
+#include "task.h"
 
 namespace paraos {
-
+// String copy here is needed because of the delayed thread initialization -
+// address of it's name could be invalid later.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 Thread::Thread(
     const std::string name, std::size_t stack_depth, ThreadPriority priority,
     bool is_joinable)
@@ -42,17 +52,18 @@ Thread::Thread(
   // Now Dtor can delete thread.
   is_thread_complete_sem_.Give();
 }
+// NOLINTEND(performance-unnecessary-value-param)
 
 Thread::~Thread() {
-  is_thread_makeable_ = false;
+  is_thread_makeable_ = static_cast<BoolAtomic>(false);
 
   // Destructor initialize competition thread loop for safety destruct object.
   SetNeedWhile(false);
 
-  if (handle_) {
+  if (handle_ != nullptr) {
     // Dtor free resources only after thread body in MyThreadFunction() complete
     // execute.
-    std::size_t delay_ms{4000};
+    const std::size_t delay_ms{4000};
 
     // Destructor restore execute ony if  MyThreadFunction() complete
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
@@ -63,28 +74,26 @@ Thread::~Thread() {
         "If you create thread, you must call Thread::StartScheduler() in "
         "main(), otherwise, destructor can't safely delete thread");
 
-#if 1
     // If we ended up here, that's mean MyThreadFunction() complete and
     // ExitThread() was called. That's mean thread already destroyed and handle_
     // == nullptr.
     // If handle_ != nullptr, that's mean user code don't call Thread::Start()
     // and thread don't was created. In this case nothing thread for delete.
     PARAOS_CHECK_ASSERT(handle_ || !handle_);
-#endif
   }
   paraosTRACE_MESSAGE("Thread deleted: " << name_);
 }
 
-std::string_view Thread::Name() const { return name_; }
+[[nodiscard]] auto Thread::Name() const -> std::string_view { return name_; }
 
-TaskHandle_t Thread::Handle() const { return handle_; }
+[[nodiscard]] auto Thread::Handle() const -> TaskHandle_t { return handle_; }
 
 void Thread::DelayMs(std::size_t sleep_ms) {
-  vTaskDelay(static_cast<TickType_t>(PARAOS_ConvertMsToTicks(sleep_ms)));
+  vTaskDelay(PARAOS_ConvertMsToTicks(sleep_ms));
 }
 
 void Thread::SleepMs(std::size_t sleep_ms) {
-  vTaskDelay(static_cast<TickType_t>(PARAOS_ConvertMsToTicks(sleep_ms)));
+  vTaskDelay(PARAOS_ConvertMsToTicks(sleep_ms));
 }
 
 void Thread::Start() {
@@ -99,7 +108,7 @@ void Thread::Start() {
 auto Thread::Join() -> bool {
   bool join_result{false};
 
-  if (is_joinable_ && handle_) {
+  if (is_joinable_ && handle_ != nullptr) {
     join_result = true;
 
     /* Wait for the joining thread to finish. Because this call waits forever,
@@ -114,28 +123,6 @@ auto Thread::Join() -> bool {
 
   return join_result;
 }
-
-#if 0
-auto Thread::Detach() -> bool {
-  bool detach_result = false;
-  if (is_joinable_ == true && is_thread_created_ == true) {
-    const paraos::CriticalSection critical;
-    auto thread_state = eTaskGetState(handle_);
-    if (thread_state != eDeleted && thread_state != eInvalid) {
-      if (thread_state == eSuspended) {
-        is_thread_created_ = false;
-        detach_result = true;
-        vTaskDelete(handle_);
-      } else {
-        is_joinable_ = false;
-        detach_result = true;
-      }
-    }
-  }
-
-  return detach_result;
-}
-#endif
 
 void Thread::Run() {
   // Если сработал данный PARAOS_CHECK_ASSERT, то конструктор производного от
@@ -172,13 +159,13 @@ void Thread::Run() {
 
 void Thread::StartScheduler() {
   paraosTRACE_MESSAGE("Start Scheduler");
-  is_scheduler_started_ = true;
+  is_scheduler_started_ = static_cast<BoolAtomic>(true);
   vTaskStartScheduler();
 }
 
 void Thread::StopScheduler() {
   paraosTRACE_MESSAGE("Stop Scheduler");
-  is_scheduler_started_ = false;
+  is_scheduler_started_ = static_cast<BoolAtomic>(false);
   vTaskEndScheduler();
 }
 
@@ -187,7 +174,7 @@ void Thread::DeleteAll() {
   // and unix ports.
 }
 
-bool Thread::SetPriority(const ThreadPriority priority) {
+auto Thread::SetPriority(const ThreadPriority priority) -> bool {
   bool result = false;
 
   if (priority < ThreadPriority::kMaxNum) {
@@ -200,21 +187,23 @@ bool Thread::SetPriority(const ThreadPriority priority) {
 }
 
 auto Thread::SetNeedWhile(bool status) -> bool {
-  is_need_while_ = status;
+  is_need_while_ = static_cast<BoolAtomic>(status);
 
   return true;
 }
 
-auto Thread::IsSchedulerStarted() -> bool { return is_scheduler_started_; }
+auto Thread::IsSchedulerStarted() -> bool {
+  return static_cast<bool>(is_scheduler_started_);
+}
 
 void Thread::Make() {
   const paraos::CriticalSection critical;
 
   // Guard to prevent double thread creation for single 'Thread' object.
-  if (!handle_) {
+  if (handle_ == nullptr) {
     // Sem was given in Ctor. Now we take sem. That's mean, Dtor can delete
     // object only after MyThreadFunction() complete.
-    constexpr std::size_t delay_ms{0u};
+    constexpr std::size_t delay_ms{0U};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
     PARAOS_ATTR_UNUSED_VAR(is_sem_taken);
 
@@ -229,7 +218,9 @@ void Thread::Make() {
   }
 }
 
-auto Thread::IsNeedWhile() const -> bool { return is_need_while_; }
+auto Thread::IsNeedWhile() const -> bool {
+  return static_cast<bool>(is_need_while_);
+}
 
 void Thread::ExitThread() {
   is_thread_complete_sem_.Give();
@@ -239,7 +230,7 @@ void Thread::ExitThread() {
 }
 
 void Thread::MyThreadFunction(void *lpParam) {
-  Thread *thread = static_cast<Thread *>(lpParam);
+  auto *thread = static_cast<Thread *>(lpParam);
 
   // Нужно ли выполнение в теле бесконечного цикла задается при создании
   // потока в конструкторе ThreadBase()

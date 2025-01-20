@@ -24,23 +24,25 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#include <algorithm>
+#include <array>
+#include <atomic>
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "etl/cyclic_value.h"
-#include "paraos_bool_atomic.hpp"
+#include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_multi_ringbuff.hpp"
+#include "paraos_ringbuff.hpp"
 #include "paraos_thread.hpp"
-#include "paraos_utils.hpp"
 
 #define PrintDebug(__message__)                   \
   {                                               \
     const paraos::CriticalSection macro_critical; \
-    std::cout << __message__ << std::endl;        \
+    std::cout << __message__ << "\n";             \
   }
 
 const std::vector<std::string> str_array{
@@ -69,19 +71,20 @@ const std::vector<std::string> str_array{
     "23) I'll be comin' for you anyway",
     "24) -------------------------------------------"};
 
-std::size_t CalcTotalBytesInStringArray(
-    const std::vector<std::string> &str_arr) {
+constexpr std::size_t queue_size{2};
+constexpr std::size_t ring_buff_size{2048};
+constexpr std::size_t thread_stack_depth{1024};
+
+namespace {
+auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
+    -> std::size_t {
   std::size_t total_bytes_numb{0};
 
-  for (auto &str : str_arr) {
+  for (const auto &str : str_arr) {
     total_bytes_numb += str.length();
   }
   return total_bytes_numb;
 }
-
-constexpr std::size_t queue_size{2};
-constexpr std::size_t ring_buff_size{2048};
-constexpr std::size_t thread_stack_depth{1024};
 
 /// @brief String index ready to write in buffer. By test design, value may be
 /// more than actual string numb in str_array.
@@ -114,9 +117,13 @@ paraos::MultiRingBuff<
     paraos::RingBuff<char, ring_buff_size>,
     paraos::RingBuff<char, ring_buff_size>>
     multi_ring_buff{};
+}  // namespace
 
+// String copy here is needed because of the delayed thread initialization -
+// address of it's name could be invalid later.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 struct Producer : public paraos::Thread {
-  Producer(
+  explicit Producer(
       const std::size_t thread_id, const std::string name = "Producer",
       std::size_t stack_depth = thread_stack_depth,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kLowest)
@@ -155,21 +162,20 @@ struct Producer : public paraos::Thread {
             Name() << " string write successful: "
                    << str_array.at(str_idx).c_str());
         break;
-      } else {
-        PrintDebug(
-            Name() << "WARN: Nothin written, try again after delay. "
-                   << "String idx is " << str_idx);
-
-        // If no consumers online, nobody read data from buffer and buffer
-        // always will full.
-        if (IsConsumersOffline()) {
-          ThreadExit();
-          break;
-        }
-
-        // Small delay for yeld resources.
-        Thread::DelayMs(1);
       }
+      PrintDebug(
+          Name() << "WARN: Nothin written, try again after delay. "
+                 << "String idx is " << str_idx);
+
+      // If no consumers online, nobody read data from buffer and buffer
+      // always will full.
+      if (IsConsumersOffline()) {
+        ThreadExit();
+        break;
+      }
+
+      // Small delay for yeld resources.
+      Thread::DelayMs(1);
     }
 
     // cyclic increment buff idx.
@@ -183,7 +189,7 @@ struct Producer : public paraos::Thread {
     PrintDebug(Name() << " exiting ... ");
   }
 
-  bool IsConsumersOffline() {
+  static auto IsConsumersOffline() -> bool {
     bool is_need_exit{false};
 
     if (consumer_thread_exit_cnt >= consumer_thread_numb) {
@@ -195,11 +201,11 @@ struct Producer : public paraos::Thread {
 
  private:
   const std::size_t thread_id_;
-  etl::cyclic_value<int, 0, multi_ring_buff.GetBuffNumb() - 1u> buff_idx_{0};
+  etl::cyclic_value<int, 0, multi_ring_buff.GetBuffNumb() - 1U> buff_idx_{0};
 };
 
 struct Consumer : public paraos::Thread {
-  Consumer(
+  explicit Consumer(
       const std::string name = "Consumer",
       std::size_t stack_depth = thread_stack_depth,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kRealTime)
@@ -219,7 +225,7 @@ struct Consumer : public paraos::Thread {
     auto read_size =
         multi_ring_buff.Read(idx, read_mem->data(), read_mem->size(), delay_ms);
 
-    if (read_size > 0u) {
+    if (read_size > 0U) {
       consumer_total_read_bytes += read_size;
       PrintDebug(Name() << " read " << read_mem->data());
     } else {
@@ -241,7 +247,7 @@ struct Consumer : public paraos::Thread {
     PrintDebug(Name() << " exiting ... ");
   }
 
-  bool IsProducersOffline() {
+  static auto IsProducersOffline() -> bool {
     bool is_offline{true};
     if (producer_thread_exit_cnt >= producer_thread_numb) {
       is_offline = true;
@@ -250,27 +256,29 @@ struct Consumer : public paraos::Thread {
     return is_offline;
   }
 };
+// NOLINTEND(performance-unnecessary-value-param)
 
+namespace {
 void AssertsForTestComplete() {
   constexpr std::size_t read_mem_size{2048};
   std::size_t idx;
 
   auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
 
-  for (std::size_t i = 0u; i < multi_ring_buff.GetBuffNumb(); ++i) {
+  for (std::size_t i = 0U; i < multi_ring_buff.GetBuffNumb(); ++i) {
     auto read_bytes_numb =
         multi_ring_buff.TryRead(idx, read_mem->data(), read_mem->size());
 
     if (read_bytes_numb > 0) {
       consumer_total_read_bytes += read_bytes_numb;
       std::cout << "Read some data befor after all threads works complete"
-                << std::endl;
+                << "\n";
     }
   }
 
   std::cout << "Total read bytes numb is " << consumer_total_read_bytes
             << " Expected bytes numb is "
-            << CalcTotalBytesInStringArray(str_array) << std::endl;
+            << CalcTotalBytesInStringArray(str_array) << "\n";
 
   PARAOS_CHECK_ASSERT(
       consumer_total_read_bytes == producer_total_written_bytes &&
@@ -278,10 +286,11 @@ void AssertsForTestComplete() {
 }
 
 #if defined(FREERTOS)
+#include <cstdlib>
 void ExitAfterTestComplete() {
   auto is_need_exit{false};
   {
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     if ((consumer_thread_exit_cnt >= consumer_thread_numb) &&
         (producer_thread_exit_cnt >= producer_thread_numb)) {
       is_need_exit = true;
@@ -294,9 +303,12 @@ void ExitAfterTestComplete() {
   }
 }
 #endif
+}  // namespace
 
 auto main() -> int {
 #if defined(FREERTOS)
+#include "paraos_utils.hpp"
+
   // ExitAfterTestComplete will be called by scheduler in idle task after no
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
@@ -305,26 +317,26 @@ auto main() -> int {
   // ---------------------------------------------------------------------------
   // Create producers
   // ---------------------------------------------------------------------------
-  Producer prod_1{0, "Prod 1"};
+  const Producer prod_1{0, "Prod 1"};
   producer_thread_numb += 1;
 
-  Producer prod_2{1, "Prod 2"};
+  const Producer prod_2{1, "Prod 2"};
   producer_thread_numb += 1;
 
-  Producer prod_3{2, "Prod 3"};
+  const Producer prod_3{2, "Prod 3"};
   producer_thread_numb += 1;
 
-  Producer prod_4{3, "Prod 4"};
+  const Producer prod_4{3, "Prod 4"};
   producer_thread_numb += 1;
   // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
   // Create consumers
   // ---------------------------------------------------------------------------
-  Consumer cons_1{"--Cons 1"};
+  const Consumer cons_1{"--Cons 1"};
   consumer_thread_numb += 1;
 
-  Consumer cons_2{"--Cons 2"};
+  const Consumer cons_2{"--Cons 2"};
   consumer_thread_numb += 1;
   // ---------------------------------------------------------------------------
 

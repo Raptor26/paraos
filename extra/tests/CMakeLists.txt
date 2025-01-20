@@ -37,6 +37,25 @@ if(THREAD_ENABLE)
            COMMAND test_paraos_cooperative_scheduling_thread)
 endif()
 
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(test_paraos_extra PROPERTIES CXX_CLANG_TIDY
+                                                       "${DO_CLANG_TIDY}")
+
+    if(THREAD_ENABLE)
+      set_target_properties(test_paraos_thread_sequence
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_paraos_cooperative_scheduling_thread
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+    endif()
+  else()
+    message(STATUS "clang-tidy not found.")
+  endif()
+endif()
+
 # Coverage ---------------------------------------------------------------------
 # ctest  --test-dir build/pc_debug_gcc  -T Test -T Coverage
 # https://stackoverflow.com/questions/52255589/code-coverage-analysis-using-codecoverage-cmake-with-multiple-targets

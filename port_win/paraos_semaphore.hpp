@@ -30,7 +30,6 @@
 
 #include <utility>
 
-
 #ifdef paraosTRACE_ENABLE
 #include <iostream>
 #endif
@@ -43,16 +42,18 @@
 namespace paraos {
 
 struct SemaphoreAttr {
-  std::size_t max_count{1u};
-  std::size_t initial_count{0u};
+  std::size_t max_count{1U};
+  std::size_t initial_count{0U};
 };
 
 class SemaphoreBase {
  public:
-  operator bool() const { return handle_ != nullptr ? true : false; }
+  explicit operator bool() const {
+    return static_cast<bool>(handle_ != nullptr);
+  }
 
-  ISRbool Take(
-      std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept {
+  auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept
+      -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
@@ -64,22 +65,26 @@ class SemaphoreBase {
         WAIT_OBJECT_0) {
       is_sem_taken = true;
     }
-    return is_sem_taken;
+    return static_cast<ISRbool>(is_sem_taken);
   }
 
   /// @brief
   /// @note
   /// https://learn.microsoft.com/ru-ru/windows/win32/api/synchapi/nf-synchapi-releasesemaphore
   /// @return
-  ISRbool Give(bool from_isr = false) noexcept {
+  auto Give(bool from_isr = false) noexcept -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
     PARAOS_CHECK_ASSERT(handle_);
-    constexpr LONG increment_sem_cnt{1u};
+    constexpr LONG increment_sem_cnt{1U};
 
     return ISRbool{static_cast<bool>(
         ReleaseSemaphore(handle_, increment_sem_cnt, nullptr))};
   }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBase(const SemaphoreBase &other) = delete;
+  auto operator=(const SemaphoreBase &other) -> SemaphoreBase & = delete;
 
  protected:
   SemaphoreBase() noexcept {
@@ -89,7 +94,7 @@ class SemaphoreBase {
   }
 
   virtual ~SemaphoreBase() {
-    if (handle_) {
+    if (handle_ != nullptr) {
       CloseHandle(handle_);
 
       // need for debug only
@@ -102,7 +107,7 @@ class SemaphoreBase {
   }
 
   /// @brief Move ctor.
-  SemaphoreBase(SemaphoreBase &&other) {
+  SemaphoreBase(SemaphoreBase &&other) noexcept {
     if (this != &other) {
       this->handle_ = other.handle_;
       other.handle_ = nullptr;
@@ -110,7 +115,7 @@ class SemaphoreBase {
   }
 
   /// @brief Move assignment.
-  SemaphoreBase &operator=(SemaphoreBase &&other) {
+  auto operator=(SemaphoreBase &&other) noexcept -> SemaphoreBase & {
     if (this != &other) {
       this->~SemaphoreBase();
       this->handle_ = other.handle_;
@@ -120,28 +125,28 @@ class SemaphoreBase {
     return *this;
   }
 
-  /// @brief Semaphore non-copyable
-  SemaphoreBase(const SemaphoreBase &other) = delete;
-  SemaphoreBase &operator=(const SemaphoreBase &other) = delete;
-
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put this variable into private section, because it's used in
+  // derived classes.
   HANDLE handle_{nullptr};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 struct SemaphoreCounting final : public SemaphoreBase {
-  SemaphoreCounting(const SemaphoreAttr &attr) : SemaphoreBase{} {
+  explicit SemaphoreCounting(const SemaphoreAttr &attr) {
     handle_ =
         CreateSemaphore(nullptr, attr.initial_count, attr.max_count, nullptr);
   }
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
-  ~SemaphoreCounting() = default;
+  ~SemaphoreCounting() override = default;
 
   /// @brief Move ctor.
-  SemaphoreCounting(SemaphoreCounting &&other)
+  SemaphoreCounting(SemaphoreCounting &&other) noexcept
       : SemaphoreBase(std::move(other)) {}
 
   /// @brief Move assignment.
-  SemaphoreCounting &operator=(SemaphoreCounting &&other) {
+  auto operator=(SemaphoreCounting &&other) noexcept -> SemaphoreCounting & {
     if (this != &other) {
       this->~SemaphoreCounting();
       this->handle_ = other.handle_;
@@ -153,7 +158,8 @@ struct SemaphoreCounting final : public SemaphoreBase {
 
   /// @brief Semaphore non-copyable
   SemaphoreCounting(const SemaphoreCounting &other) = delete;
-  SemaphoreCounting &operator=(const SemaphoreCounting &other) = delete;
+  auto operator=(const SemaphoreCounting &other)
+      -> SemaphoreCounting & = delete;
 };
 
 /// @brief Класс-реализация бинарного семафора.
@@ -161,7 +167,7 @@ struct SemaphoreBinary final : public SemaphoreBase {
   /// @brief Конструктор по умолчанию для бинарного семафора.
   SemaphoreBinary() noexcept : SemaphoreBinary{SemaphoreAttr{}} {}
 
-  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
+  explicit SemaphoreBinary(const SemaphoreAttr &attr) noexcept {
     PARAOS_ATTR_UNUSED_VAR(attr);
     constexpr LONG max_counter{1};
     constexpr LONG initial_count{0};
@@ -169,13 +175,14 @@ struct SemaphoreBinary final : public SemaphoreBase {
   }
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
-  ~SemaphoreBinary() = default;
+  ~SemaphoreBinary() override = default;
 
   /// @brief Move ctor.
-  SemaphoreBinary(SemaphoreBinary &&other) : SemaphoreBase(std::move(other)) {}
+  SemaphoreBinary(SemaphoreBinary &&other) noexcept
+      : SemaphoreBase(std::move(other)) {}
 
   /// @brief Move assignment.
-  SemaphoreBinary &operator=(SemaphoreBinary &&other) {
+  auto operator=(SemaphoreBinary &&other) noexcept -> SemaphoreBinary & {
     if (this != &other) {
       this->~SemaphoreBinary();
       this->handle_ = other.handle_;
@@ -187,7 +194,7 @@ struct SemaphoreBinary final : public SemaphoreBase {
 
   /// @brief Semaphore non-copyable
   SemaphoreBinary(const SemaphoreBinary &other) = delete;
-  SemaphoreBinary &operator=(const SemaphoreBinary &other) = delete;
+  auto operator=(const SemaphoreBinary &other) -> SemaphoreBinary & = delete;
 };
 
 }  // namespace paraos

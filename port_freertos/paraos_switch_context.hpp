@@ -49,7 +49,7 @@ class SwitchContext final {
   /// @param[in] primitive_state: ISRbool return Take()/Give()  Semaphore/mutex
   /// API.
   void WritePrimitiveState(const ISRbool &primitive_state) {
-    if (primitive_state.is_need_switch_context_) {
+    if (primitive_state.IsNeedSwitchContext()) {
       is_need_switch_context = true;
     }
   }
@@ -59,6 +59,12 @@ class SwitchContext final {
       portYIELD();
     }
   }
+
+  /// @brief Five rule.
+  SwitchContext(SwitchContext &&other) = delete;
+  auto operator=(SwitchContext &&other) -> SwitchContext & = delete;
+  auto operator=(const SwitchContext &other) -> SwitchContext & = delete;
+  SwitchContext(const SwitchContext &other) = delete;
 
  private:
   decltype(IS_ISR) is_need_switch_context{false};

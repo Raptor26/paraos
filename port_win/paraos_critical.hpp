@@ -41,12 +41,18 @@ class CriticalSection final {
  public:
   /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
   /// @param is_isr
-  CriticalSection(bool is_isr = false) noexcept : is_isr_{is_isr} {
+  explicit CriticalSection(bool is_isr = false) noexcept : is_isr_{is_isr} {
     mutex_.Lock(INFINITE, is_isr_);
   }
 
   /// @brief Деструктор обеспечивает автоматический выход из критической секции.
   ~CriticalSection() { mutex_.Unlock(is_isr_); }
+
+  /// @brief Five rule.
+  CriticalSection(CriticalSection&& other) = delete;
+  auto operator=(CriticalSection&& other) -> CriticalSection& = delete;
+  auto operator=(const CriticalSection& other) -> CriticalSection& = delete;
+  CriticalSection(const CriticalSection& other) = delete;
 
  private:
   const bool is_isr_;

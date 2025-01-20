@@ -41,7 +41,7 @@
 namespace paraos {
 
 /// @brief Перечисление видов приоритетов у потоков freeRTOS.
-enum class ThreadPriority : int {
+enum class ThreadPriority : uint8_t {
   kIdle = 0,
   kLowest,
   kBelowNormal,
@@ -70,16 +70,16 @@ class Thread {
 
   /// @brief Метод используется для получения названия потока.
   /// @return Возвращает имя потока.
-  std::string_view Name() const;
+  [[nodiscard]] auto Name() const -> std::string_view;
 
   /// @brief Метод используется для получения дескриптора созданного потока.
   /// @return Возвращает дескриптор потока.
-  TaskHandle_t Handle() const;
+  [[nodiscard]] auto Handle() const -> TaskHandle_t;
 
   /// @brief Метод используется для задержки потока на указанное время.
   /// @param[in] sleep_ms: Время в мс, на которое необходимо заблокировать
   /// поток.
-  void DelayMs(std::size_t sleep_ms);
+  static void DelayMs(std::size_t sleep_ms);
 
   static void SleepMs(std::size_t sleep_ms);
 
@@ -92,10 +92,6 @@ class Thread {
   /// потока.
   /// @return Возвращает результат операции.
   auto Join() -> bool;
-
-  /// @brief Метод используется для открепления потока от основной программы.
-  /// @return Возвращает результат операции.
-  auto Detach() -> bool;
 
   /// @brief Метод run необходимо переопределять в классах, наследниках для
   /// реализации логики работы потока.
@@ -112,7 +108,7 @@ class Thread {
   /// @brief Метод выполняет изменение приоритета потока.
   /// @param[in] priority: Новый приоритет потока.
   /// @return ВОзвращает  результат выполнения операции.
-  bool SetPriority(const ThreadPriority priority);
+  auto SetPriority(const ThreadPriority priority) -> bool;
 
   /// @brief Метод устанавливает флаг необходимости вызова в цикле while метода
   /// Run() у потока.
@@ -155,18 +151,18 @@ class Thread {
     TickType_t ticks = PARAOS_ConvertMsToTicks(delay_ms);
     auto is_timeout = xTaskCheckForTimeOut(&xTimeOut, &ticks);
     delay_ms = PARAOS_ConvertTicksToMs(ticks);
-    return is_timeout;
+    return static_cast<bool>(is_timeout);
   }
 
   Thread(const Thread &other) = delete;
   Thread(Thread &&other) = delete;
-  Thread &operator=(const Thread &other) = delete;
-  Thread &operator=(Thread &&other) = delete;
+  auto operator=(const Thread &other) -> Thread & = delete;
+  auto operator=(Thread &&other) -> Thread & = delete;
 
  private:
   void Make();
 
-  auto IsNeedWhile() const -> bool;
+  [[nodiscard]] auto IsNeedWhile() const -> bool;
 
   void ExitThread();
 

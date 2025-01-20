@@ -46,7 +46,7 @@
 
 namespace paraos {
 
-enum class ThreadPriority : int {
+enum class ThreadPriority : uint8_t {
   kIdle = 1,
   kLowest,
   kBelowNormal,
@@ -58,10 +58,13 @@ enum class ThreadPriority : int {
 
 class Thread {
  public:
+  // String copy here is needed because of the delayed thread initialization -
+  // address of it's name could be invalid later.
+  // NOLINTBEGIN(performance-unnecessary-value-param)
   Thread(
       const std::string name, std::size_t stack_depth, ThreadPriority priority,
       bool is_joinable = true)
-      : name_{std::move(name)},
+      : name_{name},
         stack_depth_{stack_depth},
         priority_{priority},
         is_joinable_{is_joinable} {
@@ -69,6 +72,7 @@ class Thread {
     // Now Dtor can delete thread.
     is_thread_complete_sem_.Give();
   }
+  // NOLINTEND(performance-unnecessary-value-param)
 
   virtual ~Thread() {
     // Destructor initialize competition thread loop for safety destruct object.
@@ -76,7 +80,7 @@ class Thread {
 
     // Dtor free resources only after thread body in perform_work()
     // complete execute.
-    std::size_t delay_ms{4000};
+    const std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
     PARAOS_CHECK_ASSERT(
@@ -90,33 +94,27 @@ class Thread {
     if (auto iter = std::find(
             queue_thread_obj_.cbegin(), queue_thread_obj_.cend(), this);
         iter != queue_thread_obj_.cend()) {
-      int result{0};
+      // Необходимо удалить дескриптор из очереди
+      queue_thread_obj_.erase(iter);
 
-      PARAOS_CHECK_ASSERT(result == 0 && "Error when try canceled thread");
-      if (result == 0) {
-        // Необходимо удалить дескриптор из очереди
-        queue_thread_obj_.erase(iter);
+      paraosTRACE_MESSAGE("Thread deleted: " << name_);
 
-        paraosTRACE_MESSAGE("Thread deleted: " << name_);
+      is_thread_created_ = static_cast<BoolAtomic>(false);
 
-        is_thread_created_ = false;
-      }
     } else {
-// Повторное удаление уже удаленного потока. Данная ситуация может
-// возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков вышли
-// из области видимости. В целом это не является ошибкой т.к. присутствует
-// защита от повторного удаления потока
-#if 1
+      // Повторное удаление уже удаленного потока. Данная ситуация может
+      // возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков
+      // вышли из области видимости. В целом это не является ошибкой т.к.
+      // присутствует защита от повторного удаления потока
       PARAOS_CHECK_ASSERT(
           false && "We can't find 'this' for thread delete operation");
-#endif
     }
   }
 
   Thread(const Thread &other) = delete;
   Thread(Thread &&other) = delete;
-  Thread &operator=(const Thread &other) = delete;
-  Thread &operator=(Thread &&other) = delete;
+  auto operator=(const Thread &other) -> Thread & = delete;
+  auto operator=(Thread &&other) -> Thread & = delete;
 
   /// @brief After "Thread' Ctor complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
@@ -130,12 +128,12 @@ class Thread {
       PARAOS_CHECK_ASSERT(result_code == 0 && "Can't join the thread");
     }
 
-    return result_code == 0 ? true : false;
+    return static_cast<bool>(result_code == 0);
   }
 
-  std::string_view Name() { return name_; }
+  auto Name() -> std::string_view { return name_; }
 
-  void DelayMs(std::size_t sleep_ms) {
+  static void DelayMs(std::size_t sleep_ms) {
     usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
   }
 
@@ -196,10 +194,10 @@ class Thread {
   }
 
   PARAOS_INLINE_TRIVIAL void SetNeedWhile(bool is_need_while) {
-    is_need_while_ = is_need_while;
+    is_need_while_ = static_cast<BoolAtomic>(is_need_while);
   }
 
-  bool SetPriority(const ThreadPriority priority) {
+  auto SetPriority(const ThreadPriority priority) -> bool {
     bool is_priority_updated{false};
 
     PARAOS_CHECK_ASSERT(
@@ -211,7 +209,7 @@ class Thread {
 
     // Изменение приоритета потока возможно только в случае запуска программы от
     // имени суперпользователя
-    if (IsRunAsRoot() == true) {
+    if (IsRunAsRoot()) {
       int policy{0};
       sched_param sched{};
       if (pthread_getschedparam(handle_, &policy, &sched) != 0) {
@@ -275,7 +273,7 @@ class Thread {
   static void StartScheduler() {
     paraosTRACE_MESSAGE("Start Scheduler");
 
-    is_scheduler_started_ = true;
+    is_scheduler_started_ = static_cast<BoolAtomic>(true);
 
     for (auto &thread : queue_thread_obj_) {
       thread->sem_.Give();
@@ -288,29 +286,6 @@ class Thread {
 
   static void DeleteAll() {
     // Thread deleted in Dtor only.
-#if 0
-    const paraos::CriticalSection critical;
-    while (!queue_thread_obj_.empty()) {
-      // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
-      // элемент из очереди не удаляется
-      auto &thread_ptr = queue_thread_obj_.front();
-
-      thread_ptr->~Thread();
-
-      // нет необходимости вызывать pop() с целью удаления объекта потока из
-      // очереди для queue_thread_obj_. Деструктор ~Thread() самостоятельно
-      // удалит ссылку на себя из очереди
-    }
-
-    // Если сработало утверждение ниже, то возможно это связано с тем, что в
-    // момент извлечения крайнего дескриптора потока из очереди, другой поток
-    // поместил новый объект в очередь (критическая секция позволяет избежать
-    // подобного состояния)
-    PARAOS_CHECK_ASSERT(
-        queue_thread_obj_.empty() &&
-        "Container for pointers threadable objects must be empty, otherwise "
-        "some thread not deleted");
-#endif
   }
 
   static auto IsSchedulerStarted() { return is_scheduler_started_; }
@@ -322,7 +297,7 @@ class Thread {
 
       // Sem was given in Ctor. Now me take sem. That's mean, Dtor can delete
       // object only after perform_work() complete.
-      constexpr std::size_t delay_ms{0u};
+      constexpr std::size_t delay_ms{0U};
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
       // If is_sem_taken == false, it's mean error in thread Ctor/Dtor logic.
@@ -337,7 +312,7 @@ class Thread {
       if (result_code == 0) {
         SetPriority(priority_);
 
-        is_thread_created_ = true;
+        is_thread_created_ = static_cast<BoolAtomic>(true);
 
         if (IsSchedulerStarted()) {
           // Give semaphore, because scheduler already started. In this case
@@ -347,17 +322,19 @@ class Thread {
       }
     }
 
-    return is_thread_created_;
+    return static_cast<bool>(is_thread_created_);
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const {
+    return is_need_while_;
+  }
 
   /// @brief Метод проверяет, выполнен ли запуск программны от имени
   /// суперпользователя.
   /// @note
   /// https://stackoverflow.com/questions/3214297/how-can-my-c-c-application-determine-if-the-root-user-is-executing-the-command
   /// @return
-  bool IsRunAsRoot() {
+  static auto IsRunAsRoot() -> bool {
     // В случае сборки под docker мы не используем права суперпользователя. Это
     // сделано для того чтобы SetPriority() всегда возвращало true
 #if NOSUDO
@@ -376,11 +353,11 @@ class Thread {
 #endif
   }
 
-  bool IsPriorityInRange(ThreadPriority priority) {
+  [[nodiscard]] auto IsPriorityInRange(ThreadPriority priority) const -> bool {
     bool is_in_range{false};
 
     int policy;
-    sched_param sched;
+    sched_param sched{};
     pthread_getschedparam(handle_, &policy, &sched);
 
     auto min = sched_get_priority_min(policy);
@@ -394,8 +371,8 @@ class Thread {
     return is_in_range;
   }
 
-  static void *perform_work(void *arguments) {
-    Thread *thread = static_cast<Thread *>(arguments);
+  static auto perform_work(void *arguments) -> void * {
+    auto *thread = static_cast<Thread *>(arguments);
 
     // Need call StartScheduler() for give this semaphore.
     thread->sem_.Take(max_delay);

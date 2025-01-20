@@ -25,7 +25,8 @@
 
 #include <gtest/gtest.h>
 
-#include "paraos_attr.h"
+#include <string_view>
+
 #include "paraos_version.hpp"
 
 TEST(Version, PrintVersion) {

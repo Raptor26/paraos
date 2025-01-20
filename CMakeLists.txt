@@ -105,6 +105,17 @@ if(PARAOS_TESTS)
   add_subdirectory(port_tests)
 endif()
 
+if(IS_PARAOS_STAND_ALONE_PROJECT AND CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY
+                                                     "${DO_CLANG_TIDY}")
+  else()
+    message(STATUS "clang-tidy not found.")
+  endif()
+endif()
+
 add_subdirectory(containers)
 add_subdirectory(extra)
 

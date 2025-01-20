@@ -32,6 +32,6 @@ namespace paraos {
 
 constexpr std::string_view version{"PARAOS version is @CMAKE_PROJECT_VERSION@"};
 
-}
+}  // namespace paraos
 
 #endif /* PARAOS_VERSION_H */

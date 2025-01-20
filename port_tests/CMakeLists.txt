@@ -63,6 +63,30 @@ target_compile_options(test_paraos_core PRIVATE -Wall -Wextra -Wpedantic
                                                 -Werror)
 add_test(NAME test_paraos_core COMMAND test_paraos_core)
 
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(test_paraos_core PROPERTIES CXX_CLANG_TIDY
+                                                      "${DO_CLANG_TIDY}")
+    set_target_properties(example_thread_check_timeout
+                          PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+    set_target_properties(example_paraos_timer PROPERTIES CXX_CLANG_TIDY
+                                                          "${DO_CLANG_TIDY}")
+
+    set_target_properties(test_paraos_thread PROPERTIES CXX_CLANG_TIDY
+                                                        "${DO_CLANG_TIDY}")
+
+    if(NOT FREERTOS)
+      set_target_properties(example_paraos_socket_udp
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+    endif()
+  else()
+    message(STATUS "clang-tidy not found.")
+  endif()
+endif()
+
 # Coverage ---------------------------------------------------------------------
 # ctest  --test-dir build/pc_debug_gcc  -T Test -T Coverage
 # https://stackoverflow.com/questions/52255589/code-coverage-analysis-using-codecoverage-cmake-with-multiple-targets

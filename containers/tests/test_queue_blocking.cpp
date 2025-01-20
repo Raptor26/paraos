@@ -26,19 +26,17 @@
 
 #include <gtest/gtest.h>
 
-#include <iostream>
+#include <cstddef>
 
 #include "paraos_queue_blocking.hpp"
 
-using namespace paraos;
-
 constexpr std::size_t block_time_ms{0};
 
-TEST(QueueBlocking, Create) { QueueBlocking<int, 20> queue; }
+TEST(QueueBlocking, Create) { const paraos::QueueBlocking<int, 20> queue; }
 
 TEST(QueueBlocking, EmplaceThenRead) {
   constexpr std::size_t max_elem{3};
-  QueueBlocking<int, max_elem> queue;
+  paraos::QueueBlocking<int, max_elem> queue;
 
   ASSERT_TRUE(queue.TryPush(1));
   ASSERT_TRUE(queue.TryPush(2));
@@ -71,9 +69,9 @@ TEST(QueueBlocking, EmplaceThenRead) {
 
 TEST(QueueBlocking, TryPushThenRead) {
   constexpr std::size_t max_elem{2};
-  QueueBlocking<int, max_elem> queue;
+  paraos::QueueBlocking<int, max_elem> queue;
 
-  int val{1};
+  constexpr int val{1};
   ASSERT_TRUE(queue.TryPush(val));     // TryPush lvalue
   ASSERT_TRUE(queue.TryPush(int{2}));  // TryPush rvalue
   ASSERT_FALSE(queue.TryPush(3));
@@ -100,11 +98,11 @@ TEST(QueueBlocking, TryPushThenRead) {
 
 TEST(QueueBlocking, PopOnEmptyQueue) {
   constexpr std::size_t max_elem{2};
-  QueueBlocking<int, max_elem> queue;
+  paraos::QueueBlocking<int, max_elem> queue;
 
   {
-    // Метод Pop() не дождётся семафора TryPush_sem (не было выполнено вставок) и
-    // вернёт значение по умолчанию для указанного типа данных.
+    // Метод Pop() не дождётся семафора TryPush_sem (не было выполнено вставок)
+    // и вернёт значение по умолчанию для указанного типа данных.
     auto result = queue.Pop(block_time_ms);
     ASSERT_FALSE(result);
   }

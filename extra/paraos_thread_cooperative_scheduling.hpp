@@ -38,6 +38,10 @@
 
 namespace paraos {
 
+/// @brief Amount of time in milliseconds coop scheduler sleeps inside it's
+/// "Run()" method.
+inline constexpr size_t coop_scheduler_delay_ms{1000};
+
 // =============================================================================
 // Scheduling policies.
 // =============================================================================
@@ -50,11 +54,13 @@ namespace paraos {
 ///
 /// @author Simakov Matvey.
 struct cooperative_scheduler_policy_run_all_at_once {
-  bool schedule_tasks(etl::ivector<etl::task *> &task_list) {
-    for (size_t index = 0UL; index < task_list.size(); ++index) {
-      etl::task &task = *(task_list[index]);
+  static auto schedule_tasks(etl::ivector<etl::task *> &task_list) -> bool {
+    // for (size_t index = 0UL; index < task_list.size(); ++index) {
+    for (auto &scheduled_task : task_list) {
+      etl::task &task = *(scheduled_task);
       task.task_process_work();
     }
+    // }
 
     // Always return true for indicate that scheduler must call idle callback
     // method.
@@ -71,6 +77,9 @@ class ICooperativeScheduling : protected Thread {
   using idle_delegate = etl::delegate<void(void)>;
 
  public:
+  // String copy here is needed because of the delayed thread initialization -
+  // address of it's name could be invalid later.
+  // NOLINTBEGIN(performance-unnecessary-value-param)
   ICooperativeScheduling(
       const std::string name, const std::size_t stack_depth,
       const ThreadPriority priority, etl::ischeduler &scheduler,
@@ -90,8 +99,9 @@ class ICooperativeScheduling : protected Thread {
 
     profiler_.runtime_.SetEmbeddedTimer(embedded_timer);
   }
+  // NOLINTEND(performance-unnecessary-value-param)
 
-  virtual ~ICooperativeScheduling() { Exit(); }
+  ~ICooperativeScheduling() override { Exit(); }
 
   /// @brief Cooperative scheduler run periodical. That's mean user code must
   /// give notify periodical.
@@ -136,10 +146,10 @@ class ICooperativeScheduling : protected Thread {
   ///
   /// @param[in] task: task for put in private list. That's mean task will
   /// scheduling for execute when Run() calls in paraos thread context.
-  virtual bool AddTask(etl::task &task) {
+  virtual auto AddTask(etl::task &task) -> bool {
     bool is_task_add{false};
     try {
-      paraos::CriticalSection critical;
+      const paraos::CriticalSection critical;
       scheduler_.add_task(task);
       is_task_add = true;
     } catch (const etl::scheduler_too_many_tasks_exception &e) {
@@ -157,7 +167,7 @@ class ICooperativeScheduling : protected Thread {
   ///
   /// @param[in] callback: User function, which calls after all works complete.
   void SetIdleCallback(etl::ifunction<void> &callback) {
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     scheduler_.set_idle_callback(callback);
   }
 
@@ -179,7 +189,7 @@ class ICooperativeScheduling : protected Thread {
       // task was registered (when user code call AddTask()), scheduler_.start()
       // start execute in internal loop, which blocking void Idle() method by
       // taking semaphore.
-      Thread::DelayMs(1000);
+      Thread::DelayMs(coop_scheduler_delay_ms);
     } catch (etl::exception &e) {
       paraosTRACE_MESSAGE(
           e.file_name() << "; --line: " << e.line_number()
@@ -187,7 +197,15 @@ class ICooperativeScheduling : protected Thread {
     }
   }
 
-  auto &GetScheduler() { return scheduler_; }
+  auto GetScheduler() -> etl::ischeduler & { return scheduler_; }
+
+  /// @brief Five rule.
+  ICooperativeScheduling(ICooperativeScheduling &&other) = delete;
+  auto operator=(ICooperativeScheduling &&other)
+      -> ICooperativeScheduling & = delete;
+  auto operator=(const ICooperativeScheduling &other)
+      -> ICooperativeScheduling & = delete;
+  ICooperativeScheduling(const ICooperativeScheduling &other) = delete;
 
  private:
   /// @brief scheduler_ will call all registered task while they has work.
@@ -238,7 +256,7 @@ class CooperativeScheduling
     : public etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
       public ICooperativeScheduling {
  public:
-  CooperativeScheduling(const CooperativeSchedulingAttr &attr)
+  explicit CooperativeScheduling(const CooperativeSchedulingAttr &attr)
       : ICooperativeScheduling{
             attr.name, attr.stack_depth, attr.priority, *this,
             attr.embedded_timer_} {
@@ -253,7 +271,15 @@ class CooperativeScheduling
     }
   }
 
-  virtual ~CooperativeScheduling() = default;
+  /// @brief Five rule.
+  CooperativeScheduling(CooperativeScheduling &&other) = delete;
+  auto operator=(CooperativeScheduling &&other)
+      -> CooperativeScheduling & = delete;
+  auto operator=(const CooperativeScheduling &other)
+      -> CooperativeScheduling & = delete;
+  CooperativeScheduling(const CooperativeScheduling &other) = delete;
+
+  ~CooperativeScheduling() override = default;
 };
 
 }  // namespace  paraos

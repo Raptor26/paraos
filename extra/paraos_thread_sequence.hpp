@@ -53,16 +53,19 @@ namespace paraos {
 ///                 delegate immediately. Remember, all blocking api return
 ///                 status, indicates is API calls successfully.
 class IThreadSequence : public Thread {
-  typedef etl::delegate<void(void)> callback_type;
+  using callback_type = etl::delegate<void(void)>;
   using try_lock_type = etl::delegate<bool(void)>;
   using lock_type = etl::delegate<void(void)>;
   using unlock_type = etl::delegate<void(void)>;
 
  protected:
+  // String copy here is needed because of the delayed thread initialization -
+  // address of it's name could be invalid later.
+  // NOLINTBEGIN(performance-unnecessary-value-param)
   IThreadSequence(
       const std::string name, const std::size_t stack_depth,
       const ThreadPriority priority, uint32_t period_in_us,
-      etl::icallback_timer& timer_controller)
+      etl::icallback_timer &timer_controller)
       : Thread{name, stack_depth, priority},
         period_in_us_{period_in_us},
         timer_controller_{timer_controller} {}
@@ -81,6 +84,7 @@ class IThreadSequence : public Thread {
       nticks_ += period_in_us_;
     }
   }
+  // NOLINTEND(performance-unnecessary-value-param)
 
   /// @brief Force break thread execute. Useful in unit tests.
   PARAOS_THREAD_SEQUENCE_VIRTUAL void Break() {
@@ -118,9 +122,9 @@ class IThreadSequence : public Thread {
   /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
   /// other case return valid timer id in range [0 .. 254].
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
-      callback_type& callback, float freq, bool repeating)
+      callback_type &callback, float freq, bool repeating)
       -> etl::timer::id::type {
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
 
@@ -140,7 +144,7 @@ class IThreadSequence : public Thread {
   /// @return true if delegate successfully deleted, false in otherwise.
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(etl::timer::id::type timer_id)
       -> bool {
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     auto is_unregistered = timer_controller_.unregister_timer(timer_id);
 
     if (is_unregistered) {
@@ -160,7 +164,7 @@ class IThreadSequence : public Thread {
       etl::timer::id::type timer_id, float freq_) -> bool {
     bool is_period_updated{false};
 
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
 
     if (timer_controller_.set_period(timer_id, FreqToPeriod(freq_))) {
       // Is timer period successfully update, that's mean timer was stopped,
@@ -171,8 +175,8 @@ class IThreadSequence : public Thread {
     return is_period_updated;
   }
 
-  auto GiveRegisteredDelegatesNumb() {
-    paraos::CriticalSection critical;
+  [[nodiscard]] auto GiveRegisteredDelegatesNumb() const -> size_t {
+    const paraos::CriticalSection critical;
     return registered_delegates_numb;
   }
 
@@ -190,24 +194,31 @@ class IThreadSequence : public Thread {
   /// the periods for calling delegates are calculated.
   ///
   /// @return Main frequency in Hz.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const -> float {
+  [[nodiscard]] PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const
+      -> float {
     // Convert microseconds to sec.
     const float main_freq = (static_cast<float>(period_in_us_)) * 0.000001;
 
     return static_cast<float>(1.0) / main_freq;
   }
 
-  virtual ~IThreadSequence() {}
+  ~IThreadSequence() override = default;
+
+  /// @brief Five rule.
+  IThreadSequence(IThreadSequence &&other) = delete;
+  auto operator=(IThreadSequence &&other) -> IThreadSequence & = delete;
+  auto operator=(const IThreadSequence &other) -> IThreadSequence & = delete;
+  IThreadSequence(const IThreadSequence &other) = delete;
 
   /// Methods definitions ------------------------------------------------------
  private:
-  [[nodiscard]] uint32_t FreqToPeriod(float freq) {
+  [[nodiscard]] auto FreqToPeriod(float freq) const -> uint32_t {
     // in Ctor ThreadSequence, user set period for called NotifyGive() by user
     // code. In this case, we calculate period in microseconds from frequency.
     uint32_t period_us{period_in_us_};
     if (freq != 0.0) {
       constexpr float us_in_sec{1000000};
-      period_us = gsl::narrow_cast<uint32_t>(1.0f / freq * us_in_sec);
+      period_us = gsl::narrow_cast<uint32_t>(1.0F / freq * us_in_sec);
     }
 
     return period_us;
@@ -222,7 +233,7 @@ class IThreadSequence : public Thread {
   const uint32_t period_in_us_;
 
   /// @brief Scheduler, based on callback timers.
-  etl::icallback_timer& timer_controller_;
+  etl::icallback_timer &timer_controller_;
 
   // if set nticks_ to zero, delegate will be called after delay
   // period_in_us_. It's not useful for tests.
@@ -232,22 +243,26 @@ class IThreadSequence : public Thread {
   std::size_t registered_delegates_numb{0};
 };
 
-/// @brief Create separate thread for execute registered delegates.
-///
-/// @tparam MAX_TASKS - Max registered delegates in one time.
-///
-/// @param[in] name: Thread name, whose  context is provided for execute
-/// registered delegates.
-/// @param[in] stack_depth: Stack depth in bytes for thread.
-/// @param[in] priority: Thread priority.
-/// @param[in] period_in_us: Period in microseconds, between user code call
-/// NotifyGive(). User code responsible for specifying this parameter, which
-/// corresponding to the actual call period NotifyGive().
-/// @param[in] is_need_start: If set true, thread will creat in Ctor, if set
-/// false, thread will not created. Sef false may be useful in unit tests.
 template <uint_least8_t MAX_TASKS = 4>
 class ThreadSequence : public IThreadSequence {
  public:
+  // String copy here is needed because of the delayed thread initialization -
+  // address of it's name could be invalid later.
+  // NOLINTBEGIN(performance-unnecessary-value-param)
+
+  /// @brief Create separate thread for execute registered delegates.
+  ///
+  /// @tparam MAX_TASKS - Max registered delegates in one time.
+  ///
+  /// @param[in] name: Thread name, whose  context is provided for execute
+  /// registered delegates.
+  /// @param[in] stack_depth: Stack depth in bytes for thread.
+  /// @param[in] priority: Thread priority.
+  /// @param[in] period_in_us: Period in microseconds, between user code call
+  /// NotifyGive(). User code responsible for specifying this parameter, which
+  /// corresponding to the actual call period NotifyGive().
+  /// @param[in] is_need_start: If set true, thread will creat in Ctor, if set
+  /// false, thread will not created. Sef false may be useful in unit tests.
   ThreadSequence(
       const std::string name, const std::size_t stack_depth,
       const ThreadPriority priority, uint32_t period_in_us,
@@ -267,11 +282,18 @@ class ThreadSequence : public IThreadSequence {
     // Allow execute all timers, registered in timer_controller_.
     timer_controller_.enable(true);
   }
+  // NOLINTEND(performance-unnecessary-value-param)
 
-  virtual ~ThreadSequence() { Break(); }
+  ~ThreadSequence() override { Break(); }
 
   /// @brief Force break thread execute. Useful in unit tests.
   void Break() { IThreadSequence::Break(); }
+
+  /// @brief Five rule.
+  ThreadSequence(ThreadSequence &&other) = delete;
+  auto operator=(ThreadSequence &&other) -> ThreadSequence & = delete;
+  auto operator=(const ThreadSequence &other) -> ThreadSequence & = delete;
+  ThreadSequence(const ThreadSequence &other) = delete;
 
   /// Variable definitions -----------------------------------------------------
  private:
