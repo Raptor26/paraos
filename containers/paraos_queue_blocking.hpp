@@ -148,22 +148,18 @@ struct IQueueBlocking {
     }
 
     if (is_need_take) {
-      try {
-        const paraos::CriticalSection critical;
+      const paraos::CriticalSection critical;
+
+      // This unnecessary check is needed to silence the warning
+      // "clang-analyzer-core.uninitialized.Assign". Clang-tidy is unable to
+      // analyze that we're using pop_sem_ to ensure the ability to pop from
+      // the queue with flag "is_need_take". Static analyzers are trying to
+      // take true branch and getting into the impossible condition.
+      if (!queue_.empty()) {
         paraosTRACE_MESSAGE("Try pop form queue");
         optional.emplace(std::move(queue_.front()));
         queue_.pop();
         paraosTRACE_MESSAGE("Queue Pop success");
-      } catch (const etl::queue_empty e) {
-        optional.reset();
-      } catch (...) {
-        // When move object from queue, maybe throw exception if queue_
-        // contained object with move ctor, which can throw exception.
-        optional.reset();
-
-        // Use loop for indicate that object, contained in queue throw
-        // exception when moved him from queue.
-        PARAOS_CHECK_LOOP();
       }
     }
 
