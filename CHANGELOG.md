@@ -1,3 +1,29 @@
+## v0.8.0 (2025-01-21)
+
+### Feat
+
+- **clang_tidy**: В библиотеку добавлена поддержка clang-tidy
+
+### Refactor
+
+- **queue_blocking**: Изменена логика полученя данных из очереди
+
+## v0.7.0 (2025-01-14)
+
+### Feat
+
+- **Semaphore**: Доработана реализация семафоров под различные платформы:
+
+### Fix
+
+- **pybuilder**: fixed errors, depends on linux/windows path styles
+- **trace**: fixed trace config for freertos
+
+### Refactor
+
+- **UDP_socket**: Рефакторинг после code review:
+- **UDP_Socket**: Рефакторинг UDP сокета для платформ win и unix:
+
 ## v0.6.0 (2025-01-10)
 
 ### Feat
