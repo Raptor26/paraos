@@ -186,3 +186,41 @@ TEST(BinaryTestingSemaphore, MoveAssignment) {
 
   ASSERT_TRUE(binary_semaphore_two.Take());
 }
+
+TEST(AlwaysTrueSemaphore, Create) {
+  const paraos::AlwaysTrueSemaphore true_sem{};
+
+  ASSERT_TRUE(true_sem);
+}
+
+TEST(AlwaysTrueSemaphore, TakeMultipleTimesWithoutGive) {
+  const paraos::AlwaysTrueSemaphore true_sem{};
+
+  ASSERT_TRUE(true_sem.Take());
+
+  ASSERT_TRUE(true_sem.Take());
+
+  ASSERT_TRUE(true_sem.Take());
+
+  ASSERT_TRUE(true_sem.Give());
+
+  ASSERT_TRUE(true_sem.Give());
+}
+
+TEST(AlwaysTrueSemaphore, MoveCtor) {
+  paraos::AlwaysTrueSemaphore true_sem_one{};
+
+  const paraos::AlwaysTrueSemaphore true_sem_two{std::move(true_sem_one)};
+
+  ASSERT_TRUE(true_sem_two.Take());
+}
+
+TEST(AlwaysTrueSemaphore, MoveAssignment) {
+  paraos::AlwaysTrueSemaphore true_sem_one{};
+
+  paraos::AlwaysTrueSemaphore true_sem_two{};
+
+  true_sem_two = std::move(true_sem_one);
+
+  ASSERT_TRUE(true_sem_two.Take());
+}

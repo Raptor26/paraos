@@ -190,6 +190,69 @@ class BinaryTestingSemaphore final : public TestingSemaphore {
       : TestingSemaphore{attrs} {}
 };
 
+/// @brief Testing semaphore class which always returns true inside it's
+/// "Take()" and "Give()" methods.
+class AlwaysTrueSemaphore final {
+ public:
+  AlwaysTrueSemaphore() = default;
+
+  /// @brief Take Semaphore.
+  ///
+  /// @param[in] timeout_ms: Not used in current realization.
+  ///
+  /// @param[in] from_isr: Not used in current realization.
+  ///
+  /// @return Returns true every time.
+  static auto Take(std::size_t timeout_ms = 0, bool from_isr = false)
+      -> ISRbool {
+    PARAOS_ATTR_UNUSED_VAR(timeout_ms);
+    PARAOS_ATTR_UNUSED_VAR(from_isr);
+
+    return ISRbool{true};
+  }
+
+  /// @brief Release semaphore.
+  ///
+  /// @param[in] from_isr: Not used in current realization.
+  ///
+  /// @return Returns true every time.
+  static auto Give(bool from_isr = false) -> ISRbool {
+    PARAOS_ATTR_UNUSED_VAR(from_isr);
+
+    return ISRbool{true};
+  }
+
+  /// @brief Move ctor.
+  AlwaysTrueSemaphore(AlwaysTrueSemaphore &&other) noexcept {
+    if (this != &other) {
+      this->is_init_succeeded_ = other.is_init_succeeded_;
+    }
+  }
+
+  /// @brief Move assignment.
+  auto operator=(AlwaysTrueSemaphore &&other) noexcept
+      -> AlwaysTrueSemaphore & {
+    if (this != &other) {
+      this->~AlwaysTrueSemaphore();
+      this->is_init_succeeded_ = other.is_init_succeeded_;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  AlwaysTrueSemaphore(const AlwaysTrueSemaphore &other) = delete;
+  auto operator=(const AlwaysTrueSemaphore &other)
+      -> AlwaysTrueSemaphore & = delete;
+
+  ~AlwaysTrueSemaphore() = default;
+
+  explicit operator bool() const { return is_init_succeeded_; }
+
+ private:
+  bool is_init_succeeded_{true};
+};
+
 }  // namespace paraos
 
 #endif /* PARAOS_TESTING_SEMAPHORE_HPP */
