@@ -49,10 +49,10 @@ namespace paraos {
 struct TestingSemaphoreAttr {
   /// @brief Maximum number of threads that can execute the code protected by
   /// semaphore at a time.
-  size_t max_count{1u};
+  size_t max_count{1U};
 
   /// @brief Semaphore counter initial value.
-  size_t initial_count{0u};
+  size_t initial_count{0U};
 };
 
 /// @brief Testing semaphore class.
@@ -62,7 +62,7 @@ class TestingSemaphore {
  public:
   /// @brief Testing semaphore constructor.
   /// @param[in] attrs: Attributes for class initialization.
-  TestingSemaphore(const TestingSemaphoreAttr &attrs)
+  explicit TestingSemaphore(const TestingSemaphoreAttr &attrs)
       : semaphore_counter_{attrs.initial_count}, max_count_{attrs.max_count} {
     if ((max_count_ > 0) && (semaphore_counter_ <= max_count_)) {
       is_init_succeeded_ = true;
@@ -70,7 +70,7 @@ class TestingSemaphore {
   }
 
   /// @brief Move ctor.
-  TestingSemaphore(TestingSemaphore &&other) {
+  TestingSemaphore(TestingSemaphore &&other) noexcept {
     if (this != &other) {
       this->is_init_succeeded_ = other.is_init_succeeded_;
       this->semaphore_counter_ = other.semaphore_counter_.load();
@@ -79,7 +79,7 @@ class TestingSemaphore {
   }
 
   /// @brief Move assignment.
-  TestingSemaphore &operator=(TestingSemaphore &&other) {
+  auto operator=(TestingSemaphore &&other) noexcept -> TestingSemaphore & {
     if (this != &other) {
       this->~TestingSemaphore();
       this->is_init_succeeded_ = other.is_init_succeeded_;
@@ -92,7 +92,7 @@ class TestingSemaphore {
 
   /// @brief Semaphore non-copyable
   TestingSemaphore(const TestingSemaphore &other) = delete;
-  TestingSemaphore &operator=(const TestingSemaphore &other) = delete;
+  auto operator=(const TestingSemaphore &other) -> TestingSemaphore & = delete;
 
   virtual ~TestingSemaphore() = default;
 
@@ -104,7 +104,7 @@ class TestingSemaphore {
   ///
   /// @return Return ISRbool with true state if semaphore counter was greater
   /// than zero, false state in otherwise.
-  ISRbool Take(std::size_t timeout_ms = 0, bool from_isr = false) {
+  auto Take(std::size_t timeout_ms = 0, bool from_isr = false) -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(timeout_ms);
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
@@ -124,7 +124,7 @@ class TestingSemaphore {
   ///
   /// @return Return operation status. ISRbool with true state if semaphore
   /// counter was less than max count, otherwise - false.
-  ISRbool Give(bool from_isr = false) {
+  auto Give(bool from_isr = false) -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
     bool give_result{true};
@@ -139,14 +139,18 @@ class TestingSemaphore {
     return ISRbool{give_result};
   }
 
-  operator bool() const { return is_init_succeeded_; }
+  explicit operator bool() const { return is_init_succeeded_; }
 
  protected:
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put these variables into private section, because they're used in
+  // derived classes
   etl::atomic<std::size_t> semaphore_counter_;
 
   etl::atomic<std::size_t> max_count_;
 
   bool is_init_succeeded_{false};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 /// @brief Binary semaphore class.
@@ -158,11 +162,12 @@ class BinaryTestingSemaphore final : public TestingSemaphore {
   BinaryTestingSemaphore() : BinaryTestingSemaphore{TestingSemaphoreAttr{}} {}
 
   /// @brief Move ctor.
-  BinaryTestingSemaphore(BinaryTestingSemaphore &&other)
+  BinaryTestingSemaphore(BinaryTestingSemaphore &&other) noexcept
       : TestingSemaphore{std::move(other)} {}
 
   /// @brief Move assignment.
-  BinaryTestingSemaphore &operator=(BinaryTestingSemaphore &&other) {
+  auto operator=(BinaryTestingSemaphore &&other) noexcept
+      -> BinaryTestingSemaphore & {
     if (this != &other) {
       this->~BinaryTestingSemaphore();
       this->is_init_succeeded_ = other.is_init_succeeded_;
@@ -175,13 +180,13 @@ class BinaryTestingSemaphore final : public TestingSemaphore {
 
   /// @brief Semaphore non-copyable
   BinaryTestingSemaphore(const BinaryTestingSemaphore &other) = delete;
-  BinaryTestingSemaphore &operator=(const BinaryTestingSemaphore &other) =
-      delete;
+  auto operator=(const BinaryTestingSemaphore &other)
+      -> BinaryTestingSemaphore & = delete;
 
-  ~BinaryTestingSemaphore() = default;
+  ~BinaryTestingSemaphore() override = default;
 
  private:
-  BinaryTestingSemaphore(const TestingSemaphoreAttr &attrs)
+  explicit BinaryTestingSemaphore(const TestingSemaphoreAttr &attrs)
       : TestingSemaphore{attrs} {}
 };
 

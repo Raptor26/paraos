@@ -25,6 +25,9 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <utility>
+
 #include "paraos_testing_semaphore.hpp"
 
 TEST(TestingSemaphore, CreateWithIncorrectMaxCount) {
@@ -33,26 +36,27 @@ TEST(TestingSemaphore, CreateWithIncorrectMaxCount) {
   attrs.max_count = 0;
   attrs.initial_count = 0;
 
-  paraos::TestingSemaphore semaphore{attrs};
+  const paraos::TestingSemaphore semaphore{attrs};
 
   ASSERT_FALSE(semaphore);
 }
 
 TEST(TestingSemaphore, CreateWithIncorrectInitialCount) {
+  constexpr size_t init_count{5};
   paraos::TestingSemaphoreAttr attrs{};
 
   attrs.max_count = 0;
-  attrs.initial_count = 5;
+  attrs.initial_count = init_count;
 
-  paraos::TestingSemaphore semaphore{attrs};
+  const paraos::TestingSemaphore semaphore{attrs};
 
   ASSERT_FALSE(semaphore);
 }
 
 TEST(TestingSemaphore, CreateDefault) {
-  paraos::TestingSemaphoreAttr attrs{};
+  const paraos::TestingSemaphoreAttr attrs{};
 
-  paraos::TestingSemaphore semaphore{attrs};
+  const paraos::TestingSemaphore semaphore{attrs};
 
   ASSERT_TRUE(semaphore);
 }
@@ -125,29 +129,35 @@ TEST(BinaryTestingSemaphore, BinarySemaphoreCreateNotGivenState) {
 }
 
 TEST(TestingSemaphore, MoveCtor) {
+  constexpr size_t max_count{10};
   paraos::TestingSemaphoreAttr attrs{};
   attrs.initial_count = 0;
-  attrs.max_count = 10;
+  attrs.max_count = max_count;
 
   paraos::TestingSemaphore semaphore_one{attrs};
 
   semaphore_one.Give();
 
-  paraos::TestingSemaphore semaphore_two{std::move(semaphore_one)};
+  const paraos::TestingSemaphore semaphore_two{std::move(semaphore_one)};
 }
 
 TEST(TestingSemaphore, MoveAssignment) {
+  constexpr size_t sem_one_max_count{10};
+
+  constexpr size_t sem_two_init_count{2};
+  constexpr size_t sem_two_max_count{7};
+
   paraos::TestingSemaphoreAttr attrs{};
   attrs.initial_count = 0;
-  attrs.max_count = 10;
+  attrs.max_count = sem_one_max_count;
 
   paraos::TestingSemaphore semaphore_one{attrs};
 
   ASSERT_TRUE(semaphore_one.Give());
 
   paraos::TestingSemaphoreAttr sem_two_attrs{};
-  sem_two_attrs.initial_count = 2;
-  sem_two_attrs.max_count = 7;
+  sem_two_attrs.initial_count = sem_two_init_count;
+  sem_two_attrs.max_count = sem_two_max_count;
 
   paraos::TestingSemaphore semaphore_two{sem_two_attrs};
 

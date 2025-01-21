@@ -26,17 +26,16 @@
 #include <gtest/gtest.h>
 
 #include "paraos_attr.h"
+#include "paraos_isr.hpp"
 #include "paraos_switch_context.hpp"
 
-using namespace paraos;
-
 TEST(SwitchContext, IfNothingChange) {
-  SwitchContext switch_context;
+  const paraos::SwitchContext switch_context;
   PARAOS_ATTR_UNUSED_VAR(switch_context);
 }
 
 TEST(SwitchContext, IfNoRequestToChangeContext) {
-  SwitchContext switch_context;
-  ISRbool primitive_state_default{};
+  paraos::SwitchContext switch_context;
+  const paraos::ISRbool primitive_state_default{};
   switch_context.WritePrimitiveState(primitive_state_default);
 }

@@ -26,11 +26,13 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+// NOLINTBEGIN(llvm-include-order)
 // clang-format off
 // winsock2.h must include before windows.h
 #include <winsock2.h>
 #include <windows.h>
 // clang-format on
+// NOLINTEND(llvm-include-order)
 
 #include <cassert>
 #include <cstddef>
@@ -40,8 +42,10 @@ namespace paraos {
 constexpr std::size_t max_delay{INFINITE};
 static_assert(sizeof(max_delay) >= sizeof(DWORD));
 
-constexpr inline std::size_t GetStackMinimumSizeInBytes() {
-  return 1024 * sizeof(size_t);
+constexpr size_t stack_multiplier{1024};
+
+constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
+  return stack_multiplier * sizeof(size_t);
 }
 }  // namespace paraos
 

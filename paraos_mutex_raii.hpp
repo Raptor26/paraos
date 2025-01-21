@@ -36,7 +36,7 @@
 namespace paraos {
 class MutexGuard {
  public:
-  MutexGuard(MutexBase& mutex, std::size_t timeout_ms = max_delay)
+  explicit MutexGuard(MutexBase& mutex, std::size_t timeout_ms = max_delay)
       : mutex_{mutex} {
     mutex_.Lock(timeout_ms);
   }
@@ -46,8 +46,8 @@ class MutexGuard {
   MutexGuard(const MutexGuard& other) = delete;
   MutexGuard(MutexGuard&& other) = delete;
 
-  MutexGuard& operator=(const MutexGuard& other) = delete;
-  MutexGuard& operator=(MutexGuard&& other) = delete;
+  auto operator=(const MutexGuard& other) -> MutexGuard& = delete;
+  auto operator=(MutexGuard&& other) -> MutexGuard& = delete;
 
  private:
   MutexBase& mutex_;

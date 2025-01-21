@@ -35,7 +35,7 @@ namespace paraos {
 /// information in called code, which can call method for switch context RTOS if
 /// needed.
 struct ISRbool final {
-  ISRbool(bool is_success, bool is_need_switch_context = false)
+  explicit ISRbool(bool is_success, bool is_need_switch_context = false)
       : is_success_{is_success},
         is_need_switch_context_{is_need_switch_context} {}
 
@@ -46,12 +46,23 @@ struct ISRbool final {
   /// --------------------------------------------------------------------------
   /// Five rule
   /// --------------------------------------------------------------------------
-
   ISRbool(const ISRbool &other) noexcept = default;
   ISRbool(ISRbool &&other) noexcept = default;
-  ISRbool &operator=(const ISRbool &other) noexcept = default;
-  ISRbool &operator=(ISRbool &&other) noexcept = default;
+  auto operator=(const ISRbool &other) noexcept -> ISRbool & = default;
+  auto operator=(ISRbool &&other) noexcept -> ISRbool & = default;
 
+  /// @brief  Behavior like as simple bool variable.
+  explicit operator bool() const { return is_success_; }
+
+  [[nodiscard]] auto IsNeedSwitchContext() const -> bool {
+    return is_need_switch_context_;
+  }
+
+  void SetSuccessStatus(bool status) { is_success_ = status; }
+
+  void SetSwitchContextStatus(bool status) { is_need_switch_context_ = status; }
+
+ private:
   /// @brief Bool flag. This value returned 'operator bool()', just like simple
   /// bool variable.
   bool is_success_;
@@ -59,9 +70,6 @@ struct ISRbool final {
   /// @brief Is true, we need switch scheduler context. Useful when
   /// semaphore/mutex api called from ISR.
   bool is_need_switch_context_;
-
-  /// @brief  Behavior like as simple bool variable.
-  operator bool() const { return is_success_; }
 };
 }  // namespace paraos
 

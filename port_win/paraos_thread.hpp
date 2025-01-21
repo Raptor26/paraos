@@ -51,7 +51,7 @@
 
 namespace paraos {
 
-enum ThreadPriority : int {
+enum ThreadPriority : int8_t {
   kIdle = THREAD_PRIORITY_IDLE,
   kLowest = THREAD_PRIORITY_LOWEST,
   kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
@@ -63,8 +63,11 @@ enum ThreadPriority : int {
 
 class Thread {
  public:
+  // String copy here is needed because of the delayed thread initialization -
+  // address of it's name could be invalid later.
+  // NOLINTBEGIN(performance-unnecessary-value-param)
   Thread(
-      const std::string name, std::size_t stack_depth, int priority,
+      const std::string name, std::size_t stack_depth, ThreadPriority priority,
       bool is_joinable = true)
       : name_{name},
         stack_depth_{stack_depth},
@@ -73,6 +76,7 @@ class Thread {
     // Now Dtor can delete thread.
     is_thread_complete_sem_.Give();
   }
+  // NOLINTEND(performance-unnecessary-value-param)
 
   virtual ~Thread() {
     // Destructor initialize competition thread loop for safety destruct object.
@@ -80,7 +84,7 @@ class Thread {
 
     // Dtor free resources only after thread body in perform_work()
     // complete execute.
-    std::size_t delay_ms{4000};
+    const std::size_t delay_ms{4000};
     auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
     // Suppress warnings when release build and PARAOS_CHECK_ASSERT() is
@@ -98,8 +102,8 @@ class Thread {
         iter != queue_thread_obj_.cend()) {
       Thread *thread_ptr = *iter;
 
-      if (thread_ptr->handle_) {
-        if (CloseHandle(thread_ptr->handle_) == true) {
+      if (thread_ptr->handle_ != nullptr) {
+        if (static_cast<bool>(CloseHandle(thread_ptr->handle_))) {
           // Необходимо удалить дескриптор из очереди
           queue_thread_obj_.erase(iter);
 
@@ -109,24 +113,21 @@ class Thread {
 
           paraosTRACE_MESSAGE("Thread deleted: " << name_);
 
-          is_thread_created_ = false;
+          is_thread_created_ = static_cast<BoolAtomic>(false);
         }
       }
     } else {
-// Повторное удаление уже удаленного потока. Данная ситуация может
-// возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков вышли
-// из области видимости. В целом это не является ошибкой т.к. присутствует
-// защита от повторного удаления потока
-#if 0
-        PARAOS_CHECK_ASSERT(false && "We can't find 'this' for thread delete operation");
-#endif
+      // Повторное удаление уже удаленного потока. Данная ситуация может
+      // возникнуть когда вызвана функция DeleteAll(), а затем объекты потоков
+      // вышли из области видимости. В целом это не является ошибкой т.к.
+      // присутствует защита от повторного удаления потока
     }
   }
 
   Thread(const Thread &other) = delete;
   Thread(Thread &&other) = delete;
-  Thread &operator=(const Thread &other) = delete;
-  Thread &operator=(Thread &&other) = delete;
+  auto operator=(const Thread &other) -> Thread & = delete;
+  auto operator=(Thread &&other) -> Thread & = delete;
 
   /// @brief After "Thread' complete construct object, user's inheritance
   /// class must call 'Start()' for create thread and scheduling this thread
@@ -151,7 +152,7 @@ class Thread {
         is_joined = true;
 
         // After join, thread can't be joinable later.
-        is_joinable_ = false;
+        is_joinable_ = static_cast<BoolAtomic>(false);
         paraosTRACE_MESSAGE("Thread join: " << name_);
       }
     }
@@ -159,19 +160,19 @@ class Thread {
     return is_joined;
   }
 
-  std::string_view Name() { return name_; }
+  auto Name() -> std::string_view { return name_; }
 
-  bool SetPriority(const ThreadPriority priority) {
+  auto SetPriority(const ThreadPriority priority) -> bool {
     auto is_priority_updated =
         SetThreadPriority(handle_, static_cast<int>(priority));
 
-    if (is_priority_updated) {
+    if (static_cast<bool>(is_priority_updated)) {
       priority_ = priority;
     }
-    return is_priority_updated;
+    return static_cast<bool>(is_priority_updated);
   }
 
-  void DelayMs(std::size_t sleep_ms) const { Sleep(sleep_ms); }
+  static void DelayMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
 
   static void SleepMs(std::size_t sleep_ms) { Sleep(sleep_ms); }
 
@@ -179,10 +180,10 @@ class Thread {
   /// @param[in] is_need_while: if `is_need_while == true`, Run() calling in
   /// infinite loop. If set `is_need_while == false`, Run() calling at once.
   PARAOS_INLINE_TRIVIAL void SetNeedWhile(bool is_need_while) {
-    is_need_while_ = is_need_while;
+    is_need_while_ = static_cast<BoolAtomic>(is_need_while);
   }
 
-  /// @brief Return current tine in ticks. Useful when need periodical check
+  /// @brief Return current time in ticks. Useful when need periodical check
   /// timeout in blocking operations with elapsed time correction.
   ///
   /// @return Return object with current time. Returned value used in
@@ -271,7 +272,7 @@ class Thread {
   static void StartScheduler() {
     paraosTRACE_MESSAGE("Start Scheduler");
 
-    is_scheduler_started_ = true;
+    is_scheduler_started_ = static_cast<BoolAtomic>(true);
 
     // Потоки создаются в приостановленном состоянии. Необходимо возобновить
     // выполнение созданных потоков, а затем вызвать Join()
@@ -284,31 +285,7 @@ class Thread {
     }
   }
 
-  static void DeleteAll() {
-#if 0
-    const paraos::CriticalSection critical;
-    while (!queue_thread_obj_.empty()) {
-      // Мы получаем ссылку на элемент в очереди, при этом при вызове front()
-      // элемент из очереди не удаляется
-      auto &thread_ptr = queue_thread_obj_.front();
-
-      thread_ptr->~Thread();
-
-      // нет необходимости вызывать pop() с целью удаления объекта потока из
-      // очереди для queue_thread_obj_. Деструктор ~Thread() самостоятельно
-      // удалит ссылку на себя из очереди
-    }
-
-    // Если сработало утверждение ниже, то возможно это связано с тем, что в
-    // момент извлечения крайнего дескриптора потока из очереди, другой поток
-    // поместил новый объект в очередь (критическая секция позволяет избежать
-    // подобного состояния)
-    PARAOS_CHECK_ASSERT(
-        queue_thread_obj_.empty() &&
-        "Container for pointers threadable objects must be empty, otherwise "
-        "some thread not deleted");
-#endif
-  }
+  static void DeleteAll() {}
 
   static auto IsSchedulerStarted() { return is_scheduler_started_; }
 
@@ -318,7 +295,7 @@ class Thread {
     if (!is_thread_created_) {
       // Sem was given in Ctor. Now we take sem. That's mean, Dtor can delete
       // object only after MyThreadFunction() complete.
-      constexpr std::size_t delay_ms{0u};
+      constexpr std::size_t delay_ms{0U};
       auto is_sem_taken = is_thread_complete_sem_.Take(delay_ms);
 
       // Suppress warnings when release build and PARAOS_CHECK_ASSERT() is
@@ -337,7 +314,7 @@ class Thread {
       }
 
       handle_ = CreateThread(
-          NULL,                            // default security attributes
+          nullptr,                         // default security attributes
           stack_depth_,                    // use default stack size
           MyThreadFunction,                // thread function name
           reinterpret_cast<LPVOID>(this),  // argument to thread function
@@ -345,19 +322,21 @@ class Thread {
           &thread_id_);                    // returns the thread identifier
 
       PARAOS_CHECK_ASSERT(handle_ && "Thread not created");
-      is_thread_created_ = true;
+      is_thread_created_ = static_cast<BoolAtomic>(true);
 
       const paraos::CriticalSection critical;
       queue_thread_obj_.push_back(this);
     }
 
-    return is_thread_created_;
+    return static_cast<bool>(is_thread_created_);
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const { return is_need_while_; }
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsNeedWhile() const {
+    return is_need_while_;
+  }
 
-  static DWORD WINAPI MyThreadFunction(LPVOID lpParam) {
-    Thread *thread = static_cast<Thread *>(lpParam);
+  static auto WINAPI MyThreadFunction(LPVOID lpParam) -> DWORD {
+    auto *thread = static_cast<Thread *>(lpParam);
 
     thread->SetPriority(thread->priority_);
 

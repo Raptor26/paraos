@@ -24,25 +24,37 @@
 /// IN THE SOFTWARE.
 
 #include <atomic>
-#include <cstdint>
+#include <cstddef>
+#include <string>
 
+#include "paraos_check.h"
+#include "paraos_critical.hpp"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_trace.hpp"
+#include "paraos_utils.hpp"
 
 constexpr std::size_t max_queue_size{2};
 
 constexpr std::size_t one_producer_expected_push_items_numb{3};
 
+constexpr std::size_t threads_default_stack_size{1024};
+
+namespace {
 std::atomic_size_t push_item_cnt{0};
 std::atomic_size_t pop_item_cnt{0};
 
 paraos::QueueBlocking<char, max_queue_size> queue;
+}  // namespace
 
+// String copy here is needed because of the delayed thread initialization -
+// address of it's name could be invalid later.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 struct Producer : public paraos::Thread {
-  Producer(
-      const std::string name = "Producer", std::size_t stack_depth = 1024,
+  explicit Producer(
+      const std::string name = "Producer",
+      std::size_t stack_depth = threads_default_stack_size,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
       : paraos::Thread{name, stack_depth, priority} {
     paraos::Thread::SetNeedWhile(true);
@@ -64,13 +76,12 @@ struct Producer : public paraos::Thread {
                      << runtime_profiler.LastDurationMs());
           ++symb;
           break;
-        } else {
-          paraosTRACE_MESSAGE(
-              Name() << " WARN: queue.TryPush() no space, try again "
-                     << runtime_profiler.LastDurationMs());
-          // Yeld processor time for consumers read data from queue.
-          DelayMs(1);
         }
+        paraosTRACE_MESSAGE(
+            Name() << " WARN: queue.TryPush() no space, try again "
+                   << runtime_profiler.LastDurationMs());
+        // Yeld processor time for consumers read data from queue.
+        DelayMs(1);
       }
     }
 
@@ -82,8 +93,9 @@ struct Producer : public paraos::Thread {
 };
 
 struct Consumer : public paraos::Thread {
-  Consumer(
-      const std::string name = "Consumer", std::size_t stack_depth = 1024,
+  explicit Consumer(
+      const std::string name = "Consumer",
+      std::size_t stack_depth = threads_default_stack_size,
       paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
       : paraos::Thread{name, stack_depth, priority} {
     paraos::Thread::SetNeedWhile(true);
@@ -105,12 +117,11 @@ struct Consumer : public paraos::Thread {
         ++pop_item_cnt;
         paraosTRACE_MESSAGE(Name() << " successfully read item from queue");
         break;
-      } else {
-        const paraos::CriticalSection critical;
-        paraosTRACE_MESSAGE(
-            "--ERROR: "
-            << Name() << " don't read item from queue with timeout. Try again");
       }
+      const paraos::CriticalSection critical;
+      paraosTRACE_MESSAGE(
+          "--ERROR: " << Name()
+                      << " don't read item from queue with timeout. Try again");
     }
 
     paraos::Thread::SetNeedWhile(false);
@@ -121,7 +132,9 @@ struct Consumer : public paraos::Thread {
  private:
   paraos::OsProfiler runtime_profiler;
 };
+// NOLINTEND(performance-unnecessary-value-param)
 
+namespace {
 void CheckIfTestSuccessfullyComplete() {
   const paraos::CriticalSection critical;
 
@@ -137,7 +150,9 @@ void CheckIfTestSuccessfullyComplete() {
 /// exit(EXIT_SUCCESS) after test complete.
 #if defined(FREERTOS)
 void ExitAfterTestComplete() {
-  paraos::CriticalSection critical;
+#include <cstdlib>
+
+  const paraos::CriticalSection critical;
   if ((push_item_cnt == pop_item_cnt) &&
       (push_item_cnt == one_producer_expected_push_items_numb)) {
     CheckIfTestSuccessfullyComplete();
@@ -145,25 +160,26 @@ void ExitAfterTestComplete() {
   }
 }
 #endif
+}  // namespace
 
-int main() {
+auto main() -> int {
 #if defined(FREERTOS)
   // ExitAfterTestComplete will be called by scheduler in idle task after no
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
 
-  Consumer consumer1{
+  const Consumer consumer1{
       "--Consumer 1", paraos::GetStackMinimumSizeInBytes(),
       paraos::ThreadPriority::kHighest};
-  Consumer consumer2{
+  const Consumer consumer2{
       "--Consumer 2", paraos::GetStackMinimumSizeInBytes(),
       paraos::ThreadPriority::kAboveNormal};
-  Consumer consumer3{
+  const Consumer consumer3{
       "--Consumer 3", paraos::GetStackMinimumSizeInBytes(),
       paraos::ThreadPriority::kBelowNormal};
 
-  Producer producer1{
+  const Producer producer1{
       "Producer 1", paraos::GetStackMinimumSizeInBytes(),
       paraos::ThreadPriority::kNormal};
 

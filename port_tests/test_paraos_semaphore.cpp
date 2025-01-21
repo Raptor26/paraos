@@ -25,20 +25,20 @@
 
 #include <gtest/gtest.h>
 
+#include <utility>
+
 #include "paraos_semaphore.hpp"
 
-using namespace paraos;
-
 TEST(Semaphore, CreateDefault) {
-  SemaphoreAttr attr;
-  auto sem_with_def_attr = SemaphoreCounting(attr);
+  const paraos::SemaphoreAttr attr;
+  auto sem_with_def_attr = paraos::SemaphoreCounting(attr);
   ASSERT_TRUE(sem_with_def_attr);
 }
 
 TEST(Semaphore, GiveThanTakeTwice) {
-  SemaphoreAttr attr;
-  attr.max_count = 2u;
-  auto sem = SemaphoreCounting(attr);
+  paraos::SemaphoreAttr attr;
+  attr.max_count = 2U;
+  auto sem = paraos::SemaphoreCounting(attr);
   ASSERT_TRUE(sem);
 
   ASSERT_TRUE(sem.Give());
@@ -47,7 +47,7 @@ TEST(Semaphore, GiveThanTakeTwice) {
 }
 
 TEST(Semaphore, GiveThanTakeTwiceButSemIsBinary) {
-  auto sem = SemaphoreBinary();
+  auto sem = paraos::SemaphoreBinary();
   ASSERT_TRUE(sem);
 
   ASSERT_TRUE(sem.Give());
@@ -57,35 +57,35 @@ TEST(Semaphore, GiveThanTakeTwiceButSemIsBinary) {
 }
 
 TEST(SemaphoreBinary, MoveCtor) {
-  auto sem_one = SemaphoreBinary();
-  auto sem_two = SemaphoreBinary(std::move(sem_one));
+  auto sem_one = paraos::SemaphoreBinary();
+  auto sem_two = paraos::SemaphoreBinary(std::move(sem_one));
 }
 
 TEST(SemaphoreBinary, MoveAssignment) {
-  auto sem_one = SemaphoreBinary();
-  auto sem_two = SemaphoreBinary();
+  auto sem_one = paraos::SemaphoreBinary();
+  auto sem_two = paraos::SemaphoreBinary();
 
   sem_one = std::move(sem_two);
 }
 
 TEST(Semaphore, BinarySemaphoreCreateNotGivenState) {
-  auto sem = SemaphoreBinary();
+  auto sem = paraos::SemaphoreBinary();
   ASSERT_TRUE(sem);
   ASSERT_FALSE(sem.Take(0));
 }
 
 TEST(SemaphoreCounting, MoveCtor) {
-  SemaphoreAttr attr;
-  attr.max_count = 2u;
-  auto sem_one = SemaphoreCounting(attr);
-  auto sem_two = SemaphoreCounting(std::move(sem_one));
+  paraos::SemaphoreAttr attr;
+  attr.max_count = 2U;
+  auto sem_one = paraos::SemaphoreCounting(attr);
+  auto sem_two = paraos::SemaphoreCounting(std::move(sem_one));
 }
 
 TEST(SemaphoreCounting, MoveAssignment) {
-  SemaphoreAttr attr;
-  attr.max_count = 2u;
-  auto sem_one = SemaphoreCounting(attr);
-  auto sem_two = SemaphoreCounting(attr);
+  paraos::SemaphoreAttr attr;
+  attr.max_count = 2U;
+  auto sem_one = paraos::SemaphoreCounting(attr);
+  auto sem_two = paraos::SemaphoreCounting(attr);
 
   sem_one = std::move(sem_two);
 }

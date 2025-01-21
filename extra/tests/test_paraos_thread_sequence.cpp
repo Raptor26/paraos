@@ -23,39 +23,53 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <string>
 
+// We need to import "etl/delegate.h" to use delegate, but static analyzer
+// can't see the delegate declaration there.
+// NOLINTBEGIN(misc-include-cleaner)
 #include "etl/delegate.h"
-#include "etl/function.h"
-#include "etl/scheduler.h"
-#include "etl/task.h"
+// NOLINTEND(misc-include-cleaner)
+
+#include "etl/timer.h"
+#include "paraos_check.h"
+#include "paraos_thread.hpp"
 #include "paraos_thread_sequence.hpp"
-#include "paraos_utils.hpp"
 
 namespace {
+
+constexpr uint32_t thread_sequence_call_period_us{1000U};
 
 std::size_t gyracc_call_cnt{0};
 std::size_t mag_call_cnt{0};
 std::size_t baro_call_cnt{0};
 
+constexpr size_t thread_default_stack_size{1024};
+
 constexpr uint_least8_t max_task_in_sequence{3};
 using ThreadSequenceTest = paraos::ThreadSequence<max_task_in_sequence>;
-ThreadSequenceTest* thread_seq_ptr;
+ThreadSequenceTest *thread_seq_ptr;
 
 constexpr uint32_t gyr_acc_max_call_cnt{8};
+
+constexpr float mag_delegate_freq_hz{thread_sequence_call_period_us / 2.0};
+constexpr float baro_delegate_freq_hz{thread_sequence_call_period_us / 4.0};
 
 bool is_test_complete{false};
 
 template <typename T = float>
 struct GyrAcc {
  public:
-  GyrAcc() { std::cout << "GyrAcc Ctor" << std::endl; }
+  GyrAcc() { std::cout << "GyrAcc Ctor" << "\n"; }
 
-  ~GyrAcc() { std::cout << "~GyrAcc Dtor" << std::endl; }
+  ~GyrAcc() { std::cout << "~GyrAcc Dtor" << "\n"; }
 
   void Update() {
-    std::cout << "GyrAcc Update()" << std::endl;
+    std::cout << "GyrAcc Update()" << "\n";
     ++gyracc_call_cnt;
 
     assert(thread_seq_ptr);
@@ -68,32 +82,58 @@ struct GyrAcc {
       is_test_complete = true;
     }
   }
+
+  /// @brief Five rule.
+  GyrAcc(GyrAcc &&other) = delete;
+  auto operator=(GyrAcc &&other) -> GyrAcc & = delete;
+  auto operator=(const GyrAcc &other) -> GyrAcc & = delete;
+  GyrAcc(const GyrAcc &other) = delete;
 };
 
 using GyrAccFloat = GyrAcc<float>;
 
 struct Mag {
  public:
-  Mag() { std::cout << "Mag Ctor" << std::endl; }
+  Mag() { std::cout << "Mag Ctor" << "\n"; }
 
-  ~Mag() { std::cout << "~Mag Dtor" << std::endl; }
+  ~Mag() { std::cout << "~Mag Dtor" << "\n"; }
 
+  // We can't make Update() method static, because it needs to be classmethod to
+  // create etl::delegate.
+  // NOLINTBEGIN(readability-convert-member-functions-to-static)
   void Update() {
     ++mag_call_cnt;
-    std::cout << "Mag Update()" << std::endl;
+    std::cout << "Mag Update()" << "\n";
   }
+  // NOLINTEND(readability-convert-member-functions-to-static)
+
+  /// @brief Five rule.
+  Mag(Mag &&other) = delete;
+  auto operator=(Mag &&other) -> Mag & = delete;
+  auto operator=(const Mag &other) -> Mag & = delete;
+  Mag(const Mag &other) = delete;
 };
 
 struct Baro {
  public:
-  Baro() { std::cout << "Baro Ctor" << std::endl; }
+  Baro() { std::cout << "Baro Ctor" << "\n"; }
 
-  ~Baro() { std::cout << "~Baro Dtor" << std::endl; }
+  ~Baro() { std::cout << "~Baro Dtor" << "\n"; }
 
+  // We can't make Update() method static, because it needs to be classmethod to
+  // create etl::delegate.
+  // NOLINTBEGIN(readability-convert-member-functions-to-static)
   void Update() {
     ++baro_call_cnt;
-    std::cout << "Baro Update()" << std::endl;
+    std::cout << "Baro Update()" << "\n";
   }
+  // NOLINTEND(readability-convert-member-functions-to-static)
+
+  /// @brief Five rule.
+  Baro(Baro &&other) = delete;
+  auto operator=(Baro &&other) -> Baro & = delete;
+  auto operator=(const Baro &other) -> Baro & = delete;
+  Baro(const Baro &other) = delete;
 };
 
 GyrAccFloat gyr_acc;
@@ -101,6 +141,7 @@ GyrAccFloat gyr_acc;
 /// FreeRTOS can't stop scheduler. In this case we must manually call
 /// exit(EXIT_SUCCESS) after test complete.
 #if defined(FREERTOS)
+#include <cstdlib>
 void ExitAfterTestComplete() {
   if (is_test_complete) {
     exit(EXIT_SUCCESS);
@@ -110,26 +151,28 @@ void ExitAfterTestComplete() {
 
 }  // namespace
 
-int main() {
+auto main() -> int {
 #if defined(FREERTOS)
+#include "paraos_utils.hpp"
+
   // ExitAfterTestComplete will be called by scheduler in idle task after no
   // user task ready for execute.
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
-
-  using namespace paraos;
-
-  constexpr uint32_t thread_sequence_call_period_us{1000u};
   ThreadSequenceTest thread_sequence{
-      "Sequence static", 1024, ThreadPriority::kNormal,
-      thread_sequence_call_period_us};
+      "Sequence static", thread_default_stack_size,
+      paraos::ThreadPriority::kNormal, thread_sequence_call_period_us};
 
   thread_seq_ptr = &thread_sequence;
 
-  // Compile time delegate. Delegate lifetime can't be less then lifetime
-  // between Registered() and Unregistered() call methods.
+  // We need to import "etl/delegate.h" to use delegate, but static analyzer
+  // can't see the delegate declaration there.
+  // NOLINTBEGIN(misc-include-cleaner)
+  //  Compile time delegate. Delegate lifetime can't be less then lifetime
+  //  between Registered() and Unregistered() call methods.
   static auto gyr_acc_delegate = etl::delegate<void(
       void)>::create<GyrAccFloat, gyr_acc, &GyrAccFloat::Update>();
+  // NOLINTEND(misc-include-cleaner)
 
   {
     // gyr_acc_delegate will be run on each call NotifyGive(). In this case
@@ -142,15 +185,19 @@ int main() {
     // runtime variable.
     static Mag mag;
 
+    // We need to import "etl/delegate.h" to use delegate, but static analyzer
+    // can't see the delegate declaration there.
+    // NOLINTBEGIN(misc-include-cleaner)
     // runtime delegate. Delegate lifetime can't be less then lifetime between
     // Registered() and Unregistered() call methods.
     static etl::delegate<void(void)> mag_delegate =
         etl::delegate<void(void)>::create<Mag, &Mag::Update>(mag);
+    // NOLINTEND(misc-include-cleaner)
 
     {
       // mag_delegate call period is two times less than gyr_acc_delegate
-      auto timer_id = thread_sequence.Register(
-          mag_delegate, thread_sequence_call_period_us / 2.0, true);
+      auto timer_id =
+          thread_sequence.Register(mag_delegate, mag_delegate_freq_hz, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
   }
@@ -159,15 +206,19 @@ int main() {
     // runtime variable.
     static Baro baro;
 
+    // We need to import "etl/delegate.h" to use delegate, but static analyzer
+    // can't see the delegate declaration there.
+    // NOLINTBEGIN(misc-include-cleaner)
     // runtime delegate. Delegate lifetime can't be less then lifetime between
     // Registered() and Unregistered() call methods.
     etl::delegate<void(void)> baro_delegate =
         etl::delegate<void(void)>::create<Baro, &Baro::Update>(baro);
+    // NOLINTEND(misc-include-cleaner)
 
     {
       // mag_delegate call period is four times less than gyr_acc_delegate
-      auto timer_id = thread_sequence.Register(
-          baro_delegate, thread_sequence_call_period_us / 4.0, true);
+      auto timer_id =
+          thread_sequence.Register(baro_delegate, baro_delegate_freq_hz, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
 
@@ -183,8 +234,8 @@ int main() {
 
   thread_sequence.NotifyGive();
 
-  Thread::StartScheduler();
-  Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   PARAOS_CHECK_ASSERT(gyracc_call_cnt == gyr_acc_max_call_cnt);
 
@@ -193,6 +244,12 @@ int main() {
 
   // Frequency of the call mag is four times less than gyr_acc.
   PARAOS_CHECK_ASSERT(baro_call_cnt == gyracc_call_cnt / 4);
+
+  // [clang-analyzer-core.StackAddressEscape]: Address of stack memory
+  // associated with local variable 'thread_sequence' is still referred to by
+  // the global variable 'thread_seq_ptr' upon returning to the caller.  This
+  // will be a dangling reference
+  thread_seq_ptr = nullptr;
 
   return 0;
 }

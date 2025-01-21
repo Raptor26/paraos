@@ -29,10 +29,14 @@
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || \
     defined(__unix__)
 #include <chrono>
+// Can't use duration cast etc. directly because these namings are platform
+// dependent. Also, long names with namespaces are bad for readability.
+// NOLINTBEGIN(google-global-names-in-headers)
 using std::chrono::duration_cast;
 using std::chrono::high_resolution_clock;
 using time_resolution = std::chrono::microseconds;
 using namespace std::chrono_literals;
+// NOLINTEND(google-global-names-in-headers)
 #endif
 
 #include <cstddef>
@@ -45,6 +49,9 @@ namespace paraos {
 
 using cnt_t = std::uint32_t;
 
+/// @brief Количество микросекунд в одной миллисекунде.
+inline constexpr cnt_t us_in_ms{1000};
+
 struct IProfiler {
   /// @brief Start timer.
   virtual void Start() = 0;
@@ -52,12 +59,12 @@ struct IProfiler {
   /// @brief Stop timer and calculate time between Start() and Stop() calls.
   ///
   /// @return Time between Start() and Stop() calls.
-  virtual cnt_t Stop() = 0;
+  virtual auto Stop() -> cnt_t = 0;
 
   /// @brief Returned value, which calculated wen user calls Stop().
   ///
   /// @return Time between last Start() and Stop() calls.
-  virtual cnt_t LastDuration() = 0;
+  virtual auto LastDuration() -> cnt_t = 0;
 };
 
 /// @brief RAII class for automaticaly start and stop profiler.
@@ -80,6 +87,11 @@ class ProfilerRAII final {
 
   ~ProfilerRAII() { profiler_.Stop(); }
 
+  ProfilerRAII(ProfilerRAII &&other) = delete;
+  auto operator=(ProfilerRAII &&other) -> ProfilerRAII & = delete;
+  auto operator=(const ProfilerRAII &other) -> ProfilerRAII & = delete;
+  ProfilerRAII(const ProfilerRAII &other) = delete;
+
  private:
   IProfiler &profiler_;
 };
@@ -96,6 +108,12 @@ class ProfilerPeriodRAII final {
   }
 
   ~ProfilerPeriodRAII() = default;
+
+  ProfilerPeriodRAII(ProfilerPeriodRAII &&other) = delete;
+  auto operator=(ProfilerPeriodRAII &&other) -> ProfilerPeriodRAII & = delete;
+  auto operator=(const ProfilerPeriodRAII &other)
+      -> ProfilerPeriodRAII & = delete;
+  ProfilerPeriodRAII(const ProfilerPeriodRAII &other) = delete;
 };
 
 /// @brief Embedded timer interface. Need for get actual timer value and use it
@@ -106,14 +124,25 @@ class ProfilerPeriodRAII final {
 /// TimerProfiler().
 struct IEmbeddedTimer {
   virtual ~IEmbeddedTimer() = default;
-  virtual cnt_t GiveCnt() const = 0;
-  virtual cnt_t GiveCntOverflowValue() const = 0;
+  [[nodiscard]] virtual auto GiveCnt() const -> cnt_t = 0;
+  [[nodiscard]] virtual auto GiveCntOverflowValue() const -> cnt_t = 0;
+
+  /// @brief Five rule.
+  IEmbeddedTimer(IEmbeddedTimer &&other) = delete;
+  auto operator=(IEmbeddedTimer &&other) -> IEmbeddedTimer & = delete;
+  auto operator=(const IEmbeddedTimer &other) -> IEmbeddedTimer & = delete;
+  IEmbeddedTimer(const IEmbeddedTimer &other) = delete;
+
+ protected:
+  IEmbeddedTimer() = default;
 };
 
 /// @brief Override IEmbeddedTimer interface with zero values.
 struct EmbeddedTimerEmpty final : public IEmbeddedTimer {
-  cnt_t GiveCnt() const override { return 0u; };
-  cnt_t GiveCntOverflowValue() const override { return 0u; };
+  [[nodiscard]] auto GiveCnt() const -> cnt_t override { return 0U; };
+  [[nodiscard]] auto GiveCntOverflowValue() const -> cnt_t override {
+    return 0U;
+  };
 };
 
 /// Empty profiler -------------------------------------------------------------
@@ -122,8 +151,8 @@ struct EmbeddedTimerEmpty final : public IEmbeddedTimer {
 /// умолчанию".
 struct EmptyProfiler final : public IProfiler {
   PARAOS_INLINE_TRIVIAL void Start() override {}
-  PARAOS_INLINE_TRIVIAL auto Stop() -> cnt_t override { return 0u; }
-  PARAOS_INLINE_TRIVIAL auto LastDuration() -> cnt_t override { return 0u; }
+  PARAOS_INLINE_TRIVIAL auto Stop() -> cnt_t override { return 0U; }
+  PARAOS_INLINE_TRIVIAL auto LastDuration() -> cnt_t override { return 0U; }
 };
 
 /// @brief Empty profiler instance. Use if need set reference on IProfiler
@@ -141,20 +170,22 @@ struct OsProfiler final : public IProfiler {
     start_ = high_resolution_clock::now();
   }
 
-  cnt_t Stop() override {
+  auto Stop() -> cnt_t override {
     end_ = high_resolution_clock::now();
     duration_ = duration_cast<time_resolution>(end_ - start_).count();
     return LastDuration();
   }
 
-  cnt_t LastDuration() override { return duration_; }
+  auto LastDuration() -> cnt_t override { return duration_; }
 
-  cnt_t LastDurationMs() { return static_cast<cnt_t>(LastDuration() / 1000); }
+  auto LastDurationMs() -> cnt_t {
+    return static_cast<cnt_t>(LastDuration() / us_in_ms);
+  }
 
  private:
   decltype(high_resolution_clock::now()) start_;
   decltype(high_resolution_clock::now()) end_;
-  decltype(duration_cast<time_resolution>(end_ - start_).count()) duration_{0u};
+  decltype(duration_cast<time_resolution>(end_ - start_).count()) duration_{0U};
 };
 
 /// @brief Profiler timer if run on operation system (like as windows or linux).
@@ -164,9 +195,9 @@ struct OsTimer final : public IEmbeddedTimer {
     start_ = high_resolution_clock::now();
   }
 
-  ~OsTimer() = default;
+  ~OsTimer() override = default;
 
-  cnt_t GiveCnt() const override {
+  [[nodiscard]] auto GiveCnt() const -> cnt_t override {
     auto end = high_resolution_clock::now();
 
     // Calculate durations between OsTimer constructor and now time when
@@ -181,9 +212,15 @@ struct OsTimer final : public IEmbeddedTimer {
     return static_cast<cnt_t>(duration % std::numeric_limits<cnt_t>::max());
   };
 
-  cnt_t GiveCntOverflowValue() const override {
+  [[nodiscard]] auto GiveCntOverflowValue() const -> cnt_t override {
     return std::numeric_limits<cnt_t>::max();
   };
+
+  /// @brief Five rule.
+  OsTimer(OsTimer &&other) = delete;
+  auto operator=(OsTimer &&other) -> OsTimer & = delete;
+  auto operator=(const OsTimer &other) -> OsTimer & = delete;
+  OsTimer(const OsTimer &other) = delete;
 
  private:
   decltype(high_resolution_clock::now()) start_;
@@ -211,28 +248,29 @@ struct EmbeddedTimer : public IEmbeddedTimer {
   /// @brief Деструктор "по умолчанию".
   /// @note Деструктор явно не объявлен виртуальным т.к. "EmbeddedTimer" и
   /// "EmbeddedProfiler" не выделяют динамических ресурсов.
-  ~EmbeddedTimer() = default;
+  ~EmbeddedTimer() override = default;
 
   EmbeddedTimer(const EmbeddedTimer &other) = default;
-  EmbeddedTimer &operator=(const EmbeddedTimer &other) = default;
+  auto operator=(const EmbeddedTimer &other) -> EmbeddedTimer & = default;
 
-  EmbeddedTimer(EmbeddedTimer &&other) = default;
-  EmbeddedTimer &operator=(EmbeddedTimer &&other) = default;
+  EmbeddedTimer(EmbeddedTimer &&other) noexcept = default;
+  auto operator=(EmbeddedTimer &&other) noexcept -> EmbeddedTimer & = default;
 
   /// @brief Возвращает значение 32-х битного аппаратного счетчика на момент
   /// вызова.
   /// @return Возвращает переменную типа 'cnt_t' содержащую значение аппаратного
   /// счетчика на момент вызова.
-  PARAOS_INLINE_TRIVIAL cnt_t GiveCnt() const override {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto GiveCnt() const -> cnt_t override {
     constexpr cnt_t hight_mask = 0xFFFF0000;
     constexpr cnt_t low_mask = 0x0000FFFF;
-    constexpr cnt_t bites_shift = 16u;
+    constexpr cnt_t bites_shift = 16U;
     return (
         (((static_cast<cnt_t>(*hight)) << bites_shift) & hight_mask) |
         ((static_cast<cnt_t>(*low)) & low_mask));
   }
 
-  PARAOS_INLINE_TRIVIAL cnt_t GiveCntOverflowValue() const override {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto GiveCntOverflowValue() const
+      -> cnt_t override {
     return std::numeric_limits<std::uint32_t>::max();
   }
 
@@ -254,23 +292,24 @@ struct EmbeddedTimer<LOW_ADDR, HightCntDefault> : public IEmbeddedTimer {
   /// @brief Деструктор "по умолчанию".
   /// @note Деструктор явно не объявлен виртуальным т.к. "EmbeddedTimer" и
   /// "EmbeddedProfiler" не выделяют динамических ресурсов.
-  ~EmbeddedTimer() = default;
+  ~EmbeddedTimer() override = default;
 
   EmbeddedTimer(const EmbeddedTimer &other) = default;
-  EmbeddedTimer &operator=(const EmbeddedTimer &other) = default;
+  auto operator=(const EmbeddedTimer &other) -> EmbeddedTimer & = default;
 
-  EmbeddedTimer(EmbeddedTimer &&other) = default;
-  EmbeddedTimer &operator=(EmbeddedTimer &&other) = default;
+  EmbeddedTimer(EmbeddedTimer &&other) noexcept = default;
+  auto operator=(EmbeddedTimer &&other) noexcept -> EmbeddedTimer & = default;
 
   /// @brief Возвращает значение 16-х битного аппаратного счетчика на момент
   /// вызова.
   /// @return Возвращает переменную типа 'cnt_t' содержащую значение аппаратного
   /// счетчика на момент вызова.
-  PARAOS_INLINE_TRIVIAL cnt_t GiveCnt() const override {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto GiveCnt() const -> cnt_t override {
     return static_cast<cnt_t>(*low);
   }
 
-  PARAOS_INLINE_TRIVIAL cnt_t GiveCntOverflowValue() const override {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto GiveCntOverflowValue() const
+      -> cnt_t override {
     return std::numeric_limits<std::uint16_t>::max();
   }
 
@@ -292,11 +331,11 @@ struct EmbeddedProfiler final : public IProfiler,
 
     // Необходимо сбросить счетчик переполнений чтобы при повторном вызове
     // Stop() не учитывать уже учтенное переполнение.
-    overflow_cnt_ = 0u;
+    overflow_cnt_ = 0U;
   }
 
-  cnt_t Stop() override {
-    cnt_t stop = EmbeddedTimer<LOW_ADDR, HIGHT_ADDR>::GiveCnt();
+  auto Stop() -> cnt_t override {
+    const cnt_t stop = EmbeddedTimer<LOW_ADDR, HIGHT_ADDR>::GiveCnt();
 
     if (start_ > stop) {
       ++overflow_cnt_;
@@ -305,20 +344,20 @@ struct EmbeddedProfiler final : public IProfiler,
     // Вычисление периода между вызовами Start() и Stop() с учетом переполнения.
     const auto &overflow_value =
         EmbeddedTimer<LOW_ADDR, HIGHT_ADDR>::GiveCntOverflowValue();
-    duration_ = static_cast<cnt_t>(
-        (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_);
+    duration_ =
+        (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_;
 
     return LastDuration();
   }
 
-  PARAOS_INLINE_TRIVIAL cnt_t LastDuration() override {
-    return static_cast<cnt_t>(duration_);
+  PARAOS_INLINE_TRIVIAL auto LastDuration() -> cnt_t override {
+    return duration_;
   }
 
  private:
-  cnt_t start_{0u};
-  cnt_t duration_{0u};
-  cnt_t overflow_cnt_{0u};
+  cnt_t start_{0U};
+  cnt_t duration_{0U};
+  cnt_t overflow_cnt_{0U};
 };
 
 /// @brief Instance of EmbeddedTimerEmpty with override interface methods which
@@ -337,7 +376,7 @@ struct TimerProfiler final : public IProfiler {
   /// @param[in] timer: New timer for connect to the profiler. If use default
   /// value, Stop() and LastDuration() return zero value. For this reason user
   /// code must call SetEmbeddedTimer() and set valid embedded timer reference.
-  TimerProfiler(const IEmbeddedTimer &timer = embedded_timer_empty)
+  explicit TimerProfiler(const IEmbeddedTimer &timer = embedded_timer_empty)
       : timer_{&timer} {}
 
   /// @brief Connect new embedded timer to the profiler.
@@ -356,14 +395,14 @@ struct TimerProfiler final : public IProfiler {
 
     // Необходимо сбросить счетчик переполнений чтобы при повторном вызове
     // Stop() не учитывать уже учтенное переполнение.
-    overflow_cnt_ = 0u;
+    overflow_cnt_ = 0U;
   }
 
   /// @brief Stop timer.
   ///
   /// @return Value between Start() and Stop() calls.
-  cnt_t Stop() override {
-    cnt_t stop = timer_->GiveCnt();
+  auto Stop() -> cnt_t override {
+    const cnt_t stop = timer_->GiveCnt();
 
     if (start_ > stop) {
       ++overflow_cnt_;
@@ -371,8 +410,8 @@ struct TimerProfiler final : public IProfiler {
 
     // Вычисление периода между вызовами Start() и Stop() с учетом переполнения.
     const auto &overflow_value = timer_->GiveCntOverflowValue();
-    duration_ = static_cast<cnt_t>(
-        (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_);
+    duration_ =
+        (overflow_value * overflow_cnt_) + (stop - start_) + overflow_cnt_;
 
     return LastDuration();
   }
@@ -380,14 +419,14 @@ struct TimerProfiler final : public IProfiler {
   /// @brief Return value between Start() and Stop() calls.
   ///
   /// @return Value between Start() and Stop() calls.
-  PARAOS_INLINE_TRIVIAL cnt_t LastDuration() override {
-    return static_cast<cnt_t>(duration_);
+  PARAOS_INLINE_TRIVIAL auto LastDuration() -> cnt_t override {
+    return duration_;
   }
 
  private:
-  cnt_t start_{0u};
-  cnt_t duration_{0u};
-  cnt_t overflow_cnt_{0u};
+  cnt_t start_{0U};
+  cnt_t duration_{0U};
+  cnt_t overflow_cnt_{0U};
 
   /// @brief Interface for get actual counter value on each time.
   const IEmbeddedTimer *timer_;

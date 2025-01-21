@@ -26,15 +26,17 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cstddef>
+#include <cstring>
 #include <string>
 
 #include "paraos_ringbuff.hpp"
 
 TEST(RingBuff, Create) {
   try {
-    paraos::RingBuff<char, 2> ring_buff;
+    const paraos::RingBuff<char, 2> ring_buff;
   } catch (paraos::ringbuff_ctor_error &e) {
-    FAIL() << "paraos::RingBuff can't throw exception" << std::endl;
+    FAIL() << "paraos::RingBuff can't throw exception" << "\n";
   }
 }
 
@@ -70,6 +72,7 @@ TEST(RingBuff, IsFull) {
 TEST(RingBuff, WriteThenRead) {
   std::string src{"Hello World!"};
   constexpr std::size_t ringbuff_size_in_bytes{100};
+  constexpr size_t array_size{128};
 
   paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
 
@@ -80,7 +83,7 @@ TEST(RingBuff, WriteThenRead) {
   ASSERT_EQ(src.size(), written_bytes_numb);
   ASSERT_EQ(src.size(), ring_buff.Size());
 
-  std::array<char, 100> dst_;
+  std::array<char, array_size> dst_{0};
   auto read_bytes_numb = ring_buff.Read(dst_.data(), dst_.size());
   ASSERT_EQ(written_bytes_numb, read_bytes_numb);
 
@@ -95,6 +98,7 @@ TEST(RingBuff, WriteThenRead) {
 
 TEST(RingBuff, WriteThenReadIterator) {
   constexpr std::size_t ringbuff_size_in_bytes{100};
+  constexpr size_t array_size{128};
 
   // User std::array instead std::stirng or check simple iterator.
   constexpr std::array<char, ringbuff_size_in_bytes> src{"Hello World!"};
@@ -107,7 +111,7 @@ TEST(RingBuff, WriteThenReadIterator) {
   ASSERT_EQ(str_len_without_null, written_bytes_numb);
   ASSERT_EQ(str_len_without_null, ring_buff.Size());
 
-  std::array<char, 100> dst_;
+  std::array<char, array_size> dst_{0};
   auto read_bytes_numb = ring_buff.Read(dst_.begin(), dst_.size());
   ASSERT_EQ(written_bytes_numb, read_bytes_numb);
 
@@ -128,7 +132,7 @@ TEST(RingBuff, Clear) {
   ASSERT_EQ(written_bytes_numb, ring_buff.Size());
 
   ring_buff.Clear();
-  ASSERT_EQ(0u, ring_buff.Size());
+  ASSERT_EQ(0U, ring_buff.Size());
 }
 
 TEST(RingBuff, Skip) {
@@ -151,6 +155,7 @@ TEST(RingBuff, Skip) {
 TEST(RingBuff, WriteSpanThenReadSpan) {
   std::string src{"Hello World!"};
   constexpr std::size_t ringbuff_size_in_bytes{100};
+  constexpr size_t array_size{128};
 
   paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
 
@@ -158,7 +163,7 @@ TEST(RingBuff, WriteSpanThenReadSpan) {
   ASSERT_EQ(src.size(), written_bytes_numb);
   ASSERT_EQ(src.size(), ring_buff.Size());
 
-  std::array<char, 100> dst_;
+  std::array<char, array_size> dst_{0};
   auto read_bytes_numb = ring_buff.Read(dst_);
   ASSERT_EQ(written_bytes_numb, read_bytes_numb);
 
@@ -177,5 +182,5 @@ TEST(RingBuff, WriteOverflow) {
 
   paraos::RingBuff<char, ringbuff_size_in_bytes> ring_buff;
   auto written_bytes_numb = ring_buff.Write(src);
-  ASSERT_EQ(0u, written_bytes_numb);
+  ASSERT_EQ(0U, written_bytes_numb);
 }

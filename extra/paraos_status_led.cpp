@@ -25,21 +25,25 @@
 
 #include "paraos_status_led.hpp"
 
+#include "etl/timer.h"
+#include "paraos_thread_sequence.hpp"
+
 namespace paraos {
 StatusLed::StatusLed(
-    IStatusLed &io, IThreadSequence &thread_sequence, StatusLedMode blink_mode)
-    : io_{io}, thread_sequence_{thread_sequence} {
+    IStatusLed &io_addr, IThreadSequence &thread_sequence,
+    StatusLedMode blink_mode)
+    : io_{io_addr}, thread_sequence_{thread_sequence} {
   NewBlinkMode(blink_mode);
 }
 
-StatusLed::~StatusLed() {}
+StatusLed::~StatusLed() = default;
 
 auto StatusLed::NewBlinkMode(StatusLedMode new_blink_mode) -> bool {
   bool is_new_blink_mode_set{false};
   thread_sequence_.Unregister(id_);
 
   auto blink_mode = static_cast<int>(new_blink_mode);
-  id_ = is_new_blink_mode_set = thread_sequence_.Register(
+  id_ = thread_sequence_.Register(
       delegate_[blink_mode].delegate_, delegate_[blink_mode].freq_,
       delegate_[blink_mode].is_continuous_);
 

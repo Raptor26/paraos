@@ -46,12 +46,13 @@ class Timer {
   /// needed).
   /// @param[in] period_ms: Period in miliseconds for calling Run() method,
   /// which user code must override in custom class.
-  Timer(
+  explicit Timer(
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer") {
     handle_ = xTimerCreate(
-        name.data(), PARAOS_ConvertMsToTicks(period_ms), is_auto_reload,
-        static_cast<void*>(this), TimerCallback);
+        name.data(), PARAOS_ConvertMsToTicks(period_ms),
+        static_cast<BaseType_t>(is_auto_reload), static_cast<void *>(this),
+        TimerCallback);
 
     if (start_immediately) {
       Start();
@@ -67,20 +68,21 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  ISRbool Start(
-      std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
+  auto Start(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
+      -> ISRbool {
     ISRbool is_timer_started;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
-    if (handle_) {
+    if (handle_ != nullptr) {
       if (!is_isr) {
-        is_timer_started.is_success_ =
-            xTimerStart(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));
+        is_timer_started.SetSuccessStatus(static_cast<bool>(
+            xTimerStart(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
+
       } else {
-        is_timer_started.is_success_ =
-            xTimerStartFromISR(handle_, &xHigherPriorityTaskWoken);
+        is_timer_started.SetSuccessStatus(static_cast<bool>(
+            xTimerStartFromISR(handle_, &xHigherPriorityTaskWoken)));
 
         if (xHigherPriorityTaskWoken != pdFALSE) {
-          is_timer_started.is_need_switch_context_ = true;
+          is_timer_started.SetSwitchContextStatus(true);
         }
       }
     }
@@ -98,20 +100,21 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  ISRbool ChangePeriod(
+  auto ChangePeriod(
       std::size_t period_ms, std::size_t max_block_time_ms = max_delay,
-      bool is_isr = false) {
+      bool is_isr = false) -> ISRbool {
     ISRbool is_period_changed;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
-      is_period_changed.is_success_ = xTimerChangePeriod(
-          handle_, period_ms, PARAOS_ConvertMsToTicks(max_block_time_ms));
+      is_period_changed.SetSuccessStatus(static_cast<bool>(xTimerChangePeriod(
+          handle_, period_ms, PARAOS_ConvertMsToTicks(max_block_time_ms))));
     } else {
-      is_period_changed.is_success_ = xTimerChangePeriodFromISR(
-          handle_, period_ms, &xHigherPriorityTaskWoken);
+      is_period_changed.SetSuccessStatus(
+          static_cast<bool>(xTimerChangePeriodFromISR(
+              handle_, period_ms, &xHigherPriorityTaskWoken)));
 
       if (xHigherPriorityTaskWoken != pdFALSE) {
-        is_period_changed.is_need_switch_context_ = true;
+        is_period_changed.SetSwitchContextStatus(true);
       }
     }
 
@@ -127,18 +130,19 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  ISRbool Stop(std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
+  auto Stop(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
+      -> ISRbool {
     ISRbool is_stopped;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
-      is_stopped.is_success_ =
-          xTimerStop(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));
+      is_stopped.SetSuccessStatus(static_cast<bool>(
+          xTimerStop(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
     } else {
-      is_stopped.is_success_ =
-          xTimerStopFromISR(handle_, &xHigherPriorityTaskWoken);
+      is_stopped.SetSuccessStatus(static_cast<bool>(
+          xTimerStopFromISR(handle_, &xHigherPriorityTaskWoken)));
 
       if (xHigherPriorityTaskWoken != pdFALSE) {
-        is_stopped.is_need_switch_context_ = true;
+        is_stopped.SetSwitchContextStatus(true);
       }
     }
 
@@ -164,16 +168,16 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  ISRbool Reset(
-      std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
+  auto Reset(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
+      -> ISRbool {
     // Reset not provided ISR API.
     PARAOS_CHECK_ASSERT(is_isr == false);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     ISRbool is_reset;
 
-    is_reset.is_success_ =
-        xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms));
+    is_reset.SetSuccessStatus(static_cast<bool>(
+        xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
 
     return is_reset;
   }
@@ -184,10 +188,16 @@ class Timer {
 
   virtual void Run() = 0;
 
+  /// @brief Five rule.
+  Timer(Timer &&other) = delete;
+  auto operator=(Timer &&other) -> Timer & = delete;
+  auto operator=(const Timer &other) -> Timer & = delete;
+  Timer(const Timer &other) = delete;
+
  private:
   static void TimerCallback(TimerHandle_t timer_handle) {
     PARAOS_CHECK_ASSERT(timer_handle);
-    auto this_ptr = reinterpret_cast<Timer*>(pvTimerGetTimerID(timer_handle));
+    auto *this_ptr = reinterpret_cast<Timer *>(pvTimerGetTimerID(timer_handle));
 
     this_ptr->Run();
   }

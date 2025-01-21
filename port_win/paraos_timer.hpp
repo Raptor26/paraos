@@ -46,11 +46,11 @@ class Timer {
   /// needed).
   /// @param[in] period_ms: Period in miliseconds for calling Run() method,
   /// which user code must override in custom class.
-  Timer(
+  explicit Timer(
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer")
       : period_ms_{period_ms}, is_auto_reload_{is_auto_reload}, name_{name} {
-    if (start_immediately == true) {
+    if (start_immediately) {
       Create();
     }
   }
@@ -67,7 +67,7 @@ class Timer {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     // Checking double timer creation run in Create().
-    return Create();
+    return static_cast<ISRbool>(Create());
   }
 
   /// @brief Change period for calling Run() method.
@@ -83,7 +83,8 @@ class Timer {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     period_ms_ = period_ms;
-    return ChangeTimerQueueTimer(nullptr, timer_, period_ms_, period_ms_);
+    return static_cast<ISRbool>(static_cast<bool>(
+        ChangeTimerQueueTimer(nullptr, timer_, period_ms_, period_ms_)));
   }
 
   /// @brief Stop periodical scheduling Run() execute.
@@ -107,8 +108,8 @@ class Timer {
   /// @param[in] is_isr: In winapi is fake parameter, which needed
   /// for compatibility for freeRTOS API.
   /// @return True is timer successfully restarted, false on otherwise.
-  ISRbool Reset(
-      std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
+  auto Reset(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
+      -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time_ms);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     Delete();
@@ -124,29 +125,35 @@ class Timer {
     PARAOS_CHECK_ASSERT(false);
   }
 
+  /// @brief Five rule.
+  Timer(Timer &&other) = delete;
+  auto operator=(Timer &&other) -> Timer & = delete;
+  auto operator=(const Timer &other) -> Timer & = delete;
+  Timer(const Timer &other) = delete;
+
  private:
   /// @brief  After timer created, his execute will be scheduling immediately.
   /// @return Return true if timer started, false in otherwise.
   auto Create() -> bool {
     bool is_timer_created{false};
-    if (!timer_) {
+    if (timer_ == nullptr) {
       // Registered CreateTimerQueueTimer() callback function in default timer
       // queue.
 
       auto period_ms{period_ms_};
       if (!is_auto_reload_) {
         // We set period_ms as zero for one shot timer execute.
-        period_ms = 0u;
+        period_ms = 0U;
       }
 
-      is_timer_created = CreateTimerQueueTimer(
+      is_timer_created = static_cast<bool>(CreateTimerQueueTimer(
           &timer_, nullptr, WaitOrTimerCallback, static_cast<PVOID>(this),
           static_cast<DWORD>(
               period_ms_),  // time befor fist call callback function
           static_cast<DWORD>(
               period_ms),  // in one shot mode, this will be zero value
 
-          WT_EXECUTEINTIMERTHREAD);
+          WT_EXECUTEINTIMERTHREAD));
     }
 
     return is_timer_created;
@@ -156,7 +163,7 @@ class Timer {
     auto is_timer_deleted = DeleteTimerQueueTimer(nullptr, timer_, nullptr);
     timer_ = nullptr;
 
-    return is_timer_deleted != 0 ? true : false;
+    return static_cast<ISRbool>(static_cast<bool>(is_timer_deleted != 0));
   }
 
   /// @brief Starting address for a timer callback or a registered wait
@@ -178,7 +185,7 @@ class Timer {
     PARAOS_CHECK_ASSERT(lpParameter);
     PARAOS_CHECK_ASSERT(TimerOrWaitFired == true);
     PARAOS_ATTR_UNUSED_VAR(TimerOrWaitFired);
-    auto* this_ptr = reinterpret_cast<Timer*>(lpParameter);
+    auto *this_ptr = reinterpret_cast<Timer *>(lpParameter);
     this_ptr->Run();
   }
 

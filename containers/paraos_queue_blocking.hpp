@@ -23,8 +23,8 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef PARAOS_QUEUE_LOCKING_V3_HPP
-#define PARAOS_QUEUE_LOCKING_V3_HPP
+#ifndef PARAOS_QUEUE_BLOCKING_HPP
+#define PARAOS_QUEUE_BLOCKING_HPP
 
 #include <execution>
 #include <optional>
@@ -125,7 +125,7 @@ struct IQueueBlocking {
   auto Pop(std::size_t timeout_ms, bool is_isr = false) -> std::optional<T> {
     std::optional<T> optional;
 
-    MutexGuard mutex(mutex_);
+    const MutexGuard mutex(mutex_);
 
     bool is_need_take{true};
 
@@ -135,15 +135,14 @@ struct IQueueBlocking {
       if (pop_sem_.Take(timeout_ms, is_isr)) {
         paraosTRACE_MESSAGE("Sem taken");
         break;
-      } else {
-        paraosTRACE_MESSAGE("Sem not taken!!!");
+      }
+      paraosTRACE_MESSAGE("Sem not taken!!!");
 
-        // recalculate timeout. timeout_ms value will corrected in
-        // CheckTimeout().
-        if (Thread::CheckTimeout(timeout, timeout_ms)) {
-          is_need_take = false;
-          break;
-        }
+      // recalculate timeout. timeout_ms value will corrected in
+      // CheckTimeout().
+      if (Thread::CheckTimeout(timeout, timeout_ms)) {
+        is_need_take = false;
+        break;
       }
     }
 
@@ -186,6 +185,11 @@ struct IQueueBlocking {
     return queue_.size();
   }
 
+  IQueueBlocking(IQueueBlocking&& other) = delete;
+  auto operator=(IQueueBlocking&& other) -> IQueueBlocking& = delete;
+  auto operator=(const IQueueBlocking& other) -> IQueueBlocking& = delete;
+  IQueueBlocking(const IQueueBlocking& other) = delete;
+
  protected:
   IQueueBlocking(etl::iqueue<T>& queue, SemaphoreBinary& pop_sem, Mutex& mutex)
       : queue_{queue}, pop_sem_{pop_sem}, mutex_{mutex} {}
@@ -198,16 +202,16 @@ struct IQueueBlocking {
 
 template <typename T, const std::size_t SIZE>
 class QueueBlocking final : public IQueueBlocking<T> {
-  static_assert(SIZE > 1u, "Queue size must be greater then 1 item");
+  static_assert(SIZE > 1U, "Queue size must be greater then 1 item");
 
  public:
   QueueBlocking()
       : IQueueBlocking<T>{queue_, pop_sem_, mutex_},
         pop_sem_{SemaphoreAttr{SIZE, SIZE}} {}
 
-  virtual ~QueueBlocking() = default;
+  ~QueueBlocking() override = default;
 
-  operator bool() const {
+  explicit operator bool() const {
     bool queue_ready{false};
 
     if (pop_sem_ && (queue_.capacity() == SIZE)) {
@@ -217,6 +221,12 @@ class QueueBlocking final : public IQueueBlocking<T> {
     return queue_ready;
   }
 
+  /// @brief Five rule.
+  QueueBlocking(QueueBlocking&& other) = delete;
+  auto operator=(QueueBlocking&& other) -> QueueBlocking& = delete;
+  auto operator=(const QueueBlocking& other) -> QueueBlocking& = delete;
+  QueueBlocking(const QueueBlocking& other) = delete;
+
  private:
   etl::queue<T, SIZE> queue_;
   SemaphoreBinary pop_sem_;
@@ -224,4 +234,4 @@ class QueueBlocking final : public IQueueBlocking<T> {
 };
 }  // namespace paraos
 
-#endif /* PARAOS_QUEUE_LOCKING_V3_HPP */
+#endif /* PARAOS_QUEUE_BLOCKING_HPP */

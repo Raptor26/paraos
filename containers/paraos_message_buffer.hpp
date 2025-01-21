@@ -48,7 +48,7 @@ class Message {
   /// @brief Запрашивает из кучи размер памяти, указанный в size_in_bytes
   /// @param[in] size_in_bytes: Размер области памяти в байтах, который
   /// необходимо выделить из аллокатора памяти.
-  Message(const std::size_t size_in_bytes)
+  explicit Message(const std::size_t size_in_bytes)
       : data_ptr_{nullptr}, size_in_bytes_{size_in_bytes} {
     SafeAllocate();
   }
@@ -61,25 +61,25 @@ class Message {
       : data_ptr_{nullptr}, size_in_bytes_{other.size_in_bytes_} {
     SafeAllocate();
 
-    if (data_ptr_) {
+    if (data_ptr_ != nullptr) {
       // After memory allocated, need copy bytes in allocated memory area from
       // other memory area.
       memcpy(data_ptr_, other.data_ptr_, size_in_bytes_);
     }
   }
 
-  Message(Message &&other)
+  Message(Message &&other) noexcept
       : data_ptr_{other.data_ptr_}, size_in_bytes_{other.size_in_bytes_} {
     other.data_ptr_ = nullptr;
   }
 
-  Message &operator=(const Message &other) = delete;
-  Message &operator=(Message &&other) = delete;
+  auto operator=(const Message &other) -> Message & = delete;
+  auto operator=(Message &&other) -> Message & = delete;
 
-  operator bool() const {
+  explicit operator bool() const {
     bool is_ready{false};
 
-    if (data_ptr_) {
+    if (data_ptr_ != nullptr) {
       is_ready = true;
     }
 
@@ -88,14 +88,16 @@ class Message {
 
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
-  PARAOS_INLINE_TRIVIAL void *Data() const {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const -> void * {
     return static_cast<void *>(data_ptr_);
   }
 
   /// @brief Возвращает размер выделенной области памяти в байтах.
   /// @return Количество байт, выделенные по адресу, который возвращает метод
   /// Addr().
-  PARAOS_INLINE_TRIVIAL size_t Size() const { return size_in_bytes_; }
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Size() const -> size_t {
+    return size_in_bytes_;
+  }
 
   /// @brief Принудительно освобождает область памяти, выделенную под сообщение.
   /// После вызова данного метода, объект становиться не валидным.
@@ -103,13 +105,13 @@ class Message {
 
  private:
   PARAOS_INLINE_TRIVIAL void SafeAllocate() {
-    if (size_in_bytes_ > 0u) {
+    if (size_in_bytes_ > 0U) {
       data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes_);
     }
   }
 
   PARAOS_INLINE_TRIVIAL void SafeDeallocate() {
-    if (data_ptr_) {
+    if (data_ptr_ != nullptr) {
       alloc_traits::deallocate(allocator_, data_ptr_, size_in_bytes_);
       data_ptr_ = nullptr;
     }
@@ -137,13 +139,13 @@ class MessageWritable final {
 
   MessageWritable(const MessageWritable &other) = delete;
   MessageWritable(MessageWritable &&other) = delete;
-  MessageWritable &operator=(const MessageWritable &other) = delete;
-  MessageWritable &operator=(MessageWritable &&other) = delete;
+  auto operator=(const MessageWritable &other) -> MessageWritable & = delete;
+  auto operator=(MessageWritable &&other) -> MessageWritable & = delete;
 
-  operator bool() const { return message_; }
+  explicit operator bool() const { return static_cast<bool>(message_); }
 
-  PARAOS_INLINE_TRIVIAL void *Data() { return message_.Data(); }
-  PARAOS_INLINE_TRIVIAL size_t Size() { return message_.Size(); }
+  PARAOS_INLINE_TRIVIAL auto Data() -> void * { return message_.Data(); }
+  PARAOS_INLINE_TRIVIAL auto Size() -> size_t { return message_.Size(); }
 
   /// @brief Try push message in buffer. Message will push if queue has space.
   ///
@@ -163,7 +165,7 @@ class MessageWritable final {
   ///
   /// @return Return true if message successfully pushed in buffer, false in
   /// otherwise.
-  PARAOS_INLINE_OPERATIONS bool TryPush(bool is_isr = false) {
+  PARAOS_INLINE_OPERATIONS auto TryPush(bool is_isr = false) -> bool {
     bool is_message_pushed{false};
 
     // If user calls TryPush(), that's mean when calls dtor, TryPush() will
@@ -197,8 +199,8 @@ class IMessageBuffer {
 
   IMessageBuffer(const IMessageBuffer &other) = delete;
   IMessageBuffer(IMessageBuffer &&other) = delete;
-  IMessageBuffer &operator=(const IMessageBuffer &other) = delete;
-  IMessageBuffer &operator=(IMessageBuffer &&other) = delete;
+  auto operator=(const IMessageBuffer &other) -> IMessageBuffer & = delete;
+  auto operator=(IMessageBuffer &&other) -> IMessageBuffer & = delete;
 
   /// @brief  Request memory from allocator, witch set in MessageBuffer ctor.
   ///
@@ -222,11 +224,12 @@ class IMessageBuffer {
     return queue_.Pop(timeout_ms);
   }
 
-  PARAOS_INLINE_TRIVIAL bool IsFull() { return queue_.IsFull(); }
-  PARAOS_INLINE_TRIVIAL bool IsEmpty() { return queue_.IsEmpty(); }
+  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool { return queue_.IsFull(); }
+  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool { return queue_.IsEmpty(); }
 
  protected:
-  IMessageBuffer(paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
+  explicit IMessageBuffer(
+      paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
       : queue_{queue} {}
 
  private:
@@ -248,14 +251,14 @@ class MessageBuffer final : public IMessageBuffer<BUFFER_ALLOCATOR> {
  public:
   MessageBuffer() : IMessageBuffer<BUFFER_ALLOCATOR>{queue_} {}
 
-  ~MessageBuffer() = default;
+  ~MessageBuffer() override = default;
 
   MessageBuffer(const MessageBuffer &other) = delete;
   MessageBuffer(MessageBuffer &&other) = delete;
-  MessageBuffer &operator=(const MessageBuffer &other) = delete;
-  MessageBuffer &operator=(MessageBuffer &&other) = delete;
+  auto operator=(const MessageBuffer &other) -> MessageBuffer & = delete;
+  auto operator=(MessageBuffer &&other) -> MessageBuffer & = delete;
 
-  operator bool() const { return queue_; }
+  explicit operator bool() const { return static_cast<bool>(queue_); }
 
  private:
   paraos::QueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> queue_;

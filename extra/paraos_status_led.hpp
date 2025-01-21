@@ -26,13 +26,15 @@
 #ifndef PARAOS_STATUS_LED_HPP
 #define PARAOS_STATUS_LED_HPP
 
+#include <array>
+
 #include "etl/delegate.h"
 #include "paraos_thread_sequence.hpp"
 
 namespace paraos {
 
-enum class StatusLedMode {
-  kEnable,
+enum class StatusLedMode : uint8_t {
+  kEnable = 0,
   kDisable,
   kIdle,
   kBlink,
@@ -61,14 +63,22 @@ class StatusLed {
   /// called. Used in Blink().
   static constexpr float disable_freq{1.0};
 
+  /// @brief Freq of blinking in error mode.
+  static constexpr float error_blink_freq{1.0};
+
  public:
   StatusLed(
-      IStatusLed &io, IThreadSequence &thread_sequence,
+      IStatusLed &io_addr, IThreadSequence &thread_sequence,
       StatusLedMode blink_mode = StatusLedMode::kIdle);
 
   virtual ~StatusLed();
 
   auto NewBlinkMode(StatusLedMode new_blink_mode) -> bool;
+
+  StatusLed(StatusLed &&other) = delete;
+  auto operator=(StatusLed &&other) -> StatusLed & = delete;
+  auto operator=(const StatusLed &other) -> StatusLed & = delete;
+  StatusLed(const StatusLed &other) = delete;
 
  private:
   void Enable();
@@ -94,13 +104,15 @@ class StatusLed {
     bool is_continuous_;
   };
 
-  StatusLedDelegate delegate_[blink_mode_max_numb] = {
-      {delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0, false},
-      {delegate_type::create<StatusLed, &StatusLed::Disable>(*this), 0.0,
-       false},
-      {delegate_type::create<StatusLed, &StatusLed::Idle>(*this), 1.0, true},
-      {delegate_type::create<StatusLed, &StatusLed::Blink>(*this), 0.0, true},
-      {delegate_type::create<StatusLed, &StatusLed::Error>(*this), 10.0, true}};
+  std::array<StatusLedDelegate, blink_mode_max_numb> delegate_ = {
+      {{delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0,
+        false},
+       {delegate_type::create<StatusLed, &StatusLed::Disable>(*this), 0.0,
+        false},
+       {delegate_type::create<StatusLed, &StatusLed::Idle>(*this), 1.0, true},
+       {delegate_type::create<StatusLed, &StatusLed::Blink>(*this), 0.0, true},
+       {delegate_type::create<StatusLed, &StatusLed::Error>(*this),
+        error_blink_freq, true}}};
 };
 
 }  // namespace paraos

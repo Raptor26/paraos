@@ -51,7 +51,7 @@ namespace paraos {
 class MutexBase {
  public:
   virtual ~MutexBase() {
-    if (handle_) {
+    if (handle_ != nullptr) {
       vSemaphoreDelete(handle_);
 
       // need for debug only
@@ -59,9 +59,12 @@ class MutexBase {
     }
   }
 
-  operator bool() const { return handle_ != nullptr ? true : false; }
+  explicit operator bool() const {
+    return static_cast<bool>(handle_ != nullptr);
+  }
 
-  ISRbool Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) {
+  auto Lock(std::size_t timeout_ms = max_delay, bool is_isr = false)
+      -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
     ISRbool is_mutex_taken;
 
@@ -80,14 +83,14 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  ISRbool Unlock(bool is_isr = false) {
+  auto Unlock(bool is_isr = false) -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
     ISRbool is_mutex_release;
 
     if (!is_isr) {
       // UnlockRecursive() may call only if caller thread is mutex holder.
       // Otherwise try release as normal mutex.
-      if ((is_recursive_ == true) &&
+      if ((is_recursive_) &&
           (xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(handle_))) {
         // Recursive mutex release operations counter can't be greater then take
         // operations counter.
@@ -105,14 +108,18 @@ class MutexBase {
     return is_mutex_release;
   }
 
+  /// @brief  Mutex non-copyable
+  auto operator=(const MutexBase& other) noexcept -> MutexBase& = delete;
+  MutexBase(const MutexBase& other) = delete;
+
  protected:
-  MutexBase(bool is_recursive = false)
+  explicit MutexBase(bool is_recursive = false)
       : is_recursive_{is_recursive}, recursive_holder_take_cnt_{0} {};
 
   /// @brief Move Ctor,
-  MutexBase(MutexBase&& other) {
+  MutexBase(MutexBase&& other) noexcept {
     if (this != &other) {
-      paraos::CriticalSection critical;
+      const paraos::CriticalSection critical;
       this->handle_ = other.handle_;
       this->is_recursive_ = other.is_recursive_.load();
       this->recursive_holder_take_cnt_ =
@@ -123,12 +130,12 @@ class MutexBase {
   }
 
   /// @brief Move assignment.
-  MutexBase& operator=(MutexBase&& other) {
+  auto operator=(MutexBase&& other) noexcept -> MutexBase& {
     if (this == &other) {
       return *this;
     }
 
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     this->~MutexBase();
     this->handle_ = other.handle_;
     this->is_recursive_ = other.is_recursive_.load();
@@ -139,72 +146,68 @@ class MutexBase {
     return *this;
   }
 
-  /// @brief  Mutex non-copyable
-  MutexBase& operator=(const MutexBase& other) = delete;
-  MutexBase(const MutexBase& other) = delete;
-
  private:
-  ISRbool LockNormal(std::size_t timeout_ms = max_delay) {
+  auto LockNormal(std::size_t timeout_ms = max_delay) -> ISRbool {
     ISRbool is_mutex_taken;
     if (xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms)) ==
         pdTRUE) {
-      is_mutex_taken.is_success_ = true;
+      is_mutex_taken.SetSuccessStatus(true);
     }
 
     return is_mutex_taken;
   }
 
-  ISRbool LockRecursive(std::size_t timeout_ms = max_delay) {
+  auto LockRecursive(std::size_t timeout_ms = max_delay) -> ISRbool {
     ISRbool is_mutex_taken;
     if (xSemaphoreGetMutexHolder(handle_) == xTaskGetCurrentTaskHandle()) {
       ++recursive_holder_take_cnt_;
     }
     if (xQueueTakeMutexRecursive(
             handle_, PARAOS_ConvertMsToTicks(timeout_ms)) == pdTRUE) {
-      is_mutex_taken.is_success_ = true;
+      is_mutex_taken.SetSuccessStatus(true);
     }
 
     return is_mutex_taken;
   }
 
-  ISRbool LockIsr() {
+  auto LockIsr() -> ISRbool {
     ISRbool is_mutex_taken;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken) == pdTRUE) {
-      is_mutex_taken.is_success_ = true;
+      is_mutex_taken.SetSuccessStatus(true);
       if (xHigherPriorityTaskWoken == pdTRUE) {
-        is_mutex_taken.is_need_switch_context_ = true;
+        is_mutex_taken.SetSwitchContextStatus(true);
       }
     }
 
     return is_mutex_taken;
   }
 
-  ISRbool UnlockRecursive() {
+  auto UnlockRecursive() -> ISRbool {
     ISRbool is_mutex_release;
     if (xSemaphoreGiveRecursive(handle_) == pdTRUE) {
-      is_mutex_release.is_success_ = true;
+      is_mutex_release.SetSuccessStatus(true);
       --recursive_holder_take_cnt_;
     }
 
     return is_mutex_release;
   }
 
-  ISRbool UnlockNormal() {
+  auto UnlockNormal() -> ISRbool {
     ISRbool is_mutex_release;
     if (xSemaphoreGive(handle_) == pdTRUE) {
-      is_mutex_release.is_success_ = true;
+      is_mutex_release.SetSuccessStatus(true);
     }
     return is_mutex_release;
   }
 
-  ISRbool UnlockIsr() {
+  auto UnlockIsr() -> ISRbool {
     ISRbool is_mutex_release;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (xSemaphoreGiveFromISR(handle_, &xHigherPriorityTaskWoken) == pdTRUE) {
-      is_mutex_release.is_success_ = true;
+      is_mutex_release.SetSuccessStatus(true);
       if (xHigherPriorityTaskWoken == pdTRUE) {
-        is_mutex_release.is_need_switch_context_ = true;
+        is_mutex_release.SetSwitchContextStatus(true);
       }
     }
 
@@ -212,29 +215,33 @@ class MutexBase {
   }
 
  protected:
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put these variables into private section, because they're used in
+  // derived classes.
   SemaphoreHandle_t handle_{nullptr};
-  etl::atomic<bool> is_recursive_;
+  etl::atomic<bool> is_recursive_{false};
 
   /// @brief Watch for symmetric call Lock() and Unlock() for recursive mutex.
-  etl::atomic<size_t> recursive_holder_take_cnt_;
+  etl::atomic<size_t> recursive_holder_take_cnt_{0};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 class Mutex final : public MutexBase {
  public:
   Mutex() : MutexBase{false} { handle_ = xSemaphoreCreateMutex(); }
 
-  ~Mutex() = default;
+  ~Mutex() override = default;
 
   /// @brief Move Ctor,
-  Mutex(Mutex&& other) : MutexBase(std::move(other)) {};
+  Mutex(Mutex&& other) noexcept : MutexBase(std::move(other)) {};
 
   /// @brief Move assignment.
-  Mutex& operator=(Mutex&& other) {
+  auto operator=(Mutex&& other) noexcept -> Mutex& {
     if (this == &other) {
       return *this;
     }
 
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     this->~Mutex();
     this->handle_ = other.handle_;
     this->is_recursive_ = other.is_recursive_.load();
@@ -246,7 +253,7 @@ class Mutex final : public MutexBase {
   }
 
   /// @brief  Mutex non-copyable.
-  Mutex& operator=(const Mutex& other) = delete;
+  auto operator=(const Mutex& other) -> Mutex& = delete;
   Mutex(const Mutex& other) = delete;
 };
 
@@ -259,18 +266,19 @@ class MutexRecursive final : public MutexBase {
     handle_ = xSemaphoreCreateRecursiveMutex();
   }
 
-  ~MutexRecursive() = default;
+  ~MutexRecursive() override = default;
 
   /// @brief Move Ctor,
-  MutexRecursive(MutexRecursive&& other) : MutexBase(std::move(other)) {};
+  MutexRecursive(MutexRecursive&& other) noexcept
+      : MutexBase(std::move(other)) {};
 
   /// @brief Move assignment.
-  MutexRecursive& operator=(MutexRecursive&& other) {
+  auto operator=(MutexRecursive&& other) noexcept -> MutexRecursive& {
     if (this == &other) {
       return *this;
     }
 
-    paraos::CriticalSection critical;
+    const paraos::CriticalSection critical;
     this->~MutexRecursive();
     this->handle_ = other.handle_;
     this->is_recursive_ = other.is_recursive_.load();
@@ -283,7 +291,7 @@ class MutexRecursive final : public MutexBase {
 
   /// @brief  Mutex non-copyable.
   MutexRecursive(const MutexRecursive& other) = delete;
-  MutexRecursive& operator=(const MutexRecursive& other) = delete;
+  auto operator=(const MutexRecursive& other) -> MutexRecursive& = delete;
 };
 
 }  // namespace paraos

@@ -27,6 +27,12 @@ class ISerial {
 
   virtual ~ISerial() = default;
 
+  /// @brief Five rule.
+  ISerial(ISerial &&other) = delete;
+  auto operator=(ISerial &&other) -> ISerial & = delete;
+  auto operator=(const ISerial &other) -> ISerial & = delete;
+  ISerial(const ISerial &other) = delete;
+
  protected:
   /// @brief Disable direct creation of interface class by declaring ctor as
   /// protected.

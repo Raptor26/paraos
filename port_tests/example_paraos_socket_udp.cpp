@@ -44,13 +44,16 @@
 ///     принудительно (Ctrl + C).
 
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <string>
 
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_socket_udp.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_utils.hpp"
 
 /// @brief Время ожидания входных данных, задаваемое для неблокирующего сокета,
 /// мс.
@@ -63,6 +66,37 @@ inline constexpr size_t empty_socket_timeout_ms{0};
 /// ограниченным временем ожидания, мс.
 inline constexpr size_t blocking_socket_timeout_ms{1500};
 
+/// @brief Размер массива для хранения принятых данных.
+inline constexpr size_t array_size{50};
+
+/// @brief Размер стека у потоков в данном примере.
+inline constexpr size_t threads_stack_size{512};
+
+/// @brief Порт сервера, который принимает и отправляет данные.
+inline constexpr uint16_t server_port{8080};
+
+/// @brief Порт "пустого" сервера.
+inline constexpr uint16_t empty_server_port{9090};
+
+/// @brief Тайм-аут потока сокета с заданным временем ожидания, мс.
+inline constexpr size_t blocking_sock_thread_delay_ms{50};
+
+/// @brief Тайм-аут потока "пустого" сокета, мс.
+inline constexpr size_t empty_sock_thread_delay_ms{800};
+
+/// @brief Тайм-аут потока неблокирующего сокета, мс.
+inline constexpr size_t nonblocking_sock_thread_delay_ms{70};
+
+/// @brief Количество итераций работы неблокирующего сокета.
+inline constexpr size_t nonblocking_socket_iterations_count{10};
+
+/// @brief Количество итераций работы "пустого" сокета.
+inline constexpr size_t empty_socket_iterations_count{20};
+
+/// @brief Количество итераций работы сокета с заданным временем ожидания.
+inline constexpr size_t blocking_socket_iterations_count{7};
+
+namespace {
 /// @brief Профилировщик для замера задержки ожидания входных данных у
 /// неблокирующего сокета.
 paraos::OsProfiler nonblocking_socket_profiler{};
@@ -79,9 +113,6 @@ paraos::OsProfiler blocking_socket_profiler{};
 /// сокета с неограниченным временем ожидания.
 paraos::OsProfiler forever_blocking_socket_profiler{};
 
-/// @brief Размер массива для хранения принятых данных.
-inline constexpr size_t array_size = 50;
-
 /// @brief Данные, передаваемые на сервер при обычной работе потока.
 std::string handshake_data{"Server handshake"};
 
@@ -96,13 +127,18 @@ bool nonblocking_thread_exit_flag = false;
 /// @brief Флаг, который устанавливается в true потоком, использующим
 /// сокет с заданным временем ожидания, во время завершения своей работы.
 bool blocking_thread_exit_flag = false;
+}  // namespace
 
+// String copy here is needed because of the delayed thread initialization -
+// address of it's name could be invalid later.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 /// @brief Структура потока, использующего неблокирующий сокет.
 struct NonBlockingSocketThread : public paraos::Thread {
-  NonBlockingSocketThread(
+  explicit NonBlockingSocketThread(
       paraos::UDPSocket* socket_ptr,
       const std::string thread_name = "Non blocking thread")
-      : paraos::Thread{thread_name, 512, paraos::ThreadPriority::kNormal},
+      : paraos::
+            Thread{thread_name, threads_stack_size, paraos::ThreadPriority::kNormal},
         socket_ptr_{socket_ptr} {
     SetNeedWhile(true);
     Start();
@@ -125,39 +161,39 @@ struct NonBlockingSocketThread : public paraos::Thread {
     if (received_bytes_num == 0) {
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
-        std::cout << "NON BLOCKING SOCKET TIMED OUT:" << std::endl;
+        std::cout << "NON BLOCKING SOCKET TIMED OUT:" << "\n";
         std::cout << "\tEXPECTED WAITING FOR " << nonblocking_socket_timeout_ms
-                  << " ms." << std::endl;
+                  << " ms." << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
 
       timed_out_counter_++;
-      if (timed_out_counter_ == 10) {
+      if (timed_out_counter_ == nonblocking_socket_iterations_count) {
         socket_ptr_->Transmit(
             static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
-        std::cout << "\t~NON BLOCKING thread EXITING~" << std::endl;
+        std::cout << "\t~NON BLOCKING thread EXITING~" << "\n";
         SetNeedWhile(false);
         nonblocking_thread_exit_flag = true;
       }
     } else {
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
         std::cout << "NON BLOCKING SOCKET GOT DATA FROM THE SERVER: "
-                  << receiver_array_.data() << std::endl;
+                  << receiver_array_.data() << "\n";
         std::cout << "\tEXPECTED WAITING FOR " << nonblocking_socket_timeout_ms
-                  << " ms." << std::endl;
+                  << " ms." << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
     }
 
-    paraos::Thread::SleepMs(70);
+    paraos::Thread::SleepMs(nonblocking_sock_thread_delay_ms);
   }
 
  private:
@@ -169,10 +205,11 @@ struct NonBlockingSocketThread : public paraos::Thread {
 /// @brief Структура потока, использующего "пустой" неблокирующий сокет,
 /// необходима для проверки неблокирующего режима у сокета.
 struct EmptySocketThread : public paraos::Thread {
-  EmptySocketThread(
+  explicit EmptySocketThread(
       paraos::UDPSocket* socket_ptr,
       const std::string thread_name = "Empty thread")
-      : paraos::Thread{thread_name, 512, paraos::ThreadPriority::kBelowNormal},
+      : paraos::
+            Thread{thread_name, threads_stack_size, paraos::ThreadPriority::kBelowNormal},
         socket_ptr_{socket_ptr} {
     SetNeedWhile(true);
     Start();
@@ -191,24 +228,24 @@ struct EmptySocketThread : public paraos::Thread {
     if (received_bytes_num == 0) {
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
-        std::cout << "EMPTY SOCKET TIMED OUT:" << std::endl;
+        std::cout << "EMPTY SOCKET TIMED OUT:" << "\n";
         std::cout << "\tEXPECTED WAITING FOR " << empty_socket_timeout_ms
-                  << " ms." << std::endl;
+                  << " ms." << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
     }
 
     cycle_counter_++;
 
-    if (cycle_counter_ == 20) {
-      std::cout << "\t~EMPTY SOCKET EXITING.~" << std::endl;
+    if (cycle_counter_ == empty_socket_iterations_count) {
+      std::cout << "\t~EMPTY SOCKET EXITING.~" << "\n";
       SetNeedWhile(false);
     }
 
-    paraos::Thread::SleepMs(800);
+    paraos::Thread::SleepMs(empty_sock_thread_delay_ms);
   }
 
  private:
@@ -222,10 +259,11 @@ struct EmptySocketThread : public paraos::Thread {
 /// @brief Структура потока, использующего сокет с заданным временем ожидания
 /// входных данных.
 struct BlockingSocketThread : public paraos::Thread {
-  BlockingSocketThread(
+  explicit BlockingSocketThread(
       paraos::UDPSocket* socket_ptr,
       const std::string thread_name = "Blocking thread")
-      : paraos::Thread{thread_name, 512, paraos::ThreadPriority::kNormal},
+      : paraos::
+            Thread{thread_name, threads_stack_size, paraos::ThreadPriority::kNormal},
         socket_ptr_{socket_ptr} {
     SetNeedWhile(true);
     Start();
@@ -249,39 +287,39 @@ struct BlockingSocketThread : public paraos::Thread {
     if (received_bytes_num != 0) {
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
         std::cout << "BLOCKING SOCKET GOT DATA FROM THE SERVER: "
-                  << receiver_array_.data() << std::endl;
+                  << receiver_array_.data() << "\n";
         std::cout << "\tEXPECTED WAITING FOR " << blocking_socket_timeout_ms
-                  << " ms." << std::endl;
+                  << " ms." << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
 
       data_counter_++;
-      if (data_counter_ == 7) {
+      if (data_counter_ == blocking_socket_iterations_count) {
         socket_ptr_->Transmit(
             static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
-        std::cout << "\t~BLOCKING THREAD EXITING~" << std::endl;
+        std::cout << "\t~BLOCKING THREAD EXITING~" << "\n";
         SetNeedWhile(false);
         blocking_thread_exit_flag = true;
       }
     } else {
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
-        std::cout << "BLOCKING SOCKET TIMED OUT:" << std::endl;
+        std::cout << "BLOCKING SOCKET TIMED OUT:" << "\n";
         std::cout << "\tEXPECTED WAITING FOR " << blocking_socket_timeout_ms
-                  << " ms." << std::endl;
+                  << " ms." << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
     }
 
-    paraos::Thread::SleepMs(50);
+    paraos::Thread::SleepMs(blocking_sock_thread_delay_ms);
   }
 
  private:
@@ -293,10 +331,11 @@ struct BlockingSocketThread : public paraos::Thread {
 /// @brief Структура потока, использующего сокет с неограниченным временем
 /// ожидания входных данных.
 struct ForeverBlockingSocketThread : public paraos::Thread {
-  ForeverBlockingSocketThread(
+  explicit ForeverBlockingSocketThread(
       paraos::UDPSocket* socket_ptr,
       const std::string thread_name = "Forever blocking thread")
-      : paraos::Thread{thread_name, 512, paraos::ThreadPriority::kNormal},
+      : paraos::
+            Thread{thread_name, threads_stack_size, paraos::ThreadPriority::kNormal},
         socket_ptr_{socket_ptr} {
     SetNeedWhile(true);
     Start();
@@ -320,13 +359,13 @@ struct ForeverBlockingSocketThread : public paraos::Thread {
     if (received_bytes_num != 0) {
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
         std::cout << "FOREVER BLOCKING SOCKET GOT DATA FROM THE SERVER: "
-                  << receiver_array_.data() << std::endl;
-        std::cout << "\tEXPECTED WAITING FOREVER" << std::endl;
+                  << receiver_array_.data() << "\n";
+        std::cout << "\tEXPECTED WAITING FOREVER" << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
 
     } else {
@@ -334,25 +373,24 @@ struct ForeverBlockingSocketThread : public paraos::Thread {
       // имеет неограниченное время ожидания входных данных.
       {
         const paraos::CriticalSection critical_section;
-        std::cout << std::endl;
+        std::cout << "\n";
 
-        std::cout << "FOREVER BLOCKING SOCKET TIMED OUT:" << std::endl;
-        std::cout << "\tEXPECTED WAITING FOREVER" << std::endl;
+        std::cout << "FOREVER BLOCKING SOCKET TIMED OUT:" << "\n";
+        std::cout << "\tEXPECTED WAITING FOREVER" << "\n";
         std::cout << "\tACTUAL WAITED FOR " << waiting_time << " ms."
-                  << std::endl;
+                  << "\n";
       }
     }
 
     // Если потоки с ограниченным временем ожидания завершили свою работу,
     // данный поток также завершается.
-    if ((nonblocking_thread_exit_flag == true) &&
-        (blocking_thread_exit_flag == true)) {
+    if ((nonblocking_thread_exit_flag) && (blocking_thread_exit_flag)) {
       socket_ptr_->Transmit(
           static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
       std::cout
           << "\t~Other threads finished, FOREVER BLOCKING THREAD EXITING.~"
-          << std::endl;
+          << "\n";
       SetNeedWhile(false);
     }
   }
@@ -361,12 +399,13 @@ struct ForeverBlockingSocketThread : public paraos::Thread {
   paraos::UDPSocket* socket_ptr_;
   std::array<uint8_t, array_size> receiver_array_{0};
 };
+// NOLINTEND(performance-unnecessary-value-param)
 
 auto main() -> int {
   // Аттрибуты для инициализации неблокирующего сокета
   paraos::UDPSocketAttrs nonblocking_attrs{};
 
-  nonblocking_attrs.port = 8080;
+  nonblocking_attrs.port = server_port;
   // Необходимо указать значение времени ожидания входных данных равное нулю.
   nonblocking_attrs.recv_timeout_ms = nonblocking_socket_timeout_ms;
 
@@ -379,7 +418,7 @@ auto main() -> int {
   paraos::UDPSocketAttrs empty_socket_attrs{};
 
   // Порт "пустого" сервера, который не будет отправлять никакие данные.
-  empty_socket_attrs.port = 9090;
+  empty_socket_attrs.port = empty_server_port;
   // Необходимо указать значение времени ожидания входных данных равное нулю.
   empty_socket_attrs.recv_timeout_ms = empty_socket_timeout_ms;
 
@@ -389,7 +428,7 @@ auto main() -> int {
   // Аттрибуты для инициализации сокета с заданным временем ожидания в мс.
   paraos::UDPSocketAttrs blocking_attrs{};
 
-  blocking_attrs.port = 8080;
+  blocking_attrs.port = server_port;
   // Время ожидания для каждой итерации получения входных данных - полсекунды.
   blocking_attrs.recv_timeout_ms = blocking_socket_timeout_ms;
 
@@ -400,7 +439,7 @@ auto main() -> int {
   // входных данных.
   paraos::UDPSocketAttrs forever_blocking_attrs{};
 
-  forever_blocking_attrs.port = 8080;
+  forever_blocking_attrs.port = server_port;
 
   // Для инициализации сокета неограниченным временем ожидания
   // входных данных необходимо оставить значение по умолчанию для поля
@@ -412,10 +451,11 @@ auto main() -> int {
   forever_blocking_attrs.recv_timeout_ms = paraos::max_delay;
 
   // Инициализация потоков, работающих с созданными сокетами.
-  NonBlockingSocketThread non_blocking_thread{&nonblocking_socket};
-  EmptySocketThread empty_socket_thread{&empty_socket};
-  BlockingSocketThread blocking_thread{&blocking_socket};
-  ForeverBlockingSocketThread forever_blocking_thread{&forever_blocking_socket};
+  const NonBlockingSocketThread non_blocking_thread{&nonblocking_socket};
+  const EmptySocketThread empty_socket_thread{&empty_socket};
+  const BlockingSocketThread blocking_thread{&blocking_socket};
+  const ForeverBlockingSocketThread forever_blocking_thread{
+      &forever_blocking_socket};
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();

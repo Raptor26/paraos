@@ -52,7 +52,7 @@ class UDPSocket : public paraos::ISerial {
  public:
   /// @brief Конструктор UDPSocket.
   /// @param[in] attrs: Атрибуты UDP сокета.
-  UDPSocket(UDPSocketAttrs &attrs)
+  explicit UDPSocket(UDPSocketAttrs &attrs)
       : connection_waiting_delay_ms_{attrs.connection_waiting_delay_ms} {
     client_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (client_socket_ == -1) {
@@ -65,26 +65,29 @@ class UDPSocket : public paraos::ISerial {
         // платформы, то нет необходимости обновлять значение задержки при
         // ожидании данных в сокете, т.к он по умолчанию блокирует вызывающий
         // код на неограниченное время при ожидании входных данных.
-      } else if (attrs.recv_timeout_ms != 0u) {
+      } else if (attrs.recv_timeout_ms != 0U) {
         // Установка тайм-аута на приём данных из сокета.
         // Для заданного значения тайм-аута в миллисекундах необходимо
         // выполнить перевод в секунды + микросекунды. (Например: тайм-аут
         // 1500 мс = 1500 / 1000 (1 сек) + (1500 % 1000) * 1000 (500000 мкс)).
-        struct timeval tv;
-        tv.tv_sec =
-            static_cast<decltype(tv.tv_sec)>(attrs.recv_timeout_ms / 1000);
-        tv.tv_usec =
-            static_cast<decltype(tv.tv_usec)>(attrs.recv_timeout_ms % 1000) *
-            MICROSECONDS_PER_MILISECONDS;
+        struct timeval delay{};
+        delay.tv_sec = static_cast<decltype(delay.tv_sec)>(
+            attrs.recv_timeout_ms / MILISECONDS_PER_SECOND);
+        delay.tv_usec = static_cast<decltype(delay.tv_usec)>(
+                            attrs.recv_timeout_ms % MILISECONDS_PER_SECOND) *
+                        MICROSECONDS_PER_MILISECONDS;
 
         result = setsockopt(
-            client_socket_, SOL_SOCKET, SO_RCVTIMEO, (const void *)&tv,
-            sizeof(tv));
+            client_socket_, SOL_SOCKET, SO_RCVTIMEO,
+            reinterpret_cast<const void *>(&delay), sizeof(delay));
 
-      } else if (attrs.recv_timeout_ms == 0u) {
+      } else if (attrs.recv_timeout_ms == 0U) {
+        // There is no "No vararg" alternative for fcntl.
+        // NOLINTBEGIN(hicpp-vararg)
         // Если тайм-аут указан как 0, необходимо выключить
         // блокирующий режим для созданного сокета.
         result = fcntl(client_socket_, F_SETFL, O_NONBLOCK);
+        // NOLINTEND(hicpp-vararg)
       }
 
       if (result != -1) {
@@ -120,10 +123,10 @@ class UDPSocket : public paraos::ISerial {
     // is nonblocking.
     read_bytes_num = recvfrom(
         client_socket_, static_cast<char *>(dst), static_cast<int>(dst_size), 0,
-        (sockaddr *)&server_, &slen);
+        reinterpret_cast<sockaddr *>(&server_), &slen);
 
     if (read_bytes_num == -1) {
-      std::cout << "recvfrom() failed with code: " << errno << std::endl;
+      std::cout << "recvfrom() failed with code: " << errno << "\n";
       read_bytes_num = 0;
       is_connected_ = false;
     } else {
@@ -143,16 +146,22 @@ class UDPSocket : public paraos::ISerial {
     size_t transmitted_bytes_num{0};
     transmitted_bytes_num = sendto(
         client_socket_, reinterpret_cast<const char *>(src),
-        static_cast<int>(msg_size), 0, (sockaddr *)&server_,
+        static_cast<int>(msg_size), 0, reinterpret_cast<sockaddr *>(&server_),
         sizeof(sockaddr_in));
 
     return transmitted_bytes_num;
   }
 
   /// @brief Перегрузка оператора bool.
-  operator bool() const { return is_init_succeeded_; }
+  explicit operator bool() const { return is_init_succeeded_; }
 
   ~UDPSocket() override { close(client_socket_); }
+
+  /// @brief Five rule.
+  UDPSocket(UDPSocket &&other) = delete;
+  auto operator=(UDPSocket &&other) -> UDPSocket & = delete;
+  auto operator=(const UDPSocket &other) -> UDPSocket & = delete;
+  UDPSocket(const UDPSocket &other) = delete;
 
  private:
   int client_socket_{0};

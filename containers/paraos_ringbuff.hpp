@@ -64,22 +64,22 @@ class ringbuff_ctor_error : public ringbuff_exception {
 /// @tparam T: Type elements, contained in ring buffer.
 template <typename T>
 class IRingBuff {
-  typedef T value_type;
-  typedef value_type* pointer;
-  typedef const value_type* const_pointer;
-  typedef value_type& reference;
-  typedef const value_type& const_reference;
-  typedef value_type* iterator;
-  typedef const value_type* const_iterator;
-  typedef std::size_t size_type;
-  typedef std::ptrdiff_t difference_type;
-  typedef std::reverse_iterator<iterator> reverse_iterator;
-  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+  using value_type = T;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using iterator = value_type*;
+  using const_iterator = const value_type*;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
  public:
   virtual ~IRingBuff() = default;
 
-  operator bool() { return lwrb_is_ready(&lwrb_); }
+  explicit operator bool() { return static_cast<bool>(lwrb_is_ready(&lwrb_)); }
 
   PARAOS_INLINE_TRIVIAL auto Write(const void* src, lwrb_sz_t size_in_bytes) {
     lwrb_sz_t written{0};
@@ -149,25 +149,31 @@ class IRingBuff {
   /// write elements numb, equal Capacity().
   ///
   /// @return Return tue if buffer empty, false in otherwise.
-  auto IsEmpty() { return Size() == 0 ? true : false; }
+  auto IsEmpty() -> bool { return Size() == 0; }
 
   /// @brief Check is buffer full. If full, thats mean user code must read or
   /// Clear() buffer before write anything again.
   ///
   /// @return Return full if buffer is full, false in otherwise.
-  auto IsFull() { return Size() == Capacity() ? true : false; }
+  auto IsFull() -> bool { return Size() == Capacity(); }
+
+  /// @brief Five rule.
+  IRingBuff(IRingBuff&& other) = delete;
+  auto operator=(IRingBuff&& other) -> IRingBuff& = delete;
+  auto operator=(const IRingBuff& other) -> IRingBuff& = delete;
+  IRingBuff(const IRingBuff& other) = delete;
 
  protected:
   IRingBuff(void* buff, lwrb_sz_t buff_size_in_bytes) {
     auto is_init_success = lwrb_init(&lwrb_, buff, buff_size_in_bytes);
 
-    ETL_ASSERT(is_init_success == 1u, ETL_ERROR(ringbuff_ctor_error));
+    ETL_ASSERT(is_init_success == 1U, ETL_ERROR(ringbuff_ctor_error));
 
     PARAOS_ATTR_UNUSED_VAR(is_init_success);
   }
 
  private:
-  lwrb_t lwrb_;
+  lwrb_t lwrb_{};
 };
 
 /// @brief A fixed capacity ring buffer.
@@ -186,12 +192,14 @@ class RingBuff : public IRingBuff<T> {
   RingBuff() : IRingBuff<T>(static_cast<void*>(storage), SIZE + 1) {}
 
  private:
+  // NOLINTBEGIN(hicpp-avoid-c-arrays)
   /// @brief Use raw array for contained bytes in ring buff. If we used
   /// std::array, when call IRingBuff ctor std::array will not initialized yet.
   /// For this reason used raw array.
   ///
   /// @note lwrb need one more byte.
   T storage[SIZE + 1];
+  // NOLINTEND(hicpp-avoid-c-arrays)
 };
 
 }  // namespace paraos

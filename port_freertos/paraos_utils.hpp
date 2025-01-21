@@ -37,7 +37,9 @@ namespace paraos {
 
 constexpr std::size_t max_delay{portMAX_DELAY};
 
-inline TickType_t PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) {
+constexpr std::size_t stack_multiplier{130};
+
+inline auto PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) -> TickType_t {
   static_assert(
       sizeof(uDelayInMs) >= sizeof(TickType_t),
       "uDelayInMs must be more or equal TickType_t size");
@@ -49,7 +51,7 @@ inline TickType_t PARAOS_ConvertMsToTicks(std::size_t uDelayInMs) {
   return (uDelayInMs);
 }
 
-inline std::size_t PARAOS_ConvertTicksToMs(TickType_t ticks) {
+inline auto PARAOS_ConvertTicksToMs(TickType_t ticks) -> std::size_t {
   std::size_t time_ms;
   if (ticks == portMAX_DELAY) {
     time_ms = std::numeric_limits<decltype(time_ms)>::max();
@@ -64,8 +66,8 @@ using FreeRTOSIdleFncPtr = void (*)();
 
 inline FreeRTOSIdleFncPtr freertos_idle_fnc_ptr{nullptr};
 
-constexpr inline std::size_t GetStackMinimumSizeInBytes() {
-  return 130 * sizeof(size_t);
+constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
+  return stack_multiplier * sizeof(size_t);
 }
 
 }  // namespace paraos

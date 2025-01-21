@@ -26,11 +26,13 @@
 #ifndef PARAOS_SOCKET_UDP_HPP
 #define PARAOS_SOCKET_UDP_HPP
 
+// NOLINTBEGIN(llvm-include-order)
 // clang-format off
 // winsock2.h must include before windows.h
 #include <winsock2.h>
 #include <windows.h>
 // clang-format on
+// NOLINTEND(llvm-include-order)
 
 #include <cstdint>
 #include <iostream>
@@ -80,7 +82,7 @@ class UDPSocket : public paraos::ISerial {
  public:
   /// @brief Конструктор UDPSocket.
   /// @param[in] attrs: Атрибуты UDP сокета.
-  UDPSocket(UDPSocketAttrs &attrs)
+  explicit UDPSocket(UDPSocketAttrs &attrs)
       : connection_waiting_delay_ms_{attrs.connection_waiting_delay_ms} {
     if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
       is_init_succeeded_ = false;
@@ -96,24 +98,26 @@ class UDPSocket : public paraos::ISerial {
           // платформы, то нет необходимости обновлять значение задержки при
           // ожидании данных в сокете, т.к он по умолчанию блокирует вызывающий
           // код на неограниченное время при ожидании входных данных.
-        } else if (attrs.recv_timeout_ms != 0u) {
+        } else if (attrs.recv_timeout_ms != 0U) {
           // Установка тайм-аута на приём данных из сокета.
           result = setsockopt(
               client_socket_, SOL_SOCKET, SO_RCVTIMEO,
               reinterpret_cast<const char *>(&attrs.recv_timeout_ms),
               static_cast<int>(sizeof(attrs.recv_timeout_ms)));
 
-        } else if (attrs.recv_timeout_ms == 0u) {
+        } else if (attrs.recv_timeout_ms == 0U) {
           // Если тайм-аут указан как 0, необходимо выключить
           // блокирующий режим для созданного сокета.
-          unsigned long block_mode_val{1};
+          uint32_t block_mode_val{1};
 
           // Set the socket I/O mode: In this case FIONBIO
           // enables or disables the blocking mode for the
           // socket based on the numerical value of block_mode_val.
           // If block_mode_val = 0, blocking is enabled;
           // If block_mode_val != 0, non-blocking mode is enabled.
-          result = ioctlsocket(client_socket_, FIONBIO, &block_mode_val);
+          result = ioctlsocket(
+              client_socket_, FIONBIO,
+              reinterpret_cast<u_long *>(&block_mode_val));
         }
 
         if (result != SOCKET_ERROR) {
@@ -150,7 +154,7 @@ class UDPSocket : public paraos::ISerial {
     // is nonblocking.
     read_bytes_num = recvfrom(
         client_socket_, static_cast<char *>(dst), static_cast<int>(dst_size), 0,
-        (sockaddr *)&server_, &slen);
+        reinterpret_cast<sockaddr *>(&server_), &slen);
 
     if (read_bytes_num == static_cast<size_t>(SOCKET_ERROR)) {
       std::cout << "recvfrom() failed with error code: " << WSAGetLastError()
@@ -174,19 +178,25 @@ class UDPSocket : public paraos::ISerial {
     size_t transmitted_bytes_num{0};
     transmitted_bytes_num = sendto(
         client_socket_, reinterpret_cast<const char *>(src),
-        static_cast<int>(msg_size), 0, (sockaddr *)&server_,
+        static_cast<int>(msg_size), 0, reinterpret_cast<sockaddr *>(&server_),
         sizeof(sockaddr_in));
 
     return transmitted_bytes_num;
   }
 
   /// @brief Перегрузка оператора bool.
-  operator bool() const { return is_init_succeeded_; }
+  explicit operator bool() const { return is_init_succeeded_; }
 
   ~UDPSocket() override {
     closesocket(client_socket_);
     WSACleanup();
   }
+
+  /// @brief Five rule.
+  UDPSocket(UDPSocket &&other) = delete;
+  auto operator=(UDPSocket &&other) -> UDPSocket & = delete;
+  auto operator=(const UDPSocket &other) -> UDPSocket & = delete;
+  UDPSocket(const UDPSocket &other) = delete;
 
  private:
   WSADATA wsa_{};

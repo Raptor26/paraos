@@ -48,7 +48,12 @@ class SwitchContext final {
     PARAOS_ATTR_UNUSED_VAR(primitive_state);
   }
 
-  ~SwitchContext() {}
+  SwitchContext(const SwitchContext &other) = default;
+  auto operator=(const SwitchContext &other) -> SwitchContext & = default;
+  SwitchContext(SwitchContext &&other) noexcept = default;
+  auto operator=(SwitchContext &&other) noexcept -> SwitchContext & = default;
+
+  ~SwitchContext() = default;
 };
 
 }  // namespace paraos
