@@ -86,21 +86,6 @@ class IThreadSequence : public Thread {
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
-  /// @brief Force break thread execute. Useful in unit tests.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL void Break() {
-    const paraos::CriticalSection critical;
-
-    // Run() no more called.
-    Thread::SetNeedWhile(false);
-
-    // Give notify for last call all registered methods timer_controller_. It's
-    // necessary for resume Run() from blocking mode and complete one iteration.
-    // After Run() complete, thread wrapper can safely delete thread (because
-    // above we call Thread::SetNeedWhile(false)) and the thead object can be
-    // safely deleted in thead dtor.
-    NotifyGive();
-  }
-
  public:
   /// @brief Register delegate for periodic execute.
   ///
@@ -202,6 +187,21 @@ class IThreadSequence : public Thread {
     return static_cast<float>(1.0) / main_freq;
   }
 
+  /// @brief Force break thread execute. Useful in unit tests.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Break() {
+    const paraos::CriticalSection critical;
+
+    // Run() no more called.
+    Thread::SetNeedWhile(false);
+
+    // Give notify for last call all registered methods timer_controller_. It's
+    // necessary for resume Run() from blocking mode and complete one iteration.
+    // After Run() complete, thread wrapper can safely delete thread (because
+    // above we call Thread::SetNeedWhile(false)) and the thead object can be
+    // safely deleted in thead dtor.
+    NotifyGive();
+  }
+
   ~IThreadSequence() override = default;
 
   /// @brief Five rule.
@@ -284,10 +284,7 @@ class ThreadSequence : public IThreadSequence {
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
-  ~ThreadSequence() override { Break(); }
-
-  /// @brief Force break thread execute. Useful in unit tests.
-  void Break() { IThreadSequence::Break(); }
+  ~ThreadSequence() override { IThreadSequence::Break(); }
 
   /// @brief Five rule.
   ThreadSequence(ThreadSequence &&other) = delete;
