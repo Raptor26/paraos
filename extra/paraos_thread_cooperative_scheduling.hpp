@@ -60,7 +60,6 @@ struct cooperative_scheduler_policy_run_all_at_once {
       etl::task &task = *(scheduled_task);
       task.task_process_work();
     }
-    // }
 
     // Always return true for indicate that scheduler must call idle callback
     // method.
