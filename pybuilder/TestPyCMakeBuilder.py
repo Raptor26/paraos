@@ -76,21 +76,21 @@ class TestComputeBinaryDir(unittest.TestCase):
         compute_path = compute_binary_dir("home", 
                            self.cmake_presets_json["configurePresets"], 
                            "stavpilot_f405_gcc_debug")
-        expected_path = "home\\build\\stavpilot_f405_gcc_debug"
+        expected_path = "home/build/stavpilot_f405_gcc_debug"
         self.assertEqual(compute_path, expected_path)
         
     def test_compute_binary_dir_if_one_inheritance(self):
         compute_path = compute_binary_dir("home", 
                         self.cmake_presets_json["configurePresets"], 
                         "stavpilot_f405_gcc_release")
-        expected_path = "home\\build\\stavpilot_f405_gcc_release"
+        expected_path = "home/build/stavpilot_f405_gcc_release"
         self.assertEqual(compute_path, expected_path)
         
     def test_compute_binary_dir_if_two_inheritance(self):
         compute_path = compute_binary_dir("home", 
                         self.cmake_presets_json["configurePresets"], 
                         "pc_gcc_with_simulation_cpp")
-        expected_path = "home\\build\\pc_gcc_with_simulation_cpp"
+        expected_path = "home/build/pc_gcc_with_simulation_cpp"
         self.assertEqual(compute_path, expected_path)
 
 class TestCheckHidden(unittest.TestCase):
