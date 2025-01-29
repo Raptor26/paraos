@@ -7,8 +7,8 @@
     },
     "configurePresets": [
         {
-            "name": "stavpilot_f405_gcc_debug",
             "displayName": "Stavpilot board STM32F405 debug with GCC",
+            "name": "stavpilot_f405_gcc_debug",
             "description": "Debug version for stavpilot with STM32F405RGT6",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
