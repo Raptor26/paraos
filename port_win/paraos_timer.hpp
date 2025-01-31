@@ -30,8 +30,10 @@
 #include <threadpoollegacyapiset.h>
 
 #include "etl/delegate.h"
+#include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_isr.hpp"
+#include "paraos_utils.hpp"
 
 namespace paraos {
 
