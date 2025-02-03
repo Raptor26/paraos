@@ -12,6 +12,7 @@ BOLD = "\033[1m"
 BINARY_DIR_PRESET_FIELD = "binaryDir"
 NAME_PRESET_FIELD = "name"
 
+
 def find_base_preset(config_presets_list: str, preset_name: str):
     base_preset = None
     for config_preset in config_presets_list:
@@ -88,6 +89,7 @@ def is_preset_hidden(preset: str):
         is_hidden = False
     return is_hidden
 
+
 def configure_preset(args: str, preset_name: str):
     if preset_name is not None:
         configure_cmd = f"cmake --preset {preset_name}"
@@ -122,9 +124,7 @@ def build_preset(args: str, binary_dir: str):
 def test_preset(args: str, binary_dir: str):
     test_cmd = f"ctest --test-dir {binary_dir} {args.ctest_options}"
     if (
-        subprocess.run(
-            args=test_cmd, cwd=args.cmake_project_dir, shell=True
-        ).returncode
+        subprocess.run(args=test_cmd, cwd=args.cmake_project_dir, shell=True).returncode
         == 0
     ):
         return True
@@ -148,7 +148,7 @@ def compute_actual_configure_presets_subset(config_presets_lst: list, args: str)
     excluded = set()
     if args.exclude is not None:
         excluded = args.exclude.split(" ")
-        
+
     excluded_set = set()
 
     for excluded_name in excluded:
@@ -175,10 +175,16 @@ def reduced_configure_dictionary(config_presets_lst: list, configure_name_set: s
             reduced_configure_lst.append(config_preset)
     return reduced_configure_lst
 
+
 def compute_configure_subset_lst(args: str, config_presets_list: list):
-    actual_configure_subset = compute_actual_configure_presets_subset(
-        config_presets_list, args
-    )
+    if args.include is None:
+        actual_configure_subset = compute_actual_configure_presets_subset(
+            config_presets_list, args
+        )
+    else:
+        actual_configure_subset = compute_configure_subset_if_include_only(
+            config_presets_list, args
+        )
 
     reduced_configure_presets_lst = reduced_if_hidden(
         config_presets_list, actual_configure_subset
@@ -187,11 +193,40 @@ def compute_configure_subset_lst(args: str, config_presets_list: list):
     reduced_configure_presets_lst = reduced_configure_dictionary(
         config_presets_list, actual_configure_subset
     )
-    
+
     return reduced_configure_presets_lst
+
+
+def compute_configure_subset_if_include_only(config_presets_lst: list, args: str):
+    configure_name_set = set()
+
+    for config_preset in config_presets_lst:
+        configure_name_set.add(config_preset.get(NAME_PRESET_FIELD))
+
+    include = set()
+    if args.include is not None:
+        include = args.include.split(" ")
+
+    include_set = set()
+
+    for include_name in include:
+        include_set.add(include_name)
+
+    configure_name_set = configure_name_set.intersection(include_set)
+    return configure_name_set
+
+
+def config_build_test(args: str, preset_name: str, binary_dir: str):
+    if configure_preset(args, preset_name):
+        if build_preset(args, binary_dir):
+            if test_preset(args, binary_dir):
+                return 0
+    return 1
+
 
 def parse_presets(args: str):
     config_presets_lst = load_configure_presets(args.cmake_project_dir)
+
     reduced_config_presets_lst = compute_configure_subset_lst(args, config_presets_lst)
 
     return_code = 0
@@ -202,20 +237,11 @@ def parse_presets(args: str):
         if name is None:
             continue
 
-        if configure_preset(args, name):
-            binary_dir = compute_binary_dir(
-                args.cmake_project_dir, config_presets_lst, name
-            )
-            if build_preset(args, binary_dir):
-                if not test_preset(args, binary_dir):
-                    return_code += 1
-                    break
-            else:
-                return_code += 1
-                break
-        else:
-            return_code += 1
-            break
+        return_code = config_build_test(
+            args,
+            name,
+            compute_binary_dir(args.cmake_project_dir, config_presets_lst, name),
+        )
 
     if return_code == 0:
         print(f"{OK_GREEN}{BOLD}Tests succeed!{END_COLOR}")
@@ -242,6 +268,14 @@ if __name__ == "__main__":
         required=False,
         type=str,
         help="excluding names of configurePresets in CMakePresets.json",
+    )
+    parse.add_argument(
+        "-i",
+        "--include",
+        metavar="",
+        required=False,
+        type=str,
+        help="including names of configurePresets in CMakePresets.json",
     )
 
     parse.add_argument(
