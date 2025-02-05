@@ -31,9 +31,8 @@
 #ifndef PARAOS_EXCEPTIONS_HPP
 #define PARAOS_EXCEPTIONS_HPP
 
-#include <cstdint>
 #include <exception>
-#include <string>
+#include <string_view>
 
 #include "etl/exception.h"
 #include "paraos_attr.h"
@@ -41,7 +40,7 @@
 namespace paraos {
 
 /// @brief String type for error messages and filepaths where error occurs.
-using error_string_type = etl::exception::string_type;
+using error_string_type = std::string_view;
 
 /// @brief Get error text relying on definition of `PARAOS_VERBOSE_ERRORS`
 /// macro.
@@ -72,9 +71,9 @@ inline auto GetErrorText(
 class exception : public std::exception, public etl::exception {
  public:
   exception(
-      const error_string_type &reason, const error_string_type &file,
+      const error_string_type reason, const error_string_type file,
       numeric_type line_number)
-      : etl::exception{reason, file, line_number} {}
+      : etl::exception{reason.data(), file.data(), line_number} {}
 
   ~exception() override = default;
 
