@@ -42,7 +42,7 @@ namespace paraos {
 #define RINGBUFF_FILE_ID ("100")
 
 /// @brief The base class for ring buffer exceptions.
-class ringbuff_exception : public exception {
+class ringbuff_exception : public paraos::exception {
  public:
   ringbuff_exception(
       error_string_type reason_, error_string_type file_name_,
@@ -59,19 +59,22 @@ class ringbuff_exception : public exception {
 
 /// @brief Exception may be thrown when error in <IRingBuff> constructor
 /// appears.
-class ringbuff_ctor_error final : public ringbuff_exception {
+class ringbuff_ctor_error_exception final : public ringbuff_exception {
  public:
-  ringbuff_ctor_error(error_string_type file_name_, numeric_type line_number_)
-      : ringbuff_exception(
-            GetErrorText("ringbuff:Ctor", RINGBUFF_FILE_ID), file_name_,
+  ringbuff_ctor_error_exception(
+      error_string_type file_name_, numeric_type line_number_)
+      : paraos::ringbuff_exception(
+            paraos::GetErrorText("ringbuff:Ctor", RINGBUFF_FILE_ID), file_name_,
             line_number_) {}
 
-  ~ringbuff_ctor_error() override = default;
+  ~ringbuff_ctor_error_exception() override = default;
 
-  ringbuff_ctor_error(const ringbuff_ctor_error&) = default;
-  auto operator=(const ringbuff_ctor_error&) -> ringbuff_ctor_error& = default;
-  ringbuff_ctor_error(ringbuff_ctor_error&&) = default;
-  auto operator=(ringbuff_ctor_error&&) -> ringbuff_ctor_error& = default;
+  ringbuff_ctor_error_exception(const ringbuff_ctor_error_exception&) = default;
+  auto operator=(const ringbuff_ctor_error_exception&)
+      -> ringbuff_ctor_error_exception& = default;
+  ringbuff_ctor_error_exception(ringbuff_ctor_error_exception&&) = default;
+  auto operator=(ringbuff_ctor_error_exception&&)
+      -> ringbuff_ctor_error_exception& = default;
 };
 
 /// @brief  This is the base for all ring buffers that contain a particular
@@ -184,7 +187,7 @@ class IRingBuff {
   IRingBuff(void* buff, lwrb_sz_t buff_size_in_bytes) {
     auto is_init_success = lwrb_init(&lwrb_, buff, buff_size_in_bytes);
 
-    ETL_ASSERT(is_init_success == 1U, ETL_ERROR(ringbuff_ctor_error));
+    ETL_ASSERT(is_init_success == 1U, ETL_ERROR(ringbuff_ctor_error_exception));
 
     PARAOS_ATTR_UNUSED_VAR(is_init_success);
   }

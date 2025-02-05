@@ -35,7 +35,7 @@
 TEST(RingBuff, Create) {
   try {
     const paraos::RingBuff<char, 2> ring_buff;
-  } catch (paraos::ringbuff_ctor_error &e) {
+  } catch (paraos::ringbuff_ctor_error_exception &e) {
     FAIL() << "paraos::RingBuff can't throw exception" << "\n";
   }
 }

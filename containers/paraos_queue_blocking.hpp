@@ -110,7 +110,7 @@ struct IQueueBlocking {
     } catch (const etl::queue_full& e) {
       // queue full. Nothing push in queue. In IQueueBlocking API it's not
       // problem. TryPush() return false.
-    } catch (const std::exception& e) {
+    } catch (const etl::exception& e) {
       // moved object throw exception. Best what we can in this case - print
       // debug message.
       paraosTRACE_MESSAGE(e.what());
