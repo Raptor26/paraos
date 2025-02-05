@@ -30,36 +30,56 @@
 #include <iterator>
 
 #include "etl/error_handler.h"
-#include "etl/exception.h"
 #include "gsl/gsl"
 #include "lwrb/lwrb.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_config.hpp"
+#include "paraos_exceptions.hpp"
 
 namespace paraos {
 
 #define RINGBUFF_FILE_ID ("100")
 
-/// The base class for ring buffer exceptions.
-class ringbuff_exception : public etl::exception {
+/// @brief The base class for ring buffer exceptions.
+class ringbuff_exception : public paraos::exception {
  public:
   ringbuff_exception(
-      string_type reason_, string_type file_name_, numeric_type line_number_)
+      error_string_type reason_, error_string_type file_name_,
+      numeric_type line_number_)
       : exception(reason_, file_name_, line_number_) {}
+
+  ~ringbuff_exception() override = default;
+
+  ringbuff_exception(const ringbuff_exception&) = default;
+  auto operator=(const ringbuff_exception&) -> ringbuff_exception& = default;
+  ringbuff_exception(ringbuff_exception&&) = default;
+  auto operator=(ringbuff_exception&&) -> ringbuff_exception& = default;
 };
 
-class ringbuff_ctor_error : public ringbuff_exception {
+/// @brief Exception may be thrown when error in <IRingBuff> constructor
+/// appears.
+class ringbuff_ctor_error_exception final : public ringbuff_exception {
  public:
-  ringbuff_ctor_error(string_type file_name_, numeric_type line_number_)
-      : ringbuff_exception(
-            ETL_ERROR_TEXT("ringbuff:Ctor", RINGBUFF_FILE_ID), file_name_,
+  ringbuff_ctor_error_exception(
+      error_string_type file_name_, numeric_type line_number_)
+      : paraos::ringbuff_exception(
+            paraos::GetErrorText("ringbuff:Ctor", RINGBUFF_FILE_ID), file_name_,
             line_number_) {}
+
+  ~ringbuff_ctor_error_exception() override = default;
+
+  ringbuff_ctor_error_exception(const ringbuff_ctor_error_exception&) = default;
+  auto operator=(const ringbuff_ctor_error_exception&)
+      -> ringbuff_ctor_error_exception& = default;
+  ringbuff_ctor_error_exception(ringbuff_ctor_error_exception&&) = default;
+  auto operator=(ringbuff_ctor_error_exception&&)
+      -> ringbuff_ctor_error_exception& = default;
 };
 
 /// @brief  This is the base for all ring buffers that contain a particular
 /// type.
-///@details Normally a reference to this type will be taken from a derived
+/// @details Normally a reference to this type will be taken from a derived
 /// RingBuff.
 /// @tparam T: Type elements, contained in ring buffer.
 template <typename T>
@@ -167,7 +187,7 @@ class IRingBuff {
   IRingBuff(void* buff, lwrb_sz_t buff_size_in_bytes) {
     auto is_init_success = lwrb_init(&lwrb_, buff, buff_size_in_bytes);
 
-    ETL_ASSERT(is_init_success == 1U, ETL_ERROR(ringbuff_ctor_error));
+    ETL_ASSERT(is_init_success == 1U, ETL_ERROR(ringbuff_ctor_error_exception));
 
     PARAOS_ATTR_UNUSED_VAR(is_init_success);
   }

@@ -165,7 +165,7 @@ class MessageWritable final {
   ///
   /// @return Return true if message successfully pushed in buffer, false in
   /// otherwise.
-  PARAOS_INLINE_OPERATIONS auto TryPush(bool is_isr = false) -> bool {
+  PARAOS_INLINE_OPERATIONS auto TryPush(bool is_isr = false) noexcept -> bool {
     bool is_message_pushed{false};
 
     // If user calls TryPush(), that's mean when calls dtor, TryPush() will

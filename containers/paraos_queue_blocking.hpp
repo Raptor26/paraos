@@ -59,13 +59,14 @@ struct IQueueBlocking {
   ///
   /// @return true if object constructed, false otherwise.
   template <typename... Args>
-  auto TryEmplaceBack(bool is_isr, Args&&... args) -> bool {
+  auto TryEmplaceBack(bool is_isr, Args&&... args) noexcept -> bool {
     bool is_pushed{false};
 
     try {
       const paraos::CriticalSection critical;
       queue_.emplace(std::forward<Args>(args)...);
       pop_sem_.Give(is_isr);
+
       is_pushed = true;
     } catch (const etl::queue_full& e) {
       // queue full. Nothing push in queue. In IQueueBlocking API it's not
@@ -86,7 +87,7 @@ struct IQueueBlocking {
   ///
   /// @return Return true if item successfully moved in queue. false in other
   /// wise.
-  auto TryPush(T&& item, bool is_isr = false) -> bool {
+  auto TryPush(T&& item, bool is_isr = false) noexcept -> bool {
     return TryEmplaceBack(is_isr, std::move(item));
   }
 
@@ -97,18 +98,19 @@ struct IQueueBlocking {
   ///
   /// @return Return true if item successfully copied in queue. false in other
   /// wise.
-  auto TryPush(const T& item, bool is_isr = false) -> bool {
+  auto TryPush(const T& item, bool is_isr = false) noexcept -> bool {
     bool is_pushed{false};
 
     try {
       const paraos::CriticalSection critical;
       queue_.push(item);
       pop_sem_.Give(is_isr);
+
       is_pushed = true;
     } catch (const etl::queue_full& e) {
       // queue full. Nothing push in queue. In IQueueBlocking API it's not
       // problem. TryPush() return false.
-    } catch (const std::exception& e) {
+    } catch (const etl::exception& e) {
       // moved object throw exception. Best what we can in this case - print
       // debug message.
       paraosTRACE_MESSAGE(e.what());
