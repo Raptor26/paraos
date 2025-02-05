@@ -1,6 +1,6 @@
 /// @file test_queue_blocking.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
-/// @author VyhodcevEgor <vyhodcev@internet.ru>
+/// @author Vyhodcev Egor <vyhodcev@internet.ru>
 ///
 /// @copyright (c) 2024 Stilsoft
 ///
