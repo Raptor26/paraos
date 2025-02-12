@@ -87,36 +87,9 @@ struct IQueueBlocking {
   ///
   /// @return Return true if item successfully moved in queue. false in other
   /// wise.
-  auto TryPush(T&& item, bool is_isr = false) noexcept -> bool {
-    return TryEmplaceBack(is_isr, std::move(item));
-  }
-
-  /// @brief Try push copy item in queue. If queue full, nothing will push.
-  ///
-  /// @param[in] item: rvalue item for move in queue.
-  /// @param[in] is_isr: Set true if TryPush() calls from isr.
-  ///
-  /// @return Return true if item successfully copied in queue. false in other
-  /// wise.
-  auto TryPush(const T& item, bool is_isr = false) noexcept -> bool {
-    bool is_pushed{false};
-
-    try {
-      const paraos::CriticalSection critical;
-      queue_.push(item);
-      pop_sem_.Give(is_isr);
-
-      is_pushed = true;
-    } catch (const etl::queue_full& e) {
-      // queue full. Nothing push in queue. In IQueueBlocking API it's not
-      // problem. TryPush() return false.
-    } catch (const etl::exception& e) {
-      // moved object throw exception. Best what we can in this case - print
-      // debug message.
-      paraosTRACE_MESSAGE(e.what());
-    }
-
-    return is_pushed;
+  template <typename U>
+  auto TryPush(U&& item, bool is_isr = false) noexcept -> bool {
+    return TryEmplaceBack(is_isr, std::forward<U>(item));
   }
 
   /// @brief Moved object from queue and pop queue.
