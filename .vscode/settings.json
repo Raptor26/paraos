@@ -144,6 +144,7 @@
         "io_context": "cpp",
         "netfwd": "cpp",
         "timer": "cpp",
+        "narrow": "cpp",
         "cassert": "cpp"
     },
     "cSpell.enabled": true
