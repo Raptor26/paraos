@@ -124,8 +124,8 @@ class Thread : public paraos::Base {
 
     const paraos::CriticalSection critical;
 
-    // Изменение приоритета потока возможно только в случае запуска программы от
-    // имени суперпользователя
+    // Changing the thread priority is only possible if the program is run with
+    // superuser privileges.
     if (IsRunAsRoot()) {
       int policy{0};
       sched_param sched{};
@@ -145,9 +145,9 @@ class Thread : public paraos::Base {
         is_priority_updated = true;
       }
     } else {
-      // Если запуск программы выполнен без прав суперпользователя, то мы не
-      // можем изменить приоритет потока. В этом случае мы вернем флаг true для
-      // обеспечения обратной совместимости
+      // If the program is launched without superuser privileges,
+      // we cannot change the thread priority.
+      // In this case, we return `true` to ensure backward compatibility.
       is_priority_updated = true;
     }
 
@@ -267,7 +267,7 @@ class Thread : public paraos::Base {
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
 
     // Set thread priority.
-    struct sched_param param {};
+    struct sched_param param{};
     param.sched_priority = static_cast<int>(attr.priority);
     result_code = pthread_attr_setschedparam(&thread_attr, &param);
     ETL_ASSERT(
@@ -350,11 +350,6 @@ class Thread : public paraos::Base {
   ///
   /// @return Returns true if the program is running as root, false otherwise.
   static auto IsRunAsRoot() -> bool {
-    // В случае сборки под docker мы не используем права суперпользователя. Это
-    // сделано для того чтобы SetPriority() всегда возвращало true
-#if NOSUDO
-    return false;
-#else
     bool is_run_as_root{false};
 
     auto user = getuid();
@@ -365,7 +360,6 @@ class Thread : public paraos::Base {
       paraosTRACE_MESSAGE("No root");
     }
     return is_run_as_root;
-#endif
   }
 
   static inline std::vector<paraos::v2::Thread *> to_resume_;
