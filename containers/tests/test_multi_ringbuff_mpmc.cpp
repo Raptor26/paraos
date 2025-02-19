@@ -37,12 +37,13 @@
 #include "paraos_critical.hpp"
 #include "paraos_multi_ringbuff.hpp"
 #include "paraos_ringbuff.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_thread_v2.hpp"
 
-#define PrintDebug(__message__)                   \
-  {                                               \
-    const paraos::CriticalSection macro_critical; \
-    std::cout << __message__ << "\n";             \
+#define PrintDebug(__message__, __object_name__)                    \
+  {                                                                 \
+    const paraos::CriticalSection macro_critical;                   \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
+              << std::endl;                                         \
   }
 
 const std::vector<std::string> str_array{
@@ -74,6 +75,10 @@ const std::vector<std::string> str_array{
 constexpr std::size_t queue_size{2};
 constexpr std::size_t ring_buff_size{2048};
 constexpr std::size_t thread_stack_depth{1024};
+
+paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
+    paraos::v2::ThreadPriority::kLowest, nullptr}};
 
 namespace {
 auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
@@ -122,18 +127,16 @@ paraos::MultiRingBuff<
 // String copy here is needed because of the delayed thread initialization -
 // address of it's name could be invalid later.
 // NOLINTBEGIN(performance-unnecessary-value-param)
-struct Producer : public paraos::Thread {
-  explicit Producer(
-      const std::size_t thread_id, const std::string name = "Producer",
-      std::size_t stack_depth = thread_stack_depth,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kLowest)
-      : paraos::Thread{name, stack_depth, priority}, thread_id_{thread_id} {
-    paraos::Thread::SetNeedWhile(true);
-    Start();
+struct Producer {
+  explicit Producer(const paraos::v2::ThreadAttr &attr, std::size_t thread_id)
+      : thread_{attr}, thread_id_{thread_id} {
+    thread_.RegisterDelegate(
+        paraos::v2::thread_delegate_type::create<Producer, &Producer::Run>(
+            *this));
   }
 
   /// @brief Producer thread
-  void Run() override {
+  void Run() {
     std::size_t str_idx;
     {
       const paraos::CriticalSection critical;
@@ -159,13 +162,14 @@ struct Producer : public paraos::Thread {
         // idx for write in buff.
         producer_total_written_bytes += written_len;
         PrintDebug(
-            Name() << " string write successful: "
-                   << str_array.at(str_idx).c_str());
+            " string write successful: " << str_array.at(str_idx).c_str(),
+            thread_.GiveName());
         break;
       }
       PrintDebug(
-          Name() << "WARN: Nothin written, try again after delay. "
-                 << "String idx is " << str_idx);
+          "WARN: Nothin written, try again after delay. " << "String idx is "
+                                                          << str_idx,
+          thread_.GiveName());
 
       // If no consumers online, nobody read data from buffer and buffer
       // always will full.
@@ -175,7 +179,7 @@ struct Producer : public paraos::Thread {
       }
 
       // Small delay for yeld resources.
-      Thread::DelayMs(1);
+      paraos::v2::Thread::DelayMs(1);
     }
 
     // cyclic increment buff idx.
@@ -184,9 +188,9 @@ struct Producer : public paraos::Thread {
 
  private:
   void ThreadExit() {
-    SetNeedWhile(false);
     ++producer_thread_exit_cnt;
-    PrintDebug(Name() << " exiting ... ");
+    PrintDebug(" exiting ... ", thread_.GiveName());
+    thread_.Finished();
   }
 
   static auto IsConsumersOffline() -> bool {
@@ -202,20 +206,18 @@ struct Producer : public paraos::Thread {
  private:
   const std::size_t thread_id_;
   etl::cyclic_value<int, 0, multi_ring_buff.GetBuffNumb() - 1U> buff_idx_{0};
+  paraos::v2::Thread thread_;
 };
 
-struct Consumer : public paraos::Thread {
-  explicit Consumer(
-      const std::string name = "Consumer",
-      std::size_t stack_depth = thread_stack_depth,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kRealTime)
-      : paraos::Thread{name, stack_depth, priority} {
-    paraos::Thread::SetNeedWhile(true);
-    Start();
+struct Consumer {
+  explicit Consumer(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
+    thread_.RegisterDelegate(
+        paraos::v2::thread_delegate_type::create<Consumer, &Consumer::Run>(
+            *this));
   }
 
   /// @brief Consumer thread.
-  void Run() override {
+  void Run() {
     // Small delay for yeld recourses if no data available in buff.
     constexpr std::size_t delay_ms{1};
     constexpr std::size_t read_mem_size{2048};
@@ -227,11 +229,12 @@ struct Consumer : public paraos::Thread {
 
     if (read_size > 0U) {
       consumer_total_read_bytes += read_size;
-      PrintDebug(Name() << " read " << read_mem->data());
+      PrintDebug(" read " << read_mem->data(), thread_.GiveName());
     } else {
       PrintDebug(
-          Name() << " Nothing read, try again. Already read total bytes is "
-                 << consumer_total_read_bytes);
+          " Nothing read, try again. Already read total bytes is "
+              << consumer_total_read_bytes,
+          thread_.GiveName());
     }
 
     // No producers online, nobody write new data, need exit from thread.
@@ -242,19 +245,21 @@ struct Consumer : public paraos::Thread {
 
  private:
   void ThreadExit() {
-    SetNeedWhile(false);
     ++consumer_thread_exit_cnt;
-    PrintDebug(Name() << " exiting ... ");
+    PrintDebug(" exiting ... ", thread_.GiveName());
+    thread_.Finished();
   }
 
   static auto IsProducersOffline() -> bool {
-    bool is_offline{true};
+    bool is_offline{false};
     if (producer_thread_exit_cnt >= producer_thread_numb) {
       is_offline = true;
     }
 
     return is_offline;
   }
+
+  paraos::v2::Thread thread_;
 };
 // NOLINTEND(performance-unnecessary-value-param)
 
@@ -271,77 +276,105 @@ void AssertsForTestComplete() {
 
     if (read_bytes_numb > 0) {
       consumer_total_read_bytes += read_bytes_numb;
-      std::cout << "Read some data befor after all threads works complete"
-                << "\n";
+      PrintDebug("Read some data befor after all threads works complete", "");
     }
   }
 
-  std::cout << "Total read bytes numb is " << consumer_total_read_bytes
-            << " Expected bytes numb is "
-            << CalcTotalBytesInStringArray(str_array) << "\n";
+  PrintDebug(
+      "Total read bytes numb is " << consumer_total_read_bytes
+                                  << ". Expected bytes numb is "
+                                  << CalcTotalBytesInStringArray(str_array),
+      "AssertsForTestComplete()");
 
   PARAOS_CHECK_ASSERT(
       consumer_total_read_bytes == producer_total_written_bytes &&
       "Total read and written bytes not equal");
+
+  PARAOS_CHECK_ASSERT(
+      producer_total_written_bytes == CalcTotalBytesInStringArray(str_array) &&
+      "written bytes not equal with expected");
 }
 
-#if defined(FREERTOS)
-#include <cstdlib>
-void ExitAfterTestComplete() {
-  auto is_need_exit{false};
-  {
-    const paraos::CriticalSection critical;
-    if ((consumer_thread_exit_cnt >= consumer_thread_numb) &&
-        (producer_thread_exit_cnt >= producer_thread_numb)) {
-      is_need_exit = true;
-    }
-  }
+void ExitFromTest() {
+  if (((consumer_thread_exit_cnt >= consumer_thread_numb) &&
+       (producer_thread_exit_cnt >= producer_thread_numb))) {
+    check_test_complete_and_exit.Finished();
 
-  if (is_need_exit) {
+    constexpr std::size_t delay_ms{0};
+    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
+    paraos::v2::Thread::DelayMs(delay_ms);
+
     AssertsForTestComplete();
-    exit(EXIT_SUCCESS);
+
+    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
+    paraos::v2::Thread::Exit();
   }
+
+  PrintDebug("Yeld resources", "ExitFromTest");
+  paraos::v2::Thread::DelayMs(10);
 }
-#endif
+
 }  // namespace
 
 auto main() -> int {
-#if defined(FREERTOS)
-#include "paraos_utils.hpp"
-
-  // ExitAfterTestComplete will be called by scheduler in idle task after no
-  // user task ready for execute.
-  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
-#endif
+  {
+    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
+    check_test_complete_and_exit.RegisterDelegate(delegate);
+  }
 
   // ---------------------------------------------------------------------------
   // Create producers
   // ---------------------------------------------------------------------------
-  const Producer prod_1{0, "Prod 1"};
-  producer_thread_numb += 1;
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Prod 0";
+    static Producer prod_1{attr, 0};
+    producer_thread_numb += 1;
+  }
 
-  const Producer prod_2{1, "Prod 2"};
-  producer_thread_numb += 1;
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Prod 1";
+    static Producer prod_2{attr, 1};
+    producer_thread_numb += 1;
+  }
 
-  const Producer prod_3{2, "Prod 3"};
-  producer_thread_numb += 1;
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Prod 2";
+    static Producer prod_3{attr, 2};
+    producer_thread_numb += 1;
+  }
 
-  const Producer prod_4{3, "Prod 4"};
-  producer_thread_numb += 1;
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Prod 3";
+    static Producer prod_4{attr, 3};
+    producer_thread_numb += 1;
+  }
   // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
   // Create consumers
   // ---------------------------------------------------------------------------
-  const Consumer cons_1{"--Cons 1"};
-  consumer_thread_numb += 1;
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "--Cons 1";
+    static Consumer cons_1{attr};
+    consumer_thread_numb += 1;
+  }
 
-  const Consumer cons_2{"--Cons 2"};
-  consumer_thread_numb += 1;
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "--Cons 2";
+    static Consumer cons_2{attr};
+    consumer_thread_numb += 1;
+  }
+
   // ---------------------------------------------------------------------------
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  paraos::v2::Thread::StartScheduler();
+  paraos::v2::Thread::DeleteAll();
 
   AssertsForTestComplete();
 
