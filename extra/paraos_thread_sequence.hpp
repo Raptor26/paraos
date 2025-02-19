@@ -34,7 +34,6 @@
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread.hpp"
 #include "paraos_thread_v2.hpp"
 
 namespace paraos {

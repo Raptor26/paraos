@@ -105,7 +105,9 @@ class Thread : public paraos::Base {
   /// paraos::v2::ThreadAttr or registered later using RegisterDelegate().
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
-  void RegisterDelegate(delegate run) { run_ = std::move(run); }
+  void RegisterDelegate(paraos::v2::thread_delegate_type run) {
+    run_ = std::move(run);
+  }
 
   /// --------------------------------------------------------------------------
 
@@ -265,7 +267,7 @@ class Thread : public paraos::Base {
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
 
     // Set thread priority.
-    struct sched_param param{};
+    struct sched_param param {};
     param.sched_priority = static_cast<int>(attr.priority);
     result_code = pthread_attr_setschedparam(&thread_attr, &param);
     ETL_ASSERT(
@@ -395,7 +397,7 @@ class Thread : public paraos::Base {
   delay_type sleep_ms_if_no_delegate_{700};
 
   /// @brief Run this delegate in thread context.
-  delegate run_;
+  paraos::v2::thread_delegate_type run_;
 
   /// @brief The user code can provide a pointer to an object that should be
   /// destroyed after the thread completes its work when Finish() is called.

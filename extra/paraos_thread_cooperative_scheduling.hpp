@@ -34,7 +34,6 @@
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread.hpp"
 #include "paraos_thread_v2.hpp"
 #include "paraos_trace.hpp"
 
@@ -217,7 +216,7 @@ class ICooperativeScheduling : public paraos::Base {
     // Once a task is registered (when the user code calls AddTask()),
     // scheduler_.start() begins execution in an internal loop,
     // which blocks the Idle() method by taking a semaphore.
-    Thread::DelayMs(coop_scheduler_delay_ms);
+    paraos::v2::Thread::DelayMs(coop_scheduler_delay_ms);
   }
 
   auto GetScheduler() -> etl::ischeduler & { return scheduler_; }

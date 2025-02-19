@@ -38,7 +38,6 @@
 #include "etl/atomic.h"
 #include "etl/timer.h"
 #include "paraos_check.h"
-#include "paraos_thread.hpp"
 #include "paraos_thread_sequence.hpp"
 
 #define PrintDebug(__message__, __object_name__)                    \
