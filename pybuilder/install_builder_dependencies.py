@@ -8,8 +8,8 @@ if __name__ == '__main__':
             sys.executable,
             '-m',
             'pip',
-            'install', 
+            'install',
             '-r',
-            'builder_requirements.txt'
+            'builder_requirements.txt',
         ]
     )
