@@ -5,9 +5,9 @@ import subprocess
 
 try:
     from python_on_whales import docker, DockerException
-except (ImportError, DockerException) as e:
+except (ImportError, DockerException) as exception:
     print(
-        f'ImportError happened: {e[0]}. '
+        f'ImportError happened: {exception[0]}. '
         'Try to install builder.py dependencies: '
         '"python install_builder_dependencies.py"'
     )
@@ -23,6 +23,12 @@ no_test_keywords_list = []
 tests_errors_table = {}
 
 test_out_file_name = 'pybuilder_test_output.txt'
+
+# Значение ключа для доступа к результатам команды memcheck.
+memcheck_results_key = 'memcheck_results'
+
+# Значение ключа для доступа к имени пресета.
+preset_name_key = 'name'
 
 # Таблица с результатами memcheck:
 # 'preset_name': {
@@ -72,7 +78,8 @@ def parse_presets(presets_filter: str = '', stress_test_flag: bool = False):
             # variables содержится флаг "SCRIPT_BUILD_ONLY"
             no_test_keywords_list.extend(
                 (
-                    preset_data['name'] for preset_data in config_presets_list
+                    preset_data[preset_name_key] for
+                    preset_data in config_presets_list
                     if 'SCRIPT_BUILD_ONLY' in preset_data['cacheVariables']
                 )
             )
@@ -83,13 +90,13 @@ def parse_presets(presets_filter: str = '', stress_test_flag: bool = False):
                 exclude_keywords_list.extend(no_test_keywords_list)
 
             presets_tuple = tuple(
-                preset_data['name']
+                preset_data[preset_name_key]
                 for preset_data in config_presets_list
                 if not any(
-                    string in preset_data['name']
+                    string in preset_data[preset_name_key]
                     for string in exclude_keywords_list
                 )
-                and preset_data['name'].find(presets_filter) != -1
+                and preset_data[preset_name_key].find(presets_filter) != -1
                 and 'hidden' not in preset_data
             )
 
@@ -160,6 +167,43 @@ def _build_preset(build_command: list[str]):
     return build_process
 
 
+def _parse_cmake_line(line):
+    found_fail_test_out = False
+    output_str = ''
+
+    if line != '':
+        line = line.replace('  ', ' ')
+        if line.find('***') != -1:
+            found_fail_test_out = True
+
+        elif line.find('FAILED TEST') != -1 or line.find(
+                'Test #') != -1:
+            found_fail_test_out = False
+
+        if found_fail_test_out:
+            output_str += line
+
+    return output_str
+
+
+def _parse_cmake_test_output(preset_name):
+    failed_test_output = ''
+
+    with (open(test_out_file_name, 'r')) as cmake_output_file:
+        for line in cmake_output_file.readlines():
+            failed_test_output += _parse_cmake_line(line)
+
+    if os.path.isfile(test_out_file_name):
+        os.remove(test_out_file_name)
+
+    if len(failed_test_output) > 0:
+        tests_errors_table[preset_name] = failed_test_output
+
+        return False
+    else:
+        return True
+
+
 def test_preset(
         make_command: list[str],
         build_command: list[str],
@@ -214,36 +258,12 @@ def test_preset(
             text=True
         )
 
-        found_fail_test_out = False
-        failed_test_output = ''
+        return _parse_cmake_test_output(preset_name)
 
-        with (open(test_out_file_name, 'r')) as f:
-            for line in f.readlines():
-
-                if line != '':
-                    line = line.replace('  ', ' ')
-                    if line.find('***') != -1:
-                        found_fail_test_out = True
-
-                    elif line.find('FAILED TEST') != -1 or line.find(
-                            'Test #') != -1:
-                        found_fail_test_out = False
-
-                    if found_fail_test_out:
-                        failed_test_output += line
-
-        if os.path.isfile(test_out_file_name):
-            os.remove(test_out_file_name)
-
-        if failed_test_output != '':
-            tests_errors_table[preset_name] = failed_test_output
-
-            return False
-    else:
-        print(
-            f'\n{WARNING}{BOLD}Preset {preset_name} has been SKIPPED from '
-            f'testing due to EXCLUSION LIST!{END_COLOR}\n'
-        )
+    print(
+        f'\n{WARNING}{BOLD}Preset {preset_name} has been SKIPPED from '
+        f'testing due to EXCLUSION LIST!{END_COLOR}\n'
+    )
 
     return True
 
@@ -262,10 +282,8 @@ def test_multiple_presets(
     иначе - False.
     """
     presets_tuple = parse_presets(presets_filter, stress_test_flag)
-    final_res = False
+    final_res = True
     if presets_tuple:
-        results_list = []
-
         if presets_filter != '':
             print(f'For the following FILTER {presets_filter}:')
 
@@ -279,16 +297,13 @@ def test_multiple_presets(
                 repetitions_count,
                 test_timeout_sec
             )
-            results_list.append(preset_res)
+
             if not preset_res:
+                final_res = False
                 break
 
-        final_res = True
-
-        for res in results_list:
-            final_res = final_res and res
     else:
-        print('No presets was found!')
+        print(f'{WARNING}No presets was found!{END_COLOR}')
 
     return final_res
 
@@ -317,7 +332,7 @@ def _build_docker_image(image_tags: str):
 
         return True
 
-    except DockerException as e:
+    except DockerException:
         tests_errors_table['docker_tests'] = fail_output
         return False
 
@@ -332,7 +347,7 @@ def _run_docker_container(image_name: str, image_tags: str):
         необходимо запустить контейнер.
     :return: Возвращает результат выполнения операции.
     """
-    result = True
+    container_result = True
     memcheck_flag = False
     tests_fail_flag = False
     tests_fail_out = b''
@@ -370,11 +385,11 @@ def _run_docker_container(image_name: str, image_tags: str):
             if stream_content.find(
                     b'Memory checking results:') != -1:
                 memcheck_flag = True
-                if memcheck_output != '':
+                if len(memcheck_output) > 0:
                     memcheck_results_table[preset_name][
                         'defects'] = memcheck_output
                 else:
-                    del memcheck_results_table[preset_name]
+                    memcheck_results_table.pop(preset_name, None)
                 memcheck_output = ''
                 memcheck_results_flag = True
                 stream_content = b''
@@ -384,7 +399,7 @@ def _run_docker_container(image_name: str, image_tags: str):
                 if (preset_name != 'preset'
                         and preset_name in memcheck_results_table):
                     memcheck_results_table[preset_name][
-                        'memcheck_results'] = memcheck_output
+                        memcheck_results_key] = memcheck_output
                     memcheck_results_flag = False
                     memcheck_output = ''
 
@@ -394,7 +409,7 @@ def _run_docker_container(image_name: str, image_tags: str):
                 memcheck_results_table.update(
                     {
                         preset_name: {
-                            'memcheck_results': '',
+                            memcheck_results_key: '',
                             'defects': ''
                         }
                     }
@@ -418,27 +433,30 @@ def _run_docker_container(image_name: str, image_tags: str):
                     memcheck_output += line
 
         if preset_name in memcheck_results_table:
-            if memcheck_output != '':
-                memcheck_results_table[
-                    preset_name]['memcheck_results'] = memcheck_output
+            if len(memcheck_output) > 0:
+                # implicit `.get()` dict usage - Здесь не происходит
+                # получение значения из словаря, поэтому использование get()
+                # здесь неоправданно.
+                memcheck_results_table[ # NOQA WPS529
+                    preset_name][memcheck_results_key] = memcheck_output
             else:
-                del memcheck_results_table[preset_name]
+                memcheck_results_table.pop(preset_name, None)
 
-    except DockerException as e:
-        tests_errors_table['docker_tests'] = e
+    except DockerException as exc:
+        tests_errors_table['docker_tests'] = exc
         if tests_fail_out != b'':
             tests_errors_table[
                 'docker_tests'
             ] = tests_fail_out.decode("utf-8")
-            result = False
+            container_result = False
 
         if memcheck_output != '' and preset_name in memcheck_results_table:
             memcheck_results_table[
-                preset_name]['memcheck_results'] = memcheck_output
+                preset_name][memcheck_results_key] = memcheck_output
 
-            result = False
+            container_result = False
 
-    return result
+    return container_result
 
 
 def run_docker_test(image_name: str, image_tags: str):
@@ -450,7 +468,7 @@ def run_docker_test(image_name: str, image_tags: str):
     :return: Возвращает результат выполнения операций сборки и запуска.
     """
     print(f'{BLUE}{BOLD}Removing "Dangling" images...{END_COLOR}')
-    result = True
+    test_result = True
     dangling_remove_res = subprocess.run(
         [os.path.abspath('./docker/remove_dangling_images.sh')],
         stdout=subprocess.PIPE,
@@ -462,8 +480,8 @@ def run_docker_test(image_name: str, image_tags: str):
         print(f'{BLUE}{BOLD}BUILDING docker image, process may take a long '
               f'time...{END_COLOR}')
 
-        result = _build_docker_image(image_tags)
-        if result:
-            result = _run_docker_container(image_name, image_tags)
+        test_result = _build_docker_image(image_tags)
+        if test_result:
+            test_result = _run_docker_container(image_name, image_tags)
 
-    return result
+    return test_result

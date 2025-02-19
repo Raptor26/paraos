@@ -1,0 +1,163 @@
+stages:
+ - windows_wps_check
+ - windows_ruff_check
+ - windows_ruff_format
+ - test_windows
+ - test_linux
+
+ ## windows ---------------------------------------------------------------------
+ci:windows:
+ stage: test_windows
+ needs: []
+ tags:
+  - windows
+ script:
+  - python -m venv venv
+  - .\venv\Scripts\activate
+  - pip install -r builder_requirements.txt
+  - deactivate
+  - .\venv\Scripts\python -m unittest test_pycmakebuilder.py
+ rules:
+    # If merge request only no need start pipeline because pipeline was
+    # started when branch pushed in repo
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
+
+ci:windows_ruff_check:
+ stage: windows_ruff_check
+ needs: []
+ tags:
+  - windows
+ script:
+  - python -m venv venv
+  - .\venv\Scripts\activate
+  - pip install -r builder_requirements.txt
+  - deactivate
+  - .\venv\Scripts\python -m ruff check
+ rules:
+    # If merge request only no need start pipeline because pipeline was
+    # started when branch pushed in repo
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
+
+ci:windows_ruff_format:
+ stage: windows_ruff_format
+ needs: []
+ tags:
+  - windows
+ script:
+  - python -m venv venv
+  - .\venv\Scripts\activate
+  - pip install -r builder_requirements.txt
+  - deactivate
+  - .\venv\Scripts\python -m ruff format --check
+ rules:
+    # If merge request only no need start pipeline because pipeline was
+    # started when branch pushed in repo
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
+
+ci:windows_wps:
+  stage: windows_wps_check
+  needs: [ ]
+  tags:
+    - windows
+  script:
+    - python -m venv venv
+    - .\venv\Scripts\activate
+    - pip install -r builder_requirements.txt
+    - deactivate
+    - .\venv\Scripts\python -m flake8 --color=always .
+  rules:
+    # If merge request only no need start pipeline because pipeline was
+    # started when branch pushed in repo
+    - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+      when: always
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+      allow_failure: false
+      # When a push is made on a branch, we always want to start the pipeline
+    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+      when: always
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: always
+      allow_failure: false
+    - if: $CI_COMMIT_BRANCH == 'master'
+      when: always
+      allow_failure: false
+    - when: never
+
+ ## linux ---------------------------------------------------------------------
+ci:linux:
+ stage: test_linux
+ needs: []
+ tags:
+  - linux
+ script:
+  - python3 -m venv venv
+  - source ./venv/bin/activate
+  - pip install -r builder_requirements.txt
+  - deactivate
+  - venv/bin/python3 -m unittest test_pycmakebuilder.py
+ rules:
+    # If merge request only no need start pipeline because pipeline was started
+    # when branch pushed in repo
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false  
+  - when: never
