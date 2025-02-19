@@ -21,7 +21,7 @@ ci:windows:
                      -j12
                      --timeout 30"
     -i=""
-    -e="pc_debug_gcc_clang_tidy|freertos_debug_gcc_clang_tidy"
+    -e="clang_tidy*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -54,7 +54,7 @@ ci:windows_clang_tidy:
                      --stop-on-failure 
                      -j12
                      --timeout 30" 
-    -i="pc_debug_gcc_clang_tidy|freertos_debug_gcc_clang_tidy"
+    -i="clang_tidy*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -121,7 +121,7 @@ ci:linux:
                      -j8
                      --timeout 30" 
     -i="" 
-    -e="pc_debug_gcc_clang_tidy|freertos_debug_gcc_clang_tidy"
+    -e="clang_tidy*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -154,7 +154,7 @@ ci:linux_clang_tidy:
                      --stop-on-failure 
                      -j8
                      --timeout 30" 
-    -i="pc_debug_gcc_clang_tidy|freertos_debug_gcc_clang_tidy"
+    -i="clang_tidy*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
