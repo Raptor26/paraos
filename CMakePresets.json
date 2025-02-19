@@ -38,6 +38,14 @@
             }
         },
         {
+            "name": "pc_debug_gcc_trace",
+            "displayName": "PC Debug GCC with trace",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "TRACE": "true"
+            }
+        },
+        {
             "name": "pc_debug_gcc_clang_tidy",
             "displayName": "PC platform debug with GCC with clang-tidy checks",
             "description": "Clang-tidy debug version",
@@ -68,6 +76,14 @@
             "inherits": "pc_debug_gcc",
             "cacheVariables": {
                 "FREERTOS": "true"
+            }
+        },
+        {
+            "name": "freertos_debug_gcc_trace",
+            "displayName": "freeRTOS Debug GCC with trace",
+            "inherits": "freertos_debug_gcc",
+            "cacheVariables": {
+                "TRACE": "true"
             }
         },
         {
