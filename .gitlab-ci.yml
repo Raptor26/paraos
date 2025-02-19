@@ -90,11 +90,7 @@ ci:windows_stress_gcc:
                      --timeout 30
                      -L [stress]" 
     -i="" 
-    -e="pc_debug_clang_trace|
-        freertos_debug_clang_trace|
-        pc_debug_clang_docker|
-        pc_debug_gcc_clang_tidy|
-        freertos_debug_gcc_clang_tidy"
+    -e="trace*|docker*|clang_tidy*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: never
@@ -194,11 +190,7 @@ ci:linux_stress_gcc:
                      --timeout 30
                      -L [stress]" 
     -i="" 
-    -e="pc_debug_clang_trace|
-        freertos_debug_clang_trace|
-        pc_debug_clang_docker|
-        pc_debug_gcc_clang_tidy|
-        freertos_debug_gcc_clang_tidy"
+    -e="trace*|docker*|clang_tidy*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: never
