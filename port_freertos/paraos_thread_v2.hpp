@@ -22,6 +22,22 @@
 /// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
+///
+/// NAME
+///     paraos_thread_v2.
+///
+/// DESCRIPTION
+///     paraos_thread_v2 provides a FreeRTOS wrapper for working with threads.
+///     This wrapper offers a cross-platform API for managing threads
+///     in RTOS, Windows, and Linux.
+///
+/// EXAMPLE
+///     See usages example in:
+///     - port_tests/test_paraos_thread_only_global.cpp
+///     -
+///       port_tests/test_paraos_thread_only_stack_with_multiple_threads_in_one_object.cpp
+///     - port_tests/test_paraos_thread_only_stack.cpp
+///     - port_tests/test_paraos_thread_only_static.cpp
 
 #ifndef PARAOS_THREAD_V2_HPP
 #define PARAOS_THREAD_V2_HPP
