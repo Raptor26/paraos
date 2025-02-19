@@ -30,17 +30,30 @@
 // Useless check here because static analyzer cant see usage of some headers,
 // but they're actually used in tis file.
 // NOLINTBEGIN(misc-include-cleaner)
+#include "etl/atomic.h"
 #include "etl/function.h"
 #include "etl/scheduler.h"
 #include "etl/task.h"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_thread.hpp"
 #include "paraos_thread_cooperative_scheduling.hpp"
+#include "paraos_thread_v2.hpp"
 #include "paraos_utils.hpp"
 // NOLINTEND(misc-include-cleaner)
 
+#define PrintDebug(__message__, __object_name__)                    \
+  {                                                                 \
+    const paraos::CriticalSection macro_critical;                   \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
+              << std::endl;                                         \
+  }
+
 namespace {
-bool is_test_complete{false};
+etl::atomic_bool is_test_complete{false};
+
+paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
+    paraos::v2::ThreadPriority::kRealTime, nullptr}};
 
 // Task 1 set highest priority in set. It will run first.
 constexpr etl::task_priority_t task1_priority{10};
@@ -53,7 +66,7 @@ constexpr size_t max_tasks_number{10};
 class Task1 : public etl::task {
  public:
   //*************************************
-  Task1() : task(task1_priority), work(3) {}
+  Task1() : task(task1_priority), work{3} {}
 
   //*************************************
   [[nodiscard]] auto task_request_work() const -> uint32_t override {
@@ -63,18 +76,18 @@ class Task1 : public etl::task {
 
   //*************************************
   void task_process_work() override {
-    std::cout << "Task1 : Process work : " << work << "\n";
+    PrintDebug("Task1 : Process work : " << work, "");
     --work;
   }
 
  private:
-  uint32_t work{0};
+  uint32_t work;
 };
 
 class Task2 : public etl::task {
  public:
   //*************************************
-  Task2() : task(task2_priority), work(3) {}
+  Task2() : task(task2_priority), work{3} {}
 
   //*************************************
   [[nodiscard]] auto task_request_work() const -> uint32_t override {
@@ -84,18 +97,18 @@ class Task2 : public etl::task {
 
   //*************************************
   void task_process_work() override {
-    std::cout << "Task2 : Process work : " << work << "\n";
+    PrintDebug("Task2 : Process work : " << work, "");
     --work;
   }
 
  private:
-  uint32_t work{0};
+  uint32_t work;
 };
 
 class Task3 : public etl::task {
  public:
   //*************************************
-  Task3() : task(task3_priority), work(1) {}
+  Task3() : task(task3_priority), work{1} {}
 
   //*************************************
   [[nodiscard]] auto task_request_work() const -> uint32_t override {
@@ -105,12 +118,12 @@ class Task3 : public etl::task {
 
   //*************************************
   void task_process_work() override {
-    std::cout << "Task3 : Process work : " << work << "\n";
+    PrintDebug("Task3 : Process work : " << work, "");
     --work;
   }
 
  private:
-  uint32_t work{0};
+  uint32_t work;
 };
 
 class Idle {
@@ -121,12 +134,12 @@ class Idle {
   //*************************************
   void IdleCallback() {
     std::cout << "Idle callback" << "\n";
-    scheduler.exit_scheduler();
-    std::cout << "Exiting the scheduler" << "\n";
 
     // Call exit(EXIT_SUCCESS) in ExitAfterTestComplete() for force break system
     // process (in freertos port only).
     is_test_complete = true;
+
+    scheduler.exit_scheduler();
   }
 
  private:
@@ -143,9 +156,8 @@ namespace {
 paraos::CooperativeScheduling<
     max_tasks_number, etl::scheduler_policy_highest_priority>
     cooperative_scheduler{paraos::CooperativeSchedulingAttr{
-        "Cooperative", paraos::GetStackMinimumSizeInBytes(),
-        paraos::ThreadPriority::kNormal, paraos::embedded_timer_empty, false,
-        true}};
+        "Cooperative scheduler", paraos::GetStackMinimumSizeInBytes(),
+        paraos::v2::ThreadPriority::kRealTime, nullptr}};
 
 Idle idle_handle(cooperative_scheduler.GetScheduler());
 
@@ -155,23 +167,32 @@ Task1 task1;
 Task2 task2;
 Task3 task3;
 
-/// FreeRTOS can't stop scheduler. In this case we must manually call
-/// exit(EXIT_SUCCESS) after test complete.
-#if defined(FREERTOS)
-void ExitAfterTestComplete() {
-  if (is_test_complete) {
-    exit(EXIT_SUCCESS);
-  }
-}
-#endif
 }  // namespace
 
+void ExitFromTest() {
+  if (is_test_complete == true) {
+    check_test_complete_and_exit.Finished();
+
+    // Exit from cooperative scheduler.
+    cooperative_scheduler.Finish(false);
+
+    constexpr std::size_t delay_ms{0};
+    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
+    paraos::v2::Thread::DelayMs(delay_ms);
+
+    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
+    paraos::v2::Thread::Exit();
+  }
+
+  PrintDebug("Yeld resources", "ExitFromTest");
+  paraos::v2::Thread::DelayMs(10);
+}
+
 auto main() -> int {
-#if defined(FREERTOS)
-  // ExitAfterTestComplete will be called by scheduler in idle task after no
-  // user task ready for execute.
-  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
-#endif
+  {
+    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
+    check_test_complete_and_exit.RegisterDelegate(delegate);
+  }
 
   // When calling AddTask(), scheduler compare priority each task and sorted
   // tasks references in private vector with tasks priority respect.
@@ -179,12 +200,12 @@ auto main() -> int {
   cooperative_scheduler.AddTask(task1);
   cooperative_scheduler.AddTask(task2);
 
+  // Set custom idle callback to complete test.
   cooperative_scheduler.SetIdleCallback(idle_callback);
 
-  cooperative_scheduler.NotifyGive();
+  paraos::v2::Thread::StartScheduler();
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  paraos::v2::Thread::DeleteAll();
 
   return EXIT_SUCCESS;
 }

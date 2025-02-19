@@ -35,16 +35,12 @@ TEST(Cooperative, Create) {
   constexpr std::size_t max_task_numb{2};
 
   paraos::CooperativeSchedulingAttr attr;
-  attr.is_need_loop = false;
-  attr.is_need_start = false;
   const paraos::CooperativeScheduling<max_task_numb> cooperative{attr};
 }
 
 TEST(Cooperative, TryPutOverflowTasks) {
   constexpr std::size_t max_task_numb{2};
   paraos::CooperativeSchedulingAttr attr;
-  attr.is_need_loop = false;
-  attr.is_need_start = false;
   paraos::CooperativeScheduling<max_task_numb> cooperative{attr};
 
   struct test_task_t : public etl::task {
