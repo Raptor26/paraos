@@ -29,7 +29,6 @@
 #include <execution>
 #include <optional>
 #include <utility>
-#include <vector>
 
 #include "etl/queue.h"
 #include "paraos_check.h"
@@ -39,7 +38,7 @@
 #include "paraos_mutex_raii.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_time.hpp"
 
 namespace paraos {
 
@@ -104,7 +103,7 @@ struct IQueueBlocking {
 
     bool is_need_take{true};
 
-    auto timeout = Thread::GetCurrentTime();
+    auto timeout = paraos::GetCurrentTime();
 
     while (IsEmpty()) {
       if (pop_sem_.Take(timeout_ms, is_isr)) {
@@ -115,7 +114,7 @@ struct IQueueBlocking {
 
       // recalculate timeout. timeout_ms value will corrected in
       // CheckTimeout().
-      if (Thread::CheckTimeout(timeout, timeout_ms)) {
+      if (paraos::CheckTimeout(timeout, timeout_ms)) {
         is_need_take = false;
         break;
       }
