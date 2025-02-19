@@ -32,7 +32,7 @@
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
-
+#include "paraos_time.hpp"
 constexpr std::size_t thread_default_stack_depth{3072};
 
 namespace {
@@ -71,10 +71,10 @@ struct TestTimeout : public paraos::Thread {
     // Useless check here, because clang-tidy somehow can't see the
     // GetCurrentTime() definition inside paraos::Thread.
     // NOLINTBEGIN(misc-include-cleaner)
-    auto current_time = paraos::Thread::GetCurrentTime();
+    auto current_time = paraos::GetCurrentTime();
     // NOLINTEND(misc-include-cleaner)
     while (true) {
-      if (Thread::CheckTimeout(current_time, delay_ms)) {
+      if (paraos::CheckTimeout(current_time, delay_ms)) {
         break;
       }
 
@@ -88,8 +88,7 @@ struct TestTimeout : public paraos::Thread {
     profiler.Stop();
 
     std::cout << "--Cycle total time is " << profiler.LastDurationMs() << " ms."
-              << " Expected delay is " << expected_delay_ms << " ms."
-              << "\n";
+              << " Expected delay is " << expected_delay_ms << " ms." << "\n";
 
     is_test_complete = true;
   }

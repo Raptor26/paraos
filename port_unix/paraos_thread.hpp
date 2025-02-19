@@ -40,6 +40,7 @@
 #include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_event_loop_interface.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_trace.hpp"
@@ -56,8 +57,30 @@ enum class ThreadPriority : uint8_t {
   kRealTime,
 };
 
+struct ThreadAttr {
+  std::string thread_name{"Thread"};
+  std::size_t stack_depth{paraos::GetStackMinimumSizeInBytes()};
+  paraos::ThreadPriority priority{paraos::ThreadPriority::kNormal};
+  bool is_joinable{true};
+};
+
+struct ThreadAttrDynamic : public ThreadAttr {
+  paraos::IEventLoop *event_loop_ptr{nullptr};
+  static constexpr bool is_dynamic_{true};
+};
+
 class Thread {
  public:
+  Thread(const ThreadAttr &attr)
+      : name_{attr.thread_name},
+        stack_depth_{attr.stack_depth},
+        priority_{attr.priority},
+        is_joinable_{attr.is_joinable} {
+    queue_thread_obj_.push_back(this);
+    // Now Dtor can delete thread.
+    is_thread_complete_sem_.Give();
+  }
+
   // String copy here is needed because of the delayed thread initialization -
   // address of it's name could be invalid later.
   // NOLINTBEGIN(performance-unnecessary-value-param)
@@ -139,58 +162,6 @@ class Thread {
 
   static void SleepMs(std::size_t sleep_ms) {
     usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
-  }
-
-  /// @brief Return current tine in ticks. Useful when need periodical check
-  /// timeout in blocking operations with elapsed time correction.
-  ///
-  /// @return Return object with current time. Returned value used in
-  /// CheckTimeout().
-  static auto GetCurrentTime() -> OsProfiler {
-    // Create profiler and capture current time.
-    OsProfiler profiler;
-    profiler.Start();
-    return profiler;
-  }
-
-  /// @brief Check timeout with elapsed time correction.
-  ///
-  /// @details If a task enters and exits the Blocked state more than once while
-  /// it is waiting for the event to occur then the timeout used each time the
-  /// task enters the Blocked state must be adjusted to ensure the total of all
-  /// the time spent in the Blocked state does not exceed the originally
-  /// specified timeout period. xTaskCheckForTimeOut() performs the adjustment,
-  /// taking into account occasional occurrences such as tick count overflows,
-  /// which would otherwise make a manual adjustment prone to error.
-  ///
-  /// @param[in] timeout: Returned by GetCurrentTime() value.
-  /// GetCurrentTimeInTicks() using at once before need periodical checking
-  /// timeout by CheckTimeout().
-  /// @param[in,out] delay_ms: Wait time in [ms]. Note: In unix port delay_ms
-  /// not modifed, by other ports (freeRTOS for example), delay_ms modify each
-  /// CheckTimeout() call.
-  ///
-  /// @return Return true if need break waiting, false if no timeout elapsed.
-  static auto CheckTimeout(OsProfiler &timeout, std::size_t &delay_ms) -> bool {
-    const CriticalSection critical;
-    bool is_timeout{true};
-    timeout.Stop();
-
-    auto elapsed_time = timeout.LastDurationMs();
-
-    if (delay_ms > elapsed_time) {
-      is_timeout = false;
-
-      // Reduced delay_ms. It's need for caller, which can again enter in
-      // blocking mode with updated timeout.
-      delay_ms -= elapsed_time;
-
-      // Update start point because delay_ms was modified. It's necessary for
-      // correct update delay_ms if CheckTimeout() will call again.
-      timeout.Start();
-    }
-
-    return is_timeout;
   }
 
   PARAOS_INLINE_TRIVIAL void SetNeedWhile(bool is_need_while) {

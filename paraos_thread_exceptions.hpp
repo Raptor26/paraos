@@ -1,7 +1,7 @@
-/// @file paraos_utils.hpp
+/// @file paraos_thread_exceptions.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
+/// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
@@ -23,34 +23,37 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef PARAOS_THREAD_EXCEPTIONS_HPP
+#define PARAOS_THREAD_EXCEPTIONS_HPP
 
-// NOLINTBEGIN(llvm-include-order)
-// clang-format off
-// winsock2.h must include before windows.h
-#include <winsock2.h>
-#include <windows.h>
-// clang-format on
-// NOLINTEND(llvm-include-order)
-
-#include <minwindef.h>
-
-#include <cassert>
-#include <cstddef>
+#include "paraos_exceptions.hpp"
 
 namespace paraos {
+class thread_exception : public paraos::exception {
+ public:
+  thread_exception(
+      string_type reason_, string_type file_name_, numeric_type line_number_)
+      : paraos::exception(reason_, file_name_, line_number_) {}
+};
 
-using delay_type = DWORD;
+class thread_not_created_exception : public paraos::thread_exception {
+ public:
+  thread_not_created_exception(
+      string_type file_name_, numeric_type line_number_)
+      : paraos::thread_exception(
+            ETL_ERROR_TEXT("Thread: not created", "thread"), file_name_,
+            line_number_) {}
+};
 
-constexpr delay_type max_delay{INFINITE};
-static_assert(sizeof(max_delay) >= sizeof(DWORD));
-
-constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
-  constexpr size_t stack_multiplier{1024};
-  return stack_multiplier * sizeof(size_t);
-}
-
+class thread_no_event_loop_interface_exception
+    : public paraos::thread_exception {
+ public:
+  thread_no_event_loop_interface_exception(
+      string_type file_name_, numeric_type line_number_)
+      : paraos::thread_exception(
+            ETL_ERROR_TEXT("Thread: no event loop interface", "thread"),
+            file_name_, line_number_) {}
+};
 }  // namespace paraos
 
-#endif /* UTILS_HPP */
+#endif /* PARAOS_THREAD_EXCEPTIONS_HPP */

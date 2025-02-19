@@ -1,7 +1,7 @@
-/// @file paraos_utils.hpp
+/// @file paraos_deferred_delete.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
+/// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
@@ -23,34 +23,28 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef UTILS_HPP
-#define UTILS_HPP
-
-// NOLINTBEGIN(llvm-include-order)
-// clang-format off
-// winsock2.h must include before windows.h
-#include <winsock2.h>
-#include <windows.h>
-// clang-format on
-// NOLINTEND(llvm-include-order)
-
-#include <minwindef.h>
-
-#include <cassert>
-#include <cstddef>
+#ifndef PARAOS_DEFERRED_DELETE_HPP
+#define PARAOS_DEFERRED_DELETE_HPP
 
 namespace paraos {
 
-using delay_type = DWORD;
+using base_callback = void (*)();
 
-constexpr delay_type max_delay{INFINITE};
-static_assert(sizeof(max_delay) >= sizeof(DWORD));
+class Base {
+ public:
+  Base(base_callback callback_ptr = nullptr)
+      : callback_ptr_{callback_ptr} {}
 
-constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
-  constexpr size_t stack_multiplier{1024};
-  return stack_multiplier * sizeof(size_t);
-}
+  virtual ~Base() noexcept {
+    if (callback_ptr_) {
+      callback_ptr_();
+    }
+  }
+
+ private:
+  base_callback callback_ptr_;
+};
 
 }  // namespace paraos
 
-#endif /* UTILS_HPP */
+#endif /* PARAOS_DEFERRED_DELETE_HPP */
