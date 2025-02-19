@@ -64,10 +64,7 @@ class SemaphoreBase {
     } else if (timeout_ms == max_delay) {
       result = sem_wait(&handle_);
     } else {
-      timespec delay{};
-      delay.tv_nsec =
-          static_cast<int64_t>(timeout_ms) * NANOSECONDS_PER_MILISECONDS;
-
+      auto delay = MillisecondsInTimeSpec(timeout_ms);
       timespec current_time{};
       clock_gettime(CLOCK_REALTIME, &current_time);
 
