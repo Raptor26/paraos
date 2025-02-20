@@ -27,6 +27,7 @@
 #define PARAOS_MESSAGE_BUFFER_HPP
 
 #include <cinttypes>
+#include <utility>
 #include <vector>
 
 #include "paraos_config.hpp"
@@ -44,22 +45,35 @@ class Message {
   using alloc_traits = std::allocator_traits<decltype(allocator_)>;
 
  public:
+  using value_type = std::uint8_t;
+  using pointer = std::uint8_t *;
+  using reference = std::uint8_t &;
+  using iterator = pointer;
+  using const_iterator = const pointer;
+
+  // ---------------------------------------------------------------------------
+
   /// @brief Запрашивает из кучи размер памяти, указанный в size_in_bytes
   /// @param[in] size_in_bytes: Размер области памяти в байтах, который
   /// необходимо выделить из аллокатора памяти.
   explicit Message(const std::size_t size_in_bytes)
-      : data_ptr_{nullptr}, size_in_bytes_{size_in_bytes} {
-    SafeAllocate();
-  }
+      : size_in_bytes_{size_in_bytes},
+        data_ptr_{SafeAllocate(size_in_bytes_)},
+        p_end_{data_ptr_ + size_in_bytes_} {}
+
+  // ---------------------------------------------------------------------------
 
   Message() : data_ptr_{nullptr}, size_in_bytes_{0} {}
 
+  // ---------------------------------------------------------------------------
+
   virtual ~Message() { SafeDeallocate(); }
 
-  Message(const Message &other)
-      : data_ptr_{nullptr}, size_in_bytes_{other.size_in_bytes_} {
-    SafeAllocate();
+  // ---------------------------------------------------------------------------
 
+  Message(const Message &other)
+      : size_in_bytes_{other.size_in_bytes_},
+        data_ptr_{SafeAllocate(size_in_bytes_)} {
     if (data_ptr_ != nullptr) {
       // After memory allocated, need copy bytes in allocated memory area from
       // other memory area.
@@ -75,6 +89,16 @@ class Message {
   auto operator=(const Message &other) -> Message & = delete;
   auto operator=(Message &&other) -> Message & = delete;
 
+  // ---------------------------------------------------------------------------
+  iterator begin() { return data_ptr_; }
+  const_iterator begin() const { return data_ptr_; }
+  const_iterator cbegin() const { return data_ptr_; }
+  iterator end() { return data_ptr_ + size_in_bytes_; }
+  const_iterator end() const { return data_ptr_ + size_in_bytes_; }
+  const_iterator cend() const { return data_ptr_ + size_in_bytes_; }
+
+  // ---------------------------------------------------------------------------
+
   explicit operator bool() const {
     bool is_ready{false};
 
@@ -85,11 +109,15 @@ class Message {
     return is_ready;
   }
 
+  // ---------------------------------------------------------------------------
+
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const -> void * {
     return static_cast<void *>(data_ptr_);
   }
+
+  // ---------------------------------------------------------------------------
 
   /// @brief Возвращает размер выделенной области памяти в байтах.
   /// @return Количество байт, выделенные по адресу, который возвращает метод
@@ -98,16 +126,25 @@ class Message {
     return size_in_bytes_;
   }
 
+  // ---------------------------------------------------------------------------
+
   /// @brief Принудительно освобождает область памяти, выделенную под сообщение.
   /// После вызова данного метода, объект становиться не валидным.
   PARAOS_INLINE_TRIVIAL void Free() { SafeDeallocate(); }
 
+  // ---------------------------------------------------------------------------
+
  private:
-  PARAOS_INLINE_TRIVIAL void SafeAllocate() {
-    if (size_in_bytes_ > 0U) {
-      data_ptr_ = alloc_traits::allocate(allocator_, size_in_bytes_);
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL pointer
+  SafeAllocate(std::size_t size_in_bytes) {
+    if (size_in_bytes > 0U) {
+      return alloc_traits::allocate(allocator_, size_in_bytes);
     }
+
+    return nullptr;
   }
+
+  // ---------------------------------------------------------------------------
 
   PARAOS_INLINE_TRIVIAL void SafeDeallocate() {
     if (data_ptr_ != nullptr) {
@@ -116,11 +153,13 @@ class Message {
     }
   }
 
-  /// @brief Указатель на выделенную область памяти под хранение сообщения.
-  std::uint8_t *data_ptr_;
-
   /// @brief Размер выделенной области памяти в байтах.
   const std::size_t size_in_bytes_;
+
+  /// @brief Указатель на выделенную область памяти под хранение сообщения.
+  pointer data_ptr_;
+
+  pointer p_end_;
 };
 
 /// @brief Message object, returned by MessageBuffer when user code calls
@@ -128,7 +167,15 @@ class Message {
 /// @tparam ALLOCATOR
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class MessageWritable final {
+  using message_type = Message<ALLOCATOR>;
+
  public:
+  using value_type = message_type::value_type;
+  using pointer = message_type::pointer;
+  using reference = message_type::reference;
+  using iterator = message_type::iterator;
+  using const_iterator = message_type::const_iterator;
+
   MessageWritable(
       const std::size_t size_in_bytes,
       paraos::IQueueBlocking<Message<ALLOCATOR>> &queue)
@@ -137,11 +184,21 @@ class MessageWritable final {
   ~MessageWritable() { TryPush(); }
 
   MessageWritable(const MessageWritable &other) = delete;
-  MessageWritable(MessageWritable &&other) = delete;
+
+  MessageWritable(MessageWritable &&other) noexcept
+      : message_{std::move(other.message_)}, queue_{other.queue_} {}
+
   auto operator=(const MessageWritable &other) -> MessageWritable & = delete;
   auto operator=(MessageWritable &&other) -> MessageWritable & = delete;
 
   explicit operator bool() const { return static_cast<bool>(message_); }
+
+  iterator begin() { return message_.begin(); }
+  const_iterator begin() const { return message_.begin(); }
+  const_iterator cbegin() const { return message_.cbegin(); }
+  iterator end() { return message_.end(); }
+  const_iterator end() const { return message_.end(); }
+  const_iterator cend() const { return message_.cend(); }
 
   PARAOS_INLINE_TRIVIAL auto Data() -> void * { return message_.Data(); }
   PARAOS_INLINE_TRIVIAL auto Size() -> size_t { return message_.Size(); }
@@ -183,8 +240,8 @@ class MessageWritable final {
   PARAOS_INLINE_TRIVIAL void Free() { message_.Free(); }
 
  private:
-  Message<ALLOCATOR> message_;
-  paraos::IQueueBlocking<Message<ALLOCATOR>> &queue_;
+  message_type message_;
+  paraos::IQueueBlocking<message_type> &queue_;
 };
 
 /// @brief Message buffer base class. Contained API for buffer.
