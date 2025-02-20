@@ -23,31 +23,27 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#include <stdio.h>
-
+// clang-format off
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on
 #if defined(FREERTOS)
 #include "FreeRTOS.h"
 #include "task.h"
 #endif
 
-#include <unistd.h>
-
 #include <atomic>
 #include <iostream>
-#include <memory>
-#include <string>
 
 #include "paraos_critical.hpp"
 #include "paraos_thread_v2.hpp"
-#include "paraos_timer.hpp"
 
-#define PrintDebug(__message__, __object_name__)                    \
-  {                                                                 \
-    const paraos::CriticalSection macro_critical;                   \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
-              << std::endl;                                         \
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
+namespace {
 std::atomic<std::size_t> deleted_objects_cnt;
 
 void DeletedObjectsCnt() {
@@ -87,10 +83,11 @@ void ExitFromTest() {
   PrintDebug("Yeld resources", "ExitFromTest");
   paraos::v2::Thread::DelayMs(10);
 }
+}  // namespace
 
 class MyThreadStatic {
  public:
-  MyThreadStatic(const paraos::v2::ThreadAttr& attr) : thread_{attr} {
+  explicit MyThreadStatic(const paraos::v2::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::v2::thread_delegate_type::create<
             MyThreadStatic, &MyThreadStatic::Processing>(*this));
@@ -121,25 +118,29 @@ auto main() -> int {
     attr.thread_name = "My thread static one";
     attr.dtor_callback = DeletedObjectsCnt;
 
-    static MyThreadStatic static_thread{attr};
+    const static MyThreadStatic static_thread{attr};
   }
 
   {
     paraos::v2::ThreadAttr attr;
     attr.thread_name = "My thread static two";
     attr.dtor_callback = DeletedObjectsCnt;
-    static MyThreadStatic static_thread{attr};
+    const static MyThreadStatic static_thread{attr};
   }
 
   {
     paraos::v2::ThreadAttr attr;
     attr.thread_name = "My thread static three";
     attr.dtor_callback = DeletedObjectsCnt;
-    static MyThreadStatic static_thread{attr};
+    const static MyThreadStatic static_thread{attr};
   }
 
   paraos::v2::Thread::StartScheduler();
   paraos::v2::Thread::DeleteAll();
 
   return 0;
+  // clang-format off
 }
+
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on

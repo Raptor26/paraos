@@ -23,22 +23,21 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
+// clang-format off
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on
 #include <iostream>
-#include <memory>
-#include <string>
 
-#include "paraos_base.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_thread_v2.hpp"
-#include "paraos_timer.hpp"
 
-#define PrintDebug(__message__, __object_name__)                    \
-  {                                                                 \
-    const paraos::CriticalSection macro_critical;                   \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
-              << std::endl;                                         \
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
+namespace {
 std::atomic<std::size_t> deleted_objects_cnt;
 
 void DeletedObjectsCnt() {
@@ -111,6 +110,7 @@ void ProcessingThree() {
   my_thread_global_three.Finished();
   ++cnt;
 }
+}  // namespace
 
 auto main() -> int {
   {
@@ -137,4 +137,8 @@ auto main() -> int {
   paraos::v2::Thread::DeleteAll();
 
   return 0;
+  // clang-format off
 }
+
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on

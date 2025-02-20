@@ -40,7 +40,6 @@
 #include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
-#include "paraos_event_loop_interface.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_trace.hpp"
@@ -64,14 +63,9 @@ struct ThreadAttr {
   bool is_joinable{true};
 };
 
-struct ThreadAttrDynamic : public ThreadAttr {
-  paraos::IEventLoop *event_loop_ptr{nullptr};
-  static constexpr bool is_dynamic_{true};
-};
-
 class Thread {
  public:
-  Thread(const ThreadAttr &attr)
+  explicit Thread(const ThreadAttr &attr)
       : name_{attr.thread_name},
         stack_depth_{attr.stack_depth},
         priority_{attr.priority},

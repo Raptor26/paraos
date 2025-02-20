@@ -37,6 +37,7 @@
 
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_semaphore.hpp"
 #include "paraos_thread_v2.hpp"
 #include "paraos_timer.hpp"
 #include "paraos_trace.hpp"

@@ -62,8 +62,9 @@
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
-namespace paraos {
-namespace v2 {
+namespace paraos::v2 {
+
+constexpr delay_type default_sleep_ms_if_no_delegate_{700};
 
 class Thread : public paraos::Base {
  public:
@@ -108,7 +109,8 @@ class Thread : public paraos::Base {
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
   void RegisterDelegate(paraos::v2::thread_delegate_type run) {
-    run_ = std::move(run);
+    // std::move of the variable of a trivially-copyable type has no effect
+    run_ = run;
   }
 
   /// --------------------------------------------------------------------------
@@ -307,7 +309,7 @@ class Thread : public paraos::Base {
 
   /// @brief Until the user code calls RegisterDelegate(), the thread will
   /// sleep after each check for delegate availability.
-  delay_type sleep_ms_if_no_delegate_{700};
+  delay_type sleep_ms_if_no_delegate_{default_sleep_ms_if_no_delegate_};
 
   /// @brief Run this delegate in thread context.
   paraos::v2::thread_delegate_type run_;
@@ -319,7 +321,6 @@ class Thread : public paraos::Base {
   paraos::Base *base_{nullptr};
 };
 
-}  // namespace v2
-}  // namespace paraos
+}  // namespace paraos::v2
 
 #endif /* PARAOS_THREAD_V2_HPP */

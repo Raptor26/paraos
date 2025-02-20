@@ -88,10 +88,11 @@ constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
 /// @return struct timespec with filled fields.
 inline auto MillisecondsInTimeSpec(std::size_t milliseconds)
     -> struct timespec {
-  struct timespec ts;
-  ts.tv_sec = milliseconds / 1000;
-  ts.tv_nsec = (milliseconds % 1000) * 1000000;
-  return ts;
+  struct timespec tspec {};
+  tspec.tv_sec = milliseconds / MILISECONDS_PER_SECOND;
+  tspec.tv_nsec =
+      (milliseconds % MILISECONDS_PER_SECOND) * MICROSECONDS_PER_SECOND;
+  return tspec;
 }
 
 using delay_type = std::size_t;

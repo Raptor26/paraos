@@ -215,7 +215,7 @@ class IThreadSequence : public paraos::Base {
     const paraos::CriticalSection critical;
 
     paraos::Base *deferred_destroy{nullptr};
-    if (is_dynamic == true) {
+    if (is_dynamic) {
       deferred_destroy = this;
     }
 
@@ -305,7 +305,7 @@ class ThreadSequence : public IThreadSequence {
   /// corresponding to the actual call period NotifyGive().
   /// @param[in] is_need_start: If set true, thread will creat in Ctor, if set
   /// false, thread will not created. Sef false may be useful in unit tests.
-  ThreadSequence(const ThreadSequenceAttr &attr)
+  explicit ThreadSequence(const ThreadSequenceAttr &attr)
       : IThreadSequence{attr, timer_controller_} {
     // Allow execute all timers, registered in timer_controller_.
     timer_controller_.enable(true);

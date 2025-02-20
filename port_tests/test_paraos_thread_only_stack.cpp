@@ -29,18 +29,20 @@
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
+// clang-format off
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on
 #include <iostream>
-#include <memory>
 #include <string>
 
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
-#include "paraos_thread.hpp"
 #include "paraos_thread_v2.hpp"
-#include "paraos_timer.hpp"
 #include "paraos_utils.hpp"
 
+namespace {
 std::atomic<std::size_t> cnt{0};
+
 constexpr std::size_t expected_threads{3};
 
 std::atomic<std::size_t> deleted_objects_cnt;
@@ -76,10 +78,11 @@ void ExitFromTest() {
   PrintDebug("Yeld resources", "ExitFromTest");
   paraos::v2::Thread::DelayMs(10);
 }
+}  // namespace
 
 class MyThreadDynamic : public paraos::Base {
  public:
-  MyThreadDynamic(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
+  explicit MyThreadDynamic(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::v2::thread_delegate_type::create<
             MyThreadDynamic, &MyThreadDynamic::Processing>(*this));
@@ -92,9 +95,8 @@ class MyThreadDynamic : public paraos::Base {
 #if !defined(PARAOS_LIKE_UNIX)
     // Can't change priority without root privileges on UNIX.
     PARAOS_CHECK_ASSERT(attr.priority == priority);
-#else
-    PARAOS_ATTR_UNUSED_VAR(priority);
 #endif
+    PARAOS_ATTR_UNUSED_VAR(priority);
   }
 
   ~MyThreadDynamic() override {
@@ -143,4 +145,8 @@ auto main() -> int {
   paraos::v2::Thread::DeleteAll();
 
   return 0;
+  // clang-format off
 }
+
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on

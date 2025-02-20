@@ -24,13 +24,12 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <array>
 #include <atomic>
 #include <cstddef>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "etl/cyclic_value.h"
 #include "paraos_check.h"
@@ -39,11 +38,10 @@
 #include "paraos_ringbuff.hpp"
 #include "paraos_thread_v2.hpp"
 
-#define PrintDebug(__message__, __object_name__)                    \
-  {                                                                 \
-    const paraos::CriticalSection macro_critical;                   \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
-              << std::endl;                                         \
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
 const std::vector<std::string> str_array{
@@ -76,11 +74,11 @@ constexpr std::size_t queue_size{2};
 constexpr std::size_t ring_buff_size{2048};
 constexpr std::size_t thread_stack_depth{1024};
 
+namespace {
 paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
     paraos::v2::ThreadPriority::kLowest, nullptr}};
 
-namespace {
 auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
     -> std::size_t {
   std::size_t total_bytes_numb{0};
@@ -328,28 +326,28 @@ auto main() -> int {
   {
     paraos::v2::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
-    static Producer prod_1{attr, 0};
+    const static Producer prod_1{attr, 0};
     producer_thread_numb += 1;
   }
 
   {
     paraos::v2::ThreadAttr attr{};
     attr.thread_name = "Prod 1";
-    static Producer prod_2{attr, 1};
+    const static Producer prod_2{attr, 1};
     producer_thread_numb += 1;
   }
 
   {
     paraos::v2::ThreadAttr attr{};
     attr.thread_name = "Prod 2";
-    static Producer prod_3{attr, 2};
+    const static Producer prod_3{attr, 2};
     producer_thread_numb += 1;
   }
 
   {
     paraos::v2::ThreadAttr attr{};
     attr.thread_name = "Prod 3";
-    static Producer prod_4{attr, 3};
+    const static Producer prod_4{attr, 3};
     producer_thread_numb += 1;
   }
   // ---------------------------------------------------------------------------
@@ -360,14 +358,14 @@ auto main() -> int {
   {
     paraos::v2::ThreadAttr attr{};
     attr.thread_name = "--Cons 1";
-    static Consumer cons_1{attr};
+    const static Consumer cons_1{attr};
     consumer_thread_numb += 1;
   }
 
   {
     paraos::v2::ThreadAttr attr{};
     attr.thread_name = "--Cons 2";
-    static Consumer cons_2{attr};
+    const static Consumer cons_2{attr};
     consumer_thread_numb += 1;
   }
 
@@ -380,3 +378,4 @@ auto main() -> int {
 
   return 0;
 }
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers)

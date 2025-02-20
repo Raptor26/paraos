@@ -24,19 +24,27 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <cstdlib>
 #include <iostream>
-#include <string>
 #include <vector>
 
 #include "paraos_critical.hpp"
-#include "paraos_thread.hpp"
-
-constexpr std::size_t thread_default_stack_depth{3072};
+#include "paraos_thread_common.hpp"
+#include "paraos_thread_v2.hpp"
 
 namespace {
-std::vector<const paraos::Thread*> thread_ptr;
+std::vector<const paraos::v2::Thread*> thread_ptr;
+
 std::size_t cnt{0};
+
+std::size_t threads_count{0};
+
+std::size_t threads_exit_count{0};
+
+paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
+    paraos::v2::ThreadPriority::kLowest, nullptr}};
 
 #if defined(FREERTOS)
 /// @brief Hack for unit test. When used freeRTOS, we can't return from main
@@ -67,27 +75,44 @@ void ExitAfterTestComplete() {
   }
 }
 #endif
+
+void ExitFromTest() {
+  if (threads_exit_count >= threads_count) {
+    check_test_complete_and_exit.Finished();
+    paraos::v2::Thread::Exit();
+  }
+
+  std::cout << "ExitFromTest Yeld resources" << "\n";
+  paraos::v2::Thread::DelayMs(10);
+}
 }  // namespace
 
-// String copy here is needed because of the delayed thread initialization -
-// address of it's name could be invalid later.
-// NOLINTBEGIN(performance-unnecessary-value-param)
-struct TestMessage : public paraos::Thread {
-  explicit TestMessage(const std::string name = "default thread name")
-      : paraos::Thread{
-            name, thread_default_stack_depth, paraos::ThreadPriority::kNormal,
-            true} {
-    Start();
+struct TestMessage {
+  explicit TestMessage(const paraos::v2::ThreadAttr& attr) : thread_{attr} {
+    thread_.RegisterDelegate(paraos::v2::thread_delegate_type::create<
+                             TestMessage, &TestMessage::Run>(*this));
   }
-  void Run() override {
+
+  void Run() {
     const paraos::CriticalSection critical;
-    std::cout << Name() << " RTOS thread Cnt is " << cnt << "\n";
+    std::cout << thread_.GiveName() << " RTOS thread Cnt is " << cnt << "\n";
     ++cnt;
+    if (cnt > 3) {
+      thread_.Finished();
+      threads_exit_count++;
+    }
   }
+
+ private:
+  paraos::v2::Thread thread_;
 };
-// NOLINTEND(performance-unnecessary-value-param)
 
 auto main() -> int {
+  {
+    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
+    check_test_complete_and_exit.RegisterDelegate(delegate);
+  }
+
 #if defined(FREERTOS)
 #include "paraos_utils.hpp"
 
@@ -96,18 +121,30 @@ auto main() -> int {
   paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
 #endif
 
-  const TestMessage print1{"Thread 1"};
-  thread_ptr.push_back(&print1);
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Thread 1";
+    const static TestMessage print1{attr};
+    threads_count += 1;
+  }
 
-  const TestMessage print2{"Thread 2"};
-  thread_ptr.push_back(&print2);
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Thread 2";
+    const static TestMessage print2{attr};
+    threads_count += 1;
+  }
 
-  const TestMessage print3{"Thread 3"};
-  thread_ptr.push_back(&print3);
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Thread 3";
+    const static TestMessage print3{attr};
+    threads_count += 1;
+  }
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  paraos::v2::Thread::StartScheduler();
+  paraos::v2::Thread::DeleteAll();
 
-  std::cout << "Exiting program..." << "\n";
   return EXIT_SUCCESS;
 }
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers)

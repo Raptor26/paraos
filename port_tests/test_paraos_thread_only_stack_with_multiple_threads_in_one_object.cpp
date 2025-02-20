@@ -29,6 +29,9 @@
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
+// clang-format off
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on
 #include <cassert>
 #include <cstddef>
 #include <iostream>
@@ -42,7 +45,7 @@
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
-std::atomic<std::size_t> cnt{0};
+namespace {
 constexpr std::size_t expected_threads{3};
 
 std::atomic<std::size_t> deleted_objects_cnt;
@@ -81,6 +84,7 @@ void ExitFromTest() {
   PrintDebug("Yeld resources", "ExitFromTest");
   paraos::v2::Thread::DelayMs(10);
 }
+}  // namespace
 
 class MyThreadDynamic : public paraos::Base {
  public:
@@ -200,4 +204,8 @@ auto main() -> int {
   paraos::v2::Thread::DeleteAll();
 
   return 0;
+  // clang-format off
 }
+
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
+// clang-format on

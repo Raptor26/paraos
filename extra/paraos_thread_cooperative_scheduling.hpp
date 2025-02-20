@@ -144,7 +144,7 @@ class ICooperativeScheduling : public paraos::Base {
     const paraos::CriticalSection critical;
 
     paraos::Base *deferred_destroy{nullptr};
-    if (is_dynamic == true) {
+    if (is_dynamic) {
       deferred_destroy = this;
     }
 

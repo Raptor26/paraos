@@ -27,24 +27,20 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <string>
 
 // We need to import "etl/delegate.h" to use delegate, but static analyzer
 // can't see the delegate declaration there.
-// NOLINTBEGIN(misc-include-cleaner)
-#include "etl/delegate.h"
-// NOLINTEND(misc-include-cleaner)
-
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include "etl/atomic.h"
+#include "etl/delegate.h"
 #include "etl/timer.h"
 #include "paraos_check.h"
 #include "paraos_thread_sequence.hpp"
 
-#define PrintDebug(__message__, __object_name__)                    \
-  {                                                                 \
-    const paraos::CriticalSection macro_critical;                   \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
-              << std::endl;                                         \
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
 namespace {
@@ -149,10 +145,8 @@ struct Baro {
 
 GyrAccFloat gyr_acc;
 
-}  // namespace
-
 void ExitFromTest() {
-  if (is_test_complete == true) {
+  if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
     PARAOS_CHECK_ASSERT(thread_seq_ptr);
@@ -169,6 +163,7 @@ void ExitFromTest() {
   PrintDebug("Yeld resources", "ExitFromTest");
   paraos::v2::Thread::DelayMs(10);
 }
+}  // namespace
 
 auto main() -> int {
   {
@@ -275,3 +270,4 @@ auto main() -> int {
 
   return 0;
 }
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers)

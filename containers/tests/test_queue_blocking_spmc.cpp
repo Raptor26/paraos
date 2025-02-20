@@ -23,17 +23,24 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <atomic>
 #include <cstddef>
-#include <string>
+#include <iostream>
 
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_thread.hpp"
-#include "paraos_trace.hpp"
+#include "paraos_thread_common.hpp"
+#include "paraos_thread_v2.hpp"
 #include "paraos_utils.hpp"
+
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+  }
 
 constexpr std::size_t max_queue_size{2};
 
@@ -42,97 +49,114 @@ constexpr std::size_t one_producer_expected_push_items_numb{3};
 constexpr std::size_t threads_default_stack_size{1024};
 
 namespace {
+paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
+    paraos::v2::ThreadPriority::kLowest, nullptr}};
+
+std::size_t producer_thread_numb{0};
+
+std::size_t consumer_thread_numb{0};
+
+std::size_t producer_thread_exit_cnt{0};
+
+std::size_t consumer_thread_exit_cnt{0};
+
 std::atomic_size_t push_item_cnt{0};
+
 std::atomic_size_t pop_item_cnt{0};
 
 paraos::QueueBlocking<char, max_queue_size> queue;
 }  // namespace
 
-// String copy here is needed because of the delayed thread initialization -
-// address of it's name could be invalid later.
-// NOLINTBEGIN(performance-unnecessary-value-param)
-struct Producer : public paraos::Thread {
-  explicit Producer(
-      const std::string name = "Producer",
-      std::size_t stack_depth = threads_default_stack_size,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{name, stack_depth, priority} {
-    paraos::Thread::SetNeedWhile(true);
-    Start();
+struct Producer {
+  explicit Producer(const paraos::v2::ThreadAttr &attr, std::size_t thread_id)
+      : thread_{attr}, thread_id_{thread_id} {
+    thread_.RegisterDelegate(
+        paraos::v2::thread_delegate_type::create<Producer, &Producer::Run>(
+            *this));
   }
 
-  void Run() override {
+  void Run() {
     char symb{'a'};
     for (std::size_t i = 0; i < one_producer_expected_push_items_numb; ++i) {
       while (true) {
-        paraosTRACE_MESSAGE(Name() << " call queue.TryPush()");
+        PrintDebug(" call queue.TryPush()", thread_.GiveName());
+
         runtime_profiler.Start();
         if (queue.TryPush(symb)) {
           ++push_item_cnt;
           runtime_profiler.Stop();
-          paraosTRACE_MESSAGE(
-              Name() << " queue.TryPush() success and put " << "'" << symb
-                     << "'" << "" << ". Real delay is "
-                     << runtime_profiler.LastDurationMs());
+          PrintDebug(
+              " queue.TryPush() success and put "
+                  << "'" << symb << "'"
+                  << "" << ". Real delay is "
+                  << runtime_profiler.LastDurationMs(),
+              thread_.GiveName());
           ++symb;
           break;
         }
-        paraosTRACE_MESSAGE(
-            Name() << " WARN: queue.TryPush() no space, try again "
-                   << runtime_profiler.LastDurationMs());
+        PrintDebug(
+            " WARN: queue.TryPush() no space, try again "
+                << runtime_profiler.LastDurationMs(),
+            thread_.GiveName());
         // Yeld processor time for consumers read data from queue.
-        DelayMs(1);
+        paraos::v2::Thread::DelayMs(1);
       }
     }
 
-    paraos::Thread::SetNeedWhile(false);
+    PrintDebug(" exiting ... ", thread_.GiveName());
+    producer_thread_exit_cnt++;
+    thread_.Finished();
   }
 
  private:
+  paraos::v2::Thread thread_;
+
+  const std::size_t thread_id_;
+
   paraos::OsProfiler runtime_profiler;
 };
 
-struct Consumer : public paraos::Thread {
-  explicit Consumer(
-      const std::string name = "Consumer",
-      std::size_t stack_depth = threads_default_stack_size,
-      paraos::ThreadPriority priority = paraos::ThreadPriority::kIdle)
-      : paraos::Thread{name, stack_depth, priority} {
-    paraos::Thread::SetNeedWhile(true);
-    Start();
+struct Consumer {
+  explicit Consumer(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
+    thread_.RegisterDelegate(
+        paraos::v2::thread_delegate_type::create<Consumer, &Consumer::Run>(
+            *this));
   }
 
   /// @brief Consumer thread.
-  void Run() override {
+  void Run() {
     constexpr std::size_t timeout_ms{2000};
 
     while (true) {
-      paraosTRACE_MESSAGE(
-          Name() << " call queue.Pop() with " << timeout_ms << " ms timeout");
+      PrintDebug(
+          " call queue.Pop() with " << timeout_ms << " ms timeout",
+          thread_.GiveName());
+
       runtime_profiler.Start();
       auto read_item = queue.Pop(timeout_ms);
       runtime_profiler.Stop();
 
       if (read_item) {
         ++pop_item_cnt;
-        paraosTRACE_MESSAGE(Name() << " successfully read item from queue");
+        PrintDebug(" successfully read item from queue", thread_.GiveName());
         break;
       }
-      const paraos::CriticalSection critical;
-      paraosTRACE_MESSAGE(
-          "--ERROR: " << Name()
-                      << " don't read item from queue with timeout. Try again");
+      PrintDebug(
+          "--ERROR: don't read item from queue with timeout. Try again",
+          thread_.GiveName());
     }
 
-    paraos::Thread::SetNeedWhile(false);
-
-    paraosTRACE_MESSAGE(Name() << " exiting ..");
+    PrintDebug(" exiting ... ", thread_.GiveName());
+    consumer_thread_exit_cnt++;
+    thread_.Finished();
   }
 
  private:
+  paraos::v2::Thread thread_;
+
   paraos::OsProfiler runtime_profiler;
 };
-// NOLINTEND(performance-unnecessary-value-param)
 
 namespace {
 void CheckIfTestSuccessfullyComplete() {
@@ -146,45 +170,72 @@ void CheckIfTestSuccessfullyComplete() {
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
 }
 
-/// FreeRTOS can't stop scheduler. In this case we must manually call
-/// exit(EXIT_SUCCESS) after test complete.
-#if defined(FREERTOS)
-void ExitAfterTestComplete() {
-#include <cstdlib>
+void ExitFromTest() {
+  if (((consumer_thread_exit_cnt >= consumer_thread_numb) &&
+       (producer_thread_exit_cnt >= producer_thread_numb))) {
+    check_test_complete_and_exit.Finished();
 
-  const paraos::CriticalSection critical;
-  if ((push_item_cnt == pop_item_cnt) &&
-      (push_item_cnt == one_producer_expected_push_items_numb)) {
+    constexpr std::size_t delay_ms{0};
+    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
+    paraos::v2::Thread::DelayMs(delay_ms);
+
     CheckIfTestSuccessfullyComplete();
-    exit(EXIT_SUCCESS);
+
+    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
+    paraos::v2::Thread::Exit();
   }
+
+  PrintDebug("Yeld resources", "ExitFromTest");
+  paraos::v2::Thread::DelayMs(10);
 }
-#endif
 }  // namespace
 
 auto main() -> int {
-#if defined(FREERTOS)
-  // ExitAfterTestComplete will be called by scheduler in idle task after no
-  // user task ready for execute.
-  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
-#endif
+  {
+    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
+    check_test_complete_and_exit.RegisterDelegate(delegate);
+  }
 
-  const Consumer consumer1{
-      "--Consumer 1", paraos::GetStackMinimumSizeInBytes(),
-      paraos::ThreadPriority::kHighest};
-  const Consumer consumer2{
-      "--Consumer 2", paraos::GetStackMinimumSizeInBytes(),
-      paraos::ThreadPriority::kAboveNormal};
-  const Consumer consumer3{
-      "--Consumer 3", paraos::GetStackMinimumSizeInBytes(),
-      paraos::ThreadPriority::kBelowNormal};
+  // ---------------------------------------------------------------------------
+  // Create producers
+  // ---------------------------------------------------------------------------
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "Prod 0";
+    const static Producer prod_1{attr, 0};
+    producer_thread_numb += 1;
+  }
+  // ---------------------------------------------------------------------------
 
-  const Producer producer1{
-      "Producer 1", paraos::GetStackMinimumSizeInBytes(),
-      paraos::ThreadPriority::kNormal};
+  // ---------------------------------------------------------------------------
+  // Create consumers
+  // ---------------------------------------------------------------------------
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "--Cons 1";
+    const static Consumer cons_1{attr};
+    consumer_thread_numb += 1;
+  }
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "--Cons 2";
+    const static Consumer cons_2{attr};
+    consumer_thread_numb += 1;
+  }
+
+  {
+    paraos::v2::ThreadAttr attr{};
+    attr.thread_name = "--Cons 3";
+    const static Consumer cons_3{attr};
+    consumer_thread_numb += 1;
+  }
+
+  // ---------------------------------------------------------------------------
+
+  paraos::v2::Thread::StartScheduler();
+  paraos::v2::Thread::DeleteAll();
 
   return 0;
 }
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers)

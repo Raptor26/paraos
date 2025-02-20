@@ -59,13 +59,15 @@
 #include "paraos_attr.h"
 #include "paraos_base.hpp"
 #include "paraos_exceptions.hpp"
+#include "paraos_semaphore.hpp"
 #include "paraos_thread_common.hpp"
 #include "paraos_thread_exceptions.hpp"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
-namespace paraos {
-namespace v2 {
+namespace paraos::v2 {
+
+constexpr delay_type default_sleep_ms_if_no_delegate_{700};
 
 class Thread : public paraos::Base {
  public:
@@ -106,15 +108,17 @@ class Thread : public paraos::Base {
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
   void RegisterDelegate(paraos::v2::thread_delegate_type run) {
-    run_ = std::move(run);
+    // std::move of the variable of a trivially-copyable type has no effect
+    run_ = run;
   }
 
   /// --------------------------------------------------------------------------
 
+  // NOLINTBEGIN(modernize-use-nodiscard)
   /// @brief Set the priority to the thread.
   ///
   /// @param[in] priority: The priority to which the thread will be set.
-  auto SetPriority(const paraos::v2::ThreadPriority priority) -> bool {
+  auto SetPriority(const paraos::v2::ThreadPriority priority) const -> bool {
     bool is_priority_updated{false};
 
     PARAOS_CHECK_ASSERT(
@@ -153,16 +157,17 @@ class Thread : public paraos::Base {
 
     return is_priority_updated;
   }
+  // NOLINTEND(modernize-use-nodiscard)
 
   /// --------------------------------------------------------------------------
 
   /// @brief Obtain the priority of the thread.
   ///
   /// @return paraos::v2::ThreadPriority.
-  auto GetPriority() {
-    struct sched_param param;
+  [[nodiscard]] auto GetPriority() const {
+    struct sched_param param {};
     int policy{};
-    int ret = pthread_getschedparam(handle_, &policy, &param);
+    const int ret = pthread_getschedparam(handle_, &policy, &param);
     PARAOS_CHECK_ASSERT(ret == 0);
     PARAOS_ATTR_UNUSED_VAR(ret);
     return static_cast<paraos::v2::ThreadPriority>(param.sched_priority);
@@ -267,7 +272,7 @@ class Thread : public paraos::Base {
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
 
     // Set thread priority.
-    struct sched_param param{};
+    struct sched_param param {};
     param.sched_priority = static_cast<int>(attr.priority);
     result_code = pthread_attr_setschedparam(&thread_attr, &param);
     ETL_ASSERT(
@@ -325,8 +330,8 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
-  [[nodiscard]] auto IsPriorityInRange(
-      paraos::v2::ThreadPriority priority) const -> bool {
+  [[nodiscard]] static auto IsPriorityInRange(
+      paraos::v2::ThreadPriority priority) -> bool {
     bool is_in_range{false};
 
     auto min = sched_get_priority_min(sch_policy);
@@ -388,7 +393,7 @@ class Thread : public paraos::Base {
 
   /// @brief Until the user code calls RegisterDelegate(), the thread will
   /// sleep after each check for delegate availability.
-  delay_type sleep_ms_if_no_delegate_{700};
+  delay_type sleep_ms_if_no_delegate_{default_sleep_ms_if_no_delegate_};
 
   /// @brief Run this delegate in thread context.
   paraos::v2::thread_delegate_type run_;
@@ -401,10 +406,9 @@ class Thread : public paraos::Base {
 
   /// @brief Semaphore used to suspend the thread until StartScheduler() is
   /// called.
-  SemaphoreBinary sem_;
+  paraos::SemaphoreBinary sem_;
 };
 
-}  // namespace v2
-}  // namespace paraos
+}  // namespace paraos::v2
 
 #endif /* PARAOS_THREAD_V2_HPP */

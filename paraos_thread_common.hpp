@@ -32,13 +32,13 @@
 #include "etl/delegate.h"
 #include "paraos_attr.h"
 #include "paraos_base.hpp"
+#include "paraos_utils.hpp"
 
 #if defined(PARAOS_LIKE_WINAPI)
 #include <winbase.h>
 #endif
 
-namespace paraos {
-namespace v2 {
+namespace paraos::v2 {
 
 /// @brief Delegate type.
 using thread_delegate_type = etl::delegate<void()>;
@@ -94,14 +94,15 @@ struct ThreadAttr {
   /// of a paraos::Base object is invoked.
   base_callback dtor_callback{nullptr};
 
-  /// @brief Run this delegate in thread context. User code will can register
+  // NOLINTBEGIN(readability-redundant-member-init)
+  /// @brief Run this delegate in thread context. User code can register
   /// delegate later.
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
-  thread_delegate_type run_;
+  thread_delegate_type run_{};
+  // NOLINTEND(readability-redundant-member-init)
 };
 
-}  // namespace v2
-}  // namespace paraos
+}  // namespace paraos::v2
 
 #endif /* PARAOS_THREAD_COMMON_HPP */

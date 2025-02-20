@@ -58,8 +58,9 @@
 #include "task.h"
 #include "timers.h"
 
-namespace paraos {
-namespace v2 {
+namespace paraos::v2 {
+
+constexpr delay_type default_sleep_ms_if_no_delegate_{700};
 
 class Thread : public paraos::Base {
  public:
@@ -82,7 +83,7 @@ class Thread : public paraos::Base {
     paraosTRACE_MESSAGE_WITH_ACTOR_NAME("~Thread", GiveName());
 
     // If scheduler is not started, calls vTaskDelete() is illegal.
-    if (handle_ && IsSchedulerRunning()) {
+    if (handle_ != nullptr && IsSchedulerRunning()) {
       vTaskDelete(handle_);
       handle_ = nullptr;
     }
@@ -102,7 +103,8 @@ class Thread : public paraos::Base {
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
   void RegisterDelegate(paraos::v2::thread_delegate_type run) {
-    run_ = std::move(run);
+    // std::move of the variable of a trivially-copyable type has no effect
+    run_ = run;
   }
 
   /// --------------------------------------------------------------------------
@@ -139,7 +141,7 @@ class Thread : public paraos::Base {
     TaskStatus_t xTaskDetails;
     vTaskGetInfo(handle_, &xTaskDetails, pdFALSE, eInvalid);
 
-    return std::string_view(xTaskDetails.pcTaskName);
+    return std::string_view{xTaskDetails.pcTaskName};
   }
 
   /// --------------------------------------------------------------------------
@@ -219,7 +221,7 @@ class Thread : public paraos::Base {
     }
 
     // Copy task handle in local variable ...
-    auto handle = thread->handle_;
+    auto *handle = thread->handle_;
 
     // ... then set to nullptr in the private field.
     // This is necessary to prevent the task from being deleted in the thread
@@ -235,8 +237,8 @@ class Thread : public paraos::Base {
     // vTaskDelete(handle).
 
     // If user want to destroy the object ...
-    if (thread->base_) {
-      auto ptr_to_delete = thread->base_;
+    if (thread->base_ != nullptr) {
+      auto *ptr_to_delete = thread->base_;
       thread->base_ = nullptr;
       paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
           "Thread finished, now put request to delete object",
@@ -248,7 +250,7 @@ class Thread : public paraos::Base {
           DeferredDeleter, ptr_to_delete, 0, paraos::max_delay);
     }
 
-    if (handle) {
+    if (handle != nullptr) {
       paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Delete self task", "");
       vTaskDelete(handle);
     }
@@ -267,13 +269,13 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
-  [[nodiscard]] auto IsSchedulerRunning() -> bool {
-    bool is_scheduler_stated{false};
+   [[nodiscard]] static auto IsSchedulerRunning() -> bool {
+    bool is_scheduler_started{false};
     if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
-      is_scheduler_stated = true;
+      is_scheduler_started = true;
     }
 
-    return is_scheduler_stated;
+    return is_scheduler_started;
   }
 
   /// --------------------------------------------------------------------------
@@ -313,9 +315,8 @@ class Thread : public paraos::Base {
 
   /// @brief Until a user code doesn't call RegisterDelegate(), the thread will
   /// be sleep after each check to delegate available.
-  delay_type sleep_ms_if_no_delegate_{700};
+  delay_type sleep_ms_if_no_delegate_{default_sleep_ms_if_no_delegate_};
 };
 
-}  // namespace v2
-}  // namespace paraos
+}  // namespace paraos::v2
 #endif /* PARAOS_THREAD_V2_HPP */

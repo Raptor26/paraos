@@ -29,7 +29,7 @@
 
 // Useless check here because static analyzer cant see usage of some headers,
 // but they're actually used in tis file.
-// NOLINTBEGIN(misc-include-cleaner)
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include "etl/atomic.h"
 #include "etl/function.h"
 #include "etl/scheduler.h"
@@ -38,13 +38,11 @@
 #include "paraos_thread_cooperative_scheduling.hpp"
 #include "paraos_thread_v2.hpp"
 #include "paraos_utils.hpp"
-// NOLINTEND(misc-include-cleaner)
 
-#define PrintDebug(__message__, __object_name__)                    \
-  {                                                                 \
-    const paraos::CriticalSection macro_critical;                   \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ \
-              << std::endl;                                         \
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
 namespace {
@@ -80,7 +78,7 @@ class Task1 : public etl::task {
   }
 
  private:
-  uint32_t work;
+  uint32_t work{0};
 };
 
 class Task2 : public etl::task {
@@ -101,7 +99,7 @@ class Task2 : public etl::task {
   }
 
  private:
-  uint32_t work;
+  uint32_t work{0};
 };
 
 class Task3 : public etl::task {
@@ -122,7 +120,7 @@ class Task3 : public etl::task {
   }
 
  private:
-  uint32_t work;
+  uint32_t work{0};
 };
 
 class Idle {
@@ -166,10 +164,8 @@ Task1 task1;
 Task2 task2;
 Task3 task3;
 
-}  // namespace
-
 void ExitFromTest() {
-  if (is_test_complete == true) {
+  if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
     // Exit from cooperative scheduler.
@@ -186,6 +182,7 @@ void ExitFromTest() {
   PrintDebug("Yeld resources", "ExitFromTest");
   paraos::v2::Thread::DelayMs(10);
 }
+}  // namespace
 
 auto main() -> int {
   {
@@ -208,3 +205,4 @@ auto main() -> int {
 
   return EXIT_SUCCESS;
 }
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers)
