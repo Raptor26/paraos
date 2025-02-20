@@ -68,8 +68,9 @@ class IThreadSequence : public paraos::Base {
   // address of it's name could be invalid later.
   // NOLINTBEGIN(performance-unnecessary-value-param)
   IThreadSequence(
-      const IThreadSequenceAttr &attr, etl::icallback_timer &timer_controller)
-      : thread_{attr},
+      const IThreadSequenceAttr &attr, etl::icallback_timer &timer_controller,
+      bool thread_start_flag = true)
+      : thread_{attr, thread_start_flag},
         period_in_us_{attr.period_in_us},
         timer_controller_{timer_controller} {
     thread_.RegisterDelegate(paraos::v2::thread_delegate_type::create<
@@ -109,8 +110,8 @@ class IThreadSequence : public paraos::Base {
   /// @return Returns `etl::timer::id::NO_TIMER` if the delegate was not
   /// registered. Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
-      callback_type &callback, float freq, bool repeating)
-      -> etl::timer::id::type {
+      callback_type &callback, float freq,
+      bool repeating) -> etl::timer::id::type {
     const paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
@@ -288,29 +289,16 @@ struct ThreadSequenceAttr : public paraos::IThreadSequenceAttr {};
 template <uint_least8_t MAX_TASKS = 4>
 class ThreadSequence : public IThreadSequence {
  public:
-  // String copy here is needed because of the delayed thread initialization -
-  // address of it's name could be invalid later.
-  // NOLINTBEGIN(performance-unnecessary-value-param)
-
   /// @brief Create separate thread for execute registered delegates.
-  ///
-  /// @tparam MAX_TASKS - Max registered delegates in one time.
-  ///
-  /// @param[in] name: Thread name, whose  context is provided for execute
-  /// registered delegates.
-  /// @param[in] stack_depth: Stack depth in bytes for thread.
-  /// @param[in] priority: Thread priority.
-  /// @param[in] period_in_us: Period in microseconds, between user code call
-  /// NotifyGive(). User code responsible for specifying this parameter, which
-  /// corresponding to the actual call period NotifyGive().
-  /// @param[in] is_need_start: If set true, thread will creat in Ctor, if set
-  /// false, thread will not created. Sef false may be useful in unit tests.
-  explicit ThreadSequence(const ThreadSequenceAttr &attr)
-      : IThreadSequence{attr, timer_controller_} {
+  /// @param[in] attr: Thread sequence attributes.
+  /// @param[in] thread_start_flag: Flag that indicates thread start condition.
+  /// May be useful in tests where there is no multithread environment needed.
+  explicit ThreadSequence(
+      const ThreadSequenceAttr &attr, bool thread_start_flag = true)
+      : IThreadSequence{attr, timer_controller_, thread_start_flag} {
     // Allow execute all timers, registered in timer_controller_.
     timer_controller_.enable(true);
   }
-  // NOLINTEND(performance-unnecessary-value-param)
 
   ~ThreadSequence() override = default;
 

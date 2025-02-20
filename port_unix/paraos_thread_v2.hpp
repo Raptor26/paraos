@@ -74,14 +74,19 @@ class Thread : public paraos::Base {
   /// @brief Construct a new Thread object.
   ///
   /// @param[in] attr: Params to initialize thread.
+  /// @param[in] thread_start_flag: Flag that indicates thread start condition.
+  /// May be useful in tests where there is no multithread environment needed.
   ///
   /// @throw Can throw "thread_not_created_exception".
-  explicit Thread(const paraos::v2::ThreadAttr &attr)
+  explicit Thread(
+      const paraos::v2::ThreadAttr &attr, bool thread_start_flag = true)
       : paraos::Base(attr.dtor_callback), name_{attr.thread_name} {
     // Before create the thread, register the delegate.
     RegisterDelegate(attr.run_);
 
-    Make(attr);
+    if (thread_start_flag) {
+      Make(attr);
+    }
   }
 
   /// --------------------------------------------------------------------------
@@ -165,7 +170,7 @@ class Thread : public paraos::Base {
   ///
   /// @return paraos::v2::ThreadPriority.
   [[nodiscard]] auto GetPriority() const {
-    struct sched_param param {};
+    struct sched_param param{};
     int policy{};
     const int ret = pthread_getschedparam(handle_, &policy, &param);
     PARAOS_CHECK_ASSERT(ret == 0);
@@ -272,7 +277,7 @@ class Thread : public paraos::Base {
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
 
     // Set thread priority.
-    struct sched_param param {};
+    struct sched_param param{};
     param.sched_priority = static_cast<int>(attr.priority);
     result_code = pthread_attr_setschedparam(&thread_attr, &param);
     ETL_ASSERT(

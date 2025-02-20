@@ -71,14 +71,19 @@ class Thread : public paraos::Base {
   /// @brief Construct a new Thread object.
   ///
   /// @param[in] attr: Params to initialize thread.
+  /// @param[in] thread_start_flag: Flag that indicates thread start condition.
+  /// May be useful in tests where there is no multithread environment needed.
   ///
   /// @throw Can throw "thread_not_created_exception".
-  explicit Thread(const paraos::v2::ThreadAttr &attr)
+  explicit Thread(
+      const paraos::v2::ThreadAttr &attr, bool thread_start_flag = true)
       : paraos::Base{attr.dtor_callback}, name_{attr.thread_name} {
     // Before create the thread, register the delegate.
     RegisterDelegate(attr.run_);
 
-    Make(attr);
+    if (thread_start_flag) {
+      Make(attr);
+    }
   }
 
   /// --------------------------------------------------------------------------

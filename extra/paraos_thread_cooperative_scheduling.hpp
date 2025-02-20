@@ -86,13 +86,16 @@ class ICooperativeScheduling : public paraos::Base {
   /// @param[in] attr: Attributes to initialize thread.
   /// @param[in] scheduler: reference to created scheduler.
   /// @param[in] embedded_timer: reference to profiler timer.
+  /// @param[in] thread_start_flag: Flag that indicates thread start condition.
+  /// May be useful in tests where there is no multithread environment needed.
+  ///
   ///
   /// @throw Can throw "thread_not_created_exception".
   // NOLINTBEGIN(performance-unnecessary-value-param)
   ICooperativeScheduling(
       const ICooperativeSchedulingAttr &attr, etl::ischeduler &scheduler,
-      const IEmbeddedTimer &embedded_timer)
-      : thread_{attr},
+      const IEmbeddedTimer &embedded_timer, bool thread_start_flag = true)
+      : thread_{attr, thread_start_flag},
         scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
     thread_.RegisterDelegate(
@@ -223,8 +226,8 @@ class ICooperativeScheduling : public paraos::Base {
 
   /// @brief Five rule.
   ICooperativeScheduling(ICooperativeScheduling &&other) = delete;
-  auto operator=(ICooperativeScheduling &&other)
-      -> ICooperativeScheduling & = delete;
+  auto operator=(ICooperativeScheduling &&other) -> ICooperativeScheduling & =
+                                                        delete;
   auto operator=(const ICooperativeScheduling &other)
       -> ICooperativeScheduling & = delete;
   ICooperativeScheduling(const ICooperativeScheduling &other) = delete;
@@ -268,13 +271,15 @@ template <
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
 class CooperativeScheduling : public ICooperativeScheduling {
  public:
-  explicit CooperativeScheduling(const CooperativeSchedulingAttr &attr)
-      : ICooperativeScheduling{attr, scheduler_, attr.embedded_timer_} {}
+  explicit CooperativeScheduling(
+      const CooperativeSchedulingAttr &attr, bool thread_start_flag = true)
+      : ICooperativeScheduling{
+            attr, scheduler_, attr.embedded_timer_, thread_start_flag} {}
 
   /// @brief Five rule.
   CooperativeScheduling(CooperativeScheduling &&other) = delete;
-  auto operator=(CooperativeScheduling &&other)
-      -> CooperativeScheduling & = delete;
+  auto operator=(CooperativeScheduling &&other) -> CooperativeScheduling & =
+                                                       delete;
   auto operator=(const CooperativeScheduling &other)
       -> CooperativeScheduling & = delete;
   CooperativeScheduling(const CooperativeScheduling &other) = delete;
