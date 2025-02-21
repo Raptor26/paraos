@@ -38,7 +38,7 @@ TEST(Cooperative, Create) {
   constexpr bool thread_start_flag{false};
 
   const paraos::CooperativeSchedulingAttr attr;
-  static paraos::CooperativeScheduling<max_task_numb> cooperative{
+  const static paraos::CooperativeScheduling<max_task_numb> cooperative{
       attr, thread_start_flag};
 }
 

@@ -33,6 +33,7 @@
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_thread_common.hpp"
 #include "paraos_time.hpp"
 
 constexpr std::size_t thread_default_stack_depth{
@@ -51,15 +52,14 @@ paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
     paraos::ThreadPriority::kLowest, nullptr}};
 
-}  // namespace
-
 // String copy here is needed because of the delayed thread initialization -
 // address of it's name could be invalid later.
 // NOLINTBEGIN(performance-unnecessary-value-param)
 struct TestTimeout {
   explicit TestTimeout(const paraos::ThreadAttr &attr) : thread_{attr} {
-    thread_.RegisterDelegate(paraos::thread_delegate_type::create<
-                             TestTimeout, &TestTimeout::Run>(*this));
+    thread_.RegisterDelegate(
+        paraos::thread_delegate_type::create<TestTimeout, &TestTimeout::Run>(
+            *this));
   }
 
   void Run() {
@@ -103,7 +103,7 @@ struct TestTimeout {
 // NOLINTEND(performance-unnecessary-value-param)
 
 void ExitFromTest() {
-  if (is_test_complete == true) {
+  if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
     constexpr std::size_t delay_ms{0};
@@ -113,8 +113,10 @@ void ExitFromTest() {
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
     paraos::Thread::Exit();
   }
+  // NOLINTNEXTLINE readability-magic-numbers
   paraos::Thread::DelayMs(10);
 }
+}  // namespace
 
 auto main() -> int {
   {

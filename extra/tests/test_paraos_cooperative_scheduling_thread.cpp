@@ -35,8 +35,8 @@
 #include "etl/scheduler.h"
 #include "etl/task.h"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_thread_cooperative_scheduling.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_thread_cooperative_scheduling.hpp"
 #include "paraos_utils.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \

@@ -32,8 +32,8 @@
 #include "paraos_critical.hpp"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_thread_common.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_thread_common.hpp"
 #include "paraos_utils.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \
@@ -73,8 +73,7 @@ struct Producer {
   explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
       : thread_{attr}, thread_id_{thread_id} {
     thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Producer, &Producer::Run>(
-            *this));
+        paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
   }
 
   /// @brief Producer thread.
@@ -127,8 +126,7 @@ struct Consumer {
   explicit Consumer(const paraos::ThreadAttr &attr, std::size_t thread_id)
       : thread_{attr}, thread_id_{thread_id} {
     thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(
-            *this));
+        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
 
   /// @brief Consumer thread.

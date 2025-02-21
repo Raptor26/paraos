@@ -42,8 +42,6 @@
 #ifndef PARAOS_THREAD_V2_HPP
 #define PARAOS_THREAD_V2_HPP
 
-#include <winbase.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -76,8 +74,7 @@ class Thread : public paraos::Base {
   /// May be useful in tests where there is no multithread environment needed.
   ///
   /// @throw Can throw "thread_not_created_exception".
-  explicit Thread(
-      const paraos::ThreadAttr &attr, bool thread_start_flag = true)
+  explicit Thread(const paraos::ThreadAttr &attr, bool thread_start_flag = true)
       : paraos::Base{attr.dtor_callback}, name_{attr.thread_name} {
     // Before create the thread, register the delegate.
     RegisterDelegate(attr.run_);

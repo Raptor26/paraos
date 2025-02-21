@@ -53,8 +53,8 @@
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_socket_udp.hpp"
-#include "paraos_thread_common.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_thread_common.hpp"
 #include "paraos_utils.hpp"
 
 /// @brief Время ожидания входных данных, задаваемое для неблокирующего сокета,
