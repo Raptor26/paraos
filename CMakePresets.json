@@ -33,8 +33,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
-                "CODE_COVERAGE": "true"
+                "CMAKE_CXX_COMPILER": "g++"
             }
         },
         {
@@ -81,10 +80,7 @@
         {
             "name": "freertos_debug_gcc_trace",
             "displayName": "freeRTOS Debug GCC with trace",
-            "inherits": "freertos_debug_gcc",
-            "cacheVariables": {
-                "TRACE": "true"
-            }
+            "inherits": "freertos_debug_gcc"
         },
         {
             "name": "freertos_debug_gcc_clang_tidy",
