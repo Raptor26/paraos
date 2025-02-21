@@ -9,18 +9,18 @@ cmake_minimum_required(VERSION 3.20)
 project(test_paraos_extra VERSION 0.1.0)
 
 # GTEST ------------------------------------------------------------------------
-# find_package(GTest REQUIRED) include(GoogleTest)
+find_package(GTest REQUIRED)
+include(GoogleTest)
 
-# add_executable(${PROJECT_NAME} test_paraos_cooperative_scheduling.cpp)
-# target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos
-# GTest::gtest_main) target_include_directories(${PROJECT_NAME} PRIVATE
-# "${CMAKE_CURRENT_SOURCE_DIR}/")
+add_executable(${PROJECT_NAME} test_paraos_cooperative_scheduling.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
+target_include_directories(${PROJECT_NAME}
+                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-# target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17 c_std_11)
-# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic
-# -Werror)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17 c_std_11)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
-# gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS EXTRA]:")
+gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS EXTRA]:")
 
 # Multithread ------------------------------------------------------------------
 if(THREAD_ENABLE)
@@ -41,8 +41,8 @@ if(CLANG_TIDY_ENABLE)
   find_program(CLANG_TIDY_EXE NAMES clang-tidy)
   if(CLANG_TIDY_EXE)
     set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
-    # set_target_properties(test_paraos_extra PROPERTIES CXX_CLANG_TIDY
-    # "${DO_CLANG_TIDY}")
+    set_target_properties(test_paraos_extra PROPERTIES CXX_CLANG_TIDY
+                                                       "${DO_CLANG_TIDY}")
 
     if(THREAD_ENABLE)
       set_target_properties(test_paraos_thread_sequence
