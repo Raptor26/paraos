@@ -136,35 +136,28 @@ struct Consumer {
     // Small delay for yeld resources for other threads.
     constexpr std::size_t timeout_ms{1};
 
-    while (true) {
-      // If all items already read.
-      if (pop_item_cnt >= expected_total_items_in_queue) {
-        // break while() and exit thread.
-        break;
-      }
+    PrintDebug(
+        " call queue.Pop() with " << timeout_ms << " ms timeout",
+        thread_.GiveName());
 
+    runtime_profiler.Start();
+    auto read_item = queue.Pop(timeout_ms);
+    runtime_profiler.Stop();
+
+    if (read_item) {
+      ++pop_item_cnt;
+      PrintDebug(" successfully read item from queue", thread_.GiveName());
+    } else {
       PrintDebug(
-          " call queue.Pop() with " << timeout_ms << " ms timeout",
+          "--ERROR: " << " don't read item from queue with timeout. Try again",
           thread_.GiveName());
-
-      runtime_profiler.Start();
-      auto read_item = queue.Pop(timeout_ms);
-      runtime_profiler.Stop();
-
-      if (read_item) {
-        ++pop_item_cnt;
-        PrintDebug(" successfully read item from queue", thread_.GiveName());
-      } else {
-        PrintDebug(
-            "--ERROR: "
-                << " don't read item from queue with timeout. Try again",
-            thread_.GiveName());
-      }
     }
 
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    consumers_exit_numb++;
-    thread_.Finished();
+    if (pop_item_cnt >= expected_total_items_in_queue) {
+      PrintDebug(" exiting ... ", thread_.GiveName());
+      consumers_exit_numb++;
+      thread_.Finished();
+    }
   }
 
  private:
