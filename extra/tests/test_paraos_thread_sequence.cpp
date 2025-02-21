@@ -61,7 +61,7 @@ constexpr uint_least8_t max_task_in_sequence{3};
 using ThreadSequenceTest = paraos::ThreadSequence<max_task_in_sequence>;
 ThreadSequenceTest *thread_seq_ptr;
 
-constexpr uint32_t gyr_acc_max_call_cnt{8};
+constexpr uint32_t gyr_acc_max_call_cnt{4};
 
 constexpr float mag_delegate_freq_hz{thread_sequence_call_period_us / 2.0};
 constexpr float baro_delegate_freq_hz{thread_sequence_call_period_us / 4.0};
@@ -178,7 +178,7 @@ auto main() -> int {
 
     attr.period_in_us = thread_sequence_call_period_us;
 
-    static ThreadSequenceTest thread_sequence{paraos::ThreadSequenceAttr{attr}};
+    static ThreadSequenceTest thread_sequence{attr};
     thread_seq_ptr = &thread_sequence;
   }
 
@@ -257,10 +257,10 @@ auto main() -> int {
   PARAOS_CHECK_ASSERT(gyracc_call_cnt == gyr_acc_max_call_cnt);
 
   // Frequency of the call mag is two times less than gyr_acc.
-  PARAOS_CHECK_ASSERT(mag_call_cnt == gyracc_call_cnt / 2);
+  PARAOS_CHECK_ASSERT(mag_call_cnt == gyr_acc_max_call_cnt / 2);
 
   // Frequency of the call mag is four times less than gyr_acc.
-  PARAOS_CHECK_ASSERT(baro_call_cnt == gyracc_call_cnt / 4);
+  PARAOS_CHECK_ASSERT(baro_call_cnt == gyr_acc_max_call_cnt / 4);
 
   // [clang-analyzer-core.StackAddressEscape]: Address of stack memory
   // associated with local variable 'thread_sequence' is still referred to by
