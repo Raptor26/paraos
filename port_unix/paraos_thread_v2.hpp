@@ -309,15 +309,10 @@ class Thread : public paraos::Base {
       }
     }
 
-    // free_resourse_after_callback lambda will be calls after return operator
-    // and call_callback lambda.
-    auto free_resourse_after_callback = gsl::finally([&] {
-      paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
-          "Thread finished, now it is calls 'delete' operator to 'base_' "
-          "object",
-          thread->GiveName());
-      delete thread->base_;
-    });
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
+        "Thread finished, now it is calls 'delete' operator to 'base_' object",
+        thread->GiveName());
+    delete thread->base_;
 
     return nullptr;
   }
