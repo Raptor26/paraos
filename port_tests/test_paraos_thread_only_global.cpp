@@ -29,7 +29,7 @@
 #include <iostream>
 
 #include "paraos_critical.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
@@ -50,28 +50,28 @@ void DeletedObjectsCnt() {
 std::atomic<std::size_t> cnt{0};
 constexpr std::size_t expected_threads{3};
 
-inline void DefaultDelegate() { paraos::v2::Thread::DelayMs(100); }
-constexpr paraos::v2::thread_delegate_type thread_default_delegate =
+inline void DefaultDelegate() { paraos::Thread::DelayMs(100); }
+constexpr paraos::thread_delegate_type thread_default_delegate =
     etl::delegate<void()>::create<DefaultDelegate>();
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, DeletedObjectsCnt,
+    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
     thread_default_delegate}};
 
-paraos::v2::Thread my_thread_global_one{paraos::v2::ThreadAttr{
+paraos::Thread my_thread_global_one{paraos::ThreadAttr{
     "Global thread one", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kLowest, DeletedObjectsCnt,
+    paraos::ThreadPriority::kLowest, DeletedObjectsCnt,
     thread_default_delegate}};
 
-paraos::v2::Thread my_thread_global_two{paraos::v2::ThreadAttr{
+paraos::Thread my_thread_global_two{paraos::ThreadAttr{
     "Global thread two", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kNormal, DeletedObjectsCnt,
+    paraos::ThreadPriority::kNormal, DeletedObjectsCnt,
     thread_default_delegate}};
 
-paraos::v2::Thread my_thread_global_three{paraos::v2::ThreadAttr{
+paraos::Thread my_thread_global_three{paraos::ThreadAttr{
     "Global thread three", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, DeletedObjectsCnt,
+    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
     thread_default_delegate}};
 
 void ExitFromTest() {
@@ -79,14 +79,14 @@ void ExitFromTest() {
     check_test_complete_and_exit.Finished();
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 
 void ProcessingOne() {
@@ -133,8 +133,8 @@ auto main() -> int {
     my_thread_global_three.RegisterDelegate(delegate);
   }
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
   // clang-format off

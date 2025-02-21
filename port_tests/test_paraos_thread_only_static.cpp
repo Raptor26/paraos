@@ -35,7 +35,7 @@
 #include <iostream>
 
 #include "paraos_critical.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
@@ -57,13 +57,13 @@ std::atomic<std::size_t> cnt{0};
 
 constexpr std::size_t expected_threads{3};
 
-inline void DefaultDelegate() { paraos::v2::Thread::DelayMs(100); }
-constexpr paraos::v2::thread_delegate_type thread_default_delegate =
+inline void DefaultDelegate() { paraos::Thread::DelayMs(100); }
+constexpr paraos::thread_delegate_type thread_default_delegate =
     etl::delegate<void()>::create<DefaultDelegate>();
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, DeletedObjectsCnt,
+    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
     thread_default_delegate}};
 
 void ExitFromTest() {
@@ -74,22 +74,22 @@ void ExitFromTest() {
 
     check_test_complete_and_exit.Finished();
 
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 }  // namespace
 
 class MyThreadStatic {
  public:
-  explicit MyThreadStatic(const paraos::v2::ThreadAttr& attr) : thread_{attr} {
+  explicit MyThreadStatic(const paraos::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             MyThreadStatic, &MyThreadStatic::Processing>(*this));
   }
 
@@ -104,7 +104,7 @@ class MyThreadStatic {
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 };
 
 auto main() -> int {
@@ -114,7 +114,7 @@ auto main() -> int {
   }
 
   {
-    paraos::v2::ThreadAttr attr;
+    paraos::ThreadAttr attr;
     attr.thread_name = "My thread static one";
     attr.dtor_callback = DeletedObjectsCnt;
 
@@ -122,21 +122,21 @@ auto main() -> int {
   }
 
   {
-    paraos::v2::ThreadAttr attr;
+    paraos::ThreadAttr attr;
     attr.thread_name = "My thread static two";
     attr.dtor_callback = DeletedObjectsCnt;
     const static MyThreadStatic static_thread{attr};
   }
 
   {
-    paraos::v2::ThreadAttr attr;
+    paraos::ThreadAttr attr;
     attr.thread_name = "My thread static three";
     attr.dtor_callback = DeletedObjectsCnt;
     const static MyThreadStatic static_thread{attr};
   }
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
   // clang-format off

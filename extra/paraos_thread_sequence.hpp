@@ -34,7 +34,7 @@
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
 namespace paraos {
 
@@ -44,7 +44,7 @@ namespace paraos {
 #define PARAOS_THREAD_SEQUENCE_VIRTUAL
 #endif
 
-struct IThreadSequenceAttr : public paraos::v2::ThreadAttr {
+struct IThreadSequenceAttr : public paraos::ThreadAttr {
   /// @brief The period in microseconds between NotifyGive() calls, which the
   /// user code is obligated to perform.
   uint32_t period_in_us{0};
@@ -73,7 +73,7 @@ class IThreadSequence : public paraos::Base {
       : thread_{attr, thread_start_flag},
         period_in_us_{attr.period_in_us},
         timer_controller_{timer_controller} {
-    thread_.RegisterDelegate(paraos::v2::thread_delegate_type::create<
+    thread_.RegisterDelegate(paraos::thread_delegate_type::create<
                              IThreadSequence, &IThreadSequence::Run>(*this));
   }
   // NOLINTEND(performance-unnecessary-value-param)
@@ -267,7 +267,7 @@ class IThreadSequence : public paraos::Base {
  private:
   SemaphoreBinary new_cycle_ready_sem_;
 
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   // Period in microseconds between user code calling NotifyGive(). User code
   // must provide this information correctly.

@@ -37,7 +37,7 @@
 
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
 
 namespace {
@@ -55,13 +55,13 @@ void DeletedObjectsCnt() {
       "Deleted objects cnt is " << deleted_objects_cnt, "DeletedObjectsCnt");
 }
 
-inline void DefaultDelegate() { paraos::v2::Thread::DelayMs(100); }
-constexpr paraos::v2::thread_delegate_type thread_default_delegate =
+inline void DefaultDelegate() { paraos::Thread::DelayMs(100); }
+constexpr paraos::thread_delegate_type thread_default_delegate =
     etl::delegate<void()>::create<DefaultDelegate>();
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, DeletedObjectsCnt,
+    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
     thread_default_delegate}};
 
 void ExitFromTest() {
@@ -69,26 +69,26 @@ void ExitFromTest() {
     check_test_complete_and_exit.Finished();
     constexpr paraos::delay_type delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 }  // namespace
 
 class MyThreadDynamic : public paraos::Base {
  public:
-  explicit MyThreadDynamic(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
+  explicit MyThreadDynamic(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             MyThreadDynamic, &MyThreadDynamic::Processing>(*this));
 
     // Check priority API. For test only. In real application, ctor of
-    // paraos::v2::Thread set priority from attr.
+    // paraos::Thread set priority from attr.
     thread_.SetPriority(attr.priority);
     auto priority = thread_.GetPriority();
 
@@ -113,7 +113,7 @@ class MyThreadDynamic : public paraos::Base {
     thread_.Finished(this);
   }
 
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 };
 
 auto main() -> int {
@@ -127,7 +127,7 @@ auto main() -> int {
     // computing will be complete.
     for (std::size_t i = 0; i < expected_threads; ++i) {
       std::string name{"My thread dynamic " + std::to_string(i)};
-      paraos::v2::ThreadAttr attr;
+      paraos::ThreadAttr attr;
       attr.thread_name = name;
       attr.dtor_callback = DeletedObjectsCnt;
 
@@ -141,8 +141,8 @@ auto main() -> int {
     PrintDebug(e.what(), "main()");
   }
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
   // clang-format off

@@ -38,7 +38,7 @@
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_timer.hpp"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
@@ -55,13 +55,13 @@ void DeletedObjectsCnt() {
       "Deleted objects cnt is " << deleted_objects_cnt, "DeletedObjectsCnt");
 }
 
-inline void DefaultDelegate() { paraos::v2::Thread::DelayMs(100); }
-constexpr paraos::v2::thread_delegate_type thread_default_delegate =
+inline void DefaultDelegate() { paraos::Thread::DelayMs(100); }
+constexpr paraos::thread_delegate_type thread_default_delegate =
     etl::delegate<void()>::create<DefaultDelegate>();
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, DeletedObjectsCnt,
+    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
     thread_default_delegate}};
 
 void ExitFromTest() {
@@ -72,30 +72,30 @@ void ExitFromTest() {
     constexpr std::size_t delay_ms{0};
 
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
 
-    paraos::v2::Thread::Exit();
+    paraos::Thread::Exit();
     check_test_complete_and_exit.Finished();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(1000);
+  paraos::Thread::DelayMs(1000);
 }
 
 class MyThreadDynamic : public paraos::Base {
  public:
-  explicit MyThreadDynamic(const paraos::v2::ThreadAttr &attr)
+  explicit MyThreadDynamic(const paraos::ThreadAttr &attr)
       : thread_one_{attr}, thread_two_{attr} {
     thread_one_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             MyThreadDynamic, &MyThreadDynamic::ProcessingOne>(*this));
 
     // -------------------------------------------------------------------------
 
     thread_two_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             MyThreadDynamic, &MyThreadDynamic::ProcessingTwo>(*this));
 
     // -------------------------------------------------------------------------
@@ -106,14 +106,14 @@ class MyThreadDynamic : public paraos::Base {
 
     std::string name{attr.thread_name};
     name += " Dynamic thread";
-    paraos::v2::ThreadAttr thread_attr;
+    paraos::ThreadAttr thread_attr;
     thread_attr.thread_name = name;
 
     // Register delegate befor calls ctor.
-    thread_attr.run_ = paraos::v2::thread_delegate_type::create<
+    thread_attr.run_ = paraos::thread_delegate_type::create<
         MyThreadDynamic, &MyThreadDynamic::ProcessingDynamic>(*this);
 
-    thread_dynamic_ = new paraos::v2::Thread(thread_attr);
+    thread_dynamic_ = new paraos::Thread(thread_attr);
     PrintDebug("Create thread on heap", thread_dynamic_->GiveName());
   }
 
@@ -156,13 +156,13 @@ class MyThreadDynamic : public paraos::Base {
   }
 
   /// @brief Not free resources.
-  paraos::v2::Thread thread_one_;
+  paraos::Thread thread_one_;
 
   /// @brief Free resources.
-  paraos::v2::Thread thread_two_;
+  paraos::Thread thread_two_;
 
   /// @brief free only self in ProcessingDynamic().
-  paraos::v2::Thread *thread_dynamic_{nullptr};
+  paraos::Thread *thread_dynamic_{nullptr};
 
   /// @brief Wait while thread 1 complete his work, only after that thread_two_
   /// can free all resources.
@@ -184,7 +184,7 @@ auto main() -> int {
     // computing will be complete.
     for (std::size_t i = 0; i < expected_threads; ++i) {
       std::string name{"My thread for stack " + std::to_string(i)};
-      paraos::v2::ThreadAttr attr;
+      paraos::ThreadAttr attr;
       attr.thread_name = name;
       attr.dtor_callback = DeletedObjectsCnt;
 
@@ -198,8 +198,8 @@ auto main() -> int {
     PrintDebug(e.what(), "main()");
   }
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
 }

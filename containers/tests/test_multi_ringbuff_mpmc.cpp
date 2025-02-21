@@ -36,7 +36,7 @@
 #include "paraos_critical.hpp"
 #include "paraos_multi_ringbuff.hpp"
 #include "paraos_ringbuff.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
@@ -75,9 +75,9 @@ constexpr std::size_t ring_buff_size{2048};
 constexpr std::size_t thread_stack_depth{1024};
 
 namespace {
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kLowest, nullptr}};
 
 auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
     -> std::size_t {
@@ -126,10 +126,10 @@ paraos::MultiRingBuff<
 // address of it's name could be invalid later.
 // NOLINTBEGIN(performance-unnecessary-value-param)
 struct Producer {
-  explicit Producer(const paraos::v2::ThreadAttr &attr, std::size_t thread_id)
+  explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
       : thread_{attr}, thread_id_{thread_id} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<Producer, &Producer::Run>(
+        paraos::thread_delegate_type::create<Producer, &Producer::Run>(
             *this));
   }
 
@@ -177,7 +177,7 @@ struct Producer {
       }
 
       // Small delay for yeld resources.
-      paraos::v2::Thread::DelayMs(1);
+      paraos::Thread::DelayMs(1);
     }
 
     // cyclic increment buff idx.
@@ -204,13 +204,13 @@ struct Producer {
  private:
   const std::size_t thread_id_;
   etl::cyclic_value<int, 0, multi_ring_buff.GetBuffNumb() - 1U> buff_idx_{0};
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
+  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<Consumer, &Consumer::Run>(
+        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(
             *this));
   }
 
@@ -257,7 +257,7 @@ struct Consumer {
     return is_offline;
   }
 
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 };
 // NOLINTEND(performance-unnecessary-value-param)
 
@@ -300,16 +300,16 @@ void ExitFromTest() {
 
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
     AssertsForTestComplete();
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 
 }  // namespace
@@ -324,28 +324,28 @@ auto main() -> int {
   // Create producers
   // ---------------------------------------------------------------------------
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
     const static Producer prod_1{attr, 0};
     producer_thread_numb += 1;
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 1";
     const static Producer prod_2{attr, 1};
     producer_thread_numb += 1;
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 2";
     const static Producer prod_3{attr, 2};
     producer_thread_numb += 1;
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 3";
     const static Producer prod_4{attr, 3};
     producer_thread_numb += 1;
@@ -356,14 +356,14 @@ auto main() -> int {
   // Create consumers
   // ---------------------------------------------------------------------------
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 1";
     const static Consumer cons_1{attr};
     consumer_thread_numb += 1;
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 2";
     const static Consumer cons_2{attr};
     consumer_thread_numb += 1;
@@ -371,8 +371,8 @@ auto main() -> int {
 
   // ---------------------------------------------------------------------------
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   AssertsForTestComplete();
 

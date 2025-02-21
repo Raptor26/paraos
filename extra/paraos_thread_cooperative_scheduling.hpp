@@ -34,7 +34,7 @@
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_trace.hpp"
 
 namespace paraos {
@@ -73,7 +73,7 @@ struct cooperative_scheduler_policy_run_all_at_once {
 // =============================================================================
 
 /// @brief Params to pass in ICooperativeScheduling{} ctor.
-struct ICooperativeSchedulingAttr : public paraos::v2::ThreadAttr {
+struct ICooperativeSchedulingAttr : public paraos::ThreadAttr {
   const IEmbeddedTimer &embedded_timer_ = embedded_timer_empty;
 };
 
@@ -99,7 +99,7 @@ class ICooperativeScheduling : public paraos::Base {
         scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             ICooperativeScheduling, &ICooperativeScheduling::Run>(*this));
 
     // scheduler_ will call all registered tasks while they have work.
@@ -219,15 +219,15 @@ class ICooperativeScheduling : public paraos::Base {
     // Once a task is registered (when the user code calls AddTask()),
     // scheduler_.start() begins execution in an internal loop,
     // which blocks the Idle() method by taking a semaphore.
-    paraos::v2::Thread::DelayMs(coop_scheduler_delay_ms);
+    paraos::Thread::DelayMs(coop_scheduler_delay_ms);
   }
 
   auto GetScheduler() -> etl::ischeduler & { return scheduler_; }
 
   /// @brief Five rule.
   ICooperativeScheduling(ICooperativeScheduling &&other) = delete;
-  auto operator=(ICooperativeScheduling &&other) -> ICooperativeScheduling & =
-                                                        delete;
+  auto operator=(ICooperativeScheduling &&other)
+      -> ICooperativeScheduling & = delete;
   auto operator=(const ICooperativeScheduling &other)
       -> ICooperativeScheduling & = delete;
   ICooperativeScheduling(const ICooperativeScheduling &other) = delete;
@@ -249,7 +249,7 @@ class ICooperativeScheduling : public paraos::Base {
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
   etl::ischeduler &scheduler_;
   SemaphoreBinary new_cycle_ready_sem_;
 
@@ -278,8 +278,8 @@ class CooperativeScheduling : public ICooperativeScheduling {
 
   /// @brief Five rule.
   CooperativeScheduling(CooperativeScheduling &&other) = delete;
-  auto operator=(CooperativeScheduling &&other) -> CooperativeScheduling & =
-                                                       delete;
+  auto operator=(CooperativeScheduling &&other)
+      -> CooperativeScheduling & = delete;
   auto operator=(const CooperativeScheduling &other)
       -> CooperativeScheduling & = delete;
   CooperativeScheduling(const CooperativeScheduling &other) = delete;

@@ -45,9 +45,9 @@
 
 namespace {
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 constexpr uint32_t thread_sequence_call_period_us{1000U};
 
@@ -154,14 +154,14 @@ void ExitFromTest() {
 
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 }  // namespace
 
@@ -174,7 +174,7 @@ auto main() -> int {
   {
     paraos::ThreadSequenceAttr attr{
         "Sequence thread", paraos::GetStackMinimumSizeInBytes(),
-        paraos::v2::ThreadPriority::kRealTime, nullptr};
+        paraos::ThreadPriority::kRealTime, nullptr};
 
     attr.period_in_us = thread_sequence_call_period_us;
 
@@ -251,8 +251,8 @@ auto main() -> int {
 
   thread_seq_ptr->NotifyGive();
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   PARAOS_CHECK_ASSERT(gyracc_call_cnt == gyr_acc_max_call_cnt);
 

@@ -33,7 +33,7 @@
 #include "paraos_queue_blocking.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_thread_common.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \
@@ -49,9 +49,9 @@ constexpr std::size_t one_producer_expected_push_items_numb{3};
 constexpr std::size_t threads_default_stack_size{1024};
 
 namespace {
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kLowest, nullptr}};
 
 std::size_t producer_thread_numb{0};
 
@@ -69,10 +69,10 @@ paraos::QueueBlocking<char, max_queue_size> queue;
 }  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::v2::ThreadAttr &attr, std::size_t thread_id)
+  explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
       : thread_{attr}, thread_id_{thread_id} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<Producer, &Producer::Run>(
+        paraos::thread_delegate_type::create<Producer, &Producer::Run>(
             *this));
   }
 
@@ -100,7 +100,7 @@ struct Producer {
                 << runtime_profiler.LastDurationMs(),
             thread_.GiveName());
         // Yeld processor time for consumers read data from queue.
-        paraos::v2::Thread::DelayMs(1);
+        paraos::Thread::DelayMs(1);
       }
     }
 
@@ -110,7 +110,7 @@ struct Producer {
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   const std::size_t thread_id_;
 
@@ -118,9 +118,9 @@ struct Producer {
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
+  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<Consumer, &Consumer::Run>(
+        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(
             *this));
   }
 
@@ -153,7 +153,7 @@ struct Consumer {
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   paraos::OsProfiler runtime_profiler;
 };
@@ -177,16 +177,16 @@ void ExitFromTest() {
 
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
     CheckIfTestSuccessfullyComplete();
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 }  // namespace
 
@@ -200,7 +200,7 @@ auto main() -> int {
   // Create producers
   // ---------------------------------------------------------------------------
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
     const static Producer prod_1{attr, 0};
     producer_thread_numb += 1;
@@ -211,21 +211,21 @@ auto main() -> int {
   // Create consumers
   // ---------------------------------------------------------------------------
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 1";
     const static Consumer cons_1{attr};
     consumer_thread_numb += 1;
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 2";
     const static Consumer cons_2{attr};
     consumer_thread_numb += 1;
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 3";
     const static Consumer cons_3{attr};
     consumer_thread_numb += 1;
@@ -233,8 +233,8 @@ auto main() -> int {
 
   // ---------------------------------------------------------------------------
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   return 0;
 }

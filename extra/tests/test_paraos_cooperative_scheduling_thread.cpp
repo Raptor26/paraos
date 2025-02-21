@@ -36,7 +36,7 @@
 #include "etl/task.h"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_thread_cooperative_scheduling.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
 
 #define PrintDebug(__message__, __object_name__)                             \
@@ -48,9 +48,9 @@
 namespace {
 etl::atomic_bool is_test_complete{false};
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kRealTime, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 // Task 1 set highest priority in set. It will run first.
 constexpr etl::task_priority_t task1_priority{10};
@@ -154,7 +154,7 @@ paraos::CooperativeScheduling<
     max_tasks_number, etl::scheduler_policy_highest_priority>
     cooperative_scheduler{paraos::CooperativeSchedulingAttr{
         "Cooperative scheduler", paraos::GetStackMinimumSizeInBytes(),
-        paraos::v2::ThreadPriority::kRealTime, nullptr}};
+        paraos::ThreadPriority::kRealTime, nullptr}};
 
 Idle idle_handle(cooperative_scheduler.GetScheduler());
 
@@ -173,14 +173,14 @@ void ExitFromTest() {
 
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 }  // namespace
 
@@ -199,9 +199,9 @@ auto main() -> int {
   // Set custom idle callback to complete test.
   cooperative_scheduler.SetIdleCallback(idle_callback);
 
-  paraos::v2::Thread::StartScheduler();
+  paraos::Thread::StartScheduler();
 
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::DeleteAll();
 
   return EXIT_SUCCESS;
 }

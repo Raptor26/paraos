@@ -54,7 +54,7 @@
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_socket_udp.hpp"
 #include "paraos_thread_common.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
 
 /// @brief Время ожидания входных данных, задаваемое для неблокирующего сокета,
@@ -134,10 +134,10 @@ bool blocking_thread_exit_flag = false;
 /// @brief Структура потока, использующего неблокирующий сокет.
 struct NonBlockingSocketThread {
   explicit NonBlockingSocketThread(
-      paraos::UDPSocket* socket_ptr, const paraos::v2::ThreadAttr& attr)
+      paraos::UDPSocket* socket_ptr, const paraos::ThreadAttr& attr)
       : thread_{attr}, socket_ptr_{socket_ptr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             NonBlockingSocketThread, &NonBlockingSocketThread::Run>(*this));
   }
 
@@ -190,11 +190,11 @@ struct NonBlockingSocketThread {
       }
     }
 
-    paraos::v2::Thread::DelayMs(nonblocking_sock_thread_delay_ms);
+    paraos::Thread::DelayMs(nonblocking_sock_thread_delay_ms);
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   paraos::UDPSocket* socket_ptr_;
 
@@ -207,10 +207,10 @@ struct NonBlockingSocketThread {
 /// необходима для проверки неблокирующего режима у сокета.
 struct EmptySocketThread {
   explicit EmptySocketThread(
-      paraos::UDPSocket* socket_ptr, const paraos::v2::ThreadAttr& attr)
+      paraos::UDPSocket* socket_ptr, const paraos::ThreadAttr& attr)
       : thread_{attr}, socket_ptr_{socket_ptr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             EmptySocketThread, &EmptySocketThread::Run>(*this));
   }
 
@@ -244,11 +244,11 @@ struct EmptySocketThread {
       thread_.Finished();
     }
 
-    paraos::v2::Thread::DelayMs(empty_sock_thread_delay_ms);
+    paraos::Thread::DelayMs(empty_sock_thread_delay_ms);
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   paraos::UDPSocket* socket_ptr_;
 
@@ -261,10 +261,10 @@ struct EmptySocketThread {
 /// входных данных.
 struct BlockingSocketThread {
   explicit BlockingSocketThread(
-      paraos::UDPSocket* socket_ptr, const paraos::v2::ThreadAttr& attr)
+      paraos::UDPSocket* socket_ptr, const paraos::ThreadAttr& attr)
       : thread_{attr}, socket_ptr_{socket_ptr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             BlockingSocketThread, &BlockingSocketThread::Run>(*this));
   }
 
@@ -318,11 +318,11 @@ struct BlockingSocketThread {
       }
     }
 
-    paraos::v2::Thread::DelayMs(blocking_sock_thread_delay_ms);
+    paraos::Thread::DelayMs(blocking_sock_thread_delay_ms);
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   paraos::UDPSocket* socket_ptr_;
 
@@ -335,10 +335,10 @@ struct BlockingSocketThread {
 /// ожидания входных данных.
 struct ForeverBlockingSocketThread {
   explicit ForeverBlockingSocketThread(
-      paraos::UDPSocket* socket_ptr, const paraos::v2::ThreadAttr& attr)
+      paraos::UDPSocket* socket_ptr, const paraos::ThreadAttr& attr)
       : thread_{attr}, socket_ptr_{socket_ptr} {
     thread_.RegisterDelegate(
-        paraos::v2::thread_delegate_type::create<
+        paraos::thread_delegate_type::create<
             ForeverBlockingSocketThread, &ForeverBlockingSocketThread::Run>(
             *this));
   }
@@ -394,12 +394,12 @@ struct ForeverBlockingSocketThread {
           << "\t~Other threads finished, FOREVER BLOCKING THREAD EXITING.~"
           << "\n";
       thread_.Finished();
-      paraos::v2::Thread::Exit();
+      paraos::Thread::Exit();
     }
   }
 
  private:
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 
   paraos::UDPSocket* socket_ptr_;
 
@@ -457,33 +457,33 @@ auto main() -> int {
 
   // Инициализация потоков, работающих с созданными сокетами.
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Nonblocking thread";
     const static NonBlockingSocketThread non_blocking_thread{
         &nonblocking_socket, attr};
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Empty socket thread";
     const static EmptySocketThread empty_socket_thread{&empty_socket, attr};
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Blocking socket thread";
     const static BlockingSocketThread blocking_thread{&blocking_socket, attr};
   }
 
   {
-    paraos::v2::ThreadAttr attr{};
+    paraos::ThreadAttr attr{};
     attr.thread_name = "Forever blocking socket thread";
     const static ForeverBlockingSocketThread forever_blocking_thread{
         &forever_blocking_socket, attr};
   }
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 
   exit(0);
 }

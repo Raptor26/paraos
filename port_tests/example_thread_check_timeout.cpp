@@ -32,7 +32,7 @@
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_time.hpp"
 
 constexpr std::size_t thread_default_stack_depth{
@@ -47,9 +47,9 @@ constexpr std::size_t thread_default_stack_depth{
 namespace {
 std::atomic_bool is_test_complete{false};
 
-paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::v2::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kLowest, nullptr}};
 
 }  // namespace
 
@@ -57,8 +57,8 @@ paraos::v2::Thread check_test_complete_and_exit{paraos::v2::ThreadAttr{
 // address of it's name could be invalid later.
 // NOLINTBEGIN(performance-unnecessary-value-param)
 struct TestTimeout {
-  explicit TestTimeout(const paraos::v2::ThreadAttr &attr) : thread_{attr} {
-    thread_.RegisterDelegate(paraos::v2::thread_delegate_type::create<
+  explicit TestTimeout(const paraos::ThreadAttr &attr) : thread_{attr} {
+    thread_.RegisterDelegate(paraos::thread_delegate_type::create<
                              TestTimeout, &TestTimeout::Run>(*this));
   }
 
@@ -98,7 +98,7 @@ struct TestTimeout {
 
  private:
   paraos::SemaphoreBinary sem_;
-  paraos::v2::Thread thread_;
+  paraos::Thread thread_;
 };
 // NOLINTEND(performance-unnecessary-value-param)
 
@@ -108,12 +108,12 @@ void ExitFromTest() {
 
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::v2::Thread::DelayMs(delay_ms);
+    paraos::Thread::DelayMs(delay_ms);
 
-    PrintDebug("Call paraos::v2::Thread::Exit();", "ExitFromTest");
-    paraos::v2::Thread::Exit();
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
   }
-  paraos::v2::Thread::DelayMs(10);
+  paraos::Thread::DelayMs(10);
 }
 
 auto main() -> int {
@@ -122,11 +122,11 @@ auto main() -> int {
     check_test_complete_and_exit.RegisterDelegate(delegate);
   }
 
-  paraos::v2::ThreadAttr attr{};
+  paraos::ThreadAttr attr{};
   attr.thread_name = "Check timeout";
   attr.stack_depth = thread_default_stack_depth;
   const TestTimeout test_thread(attr);
 
-  paraos::v2::Thread::StartScheduler();
-  paraos::v2::Thread::DeleteAll();
+  paraos::Thread::StartScheduler();
+  paraos::Thread::DeleteAll();
 }

@@ -30,7 +30,7 @@
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread_v2.hpp"
+#include "paraos_thread.hpp"
 #include "paraos_timer.hpp"
 
 namespace {
@@ -98,7 +98,7 @@ auto main() -> int {
   auto is_timer_started = local_timer.Start();
   PARAOS_CHECK_ASSERT(is_timer_started);
   PARAOS_ATTR_UNUSED_VAR(is_timer_started);
-  paraos::v2::Thread::DelayMs(thread_waiting_delay_ms);
+  paraos::Thread::DelayMs(thread_waiting_delay_ms);
   local_timer.Stop();
   std::cout << " timer is stopped " << "\n";
   local_timer.Start();

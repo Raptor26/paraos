@@ -27,7 +27,7 @@
 ///     paraos_thread_v2.
 ///
 /// DESCRIPTION
-///     paraos_thread_v2 provides a FreeRTOS wrapper for working with threads.
+///     paraos_thread_v2 provides a WinAPI wrapper for working with threads.
 ///     This wrapper offers a cross-platform API for managing threads
 ///     in RTOS, Windows, and Linux.
 ///
@@ -42,23 +42,28 @@
 #ifndef PARAOS_THREAD_V2_HPP
 #define PARAOS_THREAD_V2_HPP
 
-#include <cstdlib>
+#include <winbase.h>
 
-#include "FreeRTOS.h"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include "etl/atomic.h"
 #include "etl/delegate.h"
 #include "gsl/gsl"
+#include "paraos_attr.h"
 #include "paraos_base.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_exceptions.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread_common.hpp"
 #include "paraos_thread_exceptions.hpp"
 #include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
-#include "task.h"
-#include "timers.h"
 
-namespace paraos::v2 {
+namespace paraos {
 
 constexpr delay_type default_sleep_ms_if_no_delegate_{700};
 
@@ -72,8 +77,8 @@ class Thread : public paraos::Base {
   ///
   /// @throw Can throw "thread_not_created_exception".
   explicit Thread(
-      const paraos::v2::ThreadAttr &attr, bool thread_start_flag = true)
-      : paraos::Base{attr.dtor_callback} {
+      const paraos::ThreadAttr &attr, bool thread_start_flag = true)
+      : paraos::Base{attr.dtor_callback}, name_{attr.thread_name} {
     // Before create the thread, register the delegate.
     RegisterDelegate(attr.run_);
 
@@ -87,9 +92,11 @@ class Thread : public paraos::Base {
   ~Thread() override {
     paraosTRACE_MESSAGE_WITH_ACTOR_NAME("~Thread", GiveName());
 
-    // If scheduler is not started, calls vTaskDelete() is illegal.
-    if (handle_ != nullptr && IsSchedulerRunning()) {
-      vTaskDelete(handle_);
+    // With static object don't worry about correctly delete
+    // the thread. For dynamic object, using only deferred delete when ~Thread()
+    // calls in event loop context only after user calls Finished().
+    if (handle_ != nullptr) {
+      CloseHandle(handle_);
       handle_ = nullptr;
     }
   }
@@ -104,10 +111,10 @@ class Thread : public paraos::Base {
 
   /// @brief The user code must provide a delegate to execute in the thread
   /// context. The delegate can be passed to the constructor via
-  /// paraos::v2::ThreadAttr or registered later using RegisterDelegate().
+  /// paraos::ThreadAttr or registered later using RegisterDelegate().
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
-  void RegisterDelegate(paraos::v2::thread_delegate_type run) {
+  void RegisterDelegate(paraos::thread_delegate_type run) {
     // std::move of the variable of a trivially-copyable type has no effect
     run_ = run;
   }
@@ -117,24 +124,20 @@ class Thread : public paraos::Base {
   /// @brief Set the priority to the thread.
   ///
   /// @param[in] priority: The priority to which the thread will be set.
-  auto SetPriority(paraos::v2::ThreadPriority priority) {
-    bool result{false};
+  auto SetPriority(const paraos::ThreadPriority priority) {
+    auto is_priority_updated =
+        SetThreadPriority(handle_, static_cast<int>(priority));
 
-    if (priority < paraos::v2::ThreadPriority::kMaxNum) {
-      vTaskPrioritySet(handle_, static_cast<UBaseType_t>(priority));
-      result = true;
-    }
-
-    return result;
+    return static_cast<bool>(is_priority_updated);
   }
 
   /// --------------------------------------------------------------------------
 
   /// @brief Obtain the priority of the thread.
   ///
-  /// @return paraos::v2::ThreadPriority.
+  /// @return paraos::ThreadPriority.
   auto GetPriority() {
-    return static_cast<paraos::v2::ThreadPriority>(uxTaskPriorityGet(handle_));
+    return static_cast<paraos::ThreadPriority>(GetThreadPriority(handle_));
   }
 
   /// --------------------------------------------------------------------------
@@ -143,10 +146,7 @@ class Thread : public paraos::Base {
   ///
   /// @return std::string_view.
   [[nodiscard]] auto GiveName() const -> std::string_view {
-    TaskStatus_t xTaskDetails;
-    vTaskGetInfo(handle_, &xTaskDetails, pdFALSE, eInvalid);
-
-    return std::string_view{xTaskDetails.pcTaskName};
+    return static_cast<std::string_view>(name_);
   }
 
   /// --------------------------------------------------------------------------
@@ -155,9 +155,7 @@ class Thread : public paraos::Base {
   ///
   /// @param[in] sleep_ms: The amount of time, that the calling thead should
   /// block.
-  static void DelayMs(paraos::delay_type sleep_ms) {
-    vTaskDelay(PARAOS_ConvertMsToTicks(sleep_ms));
-  }
+  static void DelayMs(paraos::delay_type sleep_ms) { Sleep(sleep_ms); }
 
   /// --------------------------------------------------------------------------
 
@@ -177,20 +175,45 @@ class Thread : public paraos::Base {
   /// @brief StartScheduler() must run in the main thread.
   /// The created threads start executing only after the user code calls
   /// StartScheduler().
-  static void StartScheduler() { vTaskStartScheduler(); }
+  static void StartScheduler() {
+    paraosTRACE_MESSAGE("Start Scheduler");
+
+    {
+      const paraos::CriticalSection critical;
+      // Threads are created in a suspended state.
+      // It is necessary to resume execution of the created threads.
+      for (auto &thread : to_resume_) {
+        ResumeThread(thread->handle_);
+        paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
+            "Thread resume", thread->GiveName());
+      }
+
+      is_scheduler_started_ = true;
+    }
+
+    // After that scheduler stated, no more need getting storage thread
+    // pointers. New threads will be created and start immediately.
+    to_resume_.clear();
+    to_resume_.shrink_to_fit();
+  }
 
   /// --------------------------------------------------------------------------
 
   /// @brief To resume calls Exit().
-  static void DeleteAll() {}
+  static void DeleteAll() {
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
+        "Wait while user calls Exit()", "DeleteAll");
+
+    // The semaphore is released when the user code calls Exit().
+    to_exit_.Take(paraos::max_delay);
+
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME("User calls Exit()", "DeleteAll");
+  }
 
   /// --------------------------------------------------------------------------
 
   /// @brief Call the method if you ready to exit from program.
-  static void Exit() {
-    paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Call Exit()", "");
-    vTaskEndScheduler();
-  }
+  static void Exit() { to_exit_.Give(); }
 
  private:
   /// @brief Create the thread with attr params.
@@ -198,23 +221,39 @@ class Thread : public paraos::Base {
   /// @param[in] attr: Params to initialize thread.
   ///
   /// @throw Can throw "thread_not_created_exception"
-  void Make(const paraos::v2::ThreadAttr &attr) {
-    RegisterDelegate(attr.run_);
+  void Make(const paraos::ThreadAttr &attr) {
+    DWORD creation_flags{CREATE_SUSPENDED};
 
-    xTaskCreate(
-        RunThreadContext, attr.thread_name.data(),
-        paraos::ConvertStackSizeInWords(attr.stack_depth), this,
-        static_cast<UBaseType_t>(attr.priority), &handle_);
+    const paraos::CriticalSection critical;
+
+    // After the scheduler starts, there is no need to create threads in a
+    // suspended state.
+    if (is_scheduler_started_) {
+      creation_flags = 0;
+    }
+
+    handle_ = CreateThread(
+        nullptr,                         // default security attributes
+        attr.stack_depth,                // use default stack size
+        RunThreadContext,                // thread function name
+        reinterpret_cast<LPVOID>(this),  // argument to thread function
+        creation_flags,                  // use default creation flags
+        nullptr);                        // returns the thread identifier
 
     ETL_ASSERT(handle_, ETL_ERROR(paraos::thread_not_created_exception));
+
+    if (!is_scheduler_started_) {
+      // Push only threads that's must be resume when a user code calls
+      // StartScheduler().
+      to_resume_.push_back(this);
+    }
   }
 
   /// --------------------------------------------------------------------------
 
-  static void RunThreadContext(void *lpParam) {
-    auto *thread = static_cast<Thread *>(lpParam);
+  static auto WINAPI RunThreadContext(LPVOID lpParam) -> DWORD {
+    auto *thread = reinterpret_cast<Thread *>(lpParam);
 
-    // Loop for thread.
     while (thread->is_need_while_) {
       if (!thread->run_.call_if()) {
         paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
@@ -225,40 +264,18 @@ class Thread : public paraos::Base {
       }
     }
 
-    // Copy task handle in local variable ...
-    auto *handle = thread->handle_;
-
-    // ... then set to nullptr in the private field.
-    // This is necessary to prevent the task from being deleted in the thread
-    // destructor.
-    thread->handle_ = nullptr;
-
-    // Now vTaskDelete(handle) uses the local copy of the task handle.
-    // This means that if the thread object is destroyed early,
-    // vTaskDelete(handle) will correctly delete the FreeRTOS thread.
-
-    // Do not use a critical section!
-    // If a critical section is used, it will remain open after calling
-    // vTaskDelete(handle).
-
-    // If user want to destroy the object ...
-    if (thread->base_ != nullptr) {
-      auto *ptr_to_delete = thread->base_;
-      thread->base_ = nullptr;
+    // Free resources if need will make after return operator.
+    auto free_resourse_after_callback = gsl::finally([&] {
       paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
-          "Thread finished, now put request to delete object",
+          "Thread finished, now it is calls 'delete' operator to 'base_' "
+          "object",
           thread->GiveName());
+      /// Operator delete can invoke ~Thread(). Using lambda for calls after
+      /// 'return static_cast<DWORD>(0)'.
+      delete thread->base_;
+    });
 
-      // The object will be destroyed later in the freeRTOS timer deamon task
-      // context.
-      xTimerPendFunctionCall(
-          DeferredDeleter, ptr_to_delete, 0, paraos::max_delay);
-    }
-
-    if (handle != nullptr) {
-      paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Delete self task", "");
-      vTaskDelete(handle);
-    }
+    return static_cast<DWORD>(0);
   }
 
   /// --------------------------------------------------------------------------
@@ -274,54 +291,42 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
-  [[nodiscard]] static auto IsSchedulerRunning() -> bool {
-    bool is_scheduler_started{false};
-    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
-      is_scheduler_started = true;
-    }
+  static inline etl::atomic_bool is_scheduler_started_{false};
+  static inline std::vector<paraos::Thread *> to_resume_;
 
-    return is_scheduler_started;
-  }
-
-  /// --------------------------------------------------------------------------
-
-  /// @brief This function is registered in the FreeRTOS timer daemon task.
-  /// DeferredDeleter calls the delete operator for the 'deletable_obj' pointer.
+  /// @brief DeleteAll() returns control only when the user code calls Exit().
+  /// This is necessary to ensure a smooth process completion and to prevent
+  /// Valgrind warnings.
   ///
-  /// @param[in] deletable_obj Pointer to the object to be deleted
-  /// in the FreeRTOS timer daemon task context.
-  /// @param[in] empty (Parameter description missing)
-  static void DeferredDeleter(void *deletable_obj, uint32_t empty) {
-    PARAOS_ATTR_UNUSED_VAR(empty);
+  /// @note
+  /// - DeleteAll() waits for the semaphore indefinitely.
+  /// - Exit() releases the semaphore.
+  static inline paraos::SemaphoreBinary to_exit_;
 
-#if paraosTRACE_ENABLE
-    TaskStatus_t xTaskDetails;
-    vTaskGetInfo(nullptr, &xTaskDetails, pdFALSE, eInvalid);
+  /// @brief Thread name. To read the field, use GiveName().
+  std::string name_;
 
-    paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
-        "Delete object", xTaskDetails.pcTaskName);
-#endif
-    delete reinterpret_cast<paraos::Base *>(deletable_obj);
-  }
-
-  /// --------------------------------------------------------------------------
-
+  /// @brief While true, the delegate is called in an infinite loop.
+  /// When the user code calls Finish(), this field is set to false, breaking
+  /// the loop.
   etl::atomic_bool is_need_while_{true};
 
-  /// @brief Task Handle. When freeRTOS will create the task, task handle will
-  /// be written here.
-  TaskHandle_t handle_{nullptr};
+  HANDLE handle_{nullptr};
+
+  /// @brief Until the user code calls RegisterDelegate(), the thread will
+  /// sleep after each check for delegate availability.
+  delay_type sleep_ms_if_no_delegate_{default_sleep_ms_if_no_delegate_};
 
   /// @brief Run this delegate in thread context.
-  paraos::v2::thread_delegate_type run_;
+  paraos::thread_delegate_type run_;
 
-  /// @brief When thread object calls dtor, it try delete base_.
+  /// @brief The user code can provide a pointer to an object that should be
+  /// destroyed after the thread completes its work when Finish() is called.
+  /// This pointer stores a reference to the destroyable object, ensuring safe
+  /// deletion from the heap after the thread finishes execution.
   paraos::Base *base_{nullptr};
-
-  /// @brief Until a user code doesn't call RegisterDelegate(), the thread will
-  /// be sleep after each check to delegate available.
-  delay_type sleep_ms_if_no_delegate_{default_sleep_ms_if_no_delegate_};
 };
 
-}  // namespace paraos::v2
+}  // namespace paraos
+
 #endif /* PARAOS_THREAD_V2_HPP */

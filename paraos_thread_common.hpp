@@ -38,7 +38,7 @@
 #include <winbase.h>
 #endif
 
-namespace paraos::v2 {
+namespace paraos {
 
 /// @brief Delegate type.
 using thread_delegate_type = etl::delegate<void()>;
@@ -88,7 +88,7 @@ struct ThreadAttr {
   std::size_t stack_depth{paraos::GetStackMinimumSizeInBytes()};
 
   /// @brief The priority of the thread being created.
-  paraos::v2::ThreadPriority priority{paraos::v2::ThreadPriority::kNormal};
+  paraos::ThreadPriority priority{paraos::ThreadPriority::kNormal};
 
   /// @brief The user can set a callback to be called when the destructor
   /// of a paraos::Base object is invoked.
@@ -103,6 +103,6 @@ struct ThreadAttr {
   // NOLINTEND(readability-redundant-member-init)
 };
 
-}  // namespace paraos::v2
+}  // namespace paraos
 
 #endif /* PARAOS_THREAD_COMMON_HPP */
