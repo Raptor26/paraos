@@ -55,6 +55,7 @@
 #include "gsl/gsl"
 #include "paraos_attr.h"
 #include "paraos_base.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_exceptions.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread_common.hpp"

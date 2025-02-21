@@ -6,16 +6,6 @@
 
 project(test_paraos_osal VERSION 0.1.0)
 
-# Thread -----------------------------------------------------------------------
-add_executable(test_paraos_thread test_paraos_thread.cpp)
-target_link_libraries(test_paraos_thread PRIVATE paraos::paraos)
-
-target_compile_features(test_paraos_thread PRIVATE cxx_std_17 c_std_11)
-target_compile_options(test_paraos_thread PRIVATE -Wall -Wextra -Wpedantic
-                                                  -Werror)
-
-add_test(NAME test_paraos_thread COMMAND test_paraos_thread)
-
 # Thread only static -----------------------------------------------------------
 add_executable(test_paraos_thread_only_static
                test_paraos_thread_only_static.cpp)
@@ -147,9 +137,6 @@ if(CLANG_TIDY_ENABLE)
 
     set_target_properties(example_paraos_timer PROPERTIES CXX_CLANG_TIDY
                                                           "${DO_CLANG_TIDY}")
-
-    set_target_properties(test_paraos_thread PROPERTIES CXX_CLANG_TIDY
-                                                        "${DO_CLANG_TIDY}")
 
     set_target_properties(test_paraos_thread_only_static
                           PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
