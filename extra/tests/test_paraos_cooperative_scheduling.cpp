@@ -38,7 +38,7 @@ TEST(Cooperative, Create) {
   constexpr bool thread_start_flag{false};
 
   const paraos::CooperativeSchedulingAttr attr;
-  const paraos::CooperativeScheduling<max_task_numb> cooperative{
+  static paraos::CooperativeScheduling<max_task_numb> cooperative{
       attr, thread_start_flag};
 }
 
@@ -49,7 +49,7 @@ TEST(Cooperative, TryPutOverflowTasks) {
   constexpr bool thread_start_flag{false};
 
   const paraos::CooperativeSchedulingAttr attr;
-  paraos::CooperativeScheduling<max_task_numb> cooperative{
+  static paraos::CooperativeScheduling<max_task_numb> cooperative{
       attr, thread_start_flag};
 
   struct test_task_t : public etl::task {
