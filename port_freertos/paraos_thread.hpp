@@ -262,10 +262,7 @@ class Thread : public paraos::Base {
             thread->GiveName());
       }
 
-      // The object will be destroyed later in the freeRTOS timer deamon task
-      // context.
-      xTimerPendFunctionCall(
-          DeferredDeleter, ptr_to_delete, 0, paraos::max_delay);
+      delete ptr_to_delete;
     }
 
     if (handle != nullptr) {
@@ -294,27 +291,6 @@ class Thread : public paraos::Base {
     }
 
     return is_scheduler_started;
-  }
-
-  /// --------------------------------------------------------------------------
-
-  /// @brief This function is registered in the FreeRTOS timer daemon task.
-  /// DeferredDeleter calls the delete operator for the 'deletable_obj' pointer.
-  ///
-  /// @param[in] deletable_obj Pointer to the object to be deleted
-  /// in the FreeRTOS timer daemon task context.
-  /// @param[in] empty (Parameter description missing)
-  static void DeferredDeleter(void *deletable_obj, uint32_t empty) {
-    PARAOS_ATTR_UNUSED_VAR(empty);
-
-#if paraosTRACE_ENABLE
-    TaskStatus_t xTaskDetails;
-    vTaskGetInfo(nullptr, &xTaskDetails, pdFALSE, eInvalid);
-
-    paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
-        "Delete object", xTaskDetails.pcTaskName);
-#endif
-    delete reinterpret_cast<paraos::Base *>(deletable_obj);
   }
 
   /// --------------------------------------------------------------------------
