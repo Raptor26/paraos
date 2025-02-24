@@ -28,6 +28,7 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
+#include <ctime>
 #include <iostream>
 #include <memory>
 
@@ -38,10 +39,14 @@
 #include "paraos_ringbuff.hpp"
 #include "paraos_thread.hpp"
 
-#define PrintDebug(__message__, __object_name__)                             \
-  {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+#define PrintDebug(__message__, __object_name__)               \
+  {                                                            \
+    const paraos::CriticalSection macro_critical;              \
+                                                               \
+    const std::time_t result = std::time(nullptr);             \
+                                                               \
+    std::cout << "Time: '" << result << " " << __object_name__ \
+              << "': " << __message__ << "\n";                 \
   }
 
 const std::vector<std::string> str_array{
@@ -129,8 +134,7 @@ struct Producer {
   explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
       : thread_{attr}, thread_id_{thread_id} {
     thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Producer, &Producer::Run>(
-            *this));
+        paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
   }
 
   /// @brief Producer thread
@@ -210,8 +214,7 @@ struct Producer {
 struct Consumer {
   explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(
-            *this));
+        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
 
   /// @brief Consumer thread.

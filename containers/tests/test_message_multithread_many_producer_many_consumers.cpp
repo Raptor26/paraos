@@ -28,6 +28,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstring>
+#include <ctime>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -38,10 +39,14 @@
 #include "paraos_thread.hpp"
 #include "paraos_thread_common.hpp"
 
-#define PrintDebug(__message__, __object_name__)                             \
-  {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+#define PrintDebug(__message__, __object_name__)               \
+  {                                                            \
+    const paraos::CriticalSection macro_critical;              \
+                                                               \
+    const std::time_t result = std::time(nullptr);             \
+                                                               \
+    std::cout << "Time: '" << result << " " << __object_name__ \
+              << "': " << __message__ << "\n";                 \
   }
 
 /// @brief Burning Heart

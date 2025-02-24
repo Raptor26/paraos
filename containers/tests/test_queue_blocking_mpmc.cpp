@@ -26,6 +26,7 @@
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <atomic>
 #include <cstddef>
+#include <ctime>
 #include <iostream>
 
 #include "etl/atomic.h"
@@ -37,10 +38,14 @@
 #include "paraos_thread_common.hpp"
 #include "paraos_utils.hpp"
 
-#define PrintDebug(__message__, __object_name__)                             \
-  {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+#define PrintDebug(__message__, __object_name__)               \
+  {                                                            \
+    const paraos::CriticalSection macro_critical;              \
+                                                               \
+    const std::time_t result = std::time(nullptr);             \
+                                                               \
+    std::cout << "Time: '" << result << " " << __object_name__ \
+              << "': " << __message__ << "\n";                 \
   }
 
 namespace {
