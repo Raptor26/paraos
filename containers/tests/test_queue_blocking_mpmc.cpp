@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <iostream>
 
+#include "etl/atomic.h"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_queue_blocking.hpp"
@@ -49,15 +50,15 @@ constexpr std::size_t one_producer_expected_push_items_numb{3};
 
 constexpr std::size_t threads_default_stack_size{1024};
 
-std::size_t producers_total_numb{0};
+etl::atomic<std::size_t> producers_total_numb{0};
 
-std::size_t consumers_total_numb{0};
+etl::atomic<std::size_t> consumers_total_numb{0};
 
-std::size_t producers_exit_numb{0};
+etl::atomic<std::size_t> producers_exit_numb{0};
 
-std::size_t consumers_exit_numb{0};
+etl::atomic<std::size_t> consumers_exit_numb{0};
 
-std::size_t expected_total_items_in_queue{0};
+etl::atomic<std::size_t> expected_total_items_in_queue{0};
 
 std::atomic_size_t push_item_cnt{0};
 
@@ -110,7 +111,7 @@ struct Producer {
     }
 
     PrintDebug(" exiting ... ", thread_.GiveName());
-    producers_exit_numb++;
+    ++producers_exit_numb;
     thread_.Finished();
   }
 
@@ -153,7 +154,7 @@ struct Consumer {
 
     if (pop_item_cnt >= expected_total_items_in_queue) {
       PrintDebug(" exiting ... ", thread_.GiveName());
-      consumers_exit_numb++;
+      ++consumers_exit_numb;
       thread_.Finished();
     }
   }

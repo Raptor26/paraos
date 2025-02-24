@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <iostream>
 
+#include "etl/atomic.h"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_queue_blocking.hpp"
@@ -51,17 +52,17 @@ paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
     paraos::ThreadPriority::kLowest, nullptr}};
 
-std::size_t producer_thread_numb{0};
+etl::atomic<std::size_t> producer_thread_numb{0};
 
-std::size_t consumer_thread_numb{0};
+etl::atomic<std::size_t> consumer_thread_numb{0};
 
-std::size_t producer_thread_exit_cnt{0};
+etl::atomic<std::size_t> producer_thread_exit_cnt{0};
 
-std::size_t consumer_thread_exit_cnt{0};
+etl::atomic<std::size_t> consumer_thread_exit_cnt{0};
 
-std::atomic_size_t push_item_cnt{0};
+etl::atomic<std::size_t> push_item_cnt{0};
 
-std::atomic_size_t pop_item_cnt{0};
+etl::atomic<std::size_t> pop_item_cnt{0};
 
 paraos::QueueBlocking<char, max_queue_size> queue;
 }  // namespace
@@ -103,7 +104,7 @@ struct Producer {
     }
 
     PrintDebug(" exiting ... ", thread_.GiveName());
-    producer_thread_exit_cnt++;
+    ++producer_thread_exit_cnt;
     thread_.Finished();
   }
 
@@ -148,7 +149,7 @@ struct Consumer {
     }
 
     PrintDebug(" exiting ... ", thread_.GiveName());
-    consumer_thread_exit_cnt++;
+    ++consumer_thread_exit_cnt;
     thread_.Finished();
   }
 
