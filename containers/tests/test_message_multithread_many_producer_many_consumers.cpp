@@ -96,9 +96,6 @@ std::atomic_size_t producer_actual_str_idx{0};
 
 std::atomic_size_t consumer_actual_read_str_idx{0};
 
-/// @brief Set actual value in main.
-std::size_t thread_total_numb{0};
-
 std::atomic_size_t producer_total_thread_numb{0};
 std::atomic_size_t producer_thread_exit_cnt{0};
 std::atomic_size_t consumer_thread_exit_cnt{0};
@@ -152,13 +149,6 @@ struct Producer {
 
         // Small delay for yeld resources.
         paraos::Thread::DelayMs(producer_waiting_timeout_ms);
-
-        // No consumers online, nobody read read data from buffer, don't try
-        // write data in buffer again.
-        if (IsConsumersOffline()) {
-          Exit();
-          break;
-        }
       }
     } else {
       Exit();
@@ -170,16 +160,6 @@ struct Producer {
     ++producer_thread_exit_cnt;
     PrintDebug(" exiting ... ", thread_.GiveName());
     thread_.Finished();
-  }
-
-  static auto IsConsumersOffline() -> bool {
-    bool is_need_exit{false};
-
-    if (consumer_thread_exit_cnt >= consumer_total_thread_numb) {
-      is_need_exit = true;
-    }
-
-    return is_need_exit;
   }
 
   paraos::Thread thread_;
@@ -226,10 +206,7 @@ struct Consumer {
     const paraos::CriticalSection critical;
     // If all string read.
     if (consumers_str_container.size() >= elems_vector.size()) {
-      // No producers online, nobody write new data, need exit from thread.
-      if (IsProducersOffline()) {
-        Exit();
-      }
+      Exit();
     }
   }
 
@@ -238,16 +215,6 @@ struct Consumer {
     ++consumer_thread_exit_cnt;
     PrintDebug(" exiting ... ", thread_.GiveName());
     thread_.Finished();
-  }
-
-  static auto IsProducersOffline() -> bool {
-    bool is_need_exit{false};
-
-    if (producer_thread_exit_cnt >= producer_total_thread_numb) {
-      is_need_exit = true;
-    }
-
-    return is_need_exit;
   }
 
  private:
