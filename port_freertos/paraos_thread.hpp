@@ -49,6 +49,7 @@
 #include "etl/delegate.h"
 #include "gsl/gsl"
 #include "paraos_base.hpp"
+#include "paraos_critical.hpp"
 #include "paraos_exceptions.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread_common.hpp"
@@ -85,6 +86,9 @@ class Thread : public paraos::Base {
 
   ~Thread() override {
     paraosTRACE_MESSAGE_WITH_ACTOR_NAME("~Thread", GiveName());
+
+    // Try delete the task atomically.
+    const paraos::CriticalSection critical;
 
     // If scheduler is not started, calls vTaskDelete() is illegal.
     if (handle_ != nullptr && IsSchedulerRunning()) {
@@ -224,13 +228,18 @@ class Thread : public paraos::Base {
       }
     }
 
-    // Copy task handle in local variable ...
-    auto *handle = thread->handle_;
+    decltype(thread->handle_) handle;
+    {
+      const paraos::CriticalSection critical;
 
-    // ... then set to nullptr in the private field.
-    // This is necessary to prevent the task from being deleted in the thread
-    // destructor.
-    thread->handle_ = nullptr;
+      // Copy task handle in local variable ...
+      handle = thread->handle_;
+
+      // ... then set to nullptr in the private field.
+      // This is necessary to prevent the task from being deleted in the thread
+      // destructor.
+      thread->handle_ = nullptr;
+    }
 
     // Now vTaskDelete(handle) uses the local copy of the task handle.
     // This means that if the thread object is destroyed early,
@@ -242,11 +251,16 @@ class Thread : public paraos::Base {
 
     // If user want to destroy the object ...
     if (thread->base_ != nullptr) {
-      auto *ptr_to_delete = thread->base_;
-      thread->base_ = nullptr;
-      paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
-          "Thread finished, now put request to delete object",
-          thread->GiveName());
+      decltype(thread->base_) ptr_to_delete{nullptr};
+      {
+        const paraos::CriticalSection critical;
+
+        ptr_to_delete = thread->base_;
+        thread->base_ = nullptr;
+        paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
+            "Thread finished, now put request to delete object",
+            thread->GiveName());
+      }
 
       // The object will be destroyed later in the freeRTOS timer deamon task
       // context.
