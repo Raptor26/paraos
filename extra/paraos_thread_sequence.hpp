@@ -26,6 +26,8 @@
 #ifndef PARAOS_THREAD_SEQUENCE_HPP
 #define PARAOS_THREAD_SEQUENCE_HPP
 
+#include <cstdlib>
+
 #include "etl/callback_timer.h"
 #include "etl/delegate.h"
 #include "gsl/gsl"
@@ -110,8 +112,8 @@ class IThreadSequence : public paraos::Base {
   /// @return Returns `etl::timer::id::NO_TIMER` if the delegate was not
   /// registered. Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
   PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
-      callback_type &callback, float freq,
-      bool repeating) -> etl::timer::id::type {
+      callback_type &callback, float freq, bool repeating)
+      -> etl::timer::id::type {
     const paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);

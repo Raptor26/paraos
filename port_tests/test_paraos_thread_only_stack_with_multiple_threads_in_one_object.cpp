@@ -34,6 +34,7 @@
 // clang-format on
 #include <cassert>
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -71,14 +72,21 @@ void ExitFromTest() {
   // thread.
   constexpr auto expected_delete_threads_numb{expected_threads * 2};
   if (deleted_objects_cnt >= expected_delete_threads_numb) {
-    constexpr std::size_t delay_ms{0};
     check_test_complete_and_exit.Finished();
+    constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
     paraos::Thread::DelayMs(delay_ms);
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
 
+#if defined(PARAOS_LIKE_FREERTOS)
+    // Forces program exit to reduce execution time. Needed to terminate tests
+    // early, especially when running multiple tests. In other case, program
+    // will exit in 1 second later.
+    std::_Exit(EXIT_SUCCESS);
+#else
     paraos::Thread::Exit();
+#endif
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");

@@ -26,6 +26,7 @@
 // clang-format off
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers, hicpp-special-member-functions, misc-const-correctness)
 // clang-format on
+#include <cstdlib>
 #include <iostream>
 
 #include "paraos_critical.hpp"
@@ -82,7 +83,14 @@ void ExitFromTest() {
     paraos::Thread::DelayMs(delay_ms);
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+#if defined(PARAOS_LIKE_FREERTOS)
+    // Forces program exit to reduce execution time. Needed to terminate tests
+    // early, especially when running multiple tests. In other case, program
+    // will exit in 1 second later.
+    std::_Exit(EXIT_SUCCESS);
+#else
     paraos::Thread::Exit();
+#endif
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");

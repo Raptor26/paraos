@@ -157,7 +157,11 @@ void ExitFromTest() {
     paraos::Thread::DelayMs(delay_ms);
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+#if defined(PARAOS_LIKE_FREERTOS)
+    std::_Exit(EXIT_SUCCESS);
+#else
     paraos::Thread::Exit();
+#endif
   }
 
   PrintDebug("Yeld resources", "ExitFromTest");

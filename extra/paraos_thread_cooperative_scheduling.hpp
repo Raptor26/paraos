@@ -26,6 +26,8 @@
 #ifndef PARAOS_THREAD_COOPERATIVE_SCHEDULING_HPP
 #define PARAOS_THREAD_COOPERATIVE_SCHEDULING_HPP
 
+#include <cstdlib>
+
 #include "etl/delegate.h"
 #include "etl/function.h"
 #include "etl/scheduler.h"
