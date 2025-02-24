@@ -57,7 +57,7 @@ constexpr std::size_t threads_default_stack_size{1024};
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 etl::atomic<std::size_t> producer_thread_numb{0};
 

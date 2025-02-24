@@ -82,7 +82,7 @@ constexpr std::size_t thread_stack_depth{1024};
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
     -> std::size_t {

@@ -77,7 +77,7 @@ const std::vector<std::string> elems_vector{
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 /// @brief Контейнер в который записываются строки, считанные потоками
 /// 'Consumer'.

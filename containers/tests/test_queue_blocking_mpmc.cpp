@@ -72,7 +72,7 @@ paraos::QueueBlocking<char, max_queue_size> queue;
 
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 }  // namespace
 
 struct Producer {

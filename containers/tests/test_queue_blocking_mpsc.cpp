@@ -55,7 +55,7 @@ constexpr std::size_t one_producer_expected_push_items_numb{3};
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kLowest, nullptr}};
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 etl::atomic<std::size_t> producer_thread_numb{0};
 
