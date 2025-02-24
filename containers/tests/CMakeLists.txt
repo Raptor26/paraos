@@ -38,12 +38,6 @@ if(THREAD_ENABLE)
                        PROPERTIES LABELS stress)
 
   # ----------------------------------------------------------------------------
-  add_executable(test_lwrb_multithread_spsc test_lwrb_multithread_spsc.cpp)
-  target_link_libraries(test_lwrb_multithread_spsc PRIVATE paraos::paraos)
-  add_test(NAME test_lwrb_multithread_spsc COMMAND test_lwrb_multithread_spsc)
-  set_tests_properties(test_lwrb_multithread_spsc PROPERTIES LABELS stress)
-
-  # ----------------------------------------------------------------------------
   add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
   target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
   add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
@@ -88,9 +82,6 @@ if(CLANG_TIDY_ENABLE)
       set_target_properties(
         test_message_multithread_many_producer_many_consumers
         PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
-
-      set_target_properties(test_lwrb_multithread_spsc
-                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 
       set_target_properties(test_multi_ringbuff_mpmc
                             PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
