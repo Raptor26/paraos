@@ -36,6 +36,7 @@
 
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_critical.hpp"
 #include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
 
@@ -109,6 +110,7 @@ class SemaphoreBase {
   /// @brief Move ctor.
   SemaphoreBase(SemaphoreBase &&other) noexcept {
     if (this != &other) {
+      const paraos::CriticalSection critical;
       this->handle_ = other.handle_;
       other.handle_ = nullptr;
     }
@@ -117,6 +119,7 @@ class SemaphoreBase {
   /// @brief Move assignment.
   auto operator=(SemaphoreBase &&other) noexcept -> SemaphoreBase & {
     if (this != &other) {
+      const paraos::CriticalSection critical;
       this->~SemaphoreBase();
       this->handle_ = other.handle_;
       other.handle_ = nullptr;
@@ -148,6 +151,7 @@ struct SemaphoreCounting final : public SemaphoreBase {
   /// @brief Move assignment.
   auto operator=(SemaphoreCounting &&other) noexcept -> SemaphoreCounting & {
     if (this != &other) {
+      const paraos::CriticalSection critical;
       this->~SemaphoreCounting();
       this->handle_ = other.handle_;
       other.handle_ = nullptr;
@@ -184,6 +188,7 @@ struct SemaphoreBinary final : public SemaphoreBase {
   /// @brief Move assignment.
   auto operator=(SemaphoreBinary &&other) noexcept -> SemaphoreBinary & {
     if (this != &other) {
+      const paraos::CriticalSection critical;
       this->~SemaphoreBinary();
       this->handle_ = other.handle_;
       other.handle_ = nullptr;

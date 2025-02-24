@@ -31,6 +31,7 @@
 #include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_critical.hpp"
 #include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
 
@@ -105,6 +106,7 @@ class MutexBase {
   /// @brief Move Ctor,
   MutexBase(MutexBase&& other) noexcept {
     if (this != &other) {
+      const paraos::CriticalSection critical;
       this->handle_ = other.handle_;
       this->is_recursive_ = other.is_recursive_.load();
       this->lock_cnt_ = other.lock_cnt_.load();
@@ -119,6 +121,7 @@ class MutexBase {
       return *this;
     }
 
+    const paraos::CriticalSection critical;
     this->~MutexBase();
     this->handle_ = other.handle_;
     this->is_recursive_ = other.is_recursive_.load();
@@ -155,6 +158,7 @@ class Mutex final : public MutexBase {
       return *this;
     }
 
+    const paraos::CriticalSection critical;
     this->~Mutex();
     this->handle_ = other.handle_;
     this->is_recursive_ = other.is_recursive_.load();
@@ -189,6 +193,7 @@ class MutexRecursive final : public MutexBase {
       return *this;
     }
 
+    const paraos::CriticalSection critical;
     this->~MutexRecursive();
     this->handle_ = other.handle_;
     this->is_recursive_ = other.is_recursive_.load();
