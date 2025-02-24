@@ -221,8 +221,6 @@ struct Consumer {
   paraos::Thread thread_;
 
   const std::size_t thread_id_;
-
-  PARAOS_MAYBE_UNUSED bool running_condition_{true};
 };
 
 namespace {
@@ -257,8 +255,15 @@ void CheckIfTestSuccessfullyComplete() {
 }
 
 void ExitFromTest() {
-  if (((consumer_thread_exit_cnt >= consumer_total_thread_numb) &&
-       (producer_thread_exit_cnt >= producer_total_thread_numb))) {
+  bool is_test_complete{false};
+  {
+    const paraos::CriticalSection critical;
+    if (consumers_str_container.size() >= elems_vector.size()) {
+      is_test_complete = true;
+    }
+  }
+
+  if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
     constexpr std::size_t delay_ms{0};
@@ -288,21 +293,24 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 0";
-    const static Consumer cons_1{attr, 0};
+    attr.priority = paraos::ThreadPriority::kLowest;
+    const static Consumer cons_0{attr, 0};
     consumer_total_thread_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 1";
-    const static Consumer cons_2{attr, 1};
+    attr.priority = paraos::ThreadPriority::kBelowNormal;
+    const static Consumer cons_1{attr, 1};
     consumer_total_thread_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 2";
-    const static Consumer cons_3{attr, 2};
+    attr.priority = paraos::ThreadPriority::kNormal;
+    const static Consumer cons_2{attr, 2};
     consumer_total_thread_numb += 1;
   }
 
@@ -312,21 +320,23 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
-    const static Producer prod_1{attr, 0};
+    attr.priority = paraos::ThreadPriority::kAboveNormal;
+    const static Producer prod_0{attr, 0};
     producer_total_thread_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 1";
-    const static Producer prod_2{attr, 1};
+    attr.priority = paraos::ThreadPriority::kHighest;
+    const static Producer prod_1{attr, 1};
     producer_total_thread_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 2";
-    const static Producer prod_3{attr, 2};
+    const static Producer prod_2{attr, 2};
     producer_total_thread_numb += 1;
   }
 
@@ -346,8 +356,6 @@ auto main() -> int {
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
-
-  CheckIfTestSuccessfullyComplete();
 
   return 0;
 }
