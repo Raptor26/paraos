@@ -26,27 +26,59 @@
 #ifndef CRITICAL_HPP
 #define CRITICAL_HPP
 
-#include <assert.h>
 #include <synchapi.h>
 
-#include "paraos_mutex.hpp"
+#include <cassert>
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
+#include "paraos_attr.h"
 
 namespace paraos {
+
+class CriticalSectionFactory final {
+ public:
+  /// @brief Construct a new Critical Section Factory object.
+  /// @see
+  /// https://learn.microsoft.com/en-us/windows/win32/sync/using-critical-section-objects
+  ///
+  CriticalSectionFactory() noexcept {
+    // NOLINTBEGIN(*-magic-numbers)
+    auto status =
+        InitializeCriticalSectionAndSpinCount(&critical_section_, 0x00000400);
+    // NOLINTEND(*-magic-numbers)
+
+    assert(status != 0);
+    PARAOS_ATTR_UNUSED_VAR(status);
+  }
+
+  ~CriticalSectionFactory() { DeleteCriticalSection(&critical_section_); }
+
+  /// @brief Five rule.
+  CriticalSectionFactory(CriticalSectionFactory&& other) = delete;
+  auto operator=(CriticalSectionFactory&& other)
+      -> CriticalSectionFactory& = delete;
+  auto operator=(const CriticalSectionFactory& other)
+      -> CriticalSectionFactory& = delete;
+  CriticalSectionFactory(const CriticalSectionFactory& other) = delete;
+
+  auto GiveHandle() { return &critical_section_; }
+
+ private:
+  CRITICAL_SECTION critical_section_{};
+};
 
 class CriticalSection final {
  public:
   /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
   /// @param is_isr
-  explicit CriticalSection(bool is_isr = false) noexcept : is_isr_{is_isr} {
-    mutex_.Lock(INFINITE, is_isr_);
+  explicit CriticalSection(bool is_isr = false) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    EnterCriticalSection(critical_section_factory.GiveHandle());
   }
 
   /// @brief Деструктор обеспечивает автоматический выход из критической секции.
-  ~CriticalSection() { mutex_.Unlock(is_isr_); }
+  ~CriticalSection() {
+    LeaveCriticalSection(critical_section_factory.GiveHandle());
+  }
 
   /// @brief Five rule.
   CriticalSection(CriticalSection&& other) = delete;
@@ -55,8 +87,7 @@ class CriticalSection final {
   CriticalSection(const CriticalSection& other) = delete;
 
  private:
-  const bool is_isr_;
-  static inline paraos::MutexRecursive mutex_;
+  static inline CriticalSectionFactory critical_section_factory;
 };
 
 inline void DisableIsr() {}
