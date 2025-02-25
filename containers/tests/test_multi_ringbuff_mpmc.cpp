@@ -155,10 +155,15 @@ struct Producer {
         break;
       }
 
-      // try write data in buffer periodical.
-      auto written_len = multi_ring_buff.TryWrite(
-          buff_idx_, str_array.at(str_idx).c_str(),
-          str_array.at(str_idx).length());
+      std::size_t written_len;
+
+      {
+        const paraos::CriticalSection critical;
+        // try write data in buffer atomically.
+        written_len = multi_ring_buff.TryWrite(
+            buff_idx_, str_array.at(str_idx).c_str(),
+            str_array.at(str_idx).length());
+      }
 
       if (written_len > 0) {
         // Break trying write data in buff, in next iteration take new string
@@ -237,6 +242,10 @@ struct Consumer {
           " Nothing read, try again. Already read total bytes is "
               << consumer_total_read_bytes,
           thread_.GiveName());
+
+      // Yeld recourses.
+      constexpr paraos::delay_type delay_ms{10};
+      paraos::Thread::DelayMs(delay_ms);
     }
 
     // No producers online, nobody write new data, need exit from thread.
