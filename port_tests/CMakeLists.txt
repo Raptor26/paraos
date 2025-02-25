@@ -43,7 +43,6 @@ target_compile_options(test_paraos_thread_only_stack PRIVATE -Wall -Wextra
 
 add_test(NAME test_paraos_thread_only_stack
          COMMAND test_paraos_thread_only_stack)
-set_tests_properties(test_paraos_thread_only_stack PROPERTIES LABELS stress)
 
 # Thread only stack with multiple threads in one object ------------------------
 add_executable(
@@ -63,9 +62,6 @@ target_compile_options(
 add_test(
   NAME test_paraos_thread_only_stack_with_multiple_threads_in_one_object
   COMMAND test_paraos_thread_only_stack_with_multiple_threads_in_one_object)
-set_tests_properties(
-  test_paraos_thread_only_stack_with_multiple_threads_in_one_object
-  PROPERTIES LABELS stress)
 
 # test_paraos_thread_create_then_delete_many_threads ---------------------------
 
