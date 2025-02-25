@@ -165,8 +165,19 @@ def get_regex_set(config_presets_list: list[dict], regex: str | None):
             for preset in config_presets_list
             if re.search(regex, preset[NAME_PRESET_FIELD]) is not None
         }
-    elif regex == '':
-        return {preset[NAME_PRESET_FIELD] for preset in config_presets_list}
+    else:
+        return set()
+
+
+def get_build_only_presets_set(
+    include_presets_set: set[str], regex: str | None
+):
+    if regex:
+        return {
+            preset
+            for preset in include_presets_set
+            if re.search(regex, preset) is not None
+        }
     else:
         return set()
 
@@ -183,10 +194,14 @@ def get_resulting_include_and_build_sets(
             'only one of these parameters at a time!'
         )
         return set(), set()
+    # None include regex means that we will pick every preset.
+    if include_regex is None:
+        # "\S" Is regex to match all the presets names.
+        include_set = get_regex_set(config_presets_list, r'\S')
+    else:
+        include_set = get_regex_set(config_presets_list, include_regex)
 
-    include_set = get_regex_set(config_presets_list, include_regex)
-
-    build_only_set = get_regex_set(config_presets_list, build_only_regex)
+    build_only_set = get_build_only_presets_set(include_set, build_only_regex)
 
     exclude_set = get_regex_set(config_presets_list, exclude_regex)
 

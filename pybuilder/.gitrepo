@@ -6,7 +6,7 @@
 [subrepo]
 	remote = http://192.168.100.242:88/uav/pybuilder.git
 	branch = develop
-	commit = 8e2e825c417fbcdfd73a8e5e140ebe282d79a3f9
+	commit = 56eb2f9bb1a0e4e86b257168bc27e12525497814
 	method = merge
 	cmdver = 0.4.6
-	parent = 20dd85b5c3714b7cc4d63da5bcc08ca393bdf9c6
+	parent = d12562ab6083c604778d8d974b9a04b537c20547

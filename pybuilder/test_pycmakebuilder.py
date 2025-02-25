@@ -190,7 +190,7 @@ class TestCheckHidden(unittest.TestCase):
         )
 
 
-class TestRegEx(unittest.TestCase):  # NOQA Found too many methods: 8 > 7
+class TestRegEx(unittest.TestCase):  # NOQA Found too many methods
     def setUp(self):
         self.cmake_presets_json = {
             'version': 6,
@@ -257,6 +257,10 @@ class TestRegEx(unittest.TestCase):  # NOQA Found too many methods: 8 > 7
             get_regex_set(self.cmake_presets_json['configurePresets'], None),
             set(),
         )
+        self.assertEqual(
+            get_regex_set(self.cmake_presets_json['configurePresets'], ''),
+            set(),
+        )
 
     def test_get_regex_set_for_all_presets(self):
         test_set = {
@@ -269,9 +273,8 @@ class TestRegEx(unittest.TestCase):  # NOQA Found too many methods: 8 > 7
         self.assertEqual(
             get_regex_set(
                 self.cmake_presets_json['configurePresets'],
-                # Empty string means that we're going to use all presets
-                # from the list.
-                '',
+                # "\S" Is regex to match all the presets names.
+                r'\S',
             ),
             test_set,
         )
@@ -306,9 +309,8 @@ class TestRegEx(unittest.TestCase):  # NOQA Found too many methods: 8 > 7
 
         include_set, build_only_set = get_resulting_include_and_build_sets(
             self.cmake_presets_json['configurePresets'],
-            # Empty string means that we're going to use all presets
-            # from the list.
-            '',
+            # None include regex means that we will pick every preset.
+            None,
             build_only_regex,
             exclude_regex,
         )
@@ -332,13 +334,16 @@ class TestRegEx(unittest.TestCase):  # NOQA Found too many methods: 8 > 7
     def test_getting_build_set_only(self):
         include_set, build_only_set = get_resulting_include_and_build_sets(
             self.cmake_presets_json['configurePresets'],
-            None,
+            '',
             'coverage*',
             None,
         )
 
         self.assertEqual(include_set, set())
-        self.assertEqual(build_only_set, {'pc_debug_gcc_native_with_coverage'})
+        # Build only presets set initially contains all presets from the
+        # include set, if include set is empty, build presets set should be
+        # empty too.
+        self.assertEqual(build_only_set, set())
 
     def test_sets_when_include_and_exclude(self):
         include_set, build_only_set = get_resulting_include_and_build_sets(
