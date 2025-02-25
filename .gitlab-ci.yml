@@ -20,7 +20,6 @@ ci:windows:
                      --stop-on-failure 
                      -j12
                      --timeout 30"
-    -i=""
     -e="clang_tidy*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
@@ -89,7 +88,6 @@ ci:windows_stress_gcc:
                      --repeat-until-fail 120
                      --timeout 30
                      -L [stress]" 
-    -i="" 
     -e="trace*|docker*|clang_tidy*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -120,7 +118,6 @@ ci:linux:
                      --stop-on-failure 
                      -j8
                      --timeout 30" 
-    -i="" 
     -e="clang_tidy*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
@@ -189,7 +186,6 @@ ci:linux_stress_gcc:
                      --repeat-until-fail 300
                      --timeout 30
                      -L [stress]" 
-    -i="" 
     -e="trace*|docker*|clang_tidy*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
