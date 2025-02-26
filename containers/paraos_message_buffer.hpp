@@ -114,7 +114,7 @@ class Message {
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const -> void * {
-    return static_cast<void *>(data_ptr_);
+    return reinterpret_cast<void *>(data_ptr_);
   }
 
   // ---------------------------------------------------------------------------
@@ -200,8 +200,8 @@ class MessageWritable final {
   const_iterator end() const { return message_.end(); }
   const_iterator cend() const { return message_.cend(); }
 
-  PARAOS_INLINE_TRIVIAL auto Data() -> void * { return message_.Data(); }
-  PARAOS_INLINE_TRIVIAL auto Size() -> size_t { return message_.Size(); }
+  PARAOS_INLINE_TRIVIAL auto Data() const -> void * { return message_.Data(); }
+  PARAOS_INLINE_TRIVIAL auto Size() const -> size_t { return message_.Size(); }
 
   /// @brief Try push message in buffer. Message will push if queue has space.
   ///
