@@ -23,7 +23,7 @@ class ISerial {
   /// отправить.
   /// @param[in] msg_size: Количество байтов, которое необходимо передать.
   /// @return Возвращает количество переданных байтов.
-  virtual auto Transmit(void *src, size_t msg_size) -> size_t = 0;
+  virtual auto Transmit(const void *src, size_t msg_size) -> size_t = 0;
 
   virtual ~ISerial() = default;
 

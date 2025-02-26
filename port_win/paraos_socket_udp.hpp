@@ -174,7 +174,7 @@ class UDPSocket : public paraos::ISerial {
   /// отправить.
   /// @param[in] msg_size: Количество байтов, которое необходимо передать.
   /// @return Возвращает количество переданных байтов.
-  auto Transmit(void *src, size_t msg_size) -> size_t override {
+  auto Transmit(const void *src, size_t msg_size) -> size_t override {
     size_t transmitted_bytes_num{0};
     transmitted_bytes_num = sendto(
         client_socket_, reinterpret_cast<const char *>(src),
