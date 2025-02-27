@@ -52,9 +52,7 @@
 namespace {
 constexpr std::size_t max_queue_size{2};
 
-constexpr std::size_t one_producer_expected_push_items_numb{3};
-
-constexpr std::size_t threads_default_stack_size{1024};
+constexpr std::size_t one_producer_expected_push_items_numb{1};
 
 etl::atomic<std::size_t> producers_total_numb{0};
 
@@ -87,38 +85,34 @@ struct Producer {
   void Run() {
     char symb{'a'};
 
-    for (std::size_t i = 0; i < one_producer_expected_push_items_numb; ++i) {
-      while (true) {
-        PrintDebug(" call queue.TryPush()", thread_.GiveName());
+    while (true) {
+      PrintDebug(" call queue.TryPush()", thread_.GiveName());
 
-        runtime_profiler.Start();
-        if (queue.TryPush(symb)) {
-          ++push_item_cnt;
-          runtime_profiler.Stop();
+      runtime_profiler.Start();
+      if (queue.TryPush(symb)) {
+        ++push_item_cnt;
+        runtime_profiler.Stop();
 
-          PrintDebug(
-              " queue.TryPush() success and put "
-                  << "'" << symb << "'"
-                  << "" << ". Real delay is "
-                  << runtime_profiler.LastDurationMs(),
-              thread_.GiveName());
-
-          ++symb;
-          break;
-        }
         PrintDebug(
-            " WARN: queue.TryPush() no space, try again "
+            " queue.TryPush() success and put "
+                << "'" << symb << "'"
+                << "" << ". Real delay is "
                 << runtime_profiler.LastDurationMs(),
             thread_.GiveName());
 
-        // Yeld processor time for consumers read data from queue.
-        paraos::Thread::DelayMs(1);
+        PrintDebug(" exiting ... ", thread_.GiveName());
+        ++producers_exit_numb;
+        thread_.Finished();
+        break;
       }
-    }
+      PrintDebug(
+          " WARN: queue.TryPush() no space, try again "
+              << runtime_profiler.LastDurationMs(),
+          thread_.GiveName());
 
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    ++producers_exit_numb;
-    thread_.Finished();
+      // Yeld processor time for consumers read data from queue.
+      paraos::Thread::DelayMs(10);
+    }
   }
 
  private:
@@ -152,16 +146,13 @@ struct Consumer {
     if (read_item) {
       ++pop_item_cnt;
       PrintDebug(" successfully read item from queue", thread_.GiveName());
+      PrintDebug(" exiting ... ", thread_.GiveName());
+      ++consumers_exit_numb;
+      thread_.Finished();
     } else {
       PrintDebug(
           "--ERROR: " << " don't read item from queue with timeout. Try again",
           thread_.GiveName());
-    }
-
-    if (pop_item_cnt >= expected_total_items_in_queue) {
-      PrintDebug(" exiting ... ", thread_.GiveName());
-      ++consumers_exit_numb;
-      thread_.Finished();
     }
   }
 

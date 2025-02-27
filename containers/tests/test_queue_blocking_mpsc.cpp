@@ -51,14 +51,12 @@
 
 constexpr std::size_t max_queue_size{2};
 
-constexpr std::size_t one_producer_expected_push_items_numb{3};
+constexpr std::size_t one_producer_expected_push_items_numb{1};
 
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
     paraos::ThreadPriority::kRealTime, nullptr}};
-
-etl::atomic<std::size_t> producer_thread_numb{0};
 
 etl::atomic<std::size_t> consumer_thread_numb{0};
 
@@ -69,6 +67,10 @@ etl::atomic<std::size_t> consumer_thread_exit_cnt{0};
 etl::atomic<std::size_t> push_item_cnt{0};
 
 etl::atomic<std::size_t> pop_item_cnt{0};
+
+std::size_t total_items_to_be_pushed{0};
+
+std::size_t total_producer_threads_numb{0};
 
 paraos::QueueBlocking<char, max_queue_size> queue;
 }  // namespace
@@ -97,7 +99,9 @@ struct Producer {
                 << runtime_profiler.LastDurationMs(),
             thread_.GiveName());
 
-        ++symb;
+        PrintDebug(" exiting ... ", thread_.GiveName());
+        ++producer_thread_exit_cnt;
+        thread_.Finished();
         break;
       }
       PrintDebug(
@@ -106,12 +110,8 @@ struct Producer {
           thread_.GiveName());
 
       // Yeld processor time for consumers read data from queue.
-      paraos::Thread::DelayMs(1);
+      paraos::Thread::DelayMs(3);
     }
-
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    ++producer_thread_exit_cnt;
-    thread_.Finished();
   }
 
  private:
@@ -132,31 +132,30 @@ struct Consumer {
   void Run() {
     constexpr std::size_t timeout_ms{2000};
 
-    for (std::size_t i = 0; i < one_producer_expected_push_items_numb; ++i) {
-      while (true) {
-        PrintDebug(
-            " call queue.Pop() with " << timeout_ms << " ms timeout",
-            thread_.GiveName());
+    while (true) {
+      PrintDebug(
+          " call queue.Pop() with " << timeout_ms << " ms timeout",
+          thread_.GiveName());
 
-        runtime_profiler.Start();
-        auto read_item = queue.Pop(timeout_ms);
-        runtime_profiler.Stop();
+      runtime_profiler.Start();
+      auto read_item = queue.Pop(timeout_ms);
+      runtime_profiler.Stop();
 
-        if (read_item) {
-          ++pop_item_cnt;
-          PrintDebug(" successfully read item from queue", thread_.GiveName());
-
+      if (read_item) {
+        ++pop_item_cnt;
+        PrintDebug(" successfully read item from queue", thread_.GiveName());
+        if (pop_item_cnt >= total_items_to_be_pushed) {
+          PrintDebug(" exiting ... ", thread_.GiveName());
+          ++consumer_thread_exit_cnt;
+          thread_.Finished();
           break;
         }
+      } else {
         PrintDebug(
             "--ERROR: don't read item from queue with timeout. Try again",
             thread_.GiveName());
       }
     }
-
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    ++consumer_thread_exit_cnt;
-    thread_.Finished();
   }
 
  private:
@@ -170,7 +169,7 @@ void CheckIfTestSuccessfullyComplete() {
   const paraos::CriticalSection critical;
 
   PARAOS_CHECK_ASSERT(
-      push_item_cnt == one_producer_expected_push_items_numb &&
+      push_item_cnt == total_items_to_be_pushed &&
       "Pushed items cnt not equal expected value");
 
   PARAOS_CHECK_ASSERT(
@@ -179,7 +178,7 @@ void CheckIfTestSuccessfullyComplete() {
 
 void ExitFromTest() {
   if (((consumer_thread_exit_cnt >= consumer_thread_numb) &&
-       (producer_thread_exit_cnt >= producer_thread_numb))) {
+       (producer_thread_exit_cnt >= total_producer_threads_numb))) {
     check_test_complete_and_exit.Finished();
 
     constexpr std::size_t delay_ms{0};
@@ -227,22 +226,39 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
     const static Producer prod_1{attr, 0};
-    producer_thread_numb += 1;
+    total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 1";
     const static Producer prod_2{attr, 1};
-    producer_thread_numb += 1;
+    total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 2";
     const static Producer prod_3{attr, 2};
-    producer_thread_numb += 1;
+    total_producer_threads_numb += 1;
   }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "Prod 3";
+    const static Producer prod_4{attr, 3};
+    total_producer_threads_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "Prod 4";
+    const static Producer prod_5{attr, 4};
+    total_producer_threads_numb += 1;
+  }
+
+  total_items_to_be_pushed =
+      total_producer_threads_numb * one_producer_expected_push_items_numb;
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();

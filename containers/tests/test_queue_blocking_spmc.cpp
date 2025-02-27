@@ -51,9 +51,7 @@
 
 constexpr std::size_t max_queue_size{2};
 
-constexpr std::size_t one_producer_expected_push_items_numb{3};
-
-constexpr std::size_t threads_default_stack_size{1024};
+constexpr std::size_t total_items_to_be_pushed{5};
 
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
@@ -84,35 +82,36 @@ struct Producer {
 
   void Run() {
     char symb{'a'};
-    for (std::size_t i = 0; i < one_producer_expected_push_items_numb; ++i) {
-      while (true) {
-        PrintDebug(" call queue.TryPush()", thread_.GiveName());
 
-        runtime_profiler.Start();
-        if (queue.TryPush(symb)) {
-          ++push_item_cnt;
-          runtime_profiler.Stop();
-          PrintDebug(
-              " queue.TryPush() success and put "
-                  << "'" << symb << "'"
-                  << "" << ". Real delay is "
-                  << runtime_profiler.LastDurationMs(),
-              thread_.GiveName());
-          ++symb;
+    while (true) {
+      PrintDebug(" call queue.TryPush()", thread_.GiveName());
+
+      runtime_profiler.Start();
+      if (queue.TryPush(symb)) {
+        ++push_item_cnt;
+        runtime_profiler.Stop();
+        PrintDebug(
+            " queue.TryPush() success and put "
+                << "'" << symb << "'"
+                << "" << ". Real delay is "
+                << runtime_profiler.LastDurationMs(),
+            thread_.GiveName());
+        ++symb;
+        if (push_item_cnt >= total_items_to_be_pushed) {
+          PrintDebug(" exiting ... ", thread_.GiveName());
+          producer_thread_exit_cnt++;
+          thread_.Finished();
           break;
         }
+      } else {
         PrintDebug(
             " WARN: queue.TryPush() no space, try again "
                 << runtime_profiler.LastDurationMs(),
             thread_.GiveName());
-        // Yeld processor time for consumers read data from queue.
-        paraos::Thread::DelayMs(1);
       }
+      // Yeld processor time for consumers read data from queue.
+      paraos::Thread::DelayMs(1);
     }
-
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    producer_thread_exit_cnt++;
-    thread_.Finished();
   }
 
  private:
@@ -145,16 +144,16 @@ struct Consumer {
       if (read_item) {
         ++pop_item_cnt;
         PrintDebug(" successfully read item from queue", thread_.GiveName());
+
+        PrintDebug(" exiting ... ", thread_.GiveName());
+        consumer_thread_exit_cnt++;
+        thread_.Finished();
         break;
       }
       PrintDebug(
           "--ERROR: don't read item from queue with timeout. Try again",
           thread_.GiveName());
     }
-
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    consumer_thread_exit_cnt++;
-    thread_.Finished();
   }
 
  private:
@@ -168,7 +167,7 @@ void CheckIfTestSuccessfullyComplete() {
   const paraos::CriticalSection critical;
 
   PARAOS_CHECK_ASSERT(
-      push_item_cnt == one_producer_expected_push_items_numb &&
+      push_item_cnt == total_items_to_be_pushed &&
       "Pushed items cnt not equal expected value");
 
   PARAOS_CHECK_ASSERT(
@@ -241,6 +240,20 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 3";
     const static Consumer cons_3{attr};
+    consumer_thread_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "--Cons 4";
+    const static Consumer cons_4{attr};
+    consumer_thread_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "--Cons 5";
+    const static Consumer cons_5{attr};
     consumer_thread_numb += 1;
   }
 

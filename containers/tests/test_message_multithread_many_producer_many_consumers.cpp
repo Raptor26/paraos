@@ -52,28 +52,10 @@
 
 /// @brief Burning Heart
 const std::vector<std::string> elems_vector{
-    "1)  Two worlds collide",
-    "2)  Rival nations",
-    "3)  It's a primitive clash",
-    "4)  Venting years of frustration",
-    "5)  Bravely we hope",
-    "6)  Against all hope",
-    "7)  There is so much at stake",
-    "8)  Seems our freedom's up",
-    "9)  Against the ropes",
-    "10) Does the crowd understand?",
-    "11) Is it East versus West",
-    "12) Or man against man?",
-    "13) Can any nation stand alone?",
-    "14) In the burning Heart",
-    "15) Just about to burst",
-    "16) There's a quest for answers",
-    "17) An unquenchable thirst",
-    "18) In the darkest night",
-    "19) Rising like a spire",
-    "20) In the burning heart",
-    "21) The unmistakable fire",
-    "22) -----------------------------"};
+    "1)  Two worlds collide",     "2)  Rival nations",
+    "3)  It's a primitive clash", "4)  Venting years of frustration",
+    "5)  Bravely we hope",        "6)  Against all hope",
+};
 
 namespace {
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
@@ -89,18 +71,8 @@ std::vector<std::string> producers_str_container;
 
 paraos::MessageBuffer<3> message_buff;
 
-constexpr std::size_t threads_stack_depth{1024};
 constexpr std::size_t producer_waiting_timeout_ms{10};
-constexpr std::size_t consumer_waiting_timeout_ms{1};
-
-std::atomic<std::size_t> total_read_elems_cnt{0};
-std::atomic<std::size_t> total_written_elems_cnt{0};
-
-/// @brief String index ready to write in buffer. By test design, value may be
-/// more than actual string numb in str_array.
-std::atomic_size_t producer_actual_str_idx{0};
-
-std::atomic_size_t consumer_actual_read_str_idx{0};
+constexpr std::size_t consumer_waiting_timeout_ms{5};
 
 std::atomic_size_t producer_total_thread_numb{0};
 std::atomic_size_t producer_thread_exit_cnt{0};
@@ -109,48 +81,43 @@ std::atomic_size_t consumer_total_thread_numb{0};
 }  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
-      : thread_{attr}, thread_id_{thread_id} {
+  explicit Producer(const paraos::ThreadAttr &attr, std::size_t str_idx)
+      : thread_{attr}, str_idx_{str_idx} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
   }
 
   /// @brief Producer thread.
   void Run() {
-    std::size_t str_idx;
-    {
-      const paraos::CriticalSection critical;
-      str_idx = producer_actual_str_idx;
-      ++producer_actual_str_idx;
-    }
-
-    if (str_idx < elems_vector.size()) {
+    if (str_idx_ < elems_vector.size()) {
       // Trying to write message in buffer will not work yet.
       while (true) {
         bool is_push_success{false};
 
-        auto write = message_buff.Alloc(elems_vector.at(str_idx).length() + 1U);
+        auto write =
+            message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);
 
         // If memory alloc successful.
         if (write) {
-          memcpy(write.Data(), elems_vector.at(str_idx).data(), write.Size());
+          memcpy(write.Data(), elems_vector.at(str_idx_).data(), write.Size());
           is_push_success = write.TryPush();
         }
 
         if (is_push_success) {
           PrintDebug(
-              " string write successful: " << elems_vector.at(str_idx).c_str(),
+              " string write successful: " << elems_vector.at(str_idx_).c_str(),
               thread_.GiveName());
 
           const paraos::CriticalSection critical;
           producers_str_container.emplace_back(
-              elems_vector.at(str_idx).c_str());
+              elems_vector.at(str_idx_).c_str());
 
+          Exit();
           break;
         }
         PrintDebug(
             " WARN: Nothin written, try again after delay. " << "String idx is "
-                                                             << str_idx,
+                                                             << str_idx_,
             thread_.GiveName());
 
         // Small delay for yeld resources.
@@ -169,7 +136,7 @@ struct Producer {
   }
 
   paraos::Thread thread_;
-  const std::size_t thread_id_;
+  std::size_t str_idx_{1000};
 };
 
 struct Consumer {
@@ -200,19 +167,10 @@ struct Consumer {
 
         read_message.reset();
 
-        ++consumer_actual_read_str_idx;
+        Exit();
       } else {
-        if (delay_ms == 0) {
-          // Small delay for yeld resources.
-          paraos::Thread::DelayMs(consumer_waiting_timeout_ms);
-        }
+        paraos::Thread::DelayMs(consumer_waiting_timeout_ms);
       }
-    }
-
-    const paraos::CriticalSection critical;
-    // If all string read.
-    if (consumers_str_container.size() >= elems_vector.size()) {
-      Exit();
     }
   }
 
@@ -328,6 +286,30 @@ auto main() -> int {
     consumer_total_thread_numb += 1;
   }
 
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "--Cons 3";
+    attr.priority = paraos::ThreadPriority::kNormal;
+    const static Consumer cons_3{attr, 2};
+    consumer_total_thread_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "--Cons 4";
+    attr.priority = paraos::ThreadPriority::kNormal;
+    const static Consumer cons_4{attr, 2};
+    consumer_total_thread_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "--Cons 5";
+    attr.priority = paraos::ThreadPriority::kLowest;
+    const static Consumer cons_5{attr, 0};
+    consumer_total_thread_numb += 1;
+  }
+
   // ---------------------------------------------------------------------------
   // Producers Init
   // ---------------------------------------------------------------------------
@@ -357,14 +339,22 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 3";
-    const static Producer prod_4{attr, 3};
+    const static Producer prod_3{attr, 3};
     producer_total_thread_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 4";
-    const static Producer prod_5{attr, 4};
+    const static Producer prod_4{attr, 4};
+    producer_total_thread_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
+    attr.thread_name = "Prod 5";
+    attr.priority = paraos::ThreadPriority::kAboveNormal;
+    const static Producer prod_5{attr, 5};
     producer_total_thread_numb += 1;
   }
 
