@@ -151,26 +151,24 @@ struct Consumer {
     // Small delay for yeld resources.
     constexpr std::size_t delay_ms{1};
 
-    {
-      auto read_message = message_buff.Pop(delay_ms);
+    auto read_message = message_buff.Pop(delay_ms);
 
-      if (read_message) {
-        const paraos::CriticalSection critical;
+    if (read_message) {
+      const paraos::CriticalSection critical;
 
-        consumers_str_container.emplace_back(
-            static_cast<char *>(read_message->Data()));
+      consumers_str_container.emplace_back(
+          static_cast<char *>(read_message->Data()));
 
-        PrintDebug(
-            " string read successful: "
-                << static_cast<char *>(read_message->Data()),
-            thread_.GiveName());
+      PrintDebug(
+          " string read successful: "
+              << static_cast<char *>(read_message->Data()),
+          thread_.GiveName());
 
-        read_message.reset();
+      read_message.reset();
 
-        Exit();
-      } else {
-        paraos::Thread::DelayMs(consumer_waiting_timeout_ms);
-      }
+      Exit();
+    } else {
+      paraos::Thread::DelayMs(consumer_waiting_timeout_ms);
     }
   }
 

@@ -215,8 +215,8 @@ auto main() -> int {
   // ---------------------------------------------------------------------------
   {
     paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 1";
-    const static Consumer cons_1{attr};
+    attr.thread_name = "--Cons 0";
+    const static Consumer cons_0{attr};
     consumer_thread_numb += 1;
   }
   // ---------------------------------------------------------------------------
@@ -225,35 +225,35 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
-    const static Producer prod_1{attr, 0};
+    const static Producer prod_0{attr, 0};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 1";
-    const static Producer prod_2{attr, 1};
+    const static Producer prod_1{attr, 1};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 2";
-    const static Producer prod_3{attr, 2};
+    const static Producer prod_2{attr, 2};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 3";
-    const static Producer prod_4{attr, 3};
+    const static Producer prod_3{attr, 3};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 4";
-    const static Producer prod_5{attr, 4};
+    const static Producer prod_4{attr, 4};
     total_producer_threads_numb += 1;
   }
 

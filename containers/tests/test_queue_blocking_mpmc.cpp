@@ -213,22 +213,22 @@ auto main() -> int {
   // ---------------------------------------------------------------------------
   {
     paraos::ThreadAttr attr{};
+    attr.thread_name = "--Consumer 0";
+    const static Consumer cons_0{attr, 0};
+    consumers_total_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Consumer 1";
-    const static Consumer cons_1{attr, 0};
+    const static Consumer cons_1{attr, 1};
     consumers_total_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Consumer 2";
-    const static Consumer cons_2{attr, 1};
-    consumers_total_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Consumer 3";
-    const static Consumer cons_3{attr, 2};
+    const static Consumer cons_2{attr, 2};
     consumers_total_numb += 1;
   }
 
@@ -237,22 +237,22 @@ auto main() -> int {
   // ---------------------------------------------------------------------------
   {
     paraos::ThreadAttr attr{};
+    attr.thread_name = "--Prod 0";
+    const static Producer prod_0{attr, 0};
+    producers_total_numb += 1;
+  }
+
+  {
+    paraos::ThreadAttr attr{};
     attr.thread_name = "--Prod 1";
-    const static Producer prod_1{attr, 0};
+    const static Producer prod_1{attr, 1};
     producers_total_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Prod 2";
-    const static Producer prod_2{attr, 1};
-    producers_total_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Prod 3";
-    const static Producer prod_3{attr, 2};
+    const static Producer prod_2{attr, 2};
     producers_total_numb += 1;
   }
 
