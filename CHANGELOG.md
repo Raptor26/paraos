@@ -1,3 +1,39 @@
+## v0.9.0 (2025-02-27)
+
+### Feat
+
+- **thread**: add new thread class implementation
+- **trace**: add new TRACE macro for improved debugging
+- **pycmakebuilder**: Выполнено обновление pycmakebuilder
+- **paraos_exceptions**: added base class for exceptions that is based on std::exception and etl::exception
+- **always_true_testing_semaphore**: Добавлен класс семафора для тестирования, всегда возвращающего true в своих методах
+
+### Fix
+
+- **thread_v2**: fix build errors
+- **paraos**: added missing headers in port_win/paraos_timer
+- **paraos**: IThreadSequence.Break() marked as public
+
+### Refactor
+
+- **freertos_thread**: defirred deleter replace by direct calls 'delete'
+- **thread_freertos**: use critical section to atomically delete task
+- **thread**: thread_v2 rename with thread
+- **thread**: delete thread implementation
+- **queue**: replace Thread::Time functions with global functions
+- **unix/semaphore**: replace time conversion operations with a function
+- **winapi**: restore critical section and use it in move/copy for Mutex & Sem
+- **queue**: use template TryPush with perfect forward
+- **exception**: replace c_string with std::string_view
+- **exceptions**: add postfix exception in class, queue_blocking catch etl::exception as last line
+- **containers/paraos_ringbuff**: now ringbuff_exception is based on paraos::exception
+- **containers**: TryPush() methods and methods that are based on TryPush() results are marked as <noexcept>
+
+### Perf
+
+- **cooperative/sequence**: update schedulers to use Paraos v2 thread version
+- **serial**: add const qualification in Transmit() interface
+
 ## v0.8.0 (2025-01-21)
 
 ### Feat
