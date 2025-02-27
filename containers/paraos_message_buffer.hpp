@@ -33,7 +33,6 @@
 #include "paraos_mutex.hpp"
 #include "paraos_mutex_raii.hpp"
 #include "paraos_queue_blocking.hpp"
-#include "paraos_thread.hpp"
 
 namespace paraos {
 

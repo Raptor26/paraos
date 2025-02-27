@@ -26,40 +26,43 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <string>
 
-#include "iostream"
+#include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_thread_common.hpp"
+#include "paraos_time.hpp"
 
-constexpr std::size_t thread_default_stack_depth{3072};
+constexpr std::size_t thread_default_stack_depth{
+    paraos::GetStackMinimumSizeInBytes() * 3};
+
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+  }
 
 namespace {
 std::atomic_bool is_test_complete{false};
 
-#if defined(FREERTOS)
-void ExitAfterTestComplete() {
-  if (is_test_complete) {
-    std::cout << "Exiting program..." << "\n";
-    exit(EXIT_SUCCESS);
-  }
-}
-#endif
-}  // namespace
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
+    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
+    paraos::ThreadPriority::kLowest, nullptr}};
 
 // String copy here is needed because of the delayed thread initialization -
 // address of it's name could be invalid later.
 // NOLINTBEGIN(performance-unnecessary-value-param)
-struct TestTimeout : public paraos::Thread {
-  explicit TestTimeout(const std::string name = "default thread name")
-      : paraos::Thread{
-            name, thread_default_stack_depth, paraos::ThreadPriority::kNormal,
-            true} {
-    Start();
+struct TestTimeout {
+  explicit TestTimeout(const paraos::ThreadAttr &attr) : thread_{attr} {
+    thread_.RegisterDelegate(
+        paraos::thread_delegate_type::create<TestTimeout, &TestTimeout::Run>(
+            *this));
   }
 
-  void Run() override {
+  void Run() {
     paraos::OsProfiler profiler;
 
     constexpr std::size_t expected_delay_ms{1000};
@@ -71,10 +74,10 @@ struct TestTimeout : public paraos::Thread {
     // Useless check here, because clang-tidy somehow can't see the
     // GetCurrentTime() definition inside paraos::Thread.
     // NOLINTBEGIN(misc-include-cleaner)
-    auto current_time = paraos::Thread::GetCurrentTime();
+    auto current_time = paraos::GetCurrentTime();
     // NOLINTEND(misc-include-cleaner)
     while (true) {
-      if (Thread::CheckTimeout(current_time, delay_ms)) {
+      if (paraos::CheckTimeout(current_time, delay_ms)) {
         break;
       }
 
@@ -88,31 +91,44 @@ struct TestTimeout : public paraos::Thread {
     profiler.Stop();
 
     std::cout << "--Cycle total time is " << profiler.LastDurationMs() << " ms."
-              << " Expected delay is " << expected_delay_ms << " ms."
-              << "\n";
+              << " Expected delay is " << expected_delay_ms << " ms." << "\n";
 
     is_test_complete = true;
   }
 
  private:
   paraos::SemaphoreBinary sem_;
+  paraos::Thread thread_;
 };
 // NOLINTEND(performance-unnecessary-value-param)
 
+void ExitFromTest() {
+  if (is_test_complete) {
+    check_test_complete_and_exit.Finished();
+
+    constexpr std::size_t delay_ms{0};
+    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
+    paraos::Thread::DelayMs(delay_ms);
+
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+    paraos::Thread::Exit();
+  }
+  // NOLINTNEXTLINE readability-magic-numbers
+  paraos::Thread::DelayMs(10);
+}
+}  // namespace
+
 auto main() -> int {
-#if defined(FREERTOS)
-#include "paraos_utils.hpp"
+  {
+    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
+    check_test_complete_and_exit.RegisterDelegate(delegate);
+  }
 
-  // ExitAfterTestComplete will be called by scheduler in idle task after no
-  // user task ready for execute.
-  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
-#endif
-
-  const TestTimeout test_thread("Check timeout");
+  paraos::ThreadAttr attr{};
+  attr.thread_name = "Check timeout";
+  attr.stack_depth = thread_default_stack_depth;
+  const TestTimeout test_thread(attr);
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
-
-  std::cout << "Exiting program..." << "\n";
-  return EXIT_SUCCESS;
 }

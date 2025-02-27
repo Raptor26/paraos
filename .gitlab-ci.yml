@@ -1,10 +1,12 @@
 stages:
  - test_windows
- - test_clang_tidy_windows
- - test_linux
- - test_clang_tidy_linux
+ - test_windows_freertos
  - test_windows_stress
+ - test_windows_stress_freertos
+ - test_linux
+ - test_linux_freertos
  - test_linux_stress
+ - test_linux_stress_freertos
  
 ## windows ---------------------------------------------------------------------
 ci:windows:
@@ -18,9 +20,10 @@ ci:windows:
     -d="$PWD" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j12
-                     --timeout 30"
-    -e="clang_tidy*"
+                     --schedule-random
+                     --timeout 20"
+    -e="freertos*"
+    -b="trace*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -40,8 +43,8 @@ ci:windows:
     allow_failure: false
   - when: never
 
-ci:windows_clang_tidy:
- stage: test_clang_tidy_windows
+ci:windows_freertos:
+ stage: test_windows_freertos
  needs: []
  tags:
   - windows
@@ -51,9 +54,11 @@ ci:windows_clang_tidy:
     -d="$PWD" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j12
-                     --timeout 30" 
-    -i="clang_tidy*"
+                     -j1
+                     --schedule-random
+                     --timeout 20"
+    -i="freertos*"
+    -b="trace*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -84,11 +89,11 @@ ci:windows_stress_gcc:
     -d="$PWD" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j12 
+                     --schedule-random
                      --repeat-until-fail 120
-                     --timeout 30
+                     --timeout 20
                      -L [stress]" 
-    -e="trace*|docker*|clang_tidy*"
+    -e="trace*|docker*|clang_tidy*|freertos*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: never
@@ -103,6 +108,38 @@ ci:windows_stress_gcc:
     when: always
     allow_failure: false
 
+ci:windows_stress_gcc_freertos:
+ stage: test_windows_stress_freertos
+ needs: []
+ tags:
+  - windows
+ script:
+  - python -m venv venv
+  - .\\venv\\Scripts\\python pybuilder\\pycmakebuilder.py
+    -d="$PWD" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     -j1 
+                     --schedule-random
+                     --repeat-until-fail 75
+                     --timeout 20
+                     -L [stress]" 
+    -i="freertos*(?!.*tidy)"
+    -b="trace*"
+ rules:
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: never
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  
 
 ## Linux -----------------------------------------------------------------------
 ci:linux:
@@ -116,9 +153,10 @@ ci:linux:
     -d="${PWD}" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j8
-                     --timeout 30" 
-    -e="clang_tidy*"
+                     --schedule-random
+                     --timeout 20" 
+    -e="freertos*"
+    -b="trace*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -138,8 +176,8 @@ ci:linux:
     allow_failure: false
   - when: never
 
-ci:linux_clang_tidy:
- stage: test_clang_tidy_linux
+ci:linux_freertos:
+ stage: test_linux_freertos
  needs: []
  tags:
   - linux
@@ -147,11 +185,13 @@ ci:linux_clang_tidy:
   - python3 -m venv venv
   - venv/bin/python3 pybuilder/pycmakebuilder.py 
     -d="${PWD}" 
-    --ctest-options="--output-on-failure 
-                     --stop-on-failure 
-                     -j8
-                     --timeout 30" 
-    -i="clang_tidy*"
+    --ctest-options="--output-on-failure
+                     --stop-on-failure
+                     --schedule-random
+                     -j1
+                     --timeout 20" 
+    -i="freertos*"
+    -b="trace*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -182,11 +222,43 @@ ci:linux_stress_gcc:
     -d="${PWD}" 
     --ctest-options="--output-on-failure 
                      --stop-on-failure 
-                     -j8 
+                     --schedule-random
                      --repeat-until-fail 300
-                     --timeout 30
+                     --timeout 20
                      -L [stress]" 
-    -e="trace*|docker*|clang_tidy*"
+    -e="trace*|docker*|clang_tidy*|freertos*"
+ rules:
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: never
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+
+ci:linux_stress_gcc_freertos:
+ stage: test_linux_stress_freertos
+ needs: []
+ tags:
+  - linux
+ script:
+  - python3 -m venv venv
+  - venv/bin/python3 pybuilder/pycmakebuilder.py 
+    -d="${PWD}" 
+    --ctest-options="--output-on-failure 
+                     --stop-on-failure 
+                     --schedule-random
+                     -j1
+                     --repeat-until-fail 75
+                     --timeout 20
+                     -L [stress]" 
+    -i="freertos*(?!.*tidy)"
+    -b="trace*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: never

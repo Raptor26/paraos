@@ -5,6 +5,7 @@ Checks: >-
   hicpp-*,
   llvm-*,
   misc-*,
+  -misc-include-cleaner,
   modernize-*,
   performance-*,
   portability-*,

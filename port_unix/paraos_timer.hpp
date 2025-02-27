@@ -221,7 +221,9 @@ class Timer {
   /// period_ms_ after user call Start() (or after software timer object will
   /// construct if <start_immediately == true>).
   bool is_auto_reload_;
+
   std::string_view name_;
+
   timer_t timer_id_{std::numeric_limits<timer_t>::max()};
 };
 }  // namespace paraos

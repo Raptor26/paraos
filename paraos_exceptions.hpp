@@ -77,6 +77,11 @@ class exception : public std::exception, public etl::exception {
 
   ~exception() override = default;
 
+  // NOLINTNEXTLINE(modernize-use-trailing-return-type)
+  [[nodiscard]] const char *what() const noexcept override {
+    return etl::exception::what();
+  }
+
   exception(const exception &) = default;
   auto operator=(const exception &) -> exception & = default;
   exception(exception &&) = default;

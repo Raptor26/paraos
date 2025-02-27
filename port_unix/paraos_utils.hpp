@@ -88,16 +88,14 @@ constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
 /// @return struct timespec with filled fields.
 inline auto MillisecondsInTimeSpec(std::size_t milliseconds)
     -> struct timespec {
-  struct timespec time_y_milliseconds {};
-  time_y_milliseconds.tv_sec = static_cast<time_t>(milliseconds) /
-                               static_cast<time_t>(MILISECONDS_PER_SECOND);
-
-  const time_t diff =
-      milliseconds - (time_y_milliseconds.tv_sec * MILISECONDS_PER_SECOND);
-  time_y_milliseconds.tv_nsec = diff * NANOSECONDS_PER_MILISECONDS;
-
-  return time_y_milliseconds;
+  struct timespec tspec {};
+  tspec.tv_sec = milliseconds / MILISECONDS_PER_SECOND;
+  tspec.tv_nsec =
+      (milliseconds % MILISECONDS_PER_SECOND) * MICROSECONDS_PER_SECOND;
+  return tspec;
 }
+
+using delay_type = std::size_t;
 
 }  // namespace paraos
 

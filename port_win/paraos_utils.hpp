@@ -34,19 +34,23 @@
 // clang-format on
 // NOLINTEND(llvm-include-order)
 
+#include <minwindef.h>
+
 #include <cassert>
 #include <cstddef>
 
 namespace paraos {
 
-constexpr std::size_t max_delay{INFINITE};
+using delay_type = DWORD;
+
+constexpr delay_type max_delay{INFINITE};
 static_assert(sizeof(max_delay) >= sizeof(DWORD));
 
-constexpr size_t stack_multiplier{1024};
-
 constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
+  constexpr size_t stack_multiplier{1024};
   return stack_multiplier * sizeof(size_t);
 }
+
 }  // namespace paraos
 
 #endif /* UTILS_HPP */

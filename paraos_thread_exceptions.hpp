@@ -1,7 +1,7 @@
-/// @file paraos_trace.hpp
+/// @file paraos_thread_exceptions.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
+/// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
@@ -23,30 +23,37 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef PARAOS_TRACE_HPP
-#define PARAOS_TRACE_HPP
+#ifndef PARAOS_THREAD_EXCEPTIONS_HPP
+#define PARAOS_THREAD_EXCEPTIONS_HPP
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
+#include "paraos_exceptions.hpp"
 
-#include "paraos_critical.hpp"
+namespace paraos {
+class thread_exception : public paraos::exception {
+ public:
+  thread_exception(
+      string_type reason_, string_type file_name_, numeric_type line_number_)
+      : paraos::exception(reason_, file_name_, line_number_) {}
+};
 
-#define paraosTRACE_MESSAGE(__message__)          \
-  {                                               \
-    const paraos::CriticalSection macro_critical; \
-    std::cout << __message__ << std::endl;        \
-  }
+class thread_not_created_exception : public paraos::thread_exception {
+ public:
+  thread_not_created_exception(
+      string_type file_name_, numeric_type line_number_)
+      : paraos::thread_exception(
+            ETL_ERROR_TEXT("Thread: not created", "thread"), file_name_,
+            line_number_) {}
+};
 
-#define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__) \
-  {                                                                       \
-    const paraos::CriticalSection macro_critical;                         \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__       \
-              << std::endl;                                               \
-  }
+class thread_no_event_loop_interface_exception
+    : public paraos::thread_exception {
+ public:
+  thread_no_event_loop_interface_exception(
+      string_type file_name_, numeric_type line_number_)
+      : paraos::thread_exception(
+            ETL_ERROR_TEXT("Thread: no event loop interface", "thread"),
+            file_name_, line_number_) {}
+};
+}  // namespace paraos
 
-#else
-#define paraosTRACE_MESSAGE(__message__)
-#define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__)
-#endif
-
-#endif /* PARAOS_TRACE_HPP */
+#endif /* PARAOS_THREAD_EXCEPTIONS_HPP */

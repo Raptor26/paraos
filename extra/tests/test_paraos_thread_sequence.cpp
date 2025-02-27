@@ -27,20 +27,27 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <string>
 
 // We need to import "etl/delegate.h" to use delegate, but static analyzer
 // can't see the delegate declaration there.
-// NOLINTBEGIN(misc-include-cleaner)
+// NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
+#include "etl/atomic.h"
 #include "etl/delegate.h"
-// NOLINTEND(misc-include-cleaner)
-
 #include "etl/timer.h"
 #include "paraos_check.h"
-#include "paraos_thread.hpp"
 #include "paraos_thread_sequence.hpp"
 
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+  }
+
 namespace {
+
+paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
+    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
+    paraos::ThreadPriority::kRealTime, nullptr}};
 
 constexpr uint32_t thread_sequence_call_period_us{1000U};
 
@@ -54,12 +61,12 @@ constexpr uint_least8_t max_task_in_sequence{3};
 using ThreadSequenceTest = paraos::ThreadSequence<max_task_in_sequence>;
 ThreadSequenceTest *thread_seq_ptr;
 
-constexpr uint32_t gyr_acc_max_call_cnt{8};
+constexpr uint32_t gyr_acc_max_call_cnt{4};
 
 constexpr float mag_delegate_freq_hz{thread_sequence_call_period_us / 2.0};
 constexpr float baro_delegate_freq_hz{thread_sequence_call_period_us / 4.0};
 
-bool is_test_complete{false};
+etl::atomic_bool is_test_complete{false};
 
 template <typename T = float>
 struct GyrAcc {
@@ -78,7 +85,7 @@ struct GyrAcc {
       thread_seq_ptr->NotifyGive();
     } else {
       // Stop test.
-      thread_seq_ptr->Break();
+      thread_seq_ptr->Finish();
       is_test_complete = true;
     }
   }
@@ -138,32 +145,46 @@ struct Baro {
 
 GyrAccFloat gyr_acc;
 
-/// FreeRTOS can't stop scheduler. In this case we must manually call
-/// exit(EXIT_SUCCESS) after test complete.
-#if defined(FREERTOS)
-#include <cstdlib>
-void ExitAfterTestComplete() {
+void ExitFromTest() {
   if (is_test_complete) {
-    exit(EXIT_SUCCESS);
-  }
-}
-#endif
+    check_test_complete_and_exit.Finished();
 
+    PARAOS_CHECK_ASSERT(thread_seq_ptr);
+    thread_seq_ptr->Finish();
+
+    constexpr std::size_t delay_ms{0};
+    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
+    paraos::Thread::DelayMs(delay_ms);
+
+    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
+#if defined(PARAOS_LIKE_FREERTOS)
+    std::_Exit(EXIT_SUCCESS);
+#else
+    paraos::Thread::Exit();
+#endif
+  }
+
+  PrintDebug("Yeld resources", "ExitFromTest");
+  paraos::Thread::DelayMs(10);
+}
 }  // namespace
 
 auto main() -> int {
-#if defined(FREERTOS)
-#include "paraos_utils.hpp"
+  {
+    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
+    check_test_complete_and_exit.RegisterDelegate(delegate);
+  }
 
-  // ExitAfterTestComplete will be called by scheduler in idle task after no
-  // user task ready for execute.
-  paraos::freertos_idle_fnc_ptr = ExitAfterTestComplete;
-#endif
-  ThreadSequenceTest thread_sequence{
-      "Sequence static", thread_default_stack_size,
-      paraos::ThreadPriority::kNormal, thread_sequence_call_period_us};
+  {
+    paraos::ThreadSequenceAttr attr{
+        "Sequence thread", paraos::GetStackMinimumSizeInBytes(),
+        paraos::ThreadPriority::kRealTime, nullptr};
 
-  thread_seq_ptr = &thread_sequence;
+    attr.period_in_us = thread_sequence_call_period_us;
+
+    static ThreadSequenceTest thread_sequence{attr};
+    thread_seq_ptr = &thread_sequence;
+  }
 
   // We need to import "etl/delegate.h" to use delegate, but static analyzer
   // can't see the delegate declaration there.
@@ -177,7 +198,7 @@ auto main() -> int {
   {
     // gyr_acc_delegate will be run on each call NotifyGive(). In this case
     // frequency set 0.0.
-    auto timer_id = thread_sequence.Register(gyr_acc_delegate, 0.0, true);
+    auto timer_id = thread_seq_ptr->Register(gyr_acc_delegate, 0.0, true);
     assert(timer_id != etl::timer::id::NO_TIMER);
   }
 
@@ -197,7 +218,7 @@ auto main() -> int {
     {
       // mag_delegate call period is two times less than gyr_acc_delegate
       auto timer_id =
-          thread_sequence.Register(mag_delegate, mag_delegate_freq_hz, true);
+          thread_seq_ptr->Register(mag_delegate, mag_delegate_freq_hz, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
   }
@@ -218,7 +239,7 @@ auto main() -> int {
     {
       // mag_delegate call period is four times less than gyr_acc_delegate
       auto timer_id =
-          thread_sequence.Register(baro_delegate, baro_delegate_freq_hz, true);
+          thread_seq_ptr->Register(baro_delegate, baro_delegate_freq_hz, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
 
@@ -228,11 +249,11 @@ auto main() -> int {
 
   {
     // No space for register second delegate.
-    auto timer_id = thread_sequence.Register(gyr_acc_delegate, 0.0, true);
+    auto timer_id = thread_seq_ptr->Register(gyr_acc_delegate, 0.0, true);
     assert(timer_id == etl::timer::id::NO_TIMER);
   }
 
-  thread_sequence.NotifyGive();
+  thread_seq_ptr->NotifyGive();
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
@@ -240,10 +261,10 @@ auto main() -> int {
   PARAOS_CHECK_ASSERT(gyracc_call_cnt == gyr_acc_max_call_cnt);
 
   // Frequency of the call mag is two times less than gyr_acc.
-  PARAOS_CHECK_ASSERT(mag_call_cnt == gyracc_call_cnt / 2);
+  PARAOS_CHECK_ASSERT(mag_call_cnt == gyr_acc_max_call_cnt / 2);
 
   // Frequency of the call mag is four times less than gyr_acc.
-  PARAOS_CHECK_ASSERT(baro_call_cnt == gyracc_call_cnt / 4);
+  PARAOS_CHECK_ASSERT(baro_call_cnt == gyr_acc_max_call_cnt / 4);
 
   // [clang-analyzer-core.StackAddressEscape]: Address of stack memory
   // associated with local variable 'thread_sequence' is still referred to by
@@ -253,3 +274,4 @@ auto main() -> int {
 
   return 0;
 }
+// NOLINTEND(misc-include-cleaner, readability-magic-numbers)
