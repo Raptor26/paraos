@@ -58,8 +58,7 @@ class Message {
   /// необходимо выделить из аллокатора памяти.
   explicit Message(const std::size_t size_in_bytes)
       : size_in_bytes_{size_in_bytes},
-        data_ptr_{SafeAllocate(size_in_bytes_)},
-        p_end_{data_ptr_ + size_in_bytes_} {}
+        data_ptr_{SafeAllocate(size_in_bytes_)} {}
 
   // ---------------------------------------------------------------------------
 
@@ -158,8 +157,6 @@ class Message {
 
   /// @brief Указатель на выделенную область памяти под хранение сообщения.
   pointer data_ptr_;
-
-  pointer p_end_;
 };
 
 /// @brief Message object, returned by MessageBuffer when user code calls
