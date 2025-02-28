@@ -76,7 +76,7 @@ struct cooperative_scheduler_policy_run_all_at_once {
 
 /// @brief Params to pass in ICooperativeScheduling{} ctor.
 struct ICooperativeSchedulingAttr : public paraos::ThreadAttr {
-  const IEmbeddedTimer &embedded_timer_ = embedded_timer_empty;
+  IEmbeddedTimer *embedded_timer_ptr = &embedded_timer_empty;
 };
 
 class ICooperativeScheduling : public paraos::Base {
@@ -96,7 +96,7 @@ class ICooperativeScheduling : public paraos::Base {
   // NOLINTBEGIN(performance-unnecessary-value-param)
   ICooperativeScheduling(
       const ICooperativeSchedulingAttr &attr, etl::ischeduler &scheduler,
-      const IEmbeddedTimer &embedded_timer, bool thread_start_flag = true)
+      bool thread_start_flag = true)
       : thread_{attr, thread_start_flag},
         scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
@@ -111,8 +111,8 @@ class ICooperativeScheduling : public paraos::Base {
     SetIdleCallback(idle_callback);
 
     // Connect embedded timers for each profiler used in ICooperativeScheduling.
-    profiler_.period_.SetEmbeddedTimer(embedded_timer);
-    profiler_.runtime_.SetEmbeddedTimer(embedded_timer);
+    profiler_.period_.SetEmbeddedTimer(*attr.embedded_timer_ptr);
+    profiler_.runtime_.SetEmbeddedTimer(*attr.embedded_timer_ptr);
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
