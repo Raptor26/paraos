@@ -268,15 +268,25 @@ class ICooperativeScheduling : public paraos::Base {
 /// @brief Params to pass in CooperativeScheduling{} ctor.
 struct CooperativeSchedulingAttr : public ICooperativeSchedulingAttr {};
 
+/// @brief Constructs a cooperative scheduler.
+///
+/// @warning `etl::scheduler<TSchedulerPolicy, MAX_TASKS_>` must only be used
+/// as a base class because `etl::scheduler` must be fully constructed
+/// before the `ICooperativeScheduling` constructor is called.
+///
+/// @tparam MAX_TASKS_ The maximum number of tasks that can be contained at a
+/// time.
+/// @tparam TSchedulerPolicy The policy used for executing registered tasks.
+
 template <
     std::size_t MAX_TASKS_,
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
-class CooperativeScheduling : public ICooperativeScheduling {
+class CooperativeScheduling : etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
+                              public ICooperativeScheduling {
  public:
   explicit CooperativeScheduling(
       const CooperativeSchedulingAttr &attr, bool thread_start_flag = true)
-      : ICooperativeScheduling{
-            attr, scheduler_, attr.embedded_timer_, thread_start_flag} {}
+      : ICooperativeScheduling{attr, *this, thread_start_flag} {}
 
   /// @brief Five rule.
   CooperativeScheduling(CooperativeScheduling &&other) = delete;
@@ -288,8 +298,9 @@ class CooperativeScheduling : public ICooperativeScheduling {
 
   ~CooperativeScheduling() override = default;
 
- private:
-  etl::scheduler<TSchedulerPolicy, MAX_TASKS_> scheduler_;
+  // Do not use `etl::scheduler` as a private field. In this case, the
+  // `ICooperativeScheduling()` constructor will be called before
+  // `etl::scheduler` is fully constructed.
 };
 
 }  // namespace  paraos
