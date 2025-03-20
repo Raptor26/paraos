@@ -81,7 +81,7 @@ class Message {
   }
 
   Message(Message &&other) noexcept
-      : data_ptr_{other.data_ptr_}, size_in_bytes_{other.size_in_bytes_} {
+      : size_in_bytes_{other.size_in_bytes_}, data_ptr_{other.data_ptr_} {
     other.data_ptr_ = nullptr;
   }
 
@@ -167,11 +167,11 @@ class MessageWritable final {
   using message_type = Message<ALLOCATOR>;
 
  public:
-  using value_type = message_type::value_type;
-  using pointer = message_type::pointer;
-  using reference = message_type::reference;
-  using iterator = message_type::iterator;
-  using const_iterator = message_type::const_iterator;
+  using value_type = typename message_type::value_type;
+  using pointer = typename message_type::pointer;
+  using reference = typename message_type::reference;
+  using iterator = typename message_type::iterator;
+  using const_iterator = typename message_type::const_iterator;
 
   MessageWritable(
       const std::size_t size_in_bytes,
