@@ -62,10 +62,16 @@ inline auto GetCurrentTime() {
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
 inline auto CheckTimeout(TimeOut_t &xTimeOut, std::size_t &delay_ms) {
-  TickType_t ticks = PARAOS_ConvertMsToTicks(delay_ms);
-  auto is_timeout = xTaskCheckForTimeOut(&xTimeOut, &ticks);
-  delay_ms = PARAOS_ConvertTicksToMs(ticks);
-  return static_cast<bool>(is_timeout);
+  // Conditions below useful in unit tests, because if scheduler not started,
+  // xTaskCheckForTimeOut() catch segmentation fail.
+  if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+    TickType_t ticks = PARAOS_ConvertMsToTicks(delay_ms);
+    auto is_timeout = xTaskCheckForTimeOut(&xTimeOut, &ticks);
+    delay_ms = PARAOS_ConvertTicksToMs(ticks);
+    return static_cast<bool>(is_timeout);
+  }
+
+  return false;
 }
 
 }  // namespace paraos

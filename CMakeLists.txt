@@ -34,8 +34,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   include(CTest)
   enable_testing()
 
-  option(IS_PARAOS_STAND_ALONE_PROJECT "Use paraos version for etl_profile.h"
-         ON)
+  if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    option(IS_PARAOS_STAND_ALONE_PROJECT "Use paraos version for etl_profile.h"
+           ON)
+  endif()
 endif()
 
 if(IS_PARAOS_STAND_ALONE_PROJECT)

@@ -1,3 +1,9 @@
+## v0.9.1 (2025-02-28)
+
+### Fix
+
+- **paraos_cooperative**: now TSchedulerPolicyICooperativeScheduling calling after etl::scheduler is fully constructed
+
 ## v0.9.0 (2025-02-27)
 
 ### Feat
