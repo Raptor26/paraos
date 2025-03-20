@@ -27,6 +27,7 @@
 #define PARAOS_MESSAGE_BUFFER_HPP
 
 #include <cinttypes>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -89,12 +90,27 @@ class Message {
   auto operator=(Message &&other) -> Message & = delete;
 
   // ---------------------------------------------------------------------------
-  iterator begin() { return data_ptr_; }
-  const_iterator begin() const { return data_ptr_; }
-  const_iterator cbegin() const { return data_ptr_; }
-  iterator end() { return data_ptr_ + size_in_bytes_; }
-  const_iterator end() const { return data_ptr_ + size_in_bytes_; }
-  const_iterator cend() const { return data_ptr_ + size_in_bytes_; }
+  [[nodiscard]] auto begin() { return reinterpret_cast<iterator>(data_ptr_); }
+
+  [[nodiscard]] auto begin() const {
+    return reinterpret_cast<const_iterator>(data_ptr_);
+  }
+
+  [[nodiscard]] auto cbegin() const {
+    return reinterpret_cast<const_iterator>(data_ptr_);
+  }
+
+  [[nodiscard]] auto end() {
+    return reinterpret_cast<iterator>(begin() + size_in_bytes_);
+  }
+
+  [[nodiscard]] auto end() const {
+    return reinterpret_cast<const_iterator>(begin() + size_in_bytes_);
+  }
+
+  [[nodiscard]] auto cend() const {
+    return reinterpret_cast<const_iterator>(begin() + size_in_bytes_);
+  }
 
   // ---------------------------------------------------------------------------
 
@@ -112,7 +128,7 @@ class Message {
 
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const -> void * {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const {
     return reinterpret_cast<void *>(data_ptr_);
   }
 
@@ -121,7 +137,7 @@ class Message {
   /// @brief Возвращает размер выделенной области памяти в байтах.
   /// @return Количество байт, выделенные по адресу, который возвращает метод
   /// Addr().
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Size() const -> size_t {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Size() const {
     return size_in_bytes_;
   }
 
@@ -134,8 +150,8 @@ class Message {
   // ---------------------------------------------------------------------------
 
  private:
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL pointer
-  SafeAllocate(std::size_t size_in_bytes) {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto SafeAllocate(
+      std::size_t size_in_bytes) -> pointer {
     if (size_in_bytes > 0U) {
       return alloc_traits::allocate(allocator_, size_in_bytes);
     }
@@ -190,15 +206,20 @@ class MessageWritable final {
 
   explicit operator bool() const { return static_cast<bool>(message_); }
 
-  iterator begin() { return message_.begin(); }
-  const_iterator begin() const { return message_.begin(); }
-  const_iterator cbegin() const { return message_.cbegin(); }
-  iterator end() { return message_.end(); }
-  const_iterator end() const { return message_.end(); }
-  const_iterator cend() const { return message_.cend(); }
+  [[nodiscard]] auto begin() { return message_.begin(); }
+  [[nodiscard]] auto begin() const { return message_.begin(); }
+  [[nodiscard]] auto cbegin() const { return message_.cbegin(); }
+  [[nodiscard]] auto end() { return message_.end(); }
+  [[nodiscard]] auto end() const { return message_.end(); }
+  [[nodiscard]] auto cend() const { return message_.cend(); }
 
-  PARAOS_INLINE_TRIVIAL auto Data() const -> void * { return message_.Data(); }
-  PARAOS_INLINE_TRIVIAL auto Size() const -> size_t { return message_.Size(); }
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const {
+    return message_.Data();
+  }
+
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Size() const {
+    return message_.Size();
+  }
 
   /// @brief Try push message in buffer. Message will push if queue has space.
   ///
