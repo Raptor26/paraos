@@ -23,7 +23,7 @@ ci:windows:
                      --schedule-random
                      --timeout 20"
     -e="freertos*"
-    -b="trace*"
+    -b="trace*|release*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -58,7 +58,7 @@ ci:windows_freertos:
                      --schedule-random
                      --timeout 20"
     -i="freertos*"
-    -b="trace*"
+    -b="trace*|release*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -125,7 +125,7 @@ ci:windows_stress_gcc_freertos:
                      --timeout 20
                      -L [stress]" 
     -i="freertos*(?!.*tidy)"
-    -b="trace*"
+    -b="trace*|release*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: never
@@ -156,7 +156,7 @@ ci:linux:
                      --schedule-random
                      --timeout 20" 
     -e="freertos*"
-    -b="trace*"
+    -b="trace*|release*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -191,7 +191,7 @@ ci:linux_freertos:
                      -j1
                      --timeout 20" 
     -i="freertos*"
-    -b="trace*"
+    -b="trace*|release*"
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
@@ -258,7 +258,7 @@ ci:linux_stress_gcc_freertos:
                      --timeout 20
                      -L [stress]" 
     -i="freertos*(?!.*tidy)"
-    -b="trace*"
+    -b="trace*|release*"
  rules:
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
     when: never
