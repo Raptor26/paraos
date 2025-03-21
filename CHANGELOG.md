@@ -1,3 +1,23 @@
+## v0.10.0 (2025-03-21)
+
+### Feat
+
+- **paraos**: pull latest paraos version
+- add base interface to serial tx class
+
+### Fix
+
+- **message**: update iteratiors definitions
+- **paraos_message_buffer**: fix reorder and add typename with using when add aliases to types
+
+### Refactor
+
+- **serial_tx**: now return a reference to start of the message
+
+### Perf
+
+- **paraos-message_buffer**: add const in Size() and Data() methods
+
 ## v0.9.1 (2025-02-28)
 
 ### Fix
