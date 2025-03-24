@@ -30,14 +30,11 @@
 
 #include <utility>
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
-
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
 #include "paraos_isr.hpp"
+#include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 
 namespace paraos {
@@ -88,11 +85,7 @@ class SemaphoreBase {
   auto operator=(const SemaphoreBase &other) -> SemaphoreBase & = delete;
 
  protected:
-  SemaphoreBase() noexcept {
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Semaphore Ctor" << std::endl;
-#endif
-  }
+  SemaphoreBase() noexcept = default;
 
   virtual ~SemaphoreBase() {
     if (handle_ != nullptr) {
@@ -101,10 +94,6 @@ class SemaphoreBase {
       // need for debug only
       handle_ = nullptr;
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Semaphore Dtor" << std::endl;
-#endif
   }
 
   /// @brief Move ctor.
