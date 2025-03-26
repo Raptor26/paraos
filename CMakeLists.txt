@@ -119,7 +119,7 @@ if(IS_PARAOS_STAND_ALONE_PROJECT AND CLANG_TIDY_ENABLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY
                                                      "${DO_CLANG_TIDY}")
   else()
-    message(STATUS "clang-tidy not found.")
+    message(FATAL_ERROR "clang-tidy not found.")
   endif()
 endif()
 

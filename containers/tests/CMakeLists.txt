@@ -96,7 +96,7 @@ if(CLANG_TIDY_ENABLE)
                             PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
     endif()
   else()
-    message(STATUS "clang-tidy not found.")
+    message(FATAL_ERROR "clang-tidy not found.")
   endif()
 endif()
 
