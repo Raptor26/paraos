@@ -28,7 +28,8 @@
 
 #include <pthread.h>
 
-#include "etl/atomic.h"
+#include <atomic>
+
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_utils.hpp"
@@ -144,12 +145,12 @@ class MutexBase {
   // derived classes.
   pthread_mutex_t m_obj_{};
 
-  etl::atomic<bool> is_mutex_ready_{false};
+  std::atomic<bool> is_mutex_ready_{false};
 
   /// @brief If lock_cnt_ == 0, then try unlock mutex. Otherwise only return
   /// false without any action. It's need for consistent API between
   /// Unix/WinAPI/FreeRTOS
-  etl::atomic<int> lock_cnt_{0};
+  std::atomic<int> lock_cnt_{0};
   // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 

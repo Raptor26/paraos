@@ -36,14 +36,31 @@ namespace paraos {
 
 class CriticalSection final {
  public:
-  /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
+  /// @brief Constructor ensures automatic critical section entry.
+  ///
   /// @param is_isr
   explicit CriticalSection(bool is_isr = false) : is_isr_{is_isr} {
     mutex_.Lock(max_delay, is_isr_);
   }
 
-  /// @brief Деструктор обеспечивает автоматический выход из критической секции.
+  /// @brief Destructor ensures automatic leaving of the critical section.
   ~CriticalSection() { mutex_.Unlock(is_isr_); }
+
+  /// @brief Method is used for force disabling ISRs.
+  ///
+  /// @param[in] is_isr: This param here is only used for methods template sync.
+  ///
+  /// @note This method is used inside ETL libray macros.
+  static void ForceEnter(bool is_isr = false) {
+    mutex_.Lock(max_delay, is_isr);
+  }
+
+  /// @brief Method is used for force enabling ISRs.
+  ///
+  /// @param[in] is_isr: This param here is only used for methods template sync.
+  ///
+  /// @note This method is used inside ETL libray macros.
+  static void ForceExit(bool is_isr = false) { mutex_.Unlock(is_isr); }
 
   /// @brief Five rule.
   CriticalSection(CriticalSection &&other) = delete;
@@ -55,6 +72,9 @@ class CriticalSection final {
   const bool is_isr_;
   static inline MutexRecursive mutex_;
 };
+
+inline void DisableIsr() { CriticalSection::ForceEnter(); }
+inline void EnableIsr() { CriticalSection::ForceExit(); }
 
 }  // namespace paraos
 

@@ -68,15 +68,36 @@ class CriticalSectionFactory final {
 
 class CriticalSection final {
  public:
-  /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
+  /// @brief Constructor ensures automatic critical section entry.
+  ///
   /// @param is_isr
   explicit CriticalSection(bool is_isr = false) noexcept {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     EnterCriticalSection(critical_section_factory.GiveHandle());
   }
 
-  /// @brief Деструктор обеспечивает автоматический выход из критической секции.
+  /// @brief Destructor ensures automatic leaving of the critical section.
   ~CriticalSection() {
+    LeaveCriticalSection(critical_section_factory.GiveHandle());
+  }
+
+  /// @brief Method is used for force disabling ISRs.
+  ///
+  /// @param[in] is_isr: This param here is only used for methods template sync.
+  ///
+  /// @note This method is used inside ETL libray macros.
+  static void ForceEnter(bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    EnterCriticalSection(critical_section_factory.GiveHandle());
+  }
+
+  /// @brief Method is used for force enabling ISRs.
+  ///
+  /// @param[in] is_isr: This param here is only used for methods template sync.
+  ///
+  /// @note This method is used inside ETL libray macros.
+  static void ForceExit(bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     LeaveCriticalSection(critical_section_factory.GiveHandle());
   }
 
@@ -90,8 +111,8 @@ class CriticalSection final {
   static inline CriticalSectionFactory critical_section_factory;
 };
 
-inline void DisableIsr() {}
-inline void EnableIsr() {}
+inline void DisableIsr() { CriticalSection::ForceEnter(); }
+inline void EnableIsr() { CriticalSection::ForceExit(); }
 
 }  // namespace paraos
 

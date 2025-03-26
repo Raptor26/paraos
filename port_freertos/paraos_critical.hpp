@@ -34,10 +34,11 @@
 
 namespace paraos {
 
-/// @brief Класс-реализация критической секции в freeRTOS.
+/// @brief Realization of the critical section in freeRTOS.
 class CriticalSection final {
  public:
-  /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
+  /// @brief Constructor ensures automatic critical section entry.
+  ///
   /// @param is_isr
   explicit PARAOS_INLINE_CRITICAL CriticalSection(bool is_isr = false) noexcept
       : is_isr_{is_isr} {
@@ -48,7 +49,7 @@ class CriticalSection final {
     }
   }
 
-  /// @brief Деструктор обеспечивает автоматический выход из критической секции.
+  /// @brief Destructor ensures automatic leaving of the critical section.
   ~CriticalSection() {
     if (!is_isr_) {
       taskEXIT_CRITICAL();
