@@ -246,9 +246,12 @@ class MessageWritable final {
     // calls again. For this reason need check message_ validation.
     if (message_) {
       is_message_pushed = queue_.TryPush(std::move(message_), is_isr);
-      // Nothin to push again, free resources.
-      Free();
+      // Nothin to push again, resources will be free automatically in message_
+      // dtor if needing.
     }
+
+    // If message didn't push, dtor of the message_ free resources
+    // automatically,
 
     return is_message_pushed;
   }
