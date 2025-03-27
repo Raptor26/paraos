@@ -62,7 +62,7 @@ struct IQueueBlocking {
     bool is_pushed{false};
 
     try {
-      const paraos::CriticalSection critical;
+      const paraos::CriticalSection critical{is_isr};
       queue_.emplace(std::forward<Args>(args)...);
       pop_sem_.Give(is_isr);
 
@@ -139,23 +139,23 @@ struct IQueueBlocking {
     return optional;
   }
 
-  PARAOS_INLINE_TRIVIAL void Erase() {
-    const paraos::CriticalSection critical;
+  PARAOS_INLINE_TRIVIAL void Erase(bool is_isr = false) {
+    const paraos::CriticalSection critical{is_isr};
     queue_.clear();
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool {
-    const paraos::CriticalSection critical;
+  PARAOS_INLINE_TRIVIAL auto IsEmpty(bool is_isr = false) -> bool {
+    const paraos::CriticalSection critical{is_isr};
     return queue_.empty();
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool {
-    const paraos::CriticalSection critical;
+  PARAOS_INLINE_TRIVIAL auto IsFull(bool is_isr = false) -> bool {
+    const paraos::CriticalSection critical{is_isr};
     return queue_.full();
   }
 
-  PARAOS_INLINE_TRIVIAL auto Size() -> size_t {
-    const paraos::CriticalSection critical;
+  PARAOS_INLINE_TRIVIAL auto Size(bool is_isr = false) -> size_t {
+    const paraos::CriticalSection critical{is_isr};
     return queue_.size();
   }
 
