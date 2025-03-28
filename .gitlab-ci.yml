@@ -4,6 +4,7 @@ stages:
  - test_windows_stress
  - test_windows_stress_freertos
  - test_linux
+ - test_linux_valgrind
  - test_linux_freertos
  - test_linux_stress
  - test_linux_stress_freertos
@@ -157,6 +158,37 @@ ci:linux:
                      --timeout 20" 
     -e="freertos*"
     -b="trace*|release*"
+ rules:
+    # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
+  - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
+    when: always
+    allow_failure: false
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    when: never
+    allow_failure: false
+    # When a push is made on a branch, we always want to start the pipeline
+  - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: always
+    allow_failure: false
+  - if: $CI_COMMIT_BRANCH == 'master'
+    when: always
+    allow_failure: false
+  - when: never
+
+ci:linux_valgrind:
+ stage: test_linux_valgrind
+ needs: []
+ tags:
+  - linux
+ script:
+  - python3 -m venv venv
+  - venv/bin/python3 pybuilder/pycmakebuilder.py 
+    -d="${PWD}"
+    -i="pc_debug_gcc$"
+    -b="pc_debug_gcc$"
+  - ctest --test-dir build/pc_debug_gcc/ -T memcheck -j4
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
