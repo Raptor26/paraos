@@ -87,7 +87,18 @@ class Message {
   }
 
   auto operator=(const Message &other) -> Message & = delete;
-  auto operator=(Message &&other) -> Message & = delete;
+  auto operator=(Message &&other) -> Message & {
+    if (&other != this) {
+      this->SafeDeallocate();
+
+      this->data_ptr_ = other.data_ptr_;
+      other.data_ptr_ = nullptr;
+
+      this->size_in_bytes_ = other.size_in_bytes_;
+    }
+
+    return *this;
+  }
 
   // ---------------------------------------------------------------------------
   [[nodiscard]] auto begin() { return reinterpret_cast<iterator>(data_ptr_); }
@@ -128,8 +139,9 @@ class Message {
 
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
+  template <typename USER_DATA_TYPE = std::uint8_t>
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const {
-    return reinterpret_cast<void *>(data_ptr_);
+    return reinterpret_cast<USER_DATA_TYPE *>(data_ptr_);
   }
 
   // ---------------------------------------------------------------------------
@@ -169,7 +181,7 @@ class Message {
   }
 
   /// @brief Размер выделенной области памяти в байтах.
-  const std::size_t size_in_bytes_;
+  std::size_t size_in_bytes_;
 
   /// @brief Указатель на выделенную область памяти под хранение сообщения.
   pointer data_ptr_;
@@ -213,6 +225,7 @@ class MessageWritable final {
   [[nodiscard]] auto end() const { return message_.end(); }
   [[nodiscard]] auto cend() const { return message_.cend(); }
 
+  template <typename USER_DATA_TYPE = std::uint8_t>
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const {
     return message_.Data();
   }
