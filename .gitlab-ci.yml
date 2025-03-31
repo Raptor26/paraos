@@ -192,7 +192,7 @@ ci:linux_valgrind:
  rules:
     # If merge request only no need start pipeline because pipeline was started when branch pushed in repo   
   - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merge_train"
-    when: always
+    when: never
     allow_failure: false
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     when: never
