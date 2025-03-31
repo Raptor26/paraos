@@ -80,7 +80,10 @@
         {
             "name": "freertos_debug_gcc_trace",
             "displayName": "freeRTOS Debug GCC with trace",
-            "inherits": "freertos_debug_gcc"
+            "inherits": "freertos_debug_gcc",
+            "cacheVariables": {
+                "TRACE": true
+            }
         },
         {
             "name": "freertos_debug_gcc_clang_tidy",
