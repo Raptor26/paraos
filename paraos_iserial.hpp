@@ -14,10 +14,7 @@ class ISerialTx {
   /// @param[in] baudrate: Требуемая скорость работы порта ввода/вывода.
   ///
   /// @return true в случае успешной инициализации, false в противном случае.
-  virtual auto Reinit(std::uint32_t baudrate) -> bool {
-    (void)baudrate;
-    return false;
-  }
+  virtual auto Reinit() -> bool { return false; }
 
   /// @brief Метод выполняет передачу заданного количества байтов из указанной
   /// области памяти.
