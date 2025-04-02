@@ -258,7 +258,8 @@ class MessageWritable final {
     // If user calls TryPush(), that's mean when calls dtor, TryPush() will
     // calls again. For this reason need check message_ validation.
     if (message_) {
-      is_message_pushed = queue_.TryPush(std::move(message_), is_isr);
+      is_message_pushed =
+          static_cast<bool>(queue_.TryPush(std::move(message_), is_isr));
       // Nothin to push again, resources will be free automatically in message_
       // dtor if needing.
     }

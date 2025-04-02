@@ -34,6 +34,7 @@
 #include "paraos_check.h"
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_mutex_raii.hpp"
 #include "paraos_runtime_profiler.hpp"
@@ -58,15 +59,14 @@ struct IQueueBlocking {
   ///
   /// @return true if object constructed, false otherwise.
   template <typename... Args>
-  auto TryEmplaceBack(bool is_isr, Args&&... args) noexcept -> bool {
-    bool is_pushed{false};
+  auto TryEmplaceBack(bool is_isr, Args&&... args) noexcept -> paraos::ISRbool {
+    paraos::ISRbool is_pushed;
 
     try {
       const paraos::CriticalSection critical{is_isr};
       queue_.emplace(std::forward<Args>(args)...);
-      pop_sem_.Give(is_isr);
-
-      is_pushed = true;
+      is_pushed = pop_sem_.Give(is_isr);
+      is_pushed.SetSuccessStatus(true);
     } catch (const etl::queue_full& e) {
       // queue full. Nothing push in queue. In IQueueBlocking API it's not
       // problem. TryPush() return false.
@@ -87,7 +87,7 @@ struct IQueueBlocking {
   /// @return Return true if item successfully moved in queue. false in other
   /// wise.
   template <typename U>
-  auto TryPush(U&& item, bool is_isr = false) noexcept -> bool {
+  auto TryPush(U&& item, bool is_isr = false) noexcept -> paraos::ISRbool {
     return TryEmplaceBack(is_isr, std::forward<U>(item));
   }
 

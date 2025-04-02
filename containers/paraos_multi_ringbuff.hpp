@@ -72,7 +72,7 @@ class IMultiRingBuff {
 
           // queue_.Push() can't return false because we check inside critical
           // section if queue full befor push.
-          PARAOS_CHECK_ASSERT(is_pushed);
+          PARAOS_CHECK_ASSERT(static_cast<bool>(is_pushed));
         }
       }
     }
