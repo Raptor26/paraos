@@ -65,7 +65,9 @@ struct IQueueBlocking {
     try {
       const paraos::CriticalSection critical{is_isr};
       queue_.emplace(std::forward<Args>(args)...);
-      pop_sem_.Give(is_isr);
+
+      // Assignment here is needed for updating "is_need_switch_context_" state.
+      is_pushed = pop_sem_.Give(is_isr);
 
       // Semaphore always given successful.
       is_pushed.SetSuccessStatus(true);
