@@ -96,6 +96,10 @@ class IRingBuff {
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+  template <typename It>
+  using iterator_category_t =
+      typename std::iterator_traits<It>::iterator_category;
+
  public:
   virtual ~IRingBuff() = default;
 
@@ -108,13 +112,16 @@ class IRingBuff {
   }
 
   PARAOS_INLINE_TRIVIAL auto Write(const gsl::span<const T> src) {
-    return Write(static_cast<const void*>(src.data()), src.size_bytes());
+    return Write(reinterpret_cast<const void*>(src.data()), src.size_bytes());
   }
 
-  template <class TIterator>
+  template <
+      typename TIterator,
+      typename U = std::enable_if_t<std::is_base_of_v<
+          std::random_access_iterator_tag, iterator_category_t<TIterator>>>>
   PARAOS_INLINE_TRIVIAL auto Write(TIterator begin, TIterator end) {
     return Write(
-        static_cast<const void*>(begin),
+        reinterpret_cast<const void*>(begin),
         static_cast<lwrb_sz_t>(std::distance(begin, end)));
   }
 
@@ -124,7 +131,7 @@ class IRingBuff {
 
   PARAOS_INLINE_TRIVIAL auto Read(gsl::span<T> dst) {
     return Read(
-        static_cast<void*>(dst.data()),
+        reinterpret_cast<void*>(dst.data()),
         static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
@@ -136,7 +143,7 @@ class IRingBuff {
 
   PARAOS_INLINE_TRIVIAL auto Peek(gsl::span<T> dst) {
     return Peek(
-        static_cast<void*>(dst.data()),
+        reinterpret_cast<void*>(dst.data()),
         static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 

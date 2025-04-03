@@ -30,6 +30,7 @@
 #include <iterator>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
@@ -41,6 +42,10 @@ template <typename T>
 class IMultiRingBuff {
   using ringbuff_type = IRingBuff<T>;
   using ringbuff_pointer = ringbuff_type*;
+
+  template <typename It>
+  using iterator_category_t =
+      typename std::iterator_traits<It>::iterator_category;
 
  public:
   virtual ~IMultiRingBuff() = default;
@@ -80,12 +85,13 @@ class IMultiRingBuff {
     return written_elem_numb;
   }
 
-  template <class TIterator>
+  template <
+      typename TIterator,
+      typename U = std::enable_if_t<std::is_base_of_v<
+          std::random_access_iterator_tag, iterator_category_t<TIterator>>>>
   PARAOS_INLINE_TRIVIAL auto TryWrite(
       std::size_t buff_id, TIterator begin, TIterator end,
       bool is_isr = false) {
-    // todo Only random_access_iterator supported. Need static check.
-
     return TryWrite(buff_id, begin, std::distance(begin, end), is_isr);
   }
 
