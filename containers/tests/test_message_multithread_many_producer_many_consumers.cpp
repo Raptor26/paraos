@@ -140,8 +140,7 @@ struct Producer {
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr &attr, std::size_t thread_id)
-      : thread_{attr}, thread_id_{thread_id} {
+  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
@@ -157,11 +156,11 @@ struct Consumer {
       const paraos::CriticalSection critical;
 
       consumers_str_container.emplace_back(
-          static_cast<char *>(read_message->Data()));
+          reinterpret_cast<char *>(read_message->Data()));
 
       PrintDebug(
           " string read successful: "
-              << static_cast<char *>(read_message->Data()),
+              << reinterpret_cast<char *>(read_message->Data()),
           thread_.GiveName());
 
       read_message.reset();
@@ -181,8 +180,6 @@ struct Consumer {
 
  private:
   paraos::Thread thread_;
-
-  const std::size_t thread_id_;
 };
 
 namespace {
@@ -264,7 +261,7 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 0";
     attr.priority = paraos::ThreadPriority::kLowest;
-    const static Consumer cons_0{attr, 0};
+    const static Consumer cons_0{attr};
     consumer_total_thread_numb += 1;
   }
 
@@ -272,7 +269,7 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 1";
     attr.priority = paraos::ThreadPriority::kBelowNormal;
-    const static Consumer cons_1{attr, 1};
+    const static Consumer cons_1{attr};
     consumer_total_thread_numb += 1;
   }
 
@@ -280,7 +277,7 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 2";
     attr.priority = paraos::ThreadPriority::kNormal;
-    const static Consumer cons_2{attr, 2};
+    const static Consumer cons_2{attr};
     consumer_total_thread_numb += 1;
   }
 
@@ -288,7 +285,7 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 3";
     attr.priority = paraos::ThreadPriority::kNormal;
-    const static Consumer cons_3{attr, 2};
+    const static Consumer cons_3{attr};
     consumer_total_thread_numb += 1;
   }
 
@@ -296,7 +293,7 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 4";
     attr.priority = paraos::ThreadPriority::kNormal;
-    const static Consumer cons_4{attr, 2};
+    const static Consumer cons_4{attr};
     consumer_total_thread_numb += 1;
   }
 
@@ -304,7 +301,7 @@ auto main() -> int {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Cons 5";
     attr.priority = paraos::ThreadPriority::kLowest;
-    const static Consumer cons_5{attr, 0};
+    const static Consumer cons_5{attr};
     consumer_total_thread_numb += 1;
   }
 

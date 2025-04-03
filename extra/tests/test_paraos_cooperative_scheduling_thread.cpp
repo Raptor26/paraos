@@ -153,8 +153,8 @@ namespace {
 paraos::CooperativeScheduling<
     max_tasks_number, etl::scheduler_policy_highest_priority>
     cooperative_scheduler{paraos::CooperativeSchedulingAttr{
-        "Cooperative scheduler", paraos::GetStackMinimumSizeInBytes(),
-        paraos::ThreadPriority::kRealTime, nullptr}};
+        {{"Cooperative scheduler", paraos::GetStackMinimumSizeInBytes(),
+          paraos::ThreadPriority::kRealTime, nullptr}}}};
 
 Idle idle_handle(cooperative_scheduler.GetScheduler());
 

@@ -76,8 +76,7 @@ paraos::QueueBlocking<char, max_queue_size> queue;
 }  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
-      : thread_{attr}, thread_id_{thread_id} {
+  explicit Producer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
   }
@@ -116,8 +115,6 @@ struct Producer {
 
  private:
   paraos::Thread thread_;
-
-  const std::size_t thread_id_;
 
   paraos::OsProfiler runtime_profiler;
 };
@@ -225,35 +222,35 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 0";
-    const static Producer prod_0{attr, 0};
+    const static Producer prod_0{attr};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 1";
-    const static Producer prod_1{attr, 1};
+    const static Producer prod_1{attr};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 2";
-    const static Producer prod_2{attr, 2};
+    const static Producer prod_2{attr};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 3";
-    const static Producer prod_3{attr, 3};
+    const static Producer prod_3{attr};
     total_producer_threads_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "Prod 4";
-    const static Producer prod_4{attr, 4};
+    const static Producer prod_4{attr};
     total_producer_threads_numb += 1;
   }
 

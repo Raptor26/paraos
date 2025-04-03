@@ -37,7 +37,7 @@ namespace {
 paraos::SemaphoreBinary sem;
 }  // namespace
 
-constexpr std::size_t period_ms{10};
+constexpr std::size_t period_ms_default{10};
 constexpr std::size_t global_timer_period_ms{500};
 constexpr std::size_t local_timer_period_ms{100};
 
@@ -69,7 +69,7 @@ struct UserTimerWithCnt : public paraos::Timer {
 
   void Run() override {
     std::cout << str_ << " cnt is: " << cnt << "\n";
-    cnt += period_ms;
+    cnt += period_ms_default;
 
     if (cnt > runtime_max_ms_) {
       sem.Give();
@@ -93,8 +93,8 @@ UserTimer user_timer{"Global timer", global_timer_period_ms};
 }  // namespace
 
 auto main() -> int {
-  const UserTimer user_timer{"Local timer", local_timer_period_ms};
-  UserTimerWithCnt local_timer("Local timer repetition", period_ms);
+  const UserTimer user_timer_local{"Local timer", local_timer_period_ms};
+  UserTimerWithCnt local_timer("Local timer repetition", period_ms_default);
   auto is_timer_started = local_timer.Start();
   PARAOS_CHECK_ASSERT(is_timer_started);
   PARAOS_ATTR_UNUSED_VAR(is_timer_started);

@@ -156,8 +156,8 @@ struct Producer {
   }
 
  private:
+ paraos::Thread thread_;
   const std::size_t str_idx_;
-  paraos::Thread thread_;
 };
 
 struct Consumer {

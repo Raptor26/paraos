@@ -75,8 +75,7 @@ paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
 }  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr &attr, std::size_t thread_id)
-      : thread_{attr}, thread_id_{thread_id} {
+  explicit Producer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
   }
@@ -118,14 +117,11 @@ struct Producer {
  private:
   paraos::Thread thread_;
 
-  const std::size_t thread_id_;
-
   paraos::OsProfiler runtime_profiler;
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr &attr, std::size_t thread_id)
-      : thread_{attr}, thread_id_{thread_id} {
+  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
@@ -158,8 +154,6 @@ struct Consumer {
 
  private:
   paraos::Thread thread_;
-
-  const std::size_t thread_id_;
 
   paraos::OsProfiler runtime_profiler;
 };
@@ -214,21 +208,21 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Consumer 0";
-    const static Consumer cons_0{attr, 0};
+    const static Consumer cons_0{attr};
     consumers_total_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Consumer 1";
-    const static Consumer cons_1{attr, 1};
+    const static Consumer cons_1{attr};
     consumers_total_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Consumer 2";
-    const static Consumer cons_2{attr, 2};
+    const static Consumer cons_2{attr};
     consumers_total_numb += 1;
   }
 
@@ -238,21 +232,21 @@ auto main() -> int {
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Prod 0";
-    const static Producer prod_0{attr, 0};
+    const static Producer prod_0{attr};
     producers_total_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Prod 1";
-    const static Producer prod_1{attr, 1};
+    const static Producer prod_1{attr};
     producers_total_numb += 1;
   }
 
   {
     paraos::ThreadAttr attr{};
     attr.thread_name = "--Prod 2";
-    const static Producer prod_2{attr, 2};
+    const static Producer prod_2{attr};
     producers_total_numb += 1;
   }
 

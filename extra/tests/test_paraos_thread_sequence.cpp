@@ -55,8 +55,6 @@ std::size_t gyracc_call_cnt{0};
 std::size_t mag_call_cnt{0};
 std::size_t baro_call_cnt{0};
 
-constexpr size_t thread_default_stack_size{1024};
-
 constexpr uint_least8_t max_task_in_sequence{3};
 using ThreadSequenceTest = paraos::ThreadSequence<max_task_in_sequence>;
 ThreadSequenceTest *thread_seq_ptr;
@@ -177,8 +175,8 @@ auto main() -> int {
 
   {
     paraos::ThreadSequenceAttr attr{
-        "Sequence thread", paraos::GetStackMinimumSizeInBytes(),
-        paraos::ThreadPriority::kRealTime, nullptr};
+        {{"Sequence thread", paraos::GetStackMinimumSizeInBytes(),
+          paraos::ThreadPriority::kRealTime, nullptr}}};
 
     attr.period_in_us = thread_sequence_call_period_us;
 
