@@ -110,9 +110,14 @@ include(GoogleTest)
 
 add_executable(
   test_paraos_core
-  test_paraos_mutex.cpp test_paraos_semaphore.cpp test_runtime_profiler.cpp
-  test_paraos_switch_context.cpp test_paraos_testing_semaphore.cpp
-  test_paraos_version.cpp)
+  test_paraos_mutex.cpp
+  test_paraos_semaphore.cpp
+  test_runtime_profiler.cpp
+  test_paraos_switch_context.cpp
+  test_paraos_testing_semaphore.cpp
+  test_paraos_version.cpp
+  test_paraos_isr.cpp)
+
 target_link_libraries(test_paraos_core PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(test_paraos_core
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")

@@ -35,21 +35,40 @@ namespace paraos {
 /// information in called code, which can call method for switch context RTOS if
 /// needed.
 struct ISRbool final {
-  explicit ISRbool(bool is_success, bool is_need_switch_context = false)
+  explicit ISRbool(bool is_success = false, bool is_need_switch_context = false)
       : is_success_{is_success},
         is_need_switch_context_{is_need_switch_context} {}
-
-  ISRbool() : ISRbool{false, false} {}
 
   ~ISRbool() = default;
 
   /// --------------------------------------------------------------------------
   /// Five rule
   /// --------------------------------------------------------------------------
-  ISRbool(const ISRbool &other) noexcept = default;
-  ISRbool(ISRbool &&other) noexcept = default;
-  auto operator=(const ISRbool &other) noexcept -> ISRbool & = default;
-  auto operator=(ISRbool &&other) noexcept -> ISRbool & = default;
+  ISRbool(const ISRbool &other) noexcept : is_need_switch_context_{false} {
+    *this = other;
+  };
+
+  ISRbool(ISRbool &&other) noexcept : is_need_switch_context_{false} {
+    *this = other;
+  };
+
+  auto operator=(const ISRbool &other) noexcept -> ISRbool & {
+    if (&other != this) {
+      is_success_ = other.is_success_;
+
+      if (other.is_need_switch_context_) {
+        is_need_switch_context_ = other.is_need_switch_context_;
+      }
+    }
+
+    return *this;
+  };
+
+  auto operator=(ISRbool &&other) noexcept -> ISRbool & {
+    *this = other;
+
+    return *this;
+  };
 
   /// @brief  Behavior like as simple bool variable.
   explicit operator bool() const { return is_success_; }
