@@ -124,14 +124,14 @@ struct Producer {
       }
 
       // try write data in buffer periodical.
-      auto written_len = multi_ring_buff.TryWrite(
-          buff_idx, str_array.at(str_idx_).c_str(),
-          str_array.at(str_idx_).length());
+      auto how_many_bytes_need_write = str_array.at(str_idx_).length();
+      auto is_write_successful = multi_ring_buff.TryWrite(
+          buff_idx, str_array.at(str_idx_).c_str(), how_many_bytes_need_write);
 
-      if (written_len > 0) {
+      if (is_write_successful) {
         // Break trying write data in buff, in next iteration take new string
         // idx for write in buff.
-        producer_total_written_bytes += written_len;
+        producer_total_written_bytes += how_many_bytes_need_write;
         PrintDebug(
             " string write successful: " << str_array.at(str_idx_).c_str(),
             thread_.GiveName());
@@ -156,7 +156,7 @@ struct Producer {
   }
 
  private:
- paraos::Thread thread_;
+  paraos::Thread thread_;
   const std::size_t str_idx_;
 };
 

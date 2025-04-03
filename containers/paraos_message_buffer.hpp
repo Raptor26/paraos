@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "paraos_config.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_mutex_raii.hpp"
 #include "paraos_queue_blocking.hpp"
@@ -252,14 +253,14 @@ class MessageWritable final {
   ///
   /// @return Return true if message successfully pushed in buffer, false in
   /// otherwise.
-  PARAOS_INLINE_OPERATIONS auto TryPush(bool is_isr = false) noexcept -> bool {
-    bool is_message_pushed{false};
+  PARAOS_INLINE_OPERATIONS auto TryPush(bool is_isr = false) noexcept {
+    paraos::ISRbool is_message_pushed{false};
 
     // If user calls TryPush(), that's mean when calls dtor, TryPush() will
     // calls again. For this reason need check message_ validation.
     if (message_) {
-      is_message_pushed =
-          static_cast<bool>(queue_.TryPush(std::move(message_), is_isr));
+      is_message_pushed = queue_.TryPush(std::move(message_), is_isr);
+
       // Nothin to push again, resources will be free automatically in message_
       // dtor if needing.
     }

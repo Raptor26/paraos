@@ -92,7 +92,7 @@ struct Producer {
     if (str_idx_ < elems_vector.size()) {
       // Trying to write message in buffer will not work yet.
       while (true) {
-        bool is_push_success{false};
+        paraos::ISRbool is_push_success{false};
 
         auto write =
             message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);

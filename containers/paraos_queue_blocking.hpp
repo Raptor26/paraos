@@ -65,7 +65,9 @@ struct IQueueBlocking {
     try {
       const paraos::CriticalSection critical{is_isr};
       queue_.emplace(std::forward<Args>(args)...);
-      is_pushed = pop_sem_.Give(is_isr);
+      pop_sem_.Give(is_isr);
+
+      // Semaphore always given successful.
       is_pushed.SetSuccessStatus(true);
     } catch (const etl::queue_full& e) {
       // queue full. Nothing push in queue. In IQueueBlocking API it's not

@@ -60,10 +60,11 @@ TEST(MultiRingBuff, WriteDataToRingBufferThenRead) {
   std::string str{"Hello world!"};
 
   constexpr std::size_t cbuff_id{0};
-  auto written_bytes_numb =
+  const std::size_t expect_written_bytes{str.size()};
+  auto is_written_successful =
       multi_ring_buff.TryWrite(cbuff_id, str.data(), str.size());
 
-  ASSERT_EQ(str.size(), written_bytes_numb);
+  ASSERT_TRUE(is_written_successful);
 
   std::array<std::uint8_t, array_size> dst_arr{};
 
@@ -71,7 +72,7 @@ TEST(MultiRingBuff, WriteDataToRingBufferThenRead) {
   auto read_bytes_numb = multi_ring_buff.Read(
       buff_id, static_cast<void *>(dst_arr.data()), dst_arr.size(), 0U);
 
-  ASSERT_EQ(written_bytes_numb, read_bytes_numb);
+  ASSERT_EQ(expect_written_bytes, read_bytes_numb);
   ASSERT_EQ(cbuff_id, buff_id);
 }
 
@@ -94,10 +95,9 @@ TEST(MultiRingBuff, WriteReadMultipleBuffers) {
 
   for (std::size_t i = 0; i < max_ring_buff_numb; i++) {
     std::string str_custom = str + " Id:" + std::to_string(i);
-    auto written_bytes_numb =
-        multi_ring_buff.TryWrite(i, str_custom.data(), str_custom.size());
 
-    ASSERT_EQ(str_custom.size(), written_bytes_numb);
+    ASSERT_TRUE(
+        multi_ring_buff.TryWrite(i, str_custom.data(), str_custom.size()));
   }
 
   std::array<std::uint8_t, max_ring_buff_size> dst_arr{};
@@ -106,13 +106,14 @@ TEST(MultiRingBuff, WriteReadMultipleBuffers) {
     std::size_t buff_id{std::numeric_limits<std::size_t>::max()};
     std::string str_custom = str + " Id:" + std::to_string(i);
     auto read_bytes_numb = multi_ring_buff.Read(
-        buff_id, static_cast<void *>(dst_arr.data()), dst_arr.size(), 0U);
+        buff_id, reinterpret_cast<void *>(dst_arr.data()), dst_arr.size(), 0U);
 
     ASSERT_EQ(str_custom.size(), read_bytes_numb);
     ASSERT_EQ(
-        0, memcmp(
-               static_cast<const void *>(str_custom.data()),
-               static_cast<const void *>(dst_arr.data()), read_bytes_numb));
+        0,
+        memcmp(
+            reinterpret_cast<const void *>(str_custom.data()),
+            reinterpret_cast<const void *>(dst_arr.data()), read_bytes_numb));
     ASSERT_EQ(i, buff_id);
   }
 }
@@ -131,20 +132,21 @@ TEST(MultiRingBuff, WriteTwiceReadTwice) {
   std::string str2{"world!"};
 
   constexpr std::size_t cbuff_id{0};
-  std::size_t written_bytes_numb{0};
+  std::size_t expected_written_bytes{0};
   {
-    written_bytes_numb +=
+    expected_written_bytes += str1.size();
+    auto is_write_successful =
         multi_ring_buff.TryWrite(cbuff_id, str1.data(), str1.size());
 
-    ASSERT_EQ(str1.size(), written_bytes_numb);
+    ASSERT_TRUE(is_write_successful);
   }
 
   {
-    auto written_bytes_numb_second =
+    expected_written_bytes += str2.size();
+    auto is_write_successful =
         multi_ring_buff.TryWrite(cbuff_id, str2.data(), str2.size());
 
-    written_bytes_numb += written_bytes_numb_second;
-    ASSERT_EQ(str2.size(), written_bytes_numb_second);
+    ASSERT_TRUE(is_write_successful);
   }
 
   std::array<std::uint8_t, array_size> dst_arr{};
@@ -156,7 +158,7 @@ TEST(MultiRingBuff, WriteTwiceReadTwice) {
   ASSERT_STREQ(
       (str1 + str2).c_str(), reinterpret_cast<const char *>(dst_arr.data()));
 
-  ASSERT_EQ(written_bytes_numb, read_bytes_numb);
+  ASSERT_EQ(expected_written_bytes, read_bytes_numb);
   ASSERT_EQ(cbuff_id, buff_id);
 }
 
@@ -174,21 +176,22 @@ TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
   std::vector<uint8_t> myVector(str.begin(), str.end());
 
   constexpr std::size_t cbuff_id{0};
-  auto written_bytes_numb = multi_ring_buff.TryWrite(cbuff_id, myVector);
+  std::size_t expected_written_bytes{myVector.size()};
+  auto is_written_successful = multi_ring_buff.TryWrite(cbuff_id, myVector);
 
-  ASSERT_EQ(str.size(), written_bytes_numb);
+  ASSERT_TRUE(is_written_successful);
 
   std::array<std::uint8_t, array_size> dst_arr{};
 
   std::size_t buff_id;
   auto read_bytes_numb = multi_ring_buff.Read(buff_id, dst_arr, 0U);
 
-  ASSERT_EQ(written_bytes_numb, read_bytes_numb);
+  ASSERT_EQ(expected_written_bytes, read_bytes_numb);
   ASSERT_EQ(cbuff_id, buff_id);
   ASSERT_EQ(
       0, memcmp(
-             static_cast<const void *>(str.data()),
-             static_cast<const void *>(dst_arr.data()), read_bytes_numb));
+             reinterpret_cast<const void *>(str.data()),
+             reinterpret_cast<const void *>(dst_arr.data()), read_bytes_numb));
 }
 
 TEST(MultiRingBuff, WriteIteratorThenReadIterator) {
@@ -223,9 +226,8 @@ TEST(MultiRingBuff, TryRead) {
   ASSERT_EQ(multi_ring_buff.GetBuffNumb(), str_arr.size());
 
   for (std::size_t i = 0; i < multi_ring_buff.GetBuffNumb(); ++i) {
-    EXPECT_LT(
-        i, multi_ring_buff.TryWrite(
-               i, str_arr.at(i).data(), str_arr.at(i).length()));
+    EXPECT_TRUE(multi_ring_buff.TryWrite(
+        i, str_arr.at(i).data(), str_arr.at(i).length()));
   }
 
   std::array<char, array_size> dst{};
@@ -252,7 +254,7 @@ TEST(MultiRingBuff, TryReadSpan) {
       multi_ring_buff{};
 
   std::string str{"Hello world!"};
-  EXPECT_LT(0, multi_ring_buff.TryWrite(0U, str.data(), str.length()));
+  EXPECT_TRUE(multi_ring_buff.TryWrite(0U, str.data(), str.length()));
 
   std::array<char, array_size> dst{};
 

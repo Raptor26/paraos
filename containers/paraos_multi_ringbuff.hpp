@@ -58,31 +58,29 @@ class IMultiRingBuff {
   /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
   /// @param[in] is_isr: Set true if call from isr.
   ///
-  /// @return Returned number of written elements.
+  /// @return True if all data write successful, false in otherwise.
   auto TryWrite(
       const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
-      bool is_isr = false) -> std::size_t {
-    std::size_t written_elem_numb{0};
+      bool is_isr = false) {
+    paraos::ISRbool is_write_successful{false};
+
     const paraos::CriticalSection critical;
     if (!queue_.IsFull()) {
       if (buff_id < ring_buff_numb_) {
         auto& buffer = ringbuff_[buff_id];
-        written_elem_numb = buffer->Write(src, sizeof(T) * src_elem_numb);
+        auto written_elem_numb = buffer->Write(src, sizeof(T) * src_elem_numb);
 
         if (written_elem_numb > 0U) {
-          auto is_pushed = queue_.TryPush(buff_id, is_isr);
-
-          // Reduce compile warning if PARAOS_CHECK_ASSERT() empty macros.
-          PARAOS_ATTR_UNUSED_VAR(is_pushed);
+          is_write_successful = queue_.TryPush(buff_id, is_isr);
 
           // queue_.Push() can't return false because we check inside critical
           // section if queue full befor push.
-          PARAOS_CHECK_ASSERT(static_cast<bool>(is_pushed));
+          PARAOS_CHECK_ASSERT(static_cast<bool>(is_write_successful));
         }
       }
     }
 
-    return written_elem_numb;
+    return is_write_successful;
   }
 
   template <
@@ -96,8 +94,7 @@ class IMultiRingBuff {
   }
 
   PARAOS_INLINE_TRIVIAL auto TryWrite(
-      std::size_t buff_id, const gsl::span<const T> src, bool is_isr = false)
-      -> std::size_t {
+      std::size_t buff_id, const gsl::span<const T> src, bool is_isr = false) {
     return TryWrite(buff_id, src.data(), src.size(), is_isr);
   }
 
