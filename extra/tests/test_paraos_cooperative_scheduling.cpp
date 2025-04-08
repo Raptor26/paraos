@@ -65,6 +65,10 @@ TEST(Cooperative, TryPutOverflowTasks) {
   ASSERT_TRUE(cooperative.AddTask(test_task1));
   ASSERT_TRUE(cooperative.AddTask(test_task1));
 
+  // AddTask() throw exception, freeRTOS without start scheduler not support
+  // throw exceptions.
+#ifndef PARAOS_LIKE_FREERTOS
   // No more space in task list.
   ASSERT_FALSE(cooperative.AddTask(test_task1));
+#endif
 }
