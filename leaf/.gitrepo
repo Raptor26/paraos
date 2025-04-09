@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/boostorg/leaf.git
 	branch = develop
-	commit = 6633c368f1ee2d9c26fdd86e3ed11517c22f4e4c
-	parent = 7e513a812dc269095962b5c3e6c95606e0a63ff0
+	commit = aff38b5be343ac6f1588e3258d126224e5347934
+	parent = 8c301ad1782968b77a4a60079272918439c8805f
 	method = merge
 	cmdver = 0.4.6

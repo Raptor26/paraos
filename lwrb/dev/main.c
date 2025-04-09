@@ -24,7 +24,8 @@ my_buff_evt_fn(lwrb_t* buff, lwrb_evt_type_t type, lwrb_sz_t len) {
 }
 
 int
-main() {
+main(void) {
+    int retval = 0;
     lwrb_sz_t len;
 
     /* Init buffer */
@@ -36,9 +37,13 @@ main() {
 
 #define RW_TEST(_w_exp_, _r_exp_, _rw_len_, _rw_exp_len_)                                                              \
     do {                                                                                                               \
+        uint8_t is_as_expected = (buff.w_ptr == (_w_exp_) && buff.r_ptr == (_r_exp_) && (_rw_len_) == (_rw_exp_len_)); \
         printf("W ptr: %u, R ptr: %u, R/W len: %u, as_expected: %u\r\n", (unsigned)buff.w_ptr, (unsigned)buff.r_ptr,   \
-               (unsigned)(_rw_len_),                                                                                   \
-               (unsigned)(buff.w_ptr == (_w_exp_) && buff.r_ptr == (_r_exp_) && (_rw_len_) == (_rw_exp_len_)));        \
+               (unsigned)(_rw_len_), (unsigned)is_as_expected);                                                        \
+        if (!is_as_expected) {                                                                                         \
+            printf("Test failed on line %u", (unsigned)__LINE__);                                                      \
+            retval = -1;                                                                                               \
+        }                                                                                                              \
     } while (0)
 
         lwrb_reset(&buff);
@@ -65,9 +70,13 @@ main() {
 
 #define RW_TEST(_w_exp_, _r_exp_, _success_, _rw_len_, _rw_exp_len_)                                                   \
     do {                                                                                                               \
+        uint8_t is_as_expected = (buff.w_ptr == (_w_exp_) && buff.r_ptr == (_r_exp_) && (_rw_len_) == (_rw_exp_len_)); \
         printf("W ptr: %u, R ptr: %u, R/W success: %u, R/W len: %u, as_expected: %u\r\n", (unsigned)buff.w_ptr,        \
-               (unsigned)buff.r_ptr, (unsigned)(_success_), (unsigned)(_rw_len_),                                      \
-               (unsigned)(buff.w_ptr == (_w_exp_) && buff.r_ptr == (_r_exp_) && (_rw_len_) == (_rw_exp_len_)));        \
+               (unsigned)buff.r_ptr, (unsigned)(_success_), (unsigned)(_rw_len_), (unsigned)is_as_expected);           \
+        if (!is_as_expected) {                                                                                         \
+            printf("Test failed on line %u", (unsigned)__LINE__);                                                      \
+            retval = -1;                                                                                               \
+        }                                                                                                              \
     } while (0)
 
         lwrb_reset(&buff);
@@ -98,8 +107,13 @@ main() {
 #define OVERWRITE_TEST(_exp_content_, _exp_len_)                                                                       \
     do {                                                                                                               \
         len = lwrb_peek(&buff, 0, tmp, buff.size);                                                                     \
+        uint32_t is_as_expected = (strncmp((_exp_content_), (const void*)tmp, len) == 0 && len == (_exp_len_));        \
         printf("overwrite data read: %.*s, len: %u, as_expected: %u\r\n", (int)len, tmp, (unsigned)len,                \
-               (unsigned)(strncmp((_exp_content_), (const void*)tmp, len) == 0 && len == (_exp_len_)));                \
+               (unsigned)is_as_expected);                                                                              \
+        if (!is_as_expected) {                                                                                         \
+            printf("Test failed on line %u", (unsigned)__LINE__);                                                      \
+            retval = -1;                                                                                               \
+        }                                                                                                              \
     } while (0)
 
         /* Test overwrite */
@@ -138,9 +152,15 @@ main() {
         lwrb_sz_t move_len;                                                                                            \
         move_len = lwrb_move(&dst, &src);                                                                              \
         len = lwrb_peek(&dst, 0, tmp, dst.size);                                                                       \
+                                                                                                                       \
+        uint32_t is_as_expected = (strncmp((_exp_content_), (const void*)tmp, len) == 0                                \
+                                   && move_len == (_exp_move_len_) && len == (_exp_buff_len_));                        \
         printf("move data: len: %d, dest data: %.*s, as_expected: %u\r\n", (int)len, (int)len, tmp,                    \
-               (unsigned)(strncmp((_exp_content_), (const void*)tmp, len) == 0 && move_len == (_exp_move_len_)         \
-                          && len == (_exp_buff_len_)));                                                                \
+               (unsigned)is_as_expected);                                                                              \
+        if (!is_as_expected) {                                                                                         \
+            printf("Test failed on line %u", (unsigned)__LINE__);                                                      \
+            retval = -1;                                                                                               \
+        }                                                                                                              \
     } while (0)
 
         lwrb_t src, dst;
@@ -176,8 +196,14 @@ main() {
         lwrb_sz_t found_idx;                                                                                           \
         uint8_t found;                                                                                                 \
         found = lwrb_find(&buff, (_bts_), (_bts_len_), (_start_offset_), &found_idx);                                  \
+                                                                                                                       \
+        uint32_t is_as_expected = (!!found == !!(_exp_result_));                                                       \
         printf("Find \"%s\" (len %d), start_offset: %d, found_index: %d; Found: %d; As expected: %d\r\n", (_bts_),     \
-               (_bts_len_), (_start_offset_), (int)found_idx, (int)found, (int)(!!found == !!(_exp_result_)));         \
+               (_bts_len_), (_start_offset_), (int)found_idx, (int)found, (int)is_as_expected);                        \
+        if (!is_as_expected) {                                                                                         \
+            printf("Test failed on line %u", (unsigned)__LINE__);                                                      \
+            retval = -1;                                                                                               \
+        }                                                                                                              \
     } while (0)
 
         /* Prepare buffer and write data */
@@ -210,5 +236,7 @@ main() {
 
 #undef FIND_TEST
     }
-    return 0;
+
+    printf("Done!\r\n");
+    return retval;
 }
