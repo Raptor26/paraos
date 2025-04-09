@@ -88,7 +88,7 @@ class Message {
   }
 
   auto operator=(const Message &other) -> Message & = delete;
-  auto operator=(Message &&other) -> Message & {
+  auto operator=(Message &&other) noexcept -> Message & {
     if (&other != this) {
       this->SafeDeallocate();
 

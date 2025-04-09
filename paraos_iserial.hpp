@@ -8,12 +8,15 @@ namespace paraos {
 
 class ISerialTx {
  public:
+  virtual ~ISerialTx() = default;
+
   /// @brief Повторная инициализация порта ввода/вывода с заданной скоростью
   /// работы.
   ///
   /// @param[in] baudrate: Требуемая скорость работы порта ввода/вывода.
   ///
-  /// @return true в случае успешной инициализации, false в противном случае.
+  /// @return true в случае успешной инициализации, false в противном
+  /// случае.
   virtual auto Reinit() -> bool { return false; }
 
   /// @brief Метод выполняет передачу заданного количества байтов из указанной
@@ -41,6 +44,8 @@ class ISerialTx {
 
 class ISerialRx {
  public:
+  virtual ~ISerialRx() = default;
+
   /// @brief Five rule.
   ISerialRx(ISerialRx &&other) = delete;
   auto operator=(ISerialRx &&other) -> ISerialRx & = delete;
@@ -57,6 +62,8 @@ class ISerialRx {
 /// передачи данных.
 class ISerial : public ISerialTx {
  public:
+  ~ISerial() override = default;
+
   /// @brief Метод выполняет запись заданного количества полученных байтов в
   /// указанную область памяти.
   ///
@@ -67,8 +74,6 @@ class ISerial : public ISerialTx {
   ///
   /// @return Возвращает количество полученных байтов.
   virtual auto Receive(void *dst, std::size_t dst_size) -> std::size_t = 0;
-
-  virtual ~ISerial() = default;
 
   /// @brief Five rule.
   ISerial(ISerial &&other) = delete;

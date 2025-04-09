@@ -34,6 +34,12 @@ namespace paraos {
 /// freeRTOS as exapmle). Semaphore::Give() with this class can transfer
 /// information in called code, which can call method for switch context RTOS if
 /// needed.
+///
+/// Disabling clang-tidy checks because the variable is_success_ is set using
+/// operator=. This overload is used in other constructors without initial
+/// initialization of the is_success_ field, which leads to warnings from the
+/// static analyzer.
+/// NOLINTBEGIN(*-member-init)
 struct ISRbool final {
   explicit ISRbool(bool is_success = false, bool is_need_switch_context = false)
       : is_success_{is_success},
@@ -44,10 +50,15 @@ struct ISRbool final {
   /// --------------------------------------------------------------------------
   /// Five rule
   /// --------------------------------------------------------------------------
+
+  /// @note Don't initialize is_success_ because the field initialize with
+  /// operator=.
   ISRbool(const ISRbool &other) noexcept : is_need_switch_context_{false} {
     *this = other;
   };
 
+  /// @note Don't initialize is_success_ because the field initialize with
+  /// operator=.
   ISRbool(ISRbool &&other) noexcept : is_need_switch_context_{false} {
     *this = other;
   };
@@ -90,6 +101,7 @@ struct ISRbool final {
   /// semaphore/mutex api called from ISR.
   bool is_need_switch_context_;
 };
+/// NOLINTEND(*-member-init)
 }  // namespace paraos
 
 #endif /* PAROAS_ISR_HPP */
