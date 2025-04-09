@@ -36,14 +36,11 @@ namespace paraos {
 ///
 /// @note paraos not support execute from isr in windows. In this case, windows
 /// port use mock for SwitchContext().
-///
-/// @tparam IS_ISR: Set true if use SwitchContext in ISR
-///
-template <bool IS_ISR = true>
 class SwitchContext final {
  public:
   SwitchContext() = default;
 
+  /// NOLINTNEXTLINE(*-convert-member-functions-to-static)
   void WritePrimitiveState(const ISRbool &primitive_state) {
     PARAOS_ATTR_UNUSED_VAR(primitive_state);
   }
