@@ -25,9 +25,10 @@
 
 #include <gtest/gtest.h>
 
-#include "paraos_runtime_profiler.hpp"
+#include <cstdint>
+#include <limits>
 
-using namespace paraos;
+#include "paraos_runtime_profiler.hpp"
 
 namespace {
 uint16_t high;
@@ -45,22 +46,22 @@ class Profiler : public testing::Test {
   };
 
   void SetUp() override {
-    high = 0u;
-    low = 0u;
+    high = 0U;
+    low = 0U;
   }
 };
 
 TEST_F(Profiler, TimerProfiler) {
-  using embedded_timer_t = EmbeddedTimer<LowCnt, HightCnt>;
+  using embedded_timer_t = paraos::EmbeddedTimer<LowCnt, HightCnt>;
 
-  embedded_timer_t embedded_timer;
-  TimerProfiler profiler{embedded_timer};
-  EXPECT_EQ(0u, profiler.LastDuration());
+  const embedded_timer_t embedded_timer;
+  paraos::TimerProfiler profiler{embedded_timer};
+  EXPECT_EQ(0U, profiler.LastDuration());
 }
 
 TEST_F(Profiler, LongCnt) {
-  std::uint16_t increment{2};
-  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  constexpr std::uint16_t increment{2};
+  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
 
   profiler.Start();
   low += increment;
@@ -68,9 +69,9 @@ TEST_F(Profiler, LongCnt) {
 }
 
 TEST_F(Profiler, ShortCnt) {
-  std::uint16_t increment{2};
-  EmbeddedProfiler<LowCnt, HightCntDefault> profiler;
-  EmbeddedProfiler<LowCnt> profiler_high_default;
+  constexpr std::uint16_t increment{2};
+  paraos::EmbeddedProfiler<LowCnt, paraos::HightCntDefault> profiler;
+  paraos::EmbeddedProfiler<LowCnt> profiler_high_default;
 
   profiler.Start();
   profiler_high_default.Start();
@@ -81,8 +82,8 @@ TEST_F(Profiler, ShortCnt) {
 
 TEST_F(Profiler, ShortCntOneOverflow) {
   low = std::numeric_limits<std::uint16_t>::max();
-  std::uint16_t increment{3};
-  EmbeddedProfiler<LowCnt> profiler;
+  constexpr std::uint16_t increment{3};
+  paraos::EmbeddedProfiler<LowCnt> profiler;
 
   profiler.Start();
   low += increment;
@@ -93,7 +94,7 @@ TEST_F(Profiler, ShortCntOneOverflow) {
 TEST_F(Profiler, ShortCntTwoOverflow) {
   low = std::numeric_limits<std::uint16_t>::max();
   constexpr std::uint16_t first_increment{3};
-  EmbeddedProfiler<LowCnt> profiler;
+  paraos::EmbeddedProfiler<LowCnt> profiler;
 
   profiler.Start();
   low += first_increment;
@@ -112,20 +113,20 @@ TEST_F(Profiler, ShortCntTwoOverflow) {
 TEST_F(Profiler, LongCntOneOverflow) {
   low = std::numeric_limits<std::uint16_t>::max();
   high = std::numeric_limits<std::uint16_t>::max();
-  std::uint16_t increment{3};
-  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  constexpr std::uint16_t increment{3};
+  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
 
   profiler.Start();
   low += increment;
-  high = 0u;
+  high = 0U;
   EXPECT_EQ(increment, profiler.Stop());
 }
 
 TEST_F(Profiler, RAII) {
-  std::uint16_t increment{3};
-  EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  constexpr std::uint16_t increment{3};
+  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
   {
-    ProfilerRAII profiler_raii(profiler);
+    const paraos::ProfilerRAII profiler_raii(profiler);
 
     low += increment;
 
@@ -135,4 +136,17 @@ TEST_F(Profiler, RAII) {
   }
 
   EXPECT_EQ(increment, profiler.LastDuration());
+}
+
+TEST_F(Profiler, RAIIPeriod) {
+  constexpr std::uint16_t increment{3};
+  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  {
+    /// now profiler will indicates period between calling code below.
+    const paraos::ProfilerPeriodRAII period_calling(profiler);
+
+    low += increment;
+
+    // ... some long code block
+  }
 }

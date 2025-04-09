@@ -30,6 +30,7 @@
 #include <iterator>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "paraos_attr.h"
 #include "paraos_queue_blocking.hpp"
@@ -42,6 +43,10 @@ class IMultiRingBuff {
   using ringbuff_type = IRingBuff<T>;
   using ringbuff_pointer = ringbuff_type*;
 
+  template <typename It>
+  using iterator_category_t =
+      typename std::iterator_traits<It>::iterator_category;
+
  public:
   virtual ~IMultiRingBuff() = default;
 
@@ -53,45 +58,43 @@ class IMultiRingBuff {
   /// @param[in] src_elem_numb: Number of elements fo write in ring buffer.
   /// @param[in] is_isr: Set true if call from isr.
   ///
-  /// @return Returned number of written elements.
+  /// @return True if all data write successful, false in otherwise.
   auto TryWrite(
       const std::size_t buff_id, const T* src, const std::size_t src_elem_numb,
-      bool is_isr = false) -> std::size_t {
-    std::size_t written_elem_numb{0};
+      bool is_isr = false) {
+    paraos::ISRbool is_write_successful{false};
+
     const paraos::CriticalSection critical;
     if (!queue_.IsFull()) {
       if (buff_id < ring_buff_numb_) {
-        auto& bf = ringbuff_[buff_id];
-        written_elem_numb = bf->Write(src, sizeof(T) * src_elem_numb);
+        auto& buffer = ringbuff_[buff_id];
+        auto written_elem_numb = buffer->Write(src, sizeof(T) * src_elem_numb);
 
-        if (written_elem_numb > 0u) {
-          auto is_pushed = queue_.TryPush(buff_id, is_isr);
-
-          // Reduce compile warning if PARAOS_CHECK_ASSERT() empty macros.
-          PARAOS_ATTR_UNUSED_VAR(is_pushed);
+        if (written_elem_numb > 0U) {
+          is_write_successful = queue_.TryPush(buff_id, is_isr);
 
           // queue_.Push() can't return false because we check inside critical
           // section if queue full befor push.
-          PARAOS_CHECK_ASSERT(is_pushed);
+          PARAOS_CHECK_ASSERT(static_cast<bool>(is_write_successful));
         }
       }
     }
 
-    return written_elem_numb;
+    return is_write_successful;
   }
 
-  template <class TIterator>
+  template <
+      typename TIterator,
+      typename U = std::enable_if_t<std::is_base_of_v<
+          std::random_access_iterator_tag, iterator_category_t<TIterator>>>>
   PARAOS_INLINE_TRIVIAL auto TryWrite(
       std::size_t buff_id, TIterator begin, TIterator end,
       bool is_isr = false) {
-    // todo Only random_access_iterator supported. Need static check.
-
     return TryWrite(buff_id, begin, std::distance(begin, end), is_isr);
   }
 
   PARAOS_INLINE_TRIVIAL auto TryWrite(
-      std::size_t buff_id, const gsl::span<const T> src, bool is_isr = false)
-      -> std::size_t {
+      std::size_t buff_id, const gsl::span<const T> src, bool is_isr = false) {
     return TryWrite(buff_id, src.data(), src.size(), is_isr);
   }
 
@@ -99,7 +102,7 @@ class IMultiRingBuff {
       std::size_t& buff_id, void* dst, std::size_t dst_size,
       std::size_t timeout_ms, bool is_isr = false) -> std::size_t {
     PARAOS_CHECK_ASSERT(dst);
-    PARAOS_CHECK_ASSERT(dst_size != 0u);
+    PARAOS_CHECK_ASSERT(dst_size != 0U);
 
     // todo delete after tests
     is_need_force_read_ = true;
@@ -110,19 +113,19 @@ class IMultiRingBuff {
     if (ring_buff_id) {
       const paraos::CriticalSection critical;
       buff_id = *ring_buff_id;
-      auto& bf = ringbuff_[buff_id];
-      read_bytes_numb = bf->Read(dst, dst_size);
+      auto& buffer = ringbuff_[buff_id];
+      read_bytes_numb = buffer->Read(dst, dst_size);
 
       // If not read all available bytes, push ring buffer id in queue for
       // read remaining bytes in next call Read().
-      if (bf->Size() != 0u) {
+      if (buffer->Size() != 0U) {
         if (!queue_.TryPush(buff_id)) {
           // No space in queue. Set force read flag for read data from
           // buffer without request id from queue.
           is_need_force_read_ = true;
         }
       }
-    } else if (is_need_force_read_ == true) {
+    } else if (is_need_force_read_) {
       read_bytes_numb = TryRead(buff_id, dst, dst_size);
     }
 
@@ -146,11 +149,11 @@ class IMultiRingBuff {
     bool is_need_force_read{false};
 
     for (std::size_t i = 0; i < ring_buff_numb_; ++i) {
-      auto& bf = ringbuff_[i];
+      auto& buffer = ringbuff_[i];
       const paraos::CriticalSection critical;
-      if (bf->Size() != 0u) {
+      if (buffer->Size() != 0U) {
         buff_id = i;
-        read_bytes_numb = bf->Read(dst, dst_size);
+        read_bytes_numb = buffer->Read(dst, dst_size);
 
         // Read anything from buffer, when Read() will calls in next time,
         // check again if any data available.
@@ -166,7 +169,12 @@ class IMultiRingBuff {
     return TryRead(buff_id, dst.data(), dst.size(), is_isr);
   }
 
-  auto GetBuffNumb() const { return ring_buff_numb_; }
+  [[nodiscard]] auto GetBuffNumb() const { return ring_buff_numb_; }
+
+  IMultiRingBuff(IMultiRingBuff&& other) = delete;
+  auto operator=(IMultiRingBuff&& other) -> IMultiRingBuff& = delete;
+  auto operator=(const IMultiRingBuff& other) -> IMultiRingBuff& = delete;
+  IMultiRingBuff(const IMultiRingBuff& other) = delete;
 
  protected:
   IMultiRingBuff(
@@ -200,18 +208,25 @@ class MultiRingBuff : public IMultiRingBuff<T> {
   using iringbuff_pointer = iringbuff_type*;
 
   static_assert(
-      QUEUE_SIZE > 1u, "Queue size in MultiRingBuff must be greater then one");
+      QUEUE_SIZE > 1U, "Queue size in MultiRingBuff must be greater then one");
 
  public:
   constexpr MultiRingBuff()
-      : IMultiRingBuff<T>{queue_, ring_buff_ptr, ring_buffs_numbs} {
+      : IMultiRingBuff<T>{queue_, &ring_buff_ptr[0], ring_buffs_numbs} {
     // Copy ring buff addresses from tuple in ring_buff_ptr.
     SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }
 
-  virtual ~MultiRingBuff() = default;
+  ~MultiRingBuff() override = default;
 
-  constexpr auto GetBuffNumb() const { return sizeof...(RINGBUFF); }
+  [[nodiscard]] constexpr auto GetBuffNumb() const {
+    return sizeof...(RINGBUFF);
+  }
+
+  MultiRingBuff(MultiRingBuff&& other) = delete;
+  auto operator=(MultiRingBuff&& other) -> MultiRingBuff& = delete;
+  auto operator=(const MultiRingBuff& other) -> MultiRingBuff& = delete;
+  MultiRingBuff(const MultiRingBuff& other) = delete;
 
  private:
   /// --------------------------------------------------------------------------
@@ -220,26 +235,27 @@ class MultiRingBuff : public IMultiRingBuff<T> {
 
   /// @brief Iterate tuple.
   template <typename D>
-  void SetPointerOnPolymorphicRingBuffClass(D& x, int& idx) {
-    ring_buff_ptr[idx++] = &x;
+  void SetPointerOnPolymorphicRingBuffClass(D& ring_buff, int& idx) {
+    ring_buff_ptr[idx++] = &ring_buff;
   }
 
   /// @brief Iterate tuple.
   template <typename TupleT, std::size_t... Is>
   void SetPointersOnPolymorphicClassesManual(
-      TupleT& tp, std::index_sequence<Is...>) {
+      TupleT& tup, std::index_sequence<Is...> index_seq) {
+    PARAOS_ATTR_UNUSED_VAR(index_seq);
     int idx{0};
 
     // SetPointerOnPolymorphicRingBuffClass() will calls as many times as
     // there are ring buffers contained in the tuple.
-    (SetPointerOnPolymorphicRingBuffClass(std::get<Is>(tp), idx), ...);
+    (SetPointerOnPolymorphicRingBuffClass(std::get<Is>(tup), idx), ...);
   }
 
   /// @brief Iterate tuple.
   template <typename TupleT, std::size_t TupSize = std::tuple_size_v<TupleT>>
-  void SetPointersOnPolymorphicClasses(TupleT& tp) {
+  void SetPointersOnPolymorphicClasses(TupleT& tup) {
     SetPointersOnPolymorphicClassesManual(
-        tp, std::make_index_sequence<TupSize>{});
+        tup, std::make_index_sequence<TupSize>{});
   }
 
  private:
@@ -248,11 +264,16 @@ class MultiRingBuff : public IMultiRingBuff<T> {
   /// @brief Tuple for contained ring buffers.
   std::tuple<RINGBUFF...> ringbuff_tuple_;
 
+  // NOLINTBEGIN(hicpp-avoid-c-arrays)
   /// @brief Array of pointers for polymorphic classes, each element
   /// contained address one ringbuff_ exemplar. Need for using in
   /// IMultiRingBuff class and correctly access for each exemplars of
   /// ringbuff_ array by polymorphic IRingBuff class.
+  ///
+  /// @note Using C style array, because std::array stays uninitialized in
+  /// MultiRingBuff constructor.
   iringbuff_pointer ring_buff_ptr[ring_buffs_numbs];
+  // NOLINTEND(hicpp-avoid-c-arrays)
 };
 
 }  // namespace paraos

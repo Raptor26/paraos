@@ -67,12 +67,12 @@ class Timer {
   /// at ones after period_ms delay. If is_auto_reload == false and user code
   /// needs call Run() again, call Start().
   /// @param[in] name: Human readable string. Useful for debug.
-  Timer(
+  explicit Timer(
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer")
       : period_ms_{period_ms}, is_auto_reload_{is_auto_reload}, name_{name} {
     Create();
-    if (start_immediately == true) {
+    if (start_immediately) {
       Start();
     }
   }
@@ -104,12 +104,12 @@ class Timer {
       itval.it_interval.tv_sec = itval.it_value.tv_sec;
       itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
     } else {
-      itval.it_value.tv_nsec = 1u;
+      itval.it_value.tv_nsec = 1U;
     }
 
     auto status = timer_settime(timer_id_, 0, &itval, nullptr);
     if (status == 0) {
-      is_timer_started.is_success_ = true;
+      is_timer_started.SetSuccessStatus(true);
     }
 
     return is_timer_started;
@@ -128,7 +128,6 @@ class Timer {
   auto ChangePeriod(
       std::size_t period_ms, std::size_t max_block_time = max_delay,
       bool is_isr = false) -> ISRbool {
-    ISRbool is_period_changed{false};
     period_ms_ = period_ms;
 
     return Start(max_block_time, is_isr);
@@ -148,10 +147,10 @@ class Timer {
 
     ISRbool is_timer_stopped{false};
 
-    struct itimerspec itval {};
+    const struct itimerspec itval {};
 
     if (timer_settime(timer_id_, 0, &itval, nullptr) == 0) {
-      is_timer_stopped.is_success_ = true;
+      is_timer_stopped.SetSuccessStatus(true);
     }
 
     return is_timer_stopped;
@@ -178,8 +177,14 @@ class Timer {
     PARAOS_CHECK_ASSERT(false);
   }
 
+  /// @brief Five rule.
+  Timer(Timer &&other) = delete;
+  auto operator=(Timer &&other) -> Timer & = delete;
+  auto operator=(const Timer &other) -> Timer & = delete;
+  Timer(const Timer &other) = delete;
+
  private:
-  bool Create() {
+  auto Create() -> bool {
     bool is_timer_created{false};
 
     struct sigevent sev {};
@@ -187,7 +192,7 @@ class Timer {
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_value.sival_ptr = static_cast<void *>(this);
     sev.sigev_notify_function = &Hndlr;
-    sev.sigev_notify_attributes = 0;
+    sev.sigev_notify_attributes = nullptr;
     auto status = timer_create(CLOCK_REALTIME, &sev, &timer_id_);
 
     if (status == 0) {
@@ -198,7 +203,7 @@ class Timer {
   }
 
   static void Hndlr(union sigval sigev_value) {
-    auto this_ptr = static_cast<Timer *>(sigev_value.sival_ptr);
+    auto *this_ptr = static_cast<Timer *>(sigev_value.sival_ptr);
 
     this_ptr->Run();
   }
@@ -216,7 +221,9 @@ class Timer {
   /// period_ms_ after user call Start() (or after software timer object will
   /// construct if <start_immediately == true>).
   bool is_auto_reload_;
+
   std::string_view name_;
+
   timer_t timer_id_{std::numeric_limits<timer_t>::max()};
 };
 }  // namespace paraos

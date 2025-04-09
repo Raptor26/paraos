@@ -162,7 +162,6 @@ constexpr auto at(std::span<T, extent> sp, const index i) -> decltype(sp[sp.size
 
 #endif // _MSC_VER
 
-// Turn off clang unsafe buffer warnings as all accessed are guarded by runtime checks
 #if defined(__clang__)
 #if __has_warning("-Wunsafe-buffer-usage")
 #pragma clang diagnostic pop

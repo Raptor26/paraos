@@ -8,9 +8,15 @@ cmake_minimum_required(VERSION 3.20)
 
 include(setup.cmake)
 
+# Read project version from commitizen config file.
+# https://stackoverflow.com/questions/68759588/parse-a-config-file-ini-or-cfg-with-cmake-to-create-a-header-file
+file(READ "${CMAKE_CURRENT_LIST_DIR}/.cz.json" commitizen_json)
+string(JSON paraos_project_version GET "${commitizen_json}" commitizen version)
+message(STATUS "PARAOS project version is ${paraos_project_version}")
+
 project(
   paraos
-  VERSION 0.4.0
+  VERSION ${paraos_project_version}
   DESCRIPTION
     "Cross-platform wrapper over operating system primitives with an emphasis on embedded systems"
   LANGUAGES C CXX)
@@ -24,16 +30,16 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                                INTERFACE -DPARAOS_CHECK_LOOP_ENABLE)
   endif()
 
-  # If paraos is standalone project, we always want use unit testing
-  include(CTest)
-  enable_testing()
-
   option(IS_PARAOS_STAND_ALONE_PROJECT "Use paraos version for etl_profile.h"
          ON)
-endif()
 
-if(IS_PARAOS_STAND_ALONE_PROJECT)
-  option(PARAOS_TESTS "Enable testing" ON)
+  # If paraos is standalone project, we want use unit testing only if debug
+  # configuration
+  if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    include(CTest)
+    enable_testing()
+    option(PARAOS_TESTS "Enable testing" ON)
+  endif()
 endif()
 
 # Boost::leaf ------------------------------------------------------------------
@@ -87,17 +93,38 @@ target_include_directories(${PROJECT_NAME}
 if(FREERTOS)
   option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_freertos)
+  option(FREERTOS_ENABLE "Using FreeRTOS port" ON)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DPARAOS_LIKE_FREERTOS)
 elseif(WIN32)
   option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_win)
+  option(WINAPI "Using WINAPI" ON)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DPARAOS_LIKE_WINAPI)
 elseif(UNIX)
   option(THREAD_ENABLE "Thread support enable" ON)
   add_subdirectory(port_unix)
+  option(UNIX "Using UNIX" ON)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DPARAOS_LIKE_UNIX)
 endif()
 
 if(PARAOS_TESTS)
   add_subdirectory(port_tests)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DUNIT_TESTS_ENABLE)
+endif()
+
+if(IS_PARAOS_STAND_ALONE_PROJECT AND CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY
+                                                     "${DO_CLANG_TIDY}")
+  else()
+    message(FATAL_ERROR "clang-tidy not found.")
+  endif()
 endif()
 
 add_subdirectory(containers)
 add_subdirectory(extra)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/paraos_version.hpp.in
+               ${CMAKE_CURRENT_SOURCE_DIR}/paraos_version.hpp @ONLY)

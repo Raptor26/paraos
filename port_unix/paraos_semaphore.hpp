@@ -29,6 +29,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#include <utility>
+
 #include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
@@ -39,16 +41,18 @@
 namespace paraos {
 
 struct SemaphoreAttr {
-  std::size_t max_count{1u};
-  std::size_t initial_value{0};
+  std::size_t max_count{1U};
+  std::size_t initial_value{0U};
 };
 
-constexpr std::size_t initial_count = 0u;
+constexpr std::size_t initial_count = 0U;
 
 class SemaphoreBase {
  public:
-  virtual ISRbool Take(
-      std::size_t timeout_ms = max_delay, bool from_isr = false) {
+  // Unix specific semaphore realization.
+  // NOLINTBEGIN(google-default-arguments)
+  virtual auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false)
+      -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
     // PARAOS wrapper for POSIX not provided isr functions.
@@ -60,10 +64,7 @@ class SemaphoreBase {
     } else if (timeout_ms == max_delay) {
       result = sem_wait(&handle_);
     } else {
-      timespec delay{};
-      delay.tv_nsec =
-          static_cast<long>(timeout_ms) * NANOSECONDS_PER_MILISECONDS;
-
+      auto delay = MillisecondsInTimeSpec(timeout_ms);
       timespec current_time{};
       clock_gettime(CLOCK_REALTIME, &current_time);
 
@@ -75,10 +76,10 @@ class SemaphoreBase {
     if (result == 0) {
       is_sem_taken = true;
     }
-    return is_sem_taken;
+    return static_cast<ISRbool>(is_sem_taken);
   }
 
-  virtual ISRbool Give(bool from_isr = false) {
+  virtual auto Give(bool from_isr = false) -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
     bool is_sem_given{false};
     auto result = sem_post(&handle_);
@@ -86,10 +87,15 @@ class SemaphoreBase {
     if (result == 0) {
       is_sem_given = true;
     }
-    return is_sem_given;
+    return static_cast<ISRbool>(is_sem_given);
   }
+  // NOLINTEND(google-default-arguments)
 
-  operator bool() const { return is_sem_created_; }
+  explicit operator bool() const { return is_sem_created_; }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBase(const SemaphoreBase &other) = delete;
+  auto operator=(const SemaphoreBase &other) -> SemaphoreBase & = delete;
 
  protected:
   SemaphoreBase() = default;
@@ -97,34 +103,83 @@ class SemaphoreBase {
   virtual ~SemaphoreBase() {
     if (is_sem_created_) {
       sem_destroy(&handle_);
+      is_sem_created_ = false;
     }
   }
 
-  sem_t handle_;
-  bool is_sem_created_;
+  /// @brief Move ctor.
+  SemaphoreBase(SemaphoreBase &&other) noexcept {
+    if (this != &other) {
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      other.is_sem_created_ = false;
+    }
+  }
+
+  /// @brief Move assignment.
+  auto operator=(SemaphoreBase &&other) noexcept -> SemaphoreBase & {
+    if (this != &other) {
+      this->~SemaphoreBase();
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      other.is_sem_created_ = false;
+    }
+
+    return *this;
+  }
+
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put these variables into private section, because they're used in
+  // derived classes.
+  sem_t handle_{};
+  etl::atomic<bool> is_sem_created_{false};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 struct SemaphoreCounting final : public SemaphoreBase {
-  SemaphoreCounting(const SemaphoreAttr &attr) : SemaphoreBase{} {
+  explicit SemaphoreCounting(const SemaphoreAttr &attr) {
     if (sem_init(&handle_, 0, attr.initial_value) == 0) {
       is_sem_created_ = true;
     }
   }
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
-  ~SemaphoreCounting() = default;
+  ~SemaphoreCounting() override = default;
+
+  /// @brief Move ctor.
+  SemaphoreCounting(SemaphoreCounting &&other) noexcept
+      : SemaphoreBase(std::move(other)) {}
+
+  /// @brief Move assignment.
+  auto operator=(SemaphoreCounting &&other) noexcept -> SemaphoreCounting & {
+    if (this != &other) {
+      this->~SemaphoreCounting();
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      other.is_sem_created_ = false;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreCounting(const SemaphoreCounting &other) = delete;
+  auto operator=(const SemaphoreCounting &other) -> SemaphoreCounting & =
+                                                        delete;
 };
 
 struct SemaphoreBinary final : public SemaphoreBase {
   SemaphoreBinary() noexcept : SemaphoreBinary{SemaphoreAttr{}} {}
 
-  SemaphoreBinary(const SemaphoreAttr &attr) noexcept : SemaphoreBase{} {
+  explicit SemaphoreBinary(const SemaphoreAttr &attr) noexcept {
     if (sem_init(&handle_, 0, attr.initial_value) == 0) {
       is_sem_created_ = true;
     }
   }
 
-  ISRbool Give(bool from_isr = false) override {
+  // Unix specific semaphore realization.
+  // NOLINTBEGIN(google-default-arguments)
+  auto Give(bool from_isr = false) -> ISRbool override {
     ISRbool status;
 
     const CriticalSection critical;
@@ -139,8 +194,8 @@ struct SemaphoreBinary final : public SemaphoreBase {
     return status;
   }
 
-  ISRbool Take(
-      std::size_t timeout_ms = max_delay, bool from_isr = false) override {
+  auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false)
+      -> ISRbool override {
     ISRbool status;
 
     status = SemaphoreBase::Take(timeout_ms, from_isr);
@@ -152,11 +207,35 @@ struct SemaphoreBinary final : public SemaphoreBase {
 
     return status;
   }
+  // NOLINTEND(google-default-arguments)
 
-  ~SemaphoreBinary() = default;
+  ~SemaphoreBinary() override = default;
+
+  /// @brief Move ctor.
+  SemaphoreBinary(SemaphoreBinary &&other) noexcept
+      : SemaphoreBase(std::move(other)) {}
+
+  /// @brief Move assignment.
+  auto operator=(SemaphoreBinary &&other) noexcept -> SemaphoreBinary & {
+    if (this != &other) {
+      this->~SemaphoreBinary();
+      this->handle_ = other.handle_;
+      this->is_sem_created_ = other.is_sem_created_.load();
+      this->is_given_ = other.is_given_.load();
+
+      other.is_sem_created_ = false;
+      other.is_given_ = false;
+    }
+
+    return *this;
+  }
+
+  /// @brief Semaphore non-copyable
+  SemaphoreBinary(const SemaphoreBinary &other) = delete;
+  auto operator=(const SemaphoreBinary &other) -> SemaphoreBinary & = delete;
 
  private:
-  etl::atomic_bool is_given_{false};
+  etl::atomic<bool> is_given_{false};
 };
 }  // namespace paraos
 

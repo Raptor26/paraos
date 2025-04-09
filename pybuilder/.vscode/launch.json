@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: pycmakebuilder with cpp folder",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "-d=${workspaceFolder}\\cpp", "-t=--output-on-failure --stop-on-failure", "-e=pc_gcc_debug_native_trace"
+            ]
+        },
+        {
+            "name": "pycmakebuilder if include only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "-d=${workspaceFolder}\\cpp", "-t=--output-on-failure --stop-on-failure", "-i=stavpilot_f405_gcc_debug"
+            ]
+        }
+    ]
+}

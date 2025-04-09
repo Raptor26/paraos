@@ -33,8 +33,24 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
-                "CODE_COVERAGE": "true"
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "pc_debug_gcc_trace",
+            "displayName": "PC Debug GCC with trace",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "TRACE": "true"
+            }
+        },
+        {
+            "name": "pc_debug_gcc_clang_tidy",
+            "displayName": "PC platform debug with GCC with clang-tidy checks",
+            "description": "Clang-tidy debug version",
+            "inherits": "pc_debug_gcc",
+            "cacheVariables": {
+                "CLANG_TIDY_ENABLE": true
             }
         },
         {
@@ -62,6 +78,23 @@
             }
         },
         {
+            "name": "freertos_debug_gcc_trace",
+            "displayName": "freeRTOS Debug GCC with trace",
+            "inherits": "freertos_debug_gcc",
+            "cacheVariables": {
+                "TRACE": true
+            }
+        },
+        {
+            "name": "freertos_debug_gcc_clang_tidy",
+            "displayName": "freeRTOS debug with GCC and clang-tidy checks",
+            "description": "Clang-tidy debug version",
+            "inherits": "freertos_debug_gcc",
+            "cacheVariables": {
+                "CLANG_TIDY_ENABLE": true
+            }
+        },
+        {
             "name": "freertos_release_clang",
             "displayName": "freeRTOS Release Clang",
             "inherits": "pc_debug_clang",
@@ -75,88 +108,6 @@
             "inherits": "freertos_debug_clang",
             "cacheVariables": {
                 "TRACE": "true"
-            }
-        },
-        {
-            "name": "pc_debug_clang_docker",
-            "displayName": "Docker with clang and without sudo",
-            "inherits": "pc_debug_clang",
-            "cacheVariables": {
-                "NOSUDO": "true"
-            }
-        }
-    ],
-    "testPresets": [
-        {
-            "name": "test_pc_debug_clang",
-            "configurePreset": "pc_debug_clang",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": true,
-                "timeout": 10
-            }
-        },
-        {
-            "name": "test_pc_debug_gcc",
-            "configurePreset": "pc_debug_gcc",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": true,
-                "timeout": 10
-            }
-        },
-        {
-            "name": "test_pc_release_clang",
-            "configurePreset": "pc_release_clang",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": true,
-                "timeout": 10
-            }
-        },
-        {
-            "name": "test_freertos_debug_clang",
-            "configurePreset": "freertos_debug_clang",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": true,
-                "timeout": 10
-            }
-        },
-        {
-            "name": "test_freertos_debug_gcc",
-            "configurePreset": "freertos_debug_gcc",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": true,
-                "timeout": 10
-            }
-        },
-        {
-            "name": "test_freertos_release_clang",
-            "configurePreset": "freertos_release_clang",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": true,
-                "timeout": 10
             }
         }
     ]

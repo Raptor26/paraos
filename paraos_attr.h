@@ -230,4 +230,36 @@
 #error "Need definition PARAOS_PACK for used compiler"
 #endif
 
+#define PARAOS_PACK_STRUCT(__Declaration__) \
+  struct __Declaration__ __attribute__((__packed__))
+
+/// ----------------------------------------------------------------------------
+/// The macros below are useful for preventing optimization of structures and
+/// classes with template parameters.
+///
+/// <pre>
+/// {@code
+/// PARAOS_NO_PADDING_NO_OPTIMIZE_BEGIN
+/// template <typename T>
+/// struct MyStruct {
+///   char a;
+///   int b;
+///   T t;
+/// };
+/// PARAOS_NO_PADDING_NO_OPTIMIZE_END
+/// }
+/// </pre>
+#if defined(__GNUC__) || defined(__clang__)
+
+#define PARAOS_NO_PADDING_NO_OPTIMIZE_BEGIN _Pragma("pack(push, 1)")
+#define PARAOS_NO_PADDING_NO_OPTIMIZE_END _Pragma("pack(pop)")
+#elif defined(_MSC_VER)
+#define PARAOS_NO_PADDING_NO_OPTIMIZE_BEGIN __pragma(pack(push, 1))
+#define PARAOS_NO_PADDING_NO_OPTIMIZE_END __pragma(pack(pop))
+#else
+#error "Compiler does not support packing directives"
+#define PARAOS_NO_PADDING_NO_OPTIMIZE_BEGIN
+#define PARAOS_NO_PADDING_NO_OPTIMIZE_END
+#endif
+
 #endif /* PARAOS_ATTR_H */

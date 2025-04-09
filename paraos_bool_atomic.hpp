@@ -36,7 +36,7 @@ namespace paraos {
 template <typename T>
 class VarAtomic final {
  public:
-  VarAtomic(T var) {
+  explicit VarAtomic(T var) {
     const paraos::CriticalSection critical;  // RAII
     var_ = var;
   }
@@ -57,7 +57,8 @@ class VarAtomic final {
     var_ = std::move(other.var_);
   }
 
-  PARAOS_INLINE_TRIVIAL VarAtomic& operator=(const VarAtomic& other) noexcept {
+  PARAOS_INLINE_TRIVIAL auto operator=(const VarAtomic& other) noexcept
+      -> VarAtomic& {
     if (this != &other) {
       const paraos::CriticalSection critical;  // RAII
       var_ = other.var_;
@@ -66,7 +67,8 @@ class VarAtomic final {
     return *this;
   }
 
-  PARAOS_INLINE_TRIVIAL VarAtomic& operator=(VarAtomic&& other) noexcept {
+  PARAOS_INLINE_TRIVIAL auto operator=(VarAtomic&& other) noexcept
+      -> VarAtomic& {
     const paraos::CriticalSection critical;  // RAII
     var_ = std::move(other.var_);
 
@@ -74,7 +76,7 @@ class VarAtomic final {
   }
   // ---------------------------------------------------------------------------
 
-  operator bool() const {
+  explicit operator bool() const {
     static_assert(
         std::is_same_v<bool, T>,
         "This operator can be called for bool type only");

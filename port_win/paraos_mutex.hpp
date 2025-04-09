@@ -26,11 +26,12 @@
 #ifndef PARAOS_MUTEX_HPP
 #define PARAOS_MUTEX_HPP
 
-#include <atomic>
 #include <cassert>
 
+#include "etl/atomic.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_critical.hpp"
 #include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
 
@@ -46,28 +47,20 @@ namespace paraos {
 class MutexBase {
  public:
   virtual ~MutexBase() {
-    assert(handle_);
-    if (handle_) {
+    if (handle_ != nullptr) {
       CloseHandle(handle_);
 
       // need for debug only
       handle_ = nullptr;
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "MutexBase Dtor" << std::endl;
-#endif
   }
 
-  MutexBase(const MutexBase& other) = delete;
-  MutexBase(MutexBase&& other) = delete;
+  explicit operator bool() const {
+    return static_cast<bool>(handle_ != nullptr);
+  }
 
-  MutexBase& operator=(const MutexBase& other) = delete;
-  MutexBase& operator=(MutexBase&& other) = delete;
-
-  operator bool() const { return handle_ != nullptr ? true : false; }
-
-  ISRbool Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) {
+  auto Lock(std::size_t timeout_ms = max_delay, bool is_isr = false)
+      -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     PARAOS_CHECK_ASSERT(handle_);
     ISRbool is_mutex_taken;
@@ -80,7 +73,7 @@ class MutexBase {
     if (is_need_take) {
       if (WaitForSingleObject(handle_, static_cast<DWORD>(timeout_ms)) ==
           WAIT_OBJECT_0) {
-        is_mutex_taken.is_success_ = true;
+        is_mutex_taken.SetSuccessStatus(true);
         ++lock_cnt_;
       }
     }
@@ -88,42 +81,97 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  ISRbool Unlock(bool is_isr = false) {
+  auto Unlock(bool is_isr = false) -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     PARAOS_CHECK_ASSERT(handle_);
 
-    ISRbool is_unlock = static_cast<ISRbool>(ReleaseMutex(handle_));
-    if (is_unlock == true) {
+    auto is_unlock =
+        static_cast<ISRbool>(static_cast<bool>(ReleaseMutex(handle_)));
+    if (static_cast<bool>(is_unlock)) {
       --lock_cnt_;
     }
 
     return is_unlock;
   }
 
+  /// @brief  Mutex non-copyable
+  auto operator=(const MutexBase& other) -> MutexBase& = delete;
+  MutexBase(const MutexBase& other) = delete;
+
  protected:
-  MutexBase(bool is_recursive) : is_recursive_{is_recursive} {
-    handle_ = CreateMutex(nullptr, false, nullptr);
+  explicit MutexBase(bool is_recursive) : is_recursive_{is_recursive} {
+    handle_ = CreateMutex(nullptr, 0, nullptr);
   };
 
+  /// @brief Move Ctor,
+  MutexBase(MutexBase&& other) noexcept {
+    if (this != &other) {
+      const paraos::CriticalSection critical;
+      this->handle_ = other.handle_;
+      this->is_recursive_ = other.is_recursive_.load();
+      this->lock_cnt_ = other.lock_cnt_.load();
+
+      other.handle_ = nullptr;
+    }
+  }
+
+  /// @brief Move assignment.
+  auto operator=(MutexBase&& other) noexcept -> MutexBase& {
+    if (this == &other) {
+      return *this;
+    }
+
+    const paraos::CriticalSection critical;
+    this->~MutexBase();
+    this->handle_ = other.handle_;
+    this->is_recursive_ = other.is_recursive_.load();
+    this->lock_cnt_ = other.lock_cnt_.load();
+
+    other.handle_ = nullptr;
+
+    return *this;
+  }
+
  protected:
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put these variables into private section, because they're used in
+  // derived classes.
   HANDLE handle_{nullptr};
 
- private:
-  const bool is_recursive_{false};
-  std::atomic_int lock_cnt_{0};
+  etl::atomic<bool> is_recursive_{false};
+  etl::atomic<int> lock_cnt_{0};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 class Mutex final : public MutexBase {
  public:
   Mutex() : MutexBase{false} {}
 
-  ~Mutex() {}
+  ~Mutex() override = default;
 
+  /// @brief Move Ctor,
+  Mutex(Mutex&& other) noexcept : MutexBase(std::move(other)) {};
+
+  /// @brief Move assignment.
+  auto operator=(Mutex&& other) noexcept -> Mutex& {
+    if (this == &other) {
+      return *this;
+    }
+
+    const paraos::CriticalSection critical;
+    this->~Mutex();
+    this->handle_ = other.handle_;
+    this->is_recursive_ = other.is_recursive_.load();
+    this->lock_cnt_ = other.lock_cnt_.load();
+
+    other.handle_ = nullptr;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable.
+  auto operator=(const Mutex& other) -> Mutex& = delete;
   Mutex(const Mutex& other) = delete;
-  Mutex(Mutex&& other) = delete;
-
-  Mutex& operator=(const Mutex& other) = delete;
-  Mutex& operator=(Mutex&& other) = delete;
 };
 
 /// @brief
@@ -133,13 +181,32 @@ class MutexRecursive final : public MutexBase {
  public:
   MutexRecursive() : MutexBase{true} {}
 
-  ~MutexRecursive() {}
+  ~MutexRecursive() override = default;
 
+  /// @brief Move Ctor,
+  MutexRecursive(MutexRecursive&& other) noexcept
+      : MutexBase(std::move(other)) {};
+
+  /// @brief Move assignment.
+  auto operator=(MutexRecursive&& other) noexcept -> MutexRecursive& {
+    if (this == &other) {
+      return *this;
+    }
+
+    const paraos::CriticalSection critical;
+    this->~MutexRecursive();
+    this->handle_ = other.handle_;
+    this->is_recursive_ = other.is_recursive_.load();
+    this->lock_cnt_ = other.lock_cnt_.load();
+
+    other.handle_ = nullptr;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable.
   MutexRecursive(const MutexRecursive& other) = delete;
-  MutexRecursive(MutexRecursive&& other) = delete;
-
-  MutexRecursive& operator=(const MutexRecursive& other) = delete;
-  MutexRecursive& operator=(MutexRecursive&& other) = delete;
+  auto operator=(const MutexRecursive& other) -> MutexRecursive& = delete;
 };
 
 }  // namespace paraos

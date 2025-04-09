@@ -37,8 +37,16 @@
     std::cout << __message__ << std::endl;        \
   }
 
+#define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__) \
+  {                                                                       \
+    const paraos::CriticalSection macro_critical;                         \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__       \
+              << std::endl;                                               \
+  }
+
 #else
 #define paraosTRACE_MESSAGE(__message__)
+#define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__)
 #endif
 
 #endif /* PARAOS_TRACE_HPP */

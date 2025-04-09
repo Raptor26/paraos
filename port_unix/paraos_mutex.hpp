@@ -28,7 +28,8 @@
 
 #include <pthread.h>
 
-#include "etl/atomic.h"
+#include <atomic>
+
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_utils.hpp"
@@ -41,15 +42,15 @@ struct MutexAttr {
 
 class MutexBase {
  public:
-  virtual ~MutexBase() { pthread_mutex_destroy(&m_obj_); }
+  virtual ~MutexBase() {
+    if (is_mutex_ready_) {
+      pthread_mutex_destroy(&m_obj_);
+      is_mutex_ready_ = false;
+    }
+  }
 
-  MutexBase(const MutexBase& other) = delete;
-  MutexBase(MutexBase&& other) = delete;
-
-  MutexBase& operator=(const MutexBase& other) = delete;
-  MutexBase& operator=(MutexBase&& other) = delete;
-
-  bool Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) noexcept {
+  auto Lock(std::size_t timeout_ms = max_delay, bool is_isr = false) noexcept
+      -> bool {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     bool is_mutex_taken{false};
 
@@ -61,7 +62,7 @@ class MutexBase {
     } else {
       timespec delay{};
       delay.tv_nsec =
-          static_cast<long>(timeout_ms) * NANOSECONDS_PER_MILISECONDS;
+          static_cast<int64_t>(timeout_ms) * NANOSECONDS_PER_MILISECONDS;
 
       timespec current_time{};
       clock_gettime(CLOCK_REALTIME, &current_time);
@@ -79,7 +80,7 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  bool Unlock(bool is_isr = false) noexcept {
+  auto Unlock(bool is_isr = false) noexcept -> bool {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     bool is_mutex_released{false};
 
@@ -95,10 +96,14 @@ class MutexBase {
     return is_mutex_released;
   }
 
-  operator bool() const { return is_mutex_ready_; }
+  explicit operator bool() const { return is_mutex_ready_; }
+
+  /// @brief  Mutex non-copyable
+  auto operator=(const MutexBase& other) -> MutexBase& = delete;
+  MutexBase(const MutexBase& other) = delete;
 
  protected:
-  MutexBase(int kind) noexcept {
+  explicit MutexBase(int kind) noexcept {
     pthread_mutexattr_t pthread_mutex_attr;
     pthread_mutexattr_init(&pthread_mutex_attr);
     pthread_mutexattr_settype(&pthread_mutex_attr, kind);
@@ -107,42 +112,107 @@ class MutexBase {
     }
   }
 
+  /// @brief Move Ctor,
+  MutexBase(MutexBase&& other) noexcept {
+    if (this != &other) {
+      this->m_obj_ = other.m_obj_;
+      this->lock_cnt_ = other.lock_cnt_.load();
+      this->is_mutex_ready_ = other.is_mutex_ready_.load();
+
+      other.is_mutex_ready_ = false;
+    }
+  }
+
+  /// @brief Move assignment.
+  auto operator=(MutexBase&& other) noexcept -> MutexBase& {
+    if (this == &other) {
+      return *this;
+    }
+
+    this->~MutexBase();
+    this->m_obj_ = other.m_obj_;
+    this->lock_cnt_ = other.lock_cnt_.load();
+    this->is_mutex_ready_ = other.is_mutex_ready_.load();
+
+    other.is_mutex_ready_ = false;
+
+    return *this;
+  }
+
  protected:
-  pthread_mutex_t m_obj_;
+  // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
+  // We can't put these variables into private section, because they're used in
+  // derived classes.
+  pthread_mutex_t m_obj_{};
 
-  bool is_mutex_ready_{false};
+  std::atomic<bool> is_mutex_ready_{false};
 
- private:
   /// @brief If lock_cnt_ == 0, then try unlock mutex. Otherwise only return
   /// false without any action. It's need for consistent API between
   /// Unix/WinAPI/FreeRTOS
-  etl::atomic_int lock_cnt_{0};
+  std::atomic<int> lock_cnt_{0};
+  // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 class Mutex final : public MutexBase {
  public:
   Mutex() : MutexBase{PTHREAD_MUTEX_NORMAL} {}
 
-  ~Mutex() {}
+  ~Mutex() override = default;
 
+  /// @brief Move Ctor,
+  Mutex(Mutex&& other) noexcept : MutexBase(std::move(other)){};
+
+  /// @brief Move assignment.
+  auto operator=(Mutex&& other) noexcept -> Mutex& {
+    if (this == &other) {
+      return *this;
+    }
+
+    this->~Mutex();
+    this->m_obj_ = other.m_obj_;
+    this->lock_cnt_ = other.lock_cnt_.load();
+    this->is_mutex_ready_ = other.is_mutex_ready_.load();
+
+    other.is_mutex_ready_ = false;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable.
+  auto operator=(const Mutex& other) -> Mutex& = delete;
   Mutex(const Mutex& other) = delete;
-  Mutex(Mutex&& other) = delete;
-
-  Mutex& operator=(const Mutex& other) = delete;
-  Mutex& operator=(Mutex&& other) = delete;
 };
 
 class MutexRecursive final : public MutexBase {
  public:
   MutexRecursive() : MutexBase{PTHREAD_MUTEX_RECURSIVE} {}
 
-  ~MutexRecursive() {}
+  ~MutexRecursive() override = default;
 
+  /// @brief Move Ctor,
+  MutexRecursive(MutexRecursive&& other) noexcept
+      : MutexBase(std::move(other)){};
+
+  /// @brief Move assignment.
+  auto operator=(MutexRecursive&& other) noexcept -> MutexRecursive& {
+    if (this == &other) {
+      return *this;
+    }
+
+    this->~MutexRecursive();
+    this->m_obj_ = other.m_obj_;
+    this->lock_cnt_ = other.lock_cnt_.load();
+    this->is_mutex_ready_ = other.is_mutex_ready_.load();
+
+    other.is_mutex_ready_ = false;
+
+    return *this;
+  }
+
+  /// @brief  Mutex non-copyable.
   MutexRecursive(const MutexRecursive& other) = delete;
-  MutexRecursive(Mutex&& MutexRecursive) = delete;
-
-  MutexRecursive& operator=(const MutexRecursive& other) = delete;
-  MutexRecursive& operator=(MutexRecursive&& other) = delete;
+  auto operator=(const MutexRecursive& other) -> MutexRecursive& = delete;
 };
 
 }  // namespace paraos

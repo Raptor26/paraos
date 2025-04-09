@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/MaJerle/lwrb.git
 	branch = develop
-	commit = df316675a2491851c58c827b058808b112ed7614
-	parent = a8f2e180749c05bd375d597f40cf1a3fd6980e2c
+	commit = b9d0cabfde3fcd75ccfbb2e82a8768c08b2aca86
+	parent = af297aa3180e3e93de08571cf5fa0aa2a844530a
 	method = merge
 	cmdver = 0.4.6

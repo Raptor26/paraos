@@ -26,35 +26,93 @@
 #ifndef CRITICAL_HPP
 #define CRITICAL_HPP
 
-#include <assert.h>
 #include <synchapi.h>
 
-#include "paraos_mutex.hpp"
+#include <cassert>
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
+#include "paraos_attr.h"
 
 namespace paraos {
 
-class CriticalSection final {
+class CriticalSectionFactory final {
  public:
-  /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
-  /// @param is_isr
-  CriticalSection(bool is_isr = false) noexcept : is_isr_{is_isr} {
-    mutex_.Lock(INFINITE, is_isr_);
+  /// @brief Construct a new Critical Section Factory object.
+  /// @see
+  /// https://learn.microsoft.com/en-us/windows/win32/sync/using-critical-section-objects
+  ///
+  CriticalSectionFactory() noexcept {
+    // NOLINTBEGIN(*-magic-numbers)
+    auto status =
+        InitializeCriticalSectionAndSpinCount(&critical_section_, 0x00000400);
+    // NOLINTEND(*-magic-numbers)
+
+    assert(status != 0);
+    PARAOS_ATTR_UNUSED_VAR(status);
   }
 
-  /// @brief Деструктор обеспечивает автоматический выход из критической секции.
-  ~CriticalSection() { mutex_.Unlock(is_isr_); }
+  ~CriticalSectionFactory() { DeleteCriticalSection(&critical_section_); }
+
+  /// @brief Five rule.
+  CriticalSectionFactory(CriticalSectionFactory&& other) = delete;
+  auto operator=(CriticalSectionFactory&& other)
+      -> CriticalSectionFactory& = delete;
+  auto operator=(const CriticalSectionFactory& other)
+      -> CriticalSectionFactory& = delete;
+  CriticalSectionFactory(const CriticalSectionFactory& other) = delete;
+
+  auto GiveHandle() { return &critical_section_; }
 
  private:
-  const bool is_isr_;
-  static inline paraos::MutexRecursive mutex_;
+  CRITICAL_SECTION critical_section_{};
 };
 
-inline void DisableIsr() {}
-inline void EnableIsr() {}
+class CriticalSection final {
+ public:
+  /// @brief Constructor ensures automatic critical section entry.
+  ///
+  /// @param is_isr
+  explicit CriticalSection(bool is_isr = false) noexcept {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    EnterCriticalSection(critical_section_factory.GiveHandle());
+  }
+
+  /// @brief Destructor ensures automatic leaving of the critical section.
+  ~CriticalSection() {
+    LeaveCriticalSection(critical_section_factory.GiveHandle());
+  }
+
+  /// @brief Method is used for force disabling ISRs.
+  ///
+  /// @param[in] is_isr: This param here is only used for methods template sync.
+  ///
+  /// @note This method is used inside ETL libray macros.
+  static void ForceEnter(bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    EnterCriticalSection(critical_section_factory.GiveHandle());
+  }
+
+  /// @brief Method is used for force enabling ISRs.
+  ///
+  /// @param[in] is_isr: This param here is only used for methods template sync.
+  ///
+  /// @note This method is used inside ETL libray macros.
+  static void ForceExit(bool is_isr = false) {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    LeaveCriticalSection(critical_section_factory.GiveHandle());
+  }
+
+  /// @brief Five rule.
+  CriticalSection(CriticalSection&& other) = delete;
+  auto operator=(CriticalSection&& other) -> CriticalSection& = delete;
+  auto operator=(const CriticalSection& other) -> CriticalSection& = delete;
+  CriticalSection(const CriticalSection& other) = delete;
+
+ private:
+  static inline CriticalSectionFactory critical_section_factory;
+};
+
+inline void DisableIsr() { CriticalSection::ForceEnter(); }
+inline void EnableIsr() { CriticalSection::ForceExit(); }
 
 }  // namespace paraos
 

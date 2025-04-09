@@ -25,10 +25,11 @@
 
 #include <gtest/gtest.h>
 
-#include <array>
-#include <memory>
-#include <set>
+#include <cstddef>
+#include <cstring>
+#include <iostream>
 #include <string>
+#include <utility>
 
 #include "paraos_message_buffer.hpp"
 
@@ -47,7 +48,7 @@ TEST(Message, Example) {
 
   {
     // Alloc memory with null terminate symbol.
-    auto message1 = buff.Alloc(str1.length() + 1u);
+    auto message1 = buff.Alloc(str1.length() + 1U);
 
     // Before any action check container validation.
     if (message1) {
@@ -55,16 +56,16 @@ TEST(Message, Example) {
       memcpy(message1.Data(), str1.data(), message1.Size());
     }
 
-    // when message1 leave scope, message1 calls dtor and data automatically will
-    // push in buffer.
-    // Be careful: If other thread full queue buffer between buff.Alloc() and
-    // message leave scope, message1 will not pushed in buffer. message1
-    // will miss, but always resources will correctly free (no leak memory).
+    // when message1 leave scope, message1 calls dtor and data automatically
+    // will push in buffer. Be careful: If other thread full queue buffer
+    // between buff.Alloc() and message leave scope, message1 will not pushed in
+    // buffer. message1 will miss, but always resources will correctly free (no
+    // leak memory).
   }
 
   {
     // Alloc memory with null terminate symbol.
-    auto message2 = buff.Alloc(str2.length() + 1u);
+    auto message2 = buff.Alloc(str2.length() + 1U);
 
     // Before any action check container validation.
     if (message2) {
@@ -101,7 +102,7 @@ TEST(Message, Example) {
     // Always check if message was read.
     if (read) {
       // Print first string.
-      std::cout << static_cast<char *>(read->Data());
+      std::cout << reinterpret_cast<char *>(read->Data());
     }
 
     // read automatically free resources when exit from scope visible.
@@ -114,7 +115,7 @@ TEST(Message, Example) {
     // Always check if message was read.
     if (read) {
       // Print first string.
-      std::cout << static_cast<char *>(read->Data()) << std::endl;
+      std::cout << reinterpret_cast<char *>(read->Data()) << "\n";
     }
 
     // read automatically free resources when exit from scope visible.
@@ -122,7 +123,7 @@ TEST(Message, Example) {
 }
 
 TEST(Message, Create) {
-  paraos::MessageBuffer<2> buff;
+  const paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 }
 
@@ -134,13 +135,13 @@ TEST(Message, PushThenPop) {
   {
     auto message = buff.Alloc(sizeof(val));
 
-    auto *vector = static_cast<double *>(message.Data());
+    auto *vector = reinterpret_cast<double *>(message.Data());
     *vector = val;
   }
 
   auto message = buff.Pop(thread_delay);
 
-  auto *vector = static_cast<double *>(message->Data());
+  auto *vector = reinterpret_cast<double *>(message->Data());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 
@@ -176,15 +177,15 @@ TEST(Message, CopyCtor) {
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
 
-    auto *vector = static_cast<double *>(message.Data());
+    auto *vector = reinterpret_cast<double *>(message.Data());
     *vector = val;
   }
 
-  auto received_message = buff.Pop(0u);
+  auto received_message = buff.Pop(0U);
   ASSERT_TRUE(received_message);
-  auto received_message_copy = received_message.value();
+  auto &received_message_copy = received_message.value();
 
-  auto *vector = static_cast<double *>(received_message_copy.Data());
+  auto *vector = reinterpret_cast<double *>(received_message_copy.Data());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 
@@ -198,15 +199,15 @@ TEST(Message, MoveCtor) {
     ASSERT_TRUE(message);
     ASSERT_TRUE(buff.IsEmpty());
 
-    auto *vector = static_cast<double *>(message.Data());
+    auto *vector = reinterpret_cast<double *>(message.Data());
     *vector = val;
   }
 
-  auto received_message = buff.Pop(0u);
+  auto received_message = buff.Pop(0U);
   ASSERT_TRUE(received_message);
   auto received_message_copy = std::move(received_message.value());
 
-  auto *vector = static_cast<double *>(received_message_copy.Data());
+  auto *vector = reinterpret_cast<double *>(received_message_copy.Data());
   EXPECT_NEAR(val, *vector, 0.001);
 }
 

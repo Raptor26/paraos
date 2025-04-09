@@ -143,7 +143,9 @@
         "executor": "cpp",
         "io_context": "cpp",
         "netfwd": "cpp",
-        "timer": "cpp"
+        "timer": "cpp",
+        "narrow": "cpp",
+        "cassert": "cpp"
     },
     "cSpell.enabled": true
 }

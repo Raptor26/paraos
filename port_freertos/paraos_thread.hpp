@@ -1,8 +1,7 @@
-/// @file paraos_thread.hpp
+/// @file paraos_thread_v2.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
-/// @author VyhodcevEgor <vyhodcev@internet.ru>
 ///
-/// @copyright (c) 2024 Stilsoft
+/// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
@@ -23,184 +22,295 @@
 /// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
+///
+/// NAME
+///     paraos_thread_v2.
+///
+/// DESCRIPTION
+///     paraos_thread_v2 provides a FreeRTOS wrapper for working with threads.
+///     This wrapper offers a cross-platform API for managing threads
+///     in RTOS, Windows, and Linux.
+///
+/// EXAMPLE
+///     See usages example in:
+///     - port_tests/test_paraos_thread_only_global.cpp
+///     -
+///       port_tests/test_paraos_thread_only_stack_with_multiple_threads_in_one_object.cpp
+///     - port_tests/test_paraos_thread_only_stack.cpp
+///     - port_tests/test_paraos_thread_only_static.cpp
 
-#ifndef PARAOS_THREAD_HPP
-#define PARAOS_THREAD_HPP
+#ifndef PARAOS_THREAD_V2_HPP
+#define PARAOS_THREAD_V2_HPP
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
-
-#include <cstring>
-#include <deque>
-#include <string>
+#include <cstdlib>
 
 #include "FreeRTOS.h"
-#include "paraos_mutex.hpp"
+#include "etl/atomic.h"
+#include "etl/delegate.h"
+#include "gsl/gsl"
+#include "paraos_base.hpp"
+#include "paraos_critical.hpp"
+#include "paraos_exceptions.hpp"
 #include "paraos_semaphore.hpp"
+#include "paraos_thread_common.hpp"
+#include "paraos_thread_exceptions.hpp"
+#include "paraos_trace.hpp"
 #include "paraos_utils.hpp"
 #include "task.h"
+#include "timers.h"
 
 namespace paraos {
 
-/// @brief Перечисление видов приоритетов у потоков freeRTOS.
-enum class ThreadPriority : int {
-  kIdle = 0,
-  kLowest,
-  kBelowNormal,
-  kNormal,
-  kAboveNormal,
-  kHighest,
-  kRealTime,
+constexpr delay_type default_sleep_ms_if_no_delegate_{700};
 
-  kMaxNum
-};
-
-/// @brief Класс-реализация потоков freeRTOS.
-class Thread {
+class Thread : public paraos::Base {
  public:
-  /// @brief Конструктор потока freeRTOS.
-  /// @param[in] name: Название потока.
-  /// @param[in] stack_depth: Размер стека потока в байтах.
-  /// @param[in] priority: Приоритет создаваемого потока.
-  /// @param[in] is_joinable: Флаг закрепления создаваемого потока за главным
-  /// потоком.
-  Thread(
-      const std::string name, std::size_t stack_depth, ThreadPriority priority,
-      bool is_joinable = false);
-
-  virtual ~Thread();
-
-  /// @brief Метод используется для получения названия потока.
-  /// @return Возвращает имя потока.
-  std::string_view Name() const;
-
-  /// @brief Метод используется для получения дескриптора созданного потока.
-  /// @return Возвращает дескриптор потока.
-  TaskHandle_t Handle() const;
-
-  /// @brief Метод используется для задержки потока на указанное время.
-  /// @param[in] sleep_ms: Время в мс, на которое необходимо заблокировать
-  /// поток.
-  void DelayMs(std::size_t sleep_ms);
-
-  static void SleepMs(std::size_t sleep_ms);
-
-  /// @brief After "Thread' complete construct object, user's inheritance
-  /// class must call 'Start()' for create thread and scheduling this thread
-  /// instance.
-  void Start();
-
-  /// @brief Метод используется для ожидания основной программой завершения
-  /// потока.
-  /// @return Возвращает результат операции.
-  auto Join() -> bool;
-
-  /// @brief Метод используется для открепления потока от основной программы.
-  /// @return Возвращает результат операции.
-  auto Detach() -> bool;
-
-  /// @brief Метод run необходимо переопределять в классах, наследниках для
-  /// реализации логики работы потока.
-  virtual void Run();
-
-  /// @brief Метод выполняет запуск планировщика.
-  ///@note Планировщик должен запускаться в главном потоке.
-  static void StartScheduler();
-
-  /// @brief Метод выполняет удаление потоков и остановку планировщика.
-  /// @note Используется в тестах.
-  static void DeleteAll();
-
-  /// @brief Метод выполняет изменение приоритета потока.
-  /// @param[in] priority: Новый приоритет потока.
-  /// @return ВОзвращает  результат выполнения операции.
-  bool SetPriority(const ThreadPriority priority);
-
-  /// @brief Метод устанавливает флаг необходимости вызова в цикле while метода
-  /// Run() у потока.
-  /// @param[in] status: Новое значение флага.
-  /// @return
-  auto SetNeedWhile(bool status) -> bool;
-
-  /// @brief Метод используется для получения информации о запуске планировщика.
-  /// @return Возвращает статус планировщика - запущен или нет.
-  static auto IsSchedulerStarted() -> bool;
-
-  /// @brief Return current tine in ticks. Useful when need periodical check
-  /// timeout in blocking operations with elapsed time correction.
+  /// @brief Construct a new Thread object.
   ///
-  /// @return Return object with current time. Returned value used in
-  /// CheckTimeout().
-  static auto GetCurrentTime() -> TimeOut_t {
-    TimeOut_t xTimeOut;
-    vTaskInternalSetTimeOutState(&xTimeOut);
-    return xTimeOut;
+  /// @param[in] attr: Params to initialize thread.
+  /// @param[in] thread_start_flag: Flag that indicates thread start condition.
+  /// May be useful in tests where there is no multithread environment needed.
+  ///
+  /// @throw Can throw "thread_not_created_exception".
+  explicit Thread(const paraos::ThreadAttr &attr, bool thread_start_flag = true)
+      : paraos::Base{attr.dtor_callback} {
+    // Before create the thread, register the delegate.
+    RegisterDelegate(attr.run_);
+
+    if (thread_start_flag) {
+      Make(attr);
+    }
   }
 
-  /// @brief Check timeout with elapsed time correction.
-  ///
-  /// @details If a task enters and exits the Blocked state more than once while
-  /// it is waiting for the event to occur then the timeout used each time the
-  /// task enters the Blocked state must be adjusted to ensure the total of all
-  /// the time spent in the Blocked state does not exceed the originally
-  /// specified timeout period. xTaskCheckForTimeOut() performs the adjustment,
-  /// taking into account occasional occurrences such as tick count overflows,
-  /// which would otherwise make a manual adjustment prone to error.
-  ///
-  /// @param[in] pxTimeOut: Returned by GetCurrentTime() value.
-  /// GetCurrentTimeInTicks() using at once before need periodical checking
-  /// timeout by CheckTimeout().
-  /// @param[in,out] ticks_to_wait: Wait time in ticks.
-  ///
-  /// @return Return true if need break waiting, false if no timeout elapsed.
-  static auto CheckTimeout(TimeOut_t &xTimeOut, std::size_t &delay_ms) -> bool {
-    TickType_t ticks = PARAOS_ConvertMsToTicks(delay_ms);
-    auto is_timeout = xTaskCheckForTimeOut(&xTimeOut, &ticks);
-    delay_ms = PARAOS_ConvertTicksToMs(ticks);
-    return is_timeout;
+  /// --------------------------------------------------------------------------
+
+  ~Thread() override {
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME("~Thread", GiveName());
+
+    // Try delete the task atomically.
+    const paraos::CriticalSection critical;
+
+    // If scheduler is not started, calls vTaskDelete() is illegal.
+    if (handle_ != nullptr && IsSchedulerRunning()) {
+      vTaskDelete(handle_);
+      handle_ = nullptr;
+    }
   }
 
+  /// Five rule ----------------------------------------------------------------
   Thread(const Thread &other) = delete;
   Thread(Thread &&other) = delete;
-  Thread &operator=(const Thread &other) = delete;
-  Thread &operator=(Thread &&other) = delete;
+  auto operator=(const Thread &other) -> Thread & = delete;
+  auto operator=(Thread &&other) -> Thread & = delete;
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief The user code must provide a delegate to execute in the thread
+  /// context. The delegate can be passed to the constructor via
+  /// paraos::ThreadAttr or registered later using RegisterDelegate().
+  ///
+  /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
+  void RegisterDelegate(paraos::thread_delegate_type run) {
+    // std::move of the variable of a trivially-copyable type has no effect
+    run_ = run;
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Set the priority to the thread.
+  ///
+  /// @param[in] priority: The priority to which the thread will be set.
+  auto SetPriority(paraos::ThreadPriority priority) {
+    bool result{false};
+
+    if (priority < paraos::ThreadPriority::kMaxNum) {
+      vTaskPrioritySet(handle_, static_cast<UBaseType_t>(priority));
+      result = true;
+    }
+
+    return result;
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Obtain the priority of the thread.
+  ///
+  /// @return paraos::ThreadPriority.
+  auto GetPriority() {
+    return static_cast<paraos::ThreadPriority>(uxTaskPriorityGet(handle_));
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Obtain the thread name.
+  ///
+  /// @return std::string_view.
+  [[nodiscard]] auto GiveName() const -> std::string_view {
+    TaskStatus_t xTaskDetails;
+    vTaskGetInfo(handle_, &xTaskDetails, pdFALSE, eInvalid);
+
+    return std::string_view{xTaskDetails.pcTaskName};
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Delay a task for a given number of milliseconds.
+  ///
+  /// @param[in] sleep_ms: The amount of time, that the calling thead should
+  /// block.
+  static void DelayMs(paraos::delay_type sleep_ms) {
+    vTaskDelay(PARAOS_ConvertMsToTicks(sleep_ms));
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Calls this method to complete the thread's work.
+  ///
+  /// @param[in] deferred Pointer to the object that will be deleted
+  /// when the thread completes its work. Use the address only if `deferred`
+  /// has been created on the heap and is not managed by user code or smart
+  /// pointers.
+  void Finished(paraos::Base *deferred = nullptr) {
+    base_ = deferred;
+    UnregisterDelegate();
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief StartScheduler() must run in the main thread.
+  /// The created threads start executing only after the user code calls
+  /// StartScheduler().
+  static void StartScheduler() { vTaskStartScheduler(); }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief To resume calls Exit().
+  static void DeleteAll() {}
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Call the method if you ready to exit from program.
+  static void Exit() {
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Call Exit()", "");
+    vTaskEndScheduler();
+  }
 
  private:
-  void Make();
+  /// @brief Create the thread with attr params.
+  ///
+  /// @param[in] attr: Params to initialize thread.
+  ///
+  /// @throw Can throw "thread_not_created_exception"
+  void Make(const paraos::ThreadAttr &attr) {
+    RegisterDelegate(attr.run_);
 
-  auto IsNeedWhile() const -> bool;
+    xTaskCreate(
+        RunThreadContext, attr.thread_name.data(),
+        paraos::ConvertStackSizeInWords(attr.stack_depth), this,
+        static_cast<UBaseType_t>(attr.priority), &handle_);
 
-  void ExitThread();
+    ETL_ASSERT(handle_, ETL_ERROR(paraos::thread_not_created_exception));
+  }
 
-  /// @brief Метод выполняет остановку планировщика.
-  static void StopScheduler();
+  /// --------------------------------------------------------------------------
 
-  static void MyThreadFunction(void *lpParam);
+  static void RunThreadContext(void *lpParam) {
+    auto *thread = static_cast<Thread *>(lpParam);
 
- private:
-  std::string name_;
-  std::size_t stack_depth_{0};
+    // Loop for thread.
+    while (thread->is_need_while_) {
+      if (!thread->run_.call_if()) {
+        paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
+            "Delegate not ready yet, sleep in "
+                << thread->sleep_ms_if_no_delegate_,
+            thread->GiveName());
+        Thread::DelayMs(thread->sleep_ms_if_no_delegate_);
+      }
+    }
+
+    decltype(thread->handle_) handle;
+    {
+      const paraos::CriticalSection critical;
+
+      // Copy task handle in local variable ...
+      handle = thread->handle_;
+
+      // ... then set to nullptr in the private field.
+      // This is necessary to prevent the task from being deleted in the thread
+      // destructor.
+      thread->handle_ = nullptr;
+    }
+
+    // Now vTaskDelete(handle) uses the local copy of the task handle.
+    // This means that if the thread object is destroyed early,
+    // vTaskDelete(handle) will correctly delete the FreeRTOS thread.
+
+    // Do not use a critical section!
+    // If a critical section is used, it will remain open after calling
+    // vTaskDelete(handle).
+
+    // If user want to destroy the object ...
+    if (thread->base_ != nullptr) {
+      decltype(thread->base_) ptr_to_delete{nullptr};
+      {
+        const paraos::CriticalSection critical;
+
+        ptr_to_delete = thread->base_;
+        thread->base_ = nullptr;
+        paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
+            "Thread finished, now put request to delete object",
+            thread->GiveName());
+      }
+
+      delete ptr_to_delete;
+    }
+
+    if (handle != nullptr) {
+      paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Delete self task", "");
+      vTaskDelete(handle);
+    }
+  }
+
+  /// --------------------------------------------------------------------------
+
+  void UnregisterDelegate() {
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Thread clear delegate", GiveName());
+    run_.clear();
+
+    // No more need call user function inside thread.
+    is_need_while_ = false;
+    paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Thread break while", GiveName());
+  }
+
+  /// --------------------------------------------------------------------------
+
+  [[nodiscard]] static auto IsSchedulerRunning() -> bool {
+    bool is_scheduler_started{false};
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+      is_scheduler_started = true;
+    }
+
+    return is_scheduler_started;
+  }
+
+  /// --------------------------------------------------------------------------
+
+  etl::atomic_bool is_need_while_{true};
+
+  /// @brief Task Handle. When freeRTOS will create the task, task handle will
+  /// be written here.
   TaskHandle_t handle_{nullptr};
-  ThreadPriority priority_{ThreadPriority::kIdle};
-  [[maybe_unused]] BoolAtomic is_joinable_{false};
 
-  /// @brief Данный флаг устанавливается в true если нужно вызывать
-  /// Processing() в бесконечном цикле.
-  [[maybe_unused]] BoolAtomic is_need_while_{false};
+  /// @brief Run this delegate in thread context.
+  paraos::thread_delegate_type run_;
 
- private:
-  static inline BoolAtomic is_scheduler_started_{false};
+  /// @brief When thread object calls dtor, it try delete base_.
+  paraos::Base *base_{nullptr};
 
-  /// @brief If true, calling Start() make thread, otherwise, destructor was
-  /// called for class and will not create the thread.
-  BoolAtomic is_thread_makeable_{true};
-
-  /// @brief If semaphore given, that's mean perform_work() complete execute and
-  /// Dtor can safely free resources.
-  SemaphoreBinary is_thread_complete_sem_;
-  Mutex join_mutex_;
+  /// @brief Until a user code doesn't call RegisterDelegate(), the thread will
+  /// be sleep after each check to delegate available.
+  delay_type sleep_ms_if_no_delegate_{default_sleep_ms_if_no_delegate_};
 };
-}  // namespace paraos
 
-#endif /* PARAOS_THREAD_HPP */
+}  // namespace paraos
+#endif /* PARAOS_THREAD_V2_HPP */

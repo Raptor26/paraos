@@ -1,9 +1,23 @@
+---
 Checks: >-
-  boost-*,
-  bugprone-*,
-  cert-*,
   clang-analyzer-*,
-  -performance-move-constructor-init,
-  /* cppcoreguidelines-*, */
-# WarningsAsErrors: '*'
-HeaderFilterRegex: '.*'
+  google-*,
+  hicpp-*,
+  llvm-*,
+  misc-*,
+  -misc-include-cleaner,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-avoid-const-params-in-decls,
+  -llvm-header-guard,
+  -modernize-avoid-c-arrays,
+  -readability-redundant-access-specifiers,
+  -hicpp-static-assert,
+  -misc-static-assert,
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*\.hpp'
+FormatStyle: file
+...

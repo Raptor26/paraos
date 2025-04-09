@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.28)
+
+project(testing_project_for_pycmakebuilder)
+
+add_executable(${PROJECT_NAME} main.cpp)
+
+if(PRESET_NAME)
+  target_compile_definitions(${PROJECT_NAME}
+                             PRIVATE -DPRINTING_MESSAGE="${PRESET_NAME}")
+endif()
+
+if(UTEST)
+  include(CTest)
+  enable_testing()
+  add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
+endif()

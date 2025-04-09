@@ -1,4 +1,4 @@
-/// @file paraos_thread_sequence_v2,hpp
+/// @file paraos_thread_sequence_v2.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -22,9 +22,10 @@
 /// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
-
 #ifndef PARAOS_THREAD_SEQUENCE_HPP
 #define PARAOS_THREAD_SEQUENCE_HPP
+
+#include <cstdlib>
 
 #include "etl/callback_timer.h"
 #include "etl/delegate.h"
@@ -44,37 +45,199 @@ namespace paraos {
 #define PARAOS_THREAD_SEQUENCE_VIRTUAL
 #endif
 
-/// @brief Provided thread for execute delegates.
+/// @brief Attributes for configuring a thread sequence.
 ///
-/// @warning No delegates should use blocking paraos API. For example,
-/// - sem.Take(100) - bad idea, because all delegates in the thread will blocked
-///                   for 100 ms.
-/// - sem.Take(0) - good. If no semaphore for take, method return control to
-///                 delegate immediately. Remember, all blocking api return
-///                 status, indicates is API calls successfully.
-class IThreadSequence : public Thread {
-  typedef etl::delegate<void(void)> callback_type;
-  using try_lock_type = etl::delegate<bool(void)>;
-  using lock_type = etl::delegate<void(void)>;
-  using unlock_type = etl::delegate<void(void)>;
+/// This structure extends the base thread attributes and includes an additional
+/// field for specifying the period between notifications.
+struct IThreadSequenceAttr : public paraos::ThreadAttr {
+  /// @brief The period in microseconds between `NotifyGive()` calls.
+  /// The user code is responsible for calling `NotifyGive()` at this interval.
+  uint32_t period_in_us{0};
+};
+
+/// @brief Provides a thread for executing delegates.
+///
+/// @warning Delegates should not use blocking ParaOS API calls. For example:
+///     - `sem.Take(100)` – Bad, as it blocks all delegates in the thread for
+///        100 ms.
+///     - `sem.Take(0)` – Good, as it returns immediately if the semaphore is
+///        unavailable.
+///
+/// All blocking API calls should return a status indicating success or failure.
+class IThreadSequence : public paraos::Base {
+  using callback_type = etl::delegate<void()>;
 
  protected:
+  // String copy is needed due to delayed thread initialization; the address of
+  // its name could be invalid later.
+  // NOLINTBEGIN(performance-unnecessary-value-param)
   IThreadSequence(
-      const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, uint32_t period_in_us,
-      etl::icallback_timer& timer_controller)
-      : Thread{name, stack_depth, priority},
-        period_in_us_{period_in_us},
-        timer_controller_{timer_controller} {}
+      const IThreadSequenceAttr &attr, etl::icallback_timer &timer_controller,
+      bool thread_start_flag = true)
+      : thread_{attr, thread_start_flag},
+        period_in_us_{attr.period_in_us},
+        timer_controller_{timer_controller} {
+    thread_.RegisterDelegate(
+        paraos::thread_delegate_type::create<
+            IThreadSequence, &IThreadSequence::Run>(*this));
+  }
+  // NOLINTEND(performance-unnecessary-value-param)
 
-  /// @brief Run is called in loop wrapper in separate RTOS thread until
-  /// anything call Break().
-  PARAOS_THREAD_SEQUENCE_VIRTUAL void Run() override {
-    // Wait semaphore before try run all methods in array. It's allows call
-    // methods with a user-defined period (period with witch user code calls
-    // the method NotifyGive()).
-    new_cycle_ready_sem_.Take(max_delay);
+ public:
+  ~IThreadSequence() override = default;
 
+  /// @brief Deleted move constructor and assignment operators to enforce
+  /// non-copyable and non-movable semantics.
+  IThreadSequence(IThreadSequence &&other) = delete;
+  auto operator=(IThreadSequence &&other) -> IThreadSequence & = delete;
+  auto operator=(const IThreadSequence &other) -> IThreadSequence & = delete;
+  IThreadSequence(const IThreadSequence &other) = delete;
+
+  /// @brief Converts frequency in Hz to period in microseconds.
+  ///
+  /// @param[in] freq: Frequency in Hz.
+  ///
+  /// @return Period in microseconds.
+  [[nodiscard]] auto FreqToPeriod(float freq) const {
+    // Calculate period in microseconds from frequency.
+    uint32_t period_us{period_in_us_};
+    if (freq != 0.0F) {
+      constexpr float us_in_sec{1000000.0F};
+      period_us =
+          gsl::narrow_cast<decltype(period_us)>(1.0F / freq * us_in_sec);
+    }
+    return period_us;
+  }
+
+  /// @brief Registers a delegate for periodic execution.
+  ///
+  /// @warning All registered delegates execute in a single thread. Therefore,
+  /// no delegate should use blocking API calls.
+  ///
+  /// Example of problematic usage:
+  /// - `sem.Take(100)` – Bad, as it blocks all delegates for 100 ms.
+  /// - `sem.Take(0)` – Good, as it returns immediately if the semaphore is
+  /// unavailable.
+  ///
+  /// @param[in] callback: Delegate to be registered.
+  /// @param[in] freq: Execution frequency in Hz. If set to `0.0`, the callback
+  /// will be called each time `NotifyGive()` is called.
+  /// @param[in] repeating: Set to `true` for periodic execution, or `false` for
+  /// a one-time call.
+  ///
+  /// @return Returns `etl::timer::id::NO_TIMER` if registration fails.
+  ///         Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
+      callback_type &callback, float freq, bool repeating) {
+    const paraos::CriticalSection critical;
+    auto timer_id = timer_controller_.register_timer(
+        callback, FreqToPeriod(freq), repeating);
+
+    if (timer_id != etl::timer::id::NO_TIMER) {
+      timer_controller_.start(timer_id);
+      ++registered_delegates_numb_;
+    }
+
+    return timer_id;
+  }
+
+  /// @brief Removes a delegate from periodic execution.
+  ///
+  /// @param[in] timer_id: ID of the delegate to be removed.
+  ///
+  /// @return Returns `true` if the delegate was successfully removed, `false`
+  /// otherwise.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(
+      etl::timer::id::type timer_id) {
+    const paraos::CriticalSection critical;
+    auto is_unregistered = timer_controller_.unregister_timer(timer_id);
+    if (is_unregistered) {
+      --registered_delegates_numb_;
+    }
+    return is_unregistered;
+  }
+
+  /// @brief Changes the execution frequency of a registered delegate.
+  ///
+  /// @param[in] timer_id: ID of the delegate whose frequency will be changed.
+  /// @param[in] freq: New frequency for periodic delegate execution in Hz.
+  ///
+  /// @return Returns `true` if the frequency was successfully updated, `false`
+  /// otherwise.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto SetFreq(
+      etl::timer::id::type timer_id, float freq) {
+    bool is_period_updated{false};
+    const paraos::CriticalSection critical;
+    if (timer_controller_.set_period(timer_id, FreqToPeriod(freq))) {
+      // If the timer period is successfully updated, restart the timer.
+      is_period_updated = timer_controller_.start(timer_id);
+    }
+    return is_period_updated;
+  }
+
+  /// @brief Returns the number of registered delegates.
+  [[nodiscard]] auto GiveRegisteredDelegatesNumb() const {
+    const paraos::CriticalSection critical;
+    return registered_delegates_numb_;
+  }
+
+  /// @brief Notifies the thread sequence to start a new scheduling cycle.
+  ///
+  /// @note This method must be called at regular intervals, such as in a timer
+  /// overflow interrupt.
+  ///
+  /// @param[in] is_isr: Set to `true` if called from an interrupt service
+  /// routine.
+  ///
+  /// @return Returns `true` if the semaphore was successfully given, `false`
+  /// otherwise.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL auto NotifyGive(bool is_isr = false) {
+    return new_cycle_ready_sem_.Give(is_isr);
+  }
+
+  /// @brief Returns the main frequency of the thread sequence in Hz.
+  /// The periods for calling delegates are calculated based on this frequency.
+  ///
+  /// @return The main frequency in Hz.
+  [[nodiscard]] PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const {
+    // Convert microseconds to seconds.
+    const float main_freq = static_cast<float>(period_in_us_) * 0.000001F;
+    return 1.0F / main_freq;
+  }
+
+  /// @brief Completes thread execution.
+  ///
+  /// @param[in] is_dynamic: Set to `true` if the ThreadSequence was created
+  /// on the heap and is not managed by user code or smart pointers.
+  /// In this case, `CooperativeScheduling()` will be removed from the heap
+  /// after the thread completes all work. Otherwise, set to `false`.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Finish(bool is_dynamic = false) {
+    const paraos::CriticalSection critical;
+    paraos::Base *deferred_destroy{nullptr};
+
+    if (is_dynamic) {
+      deferred_destroy = this;
+    }
+
+    thread_.Finished(deferred_destroy);
+
+    // Notify the thread to complete the final iteration of all registered
+    // methods. This ensures that `Run()` exits blocking mode and completes one
+    // more cycle.
+    //
+    // After `Run()` completes, the thread wrapper can safely delete the thread
+    // (since `Thread::SetNeedWhile(false)` was called earlier),
+    // and the thread object can be safely deleted in the thread destructor.
+    NotifyGive();
+  }
+
+ private:
+  /// @brief Main loop function executed by the thread.
+  /// Runs until `Break()` is called.
+  PARAOS_THREAD_SEQUENCE_VIRTUAL void Run() {
+    // Wait for the semaphore before processing all registered delegates.
+    // This allows delegates to be called with a user-defined period.
+    new_cycle_ready_sem_.Take(paraos::max_delay);
     if (timer_controller_.tick(nticks_)) {
       nticks_ = period_in_us_;
     } else {
@@ -82,187 +245,58 @@ class IThreadSequence : public Thread {
     }
   }
 
-  /// @brief Force break thread execute. Useful in unit tests.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL void Break() {
-    const paraos::CriticalSection critical;
-
-    // Run() no more called.
-    Thread::SetNeedWhile(false);
-
-    // Give notify for last call all registered methods timer_controller_. It's
-    // necessary for resume Run() from blocking mode and complete one iteration.
-    // After Run() complete, thread wrapper can safely delete thread (because
-    // above we call Thread::SetNeedWhile(false)) and the thead object can be
-    // safely deleted in thead dtor.
-    NotifyGive();
-  }
-
- public:
-  /// @brief Register delegate for periodic execute.
-  ///
-  /// @warning All registered delegates execute in one thread. That's mean, no
-  /// delegate should use blocking API.
-  /// For example, if delegate call 'sem.Take(delay_ms)' and 'delay_ms > 0', all
-  /// delegates in the thread will blocked for specfied period (most likely,
-  /// this is not behavior you need). Timeout in all paraos API must be set as
-  /// zero!
-  /// - sem.Take(100) - bad;
-  /// - sem.Take(0) - good;
-  ///
-  /// @param[in] callback: Delegate that needs to be registered.
-  /// @param[in] freq: If set 0.0, callback will be called on each user called
-  /// NotifyGive().
-  /// @param[in] repeating: true if need periodic call, false if need call at
-  /// once.
-  ///
-  /// @return return etl::timer::id::NO_TIMER if delegate not registered. In
-  /// other case return valid timer id in range [0 .. 254].
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
-      callback_type& callback, float freq, bool repeating)
-      -> etl::timer::id::type {
-    paraos::CriticalSection critical;
-    auto timer_id = timer_controller_.register_timer(
-        callback, FreqToPeriod(freq), repeating);
-
-    if (timer_id != etl::timer::id::NO_TIMER) {
-      timer_controller_.start(timer_id);
-    }
-
-    return timer_id;
-  }
-
-  /// @brief Delete delegate from periodic execute.
-  ///
-  /// @param[in] timer_id: Delegate id, which needs for delete from queue
-  /// executor.
-  ///
-  /// @return true if delegate successfully deleted, false in otherwise.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(etl::timer::id::type timer_id)
-      -> bool {
-    paraos::CriticalSection critical;
-    return timer_controller_.unregister_timer(timer_id);
-  }
-
-  /// @brief Change freq for delegate execution.
-  ///
-  /// @param[in] timer_id: Delegate id whose execution frequency will be
-  /// changed.
-  /// @param[in] freq_: new frequency for periodic call delegate.
-  ///
-  /// @return true if frequency changed successfully, false in otherwise.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto SetFreq(
-      etl::timer::id::type timer_id, float freq_) -> bool {
-    bool is_period_updated{false};
-
-    paraos::CriticalSection critical;
-
-    if (timer_controller_.set_period(timer_id, FreqToPeriod(freq_))) {
-      // Is timer period successfully update, that's mean timer was stopped,
-      // need start it again.
-      is_period_updated = timer_controller_.start(timer_id);
-    }
-
-    return is_period_updated;
-  }
-
-  /// @brief Give notify for start new cycle of scheduling tasks, written in
-  /// timer_controller_.
-  /// @note User code must call this method at regular intervals, for example -
-  /// in a timer overflow interrupt.
-  /// @return
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto NotifyGive(bool is_isr = false)
-      -> ISRbool {
-    return new_cycle_ready_sem_.Give(is_isr);
-  }
-
-  /// @brief Return frequency which thread execute. Relative to this frequency,
-  /// the periods for calling delegates are calculated.
-  ///
-  /// @return Main frequency in Hz.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const -> float {
-    // Convert microseconds to sec.
-    const float main_freq = (static_cast<float>(period_in_us_)) * 0.000001;
-
-    return static_cast<float>(1.0) / main_freq;
-  }
-
-  virtual ~IThreadSequence() {}
-
-  /// Methods definitions ------------------------------------------------------
  private:
-  [[nodiscard]] uint32_t FreqToPeriod(float freq) {
-    // in Ctor ThreadSequence, user set period for called NotifyGive() by user
-    // code. In this case, we calculate period in microseconds from frequency.
-    uint32_t period_us{period_in_us_};
-    if (freq != 0.0) {
-      constexpr float us_in_sec{1000000};
-      period_us = gsl::narrow_cast<uint32_t>(1.0f / freq * us_in_sec);
-    }
-
-    return period_us;
-  }
-
-  /// Variable definitions -----------------------------------------------------
- private:
+  /// Binary semaphore for synchronization.
   SemaphoreBinary new_cycle_ready_sem_;
 
-  // Period in microseconds between user code calling NotifyGive(). User code
-  // must provide this information correctly.
+  /// Thread instance.
+  paraos::Thread thread_;
+
+  /// Period in microseconds between `NotifyGive()` calls.
   const uint32_t period_in_us_;
 
-  /// @brief Scheduler, based on callback timers.
-  etl::icallback_timer& timer_controller_;
+  /// Callback timer controller.
+  etl::icallback_timer &timer_controller_;
 
-  // if set nticks_ to zero, delegate will be called after delay
-  // period_in_us_. It's not useful for tests.
+  /// Number of ticks since last notification.
   uint32_t nticks_{period_in_us_};
+
+  /// Number of registered delegates.
+  std::size_t registered_delegates_numb_{0};
 };
 
-/// @brief Create separate thread for execute registered delegates.
-///
-/// @tparam MAX_TASKS - Max registered delegates in one time.
-///
-/// @param[in] name: Thread name, whose  context is provided for execute
-/// registered delegates.
-/// @param[in] stack_depth: Stack depth in bytes for thread.
-/// @param[in] priority: Thread priority.
-/// @param[in] period_in_us: Period in microseconds, between user code call
-/// NotifyGive(). User code responsible for specifying this parameter, which
-/// corresponding to the actual call period NotifyGive().
-/// @param[in] is_need_start: If set true, thread will creat in Ctor, if set
-/// false, thread will not created. Sef false may be useful in unit tests.
+/// @brief Concrete implementation of `IThreadSequence`.
+struct ThreadSequenceAttr : public paraos::IThreadSequenceAttr {};
+
 template <uint_least8_t MAX_TASKS = 4>
 class ThreadSequence : public IThreadSequence {
  public:
-  ThreadSequence(
-      const std::string name, const std::size_t stack_depth,
-      const ThreadPriority priority, uint32_t period_in_us,
-      bool is_need_start = true)
-      : IThreadSequence{
-            name, stack_depth, priority, period_in_us, timer_controller_} {
-    // Run() method must call in forever loop periodical.
-    Thread::SetNeedWhile(true);
-
-    // In unit test is_need_start == false,
-    if (is_need_start) {
-      // Method below create thread and scheduling it's for execute in RTOS (or
-      // windows/unix).
-      Thread::Start();
-    }
-
-    // Allow execute all timers, registered in timer_controller_.
+  /// @brief Creates a separate thread for executing registered delegates.
+  ///
+  /// @param[in] attr: Thread sequence attributes.
+  /// @param[in] thread_start_flag: Flag indicating whether to start the thread
+  /// immediately. Useful in test environments without multithreading.
+  explicit ThreadSequence(
+      const ThreadSequenceAttr &attr, bool thread_start_flag = true)
+      : IThreadSequence{attr, timer_controller_, thread_start_flag} {
+    // Enable all timers registered in the timer controller.
     timer_controller_.enable(true);
   }
 
-  virtual ~ThreadSequence() { Break(); }
+  ~ThreadSequence() override = default;
 
-  /// @brief Force break thread execute. Useful in unit tests.
-  void Break() { IThreadSequence::Break(); }
+  /// @brief Deleted move constructor and assignment operators to enforce
+  /// non-copyable and non-movable semantics.
+  ThreadSequence(ThreadSequence &&other) = delete;
+  auto operator=(ThreadSequence &&other) -> ThreadSequence & = delete;
+  auto operator=(const ThreadSequence &other) -> ThreadSequence & = delete;
+  ThreadSequence(const ThreadSequence &other) = delete;
 
-  /// Variable definitions -----------------------------------------------------
  private:
+  /// Callback timer with a fixed number of tasks.
   etl::callback_timer<MAX_TASKS> timer_controller_;
 };
+
 }  // namespace paraos
 
 #endif /* PARAOS_THREAD_SEQUENCE_HPP */

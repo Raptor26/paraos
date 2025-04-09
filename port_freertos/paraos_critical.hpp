@@ -34,35 +34,28 @@
 
 namespace paraos {
 
-/// @brief Класс-реализация критической секции в freeRTOS.
+/// @brief Realization of the critical section in freeRTOS.
 class CriticalSection final {
  public:
-  /// @brief Конструктор обеспечивает автоматический вход в критическую секцию.
+  /// @brief Constructor ensures automatic critical section entry.
+  ///
   /// @param is_isr
-  PARAOS_INLINE_CRITICAL CriticalSection(bool is_isr = false) noexcept
+  explicit PARAOS_INLINE_CRITICAL CriticalSection(bool is_isr = false) noexcept
       : is_isr_{is_isr} {
-    if (is_isr_ == false) {
+    if (!is_isr_) {
       taskENTER_CRITICAL();
     } else {
       uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Open critical section" << std::endl;
-#endif
   }
 
-  /// @brief Деструктор обеспечивает автоматический выход из критической секции.
+  /// @brief Destructor ensures automatic leaving of the critical section.
   ~CriticalSection() {
     if (!is_isr_) {
       taskEXIT_CRITICAL();
     } else {
       taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
     }
-
-#ifdef paraosTRACE_ENABLE
-    std::cout << "Close critical section" << std::endl;
-#endif
   }
 
   CriticalSection(const CriticalSection &other) = delete;
@@ -72,7 +65,7 @@ class CriticalSection final {
 
  private:
   const bool is_isr_;
-  UBaseType_t uxSavedInterruptStatus;
+  UBaseType_t uxSavedInterruptStatus{0};
 };
 
 inline void DisableIsr() { taskENTER_CRITICAL(); }
