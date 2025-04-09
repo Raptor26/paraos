@@ -36,10 +36,6 @@ namespace paraos {
 /// for check is need switch thread context. When Dtor was calling,
 /// SwitchContext check and switch context if was request in
 /// WritePrimitiveState() calling.
-///
-/// @tparam IS_ISR: Set true if use SwitchContext in ISR
-///
-template <bool IS_ISR = true>
 class SwitchContext final {
  public:
   SwitchContext() = default;
@@ -50,12 +46,12 @@ class SwitchContext final {
   /// API.
   void WritePrimitiveState(const ISRbool &primitive_state) noexcept {
     if (primitive_state.IsNeedSwitchContext()) {
-      is_need_switch_context = true;
+      is_need_switch_context_ = true;
     }
   }
 
   ~SwitchContext() {
-    if (is_need_switch_context) {
+    if (is_need_switch_context_) {
       portYIELD();
     }
   }
@@ -67,7 +63,7 @@ class SwitchContext final {
   SwitchContext(const SwitchContext &other) = delete;
 
  private:
-  decltype(IS_ISR) is_need_switch_context{false};
+  bool is_need_switch_context_{false};
 };
 
 }  // namespace paraos
