@@ -31,6 +31,7 @@
 #include "etl/delegate.h"
 #include "gsl/gsl"
 #include "paraos_bool_atomic.hpp"
+#include "paraos_config.hpp"
 #include "paraos_isr.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
@@ -38,12 +39,6 @@
 #include "paraos_thread.hpp"
 
 namespace paraos {
-
-#if PARAOS_THREAD_SEQUENCE_USING_VIRTUAL
-#define PARAOS_THREAD_SEQUENCE_VIRTUAL virtual
-#else
-#define PARAOS_THREAD_SEQUENCE_VIRTUAL
-#endif
 
 /// @brief Attributes for configuring a thread sequence.
 ///
@@ -127,8 +122,9 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `etl::timer::id::NO_TIMER` if registration fails.
   ///         Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Register(
-      callback_type &callback, float freq, bool repeating) {
+  PARAOS_POLYMORPHIC_EXTRA auto Register(
+      callback_type &callback, float freq, bool repeating)
+      -> etl::timer::id::type {
     const paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
@@ -147,8 +143,8 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `true` if the delegate was successfully removed, `false`
   /// otherwise.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto Unregister(
-      etl::timer::id::type timer_id) {
+  PARAOS_POLYMORPHIC_EXTRA auto Unregister(etl::timer::id::type timer_id)
+      -> bool {
     const paraos::CriticalSection critical;
     auto is_unregistered = timer_controller_.unregister_timer(timer_id);
     if (is_unregistered) {
@@ -164,8 +160,8 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `true` if the frequency was successfully updated, `false`
   /// otherwise.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto SetFreq(
-      etl::timer::id::type timer_id, float freq) {
+  PARAOS_POLYMORPHIC_EXTRA auto SetFreq(
+      etl::timer::id::type timer_id, float freq) -> bool {
     bool is_period_updated{false};
     const paraos::CriticalSection critical;
     if (timer_controller_.set_period(timer_id, FreqToPeriod(freq))) {
@@ -191,7 +187,8 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `true` if the semaphore was successfully given, `false`
   /// otherwise.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL auto NotifyGive(bool is_isr = false) {
+  PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr = false)
+      -> paraos::ISRbool {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
@@ -199,7 +196,7 @@ class IThreadSequence : public paraos::Base {
   /// The periods for calling delegates are calculated based on this frequency.
   ///
   /// @return The main frequency in Hz.
-  [[nodiscard]] PARAOS_THREAD_SEQUENCE_VIRTUAL auto GetMainFreq() const {
+  [[nodiscard]] PARAOS_POLYMORPHIC_EXTRA auto GetMainFreq() const -> float {
     // Convert microseconds to seconds.
     const float main_freq = static_cast<float>(period_in_us_) * 0.000001F;
     return 1.0F / main_freq;
@@ -211,7 +208,7 @@ class IThreadSequence : public paraos::Base {
   /// on the heap and is not managed by user code or smart pointers.
   /// In this case, `CooperativeScheduling()` will be removed from the heap
   /// after the thread completes all work. Otherwise, set to `false`.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL void Finish(bool is_dynamic = false) {
+  PARAOS_POLYMORPHIC_EXTRA void Finish(bool is_dynamic = false) {
     const paraos::CriticalSection critical;
     paraos::Base *deferred_destroy{nullptr};
 
@@ -234,7 +231,7 @@ class IThreadSequence : public paraos::Base {
  private:
   /// @brief Main loop function executed by the thread.
   /// Runs until `Break()` is called.
-  PARAOS_THREAD_SEQUENCE_VIRTUAL void Run() {
+  PARAOS_POLYMORPHIC_EXTRA void Run() {
     // Wait for the semaphore before processing all registered delegates.
     // This allows delegates to be called with a user-defined period.
     new_cycle_ready_sem_.Take(paraos::max_delay);

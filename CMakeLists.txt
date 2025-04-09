@@ -112,6 +112,11 @@ if(PARAOS_TESTS)
   target_compile_definitions(${PROJECT_NAME} PUBLIC -DUNIT_TESTS_ENABLE)
 endif()
 
+if(PARAOS_USING_POLYMORPHIC_EXTRA)
+  target_compile_definitions(paraos_setup
+                             INTERFACE -DPARAOS_USING_POLYMORPHIC_EXTRA)
+endif()
+
 if(IS_PARAOS_STAND_ALONE_PROJECT AND CLANG_TIDY_ENABLE)
   find_program(CLANG_TIDY_EXE NAMES clang-tidy)
   if(CLANG_TIDY_EXE)
