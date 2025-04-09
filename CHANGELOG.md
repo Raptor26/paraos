@@ -1,3 +1,21 @@
+## v0.11.0 (2025-04-09)
+
+### Feat
+
+- **paraos**: add custom ISRBool move and copy ctros and assignment operators
+- **ParaosQueueBlocking**: Добавлена поддержка ISR в методах очереди
+- **paraos-message**: add move assignment operator
+
+### Refactor
+
+- **status_led**: update docs and realization is moved in header
+- **Paraos**: Возвращено присвоение ISRbool в методе TryEmplaceBack класса QueueBlocking
+- **paraos-containers**: add ISRBool as return type when some data write in containers
+- **paraos-multiringbuff**: add check is random_access_iterator_tag in TryWrite() method
+- **Stavlibs**: Изменения в Paraos и Filezilla:
+- **ISerial**: Изменён шаблон метода Reinit()
+- **paraos-iserial**: ISerial separate on three classes
+
 ## v0.10.0 (2025-03-21)
 
 ### Feat
