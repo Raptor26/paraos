@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 	branch = main
-	commit = 974351fe4aec19779f5be774007810c6ab36a8ab
-	parent = 6062016f0cfeeede689b45183d5cbc70f04bdae1
+	commit = 03db672b8f45db24aa99f12051f7cf86746b9ed9
+	parent = 9df1327578a30d4f65c6542c85a723eaddc17ca8
 	method = merge
 	cmdver = 0.4.6
