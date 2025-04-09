@@ -69,4 +69,10 @@
 #endif
 #endif
 
+#if PARAOS_USING_POLYMORPHIC_EXTRA
+#define PARAOS_POLYMORPHIC_EXTRA virtual
+#else
+#define PARAOS_POLYMORPHIC_EXTRA
+#endif
+
 #endif /* PARAOS_CONFIG_HPP */

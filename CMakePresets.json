@@ -26,6 +26,14 @@
             }
         },
         {
+            "name": "pc_debug_clang_polymorphic",
+            "displayName": "PC Debug Clang with polymorphic objects",
+            "inherits": "pc_debug_clang",
+            "cacheVariables": {
+                "PARAOS_USING_POLYMORPHIC_EXTRA": "true"
+            }
+        },
+        {
             "name": "pc_debug_gcc",
             "displayName": "PC Debug GCC",
             "generator": "Ninja",
