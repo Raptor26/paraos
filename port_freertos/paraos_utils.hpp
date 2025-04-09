@@ -41,7 +41,7 @@ constexpr delay_type max_delay{portMAX_DELAY};
 
 constexpr std::size_t machine_world_len = sizeof(std::size_t);
 
-inline auto PARAOS_ConvertMsToTicks(delay_type uDelayInMs) {
+inline auto PARAOS_ConvertMsToTicks(delay_type uDelayInMs) noexcept {
   static_assert(
       sizeof(uDelayInMs) >= sizeof(TickType_t),
       "uDelayInMs must be more or equal TickType_t size");
@@ -53,7 +53,7 @@ inline auto PARAOS_ConvertMsToTicks(delay_type uDelayInMs) {
   return static_cast<TickType_t>(uDelayInMs);
 }
 
-inline auto PARAOS_ConvertTicksToMs(TickType_t ticks) -> delay_type {
+inline auto PARAOS_ConvertTicksToMs(TickType_t ticks) noexcept {
   delay_type time_ms{max_delay};
   if (ticks != portMAX_DELAY) {
     time_ms = pdTICKS_TO_MS(ticks);

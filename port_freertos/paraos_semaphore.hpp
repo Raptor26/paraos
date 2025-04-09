@@ -29,9 +29,11 @@
 
 #include <stddef.h>
 
+#include <new>
 #include <utility>
 
 #include "FreeRTOS.h"
+#include "etl/error_handler.h"
 #include "paraos_check.h"
 #include "paraos_isr.hpp"
 #include "paraos_utils.hpp"
@@ -76,15 +78,17 @@ class SemaphoreBase {
       // Not need call xSemaphoreTakeRecursive().
       // xSemaphoreTake() may used with SemaphoreCounting and SemaphoreBinary
       // classes.
-      status.SetSuccessStatus(static_cast<bool>(
-          xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms))));
+      status.SetSuccessStatus(
+          static_cast<bool>(
+              xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms))));
     } else {
       BaseType_t xHigherPriorityTaskWoken{pdFALSE};
 
       // xSemaphoreTakeFromISR() may used with SemaphoreCounting and
       // SemaphoreBinary classes.
-      status.SetSuccessStatus(static_cast<bool>(
-          xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken)));
+      status.SetSuccessStatus(
+          static_cast<bool>(
+              xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken)));
 
       if (xHigherPriorityTaskWoken == pdTRUE) {
         status.SetSwitchContextStatus(true);
@@ -116,8 +120,9 @@ class SemaphoreBase {
 
       // xSemaphoreGiveFromISR() may used with SemaphoreCounting and
       // SemaphoreBinary classes.
-      status.SetSuccessStatus(static_cast<bool>(
-          xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken)));
+      status.SetSuccessStatus(
+          static_cast<bool>(
+              xSemaphoreGiveFromISR(handle_, &higher_priority_task_woken)));
 
       if (higher_priority_task_woken == pdTRUE) {
         status.SetSwitchContextStatus(true);
@@ -169,8 +174,9 @@ class SemaphoreBase {
 
 /// @brief Counting semaphore. Max call Give() determine in attr.max_count.
 struct SemaphoreCounting final : public SemaphoreBase {
-  explicit SemaphoreCounting(const SemaphoreAttr &attr) noexcept {
+  explicit SemaphoreCounting(const SemaphoreAttr &attr) {
     handle_ = xSemaphoreCreateCounting(attr.max_count, attr.initial_count);
+    ETL_ASSERT(handle_ != nullptr, std::bad_alloc());
   }
 
   /// @brief Semaphore deleted by ~SemaphoreBase()
@@ -206,10 +212,11 @@ struct SemaphoreCounting final : public SemaphoreBase {
 /// synchronisation can be implemented by one task/interrupt continuously
 /// 'giving' the semaphore while another continuously 'takes' the semaphore.
 struct SemaphoreBinary final : public SemaphoreBase {
-  SemaphoreBinary() noexcept : SemaphoreBinary{SemaphoreAttr{}} {}
+  SemaphoreBinary() : SemaphoreBinary{SemaphoreAttr{}} {}
 
-  explicit SemaphoreBinary(const SemaphoreAttr &attr) noexcept {
+  explicit SemaphoreBinary(const SemaphoreAttr &attr) {
     handle_ = xSemaphoreCreateBinary();
+    ETL_ASSERT(handle_ != nullptr, std::bad_alloc());
 
     if (attr.initial_count > 0) {
       Give();

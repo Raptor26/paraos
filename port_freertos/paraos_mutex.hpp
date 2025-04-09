@@ -30,8 +30,11 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include <new>
+
 #include "FreeRTOS.h"
 #include "etl/atomic.h"
+#include "etl/error_handler.h"
 #include "paraos_bool_atomic.hpp"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
@@ -147,7 +150,7 @@ class MutexBase {
   }
 
  private:
-  auto LockNormal(std::size_t timeout_ms = max_delay) -> ISRbool {
+  auto LockNormal(std::size_t timeout_ms = max_delay) noexcept -> ISRbool {
     ISRbool is_mutex_taken;
     if (xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms)) ==
         pdTRUE) {
@@ -157,7 +160,7 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  auto LockRecursive(std::size_t timeout_ms = max_delay) -> ISRbool {
+  auto LockRecursive(std::size_t timeout_ms = max_delay) noexcept -> ISRbool {
     ISRbool is_mutex_taken;
     if (xSemaphoreGetMutexHolder(handle_) == xTaskGetCurrentTaskHandle()) {
       ++recursive_holder_take_cnt_;
@@ -170,7 +173,7 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  auto LockIsr() -> ISRbool {
+  auto LockIsr() noexcept -> ISRbool {
     ISRbool is_mutex_taken;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (xSemaphoreTakeFromISR(handle_, &xHigherPriorityTaskWoken) == pdTRUE) {
@@ -183,7 +186,7 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  auto UnlockRecursive() -> ISRbool {
+  auto UnlockRecursive() noexcept -> ISRbool {
     ISRbool is_mutex_release;
     if (xSemaphoreGiveRecursive(handle_) == pdTRUE) {
       is_mutex_release.SetSuccessStatus(true);
@@ -193,7 +196,7 @@ class MutexBase {
     return is_mutex_release;
   }
 
-  auto UnlockNormal() -> ISRbool {
+  auto UnlockNormal() noexcept -> ISRbool {
     ISRbool is_mutex_release;
     if (xSemaphoreGive(handle_) == pdTRUE) {
       is_mutex_release.SetSuccessStatus(true);
@@ -201,7 +204,7 @@ class MutexBase {
     return is_mutex_release;
   }
 
-  auto UnlockIsr() -> ISRbool {
+  auto UnlockIsr() noexcept -> ISRbool {
     ISRbool is_mutex_release;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (xSemaphoreGiveFromISR(handle_, &xHigherPriorityTaskWoken) == pdTRUE) {
@@ -228,7 +231,10 @@ class MutexBase {
 
 class Mutex final : public MutexBase {
  public:
-  Mutex() : MutexBase{false} { handle_ = xSemaphoreCreateMutex(); }
+  Mutex() : MutexBase{false} {
+    handle_ = xSemaphoreCreateMutex();
+    ETL_ASSERT(handle_ != nullptr, std::bad_alloc());
+  }
 
   ~Mutex() override = default;
 
@@ -264,6 +270,7 @@ class MutexRecursive final : public MutexBase {
  public:
   MutexRecursive() : MutexBase{true} {
     handle_ = xSemaphoreCreateRecursiveMutex();
+    ETL_ASSERT(handle_ != nullptr, std::bad_alloc());
   }
 
   ~MutexRecursive() override = default;

@@ -48,6 +48,7 @@
 #include "etl/atomic.h"
 #include "etl/delegate.h"
 #include "gsl/gsl"
+#include "paraos_attr.h"
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
 #include "paraos_exceptions.hpp"
@@ -110,7 +111,7 @@ class Thread : public paraos::Base {
   /// paraos::ThreadAttr or registered later using RegisterDelegate().
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
-  void RegisterDelegate(paraos::thread_delegate_type run) {
+  void RegisterDelegate(paraos::thread_delegate_type run) noexcept {
     // std::move of the variable of a trivially-copyable type has no effect
     run_ = run;
   }
@@ -120,7 +121,7 @@ class Thread : public paraos::Base {
   /// @brief Set the priority to the thread.
   ///
   /// @param[in] priority: The priority to which the thread will be set.
-  auto SetPriority(paraos::ThreadPriority priority) {
+  auto SetPriority(paraos::ThreadPriority priority) noexcept {
     bool result{false};
 
     if (priority < paraos::ThreadPriority::kMaxNum) {
@@ -136,7 +137,7 @@ class Thread : public paraos::Base {
   /// @brief Obtain the priority of the thread.
   ///
   /// @return paraos::ThreadPriority.
-  auto GetPriority() {
+  auto GetPriority() noexcept {
     return static_cast<paraos::ThreadPriority>(uxTaskPriorityGet(handle_));
   }
 
@@ -145,7 +146,7 @@ class Thread : public paraos::Base {
   /// @brief Obtain the thread name.
   ///
   /// @return std::string_view.
-  [[nodiscard]] auto GiveName() const -> std::string_view {
+  [[nodiscard]] auto GiveName() const noexcept -> std::string_view {
     TaskStatus_t xTaskDetails;
     vTaskGetInfo(handle_, &xTaskDetails, pdFALSE, eInvalid);
 
@@ -158,7 +159,7 @@ class Thread : public paraos::Base {
   ///
   /// @param[in] sleep_ms: The amount of time, that the calling thead should
   /// block.
-  static void DelayMs(paraos::delay_type sleep_ms) {
+  static void DelayMs(paraos::delay_type sleep_ms) noexcept {
     vTaskDelay(PARAOS_ConvertMsToTicks(sleep_ms));
   }
 
@@ -170,7 +171,7 @@ class Thread : public paraos::Base {
   /// when the thread completes its work. Use the address only if `deferred`
   /// has been created on the heap and is not managed by user code or smart
   /// pointers.
-  void Finished(paraos::Base *deferred = nullptr) {
+  void Finished(paraos::Base *deferred = nullptr) noexcept {
     base_ = deferred;
     UnregisterDelegate();
   }
@@ -273,7 +274,7 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
-  void UnregisterDelegate() {
+  void UnregisterDelegate() noexcept {
     paraosTRACE_MESSAGE_WITH_ACTOR_NAME("Thread clear delegate", GiveName());
     run_.clear();
 
@@ -284,7 +285,7 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
-  [[nodiscard]] static auto IsSchedulerRunning() -> bool {
+  [[nodiscard]] static auto IsSchedulerRunning() noexcept -> bool {
     bool is_scheduler_started{false};
     if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
       is_scheduler_started = true;
