@@ -29,81 +29,161 @@
 #include <array>
 
 #include "etl/delegate.h"
+#include "etl/timer.h"
+#include "paraos_config.hpp"
 #include "paraos_thread_sequence.hpp"
 
 namespace paraos {
 
+/// @brief Enumeration representing the operational modes of the status LED.
 enum class StatusLedMode : uint8_t {
-  kEnable = 0,
-  kDisable,
-  kIdle,
-  kBlink,
-  kError,
+  kEnable = 0,  ///< LED is enabled continuously.
+  kDisable,     ///< LED is disabled.
+  kIdle,        ///< LED is blinking as idle mode.
+  kBlink,       ///< LED is blinking as default mode.
+  kError,       ///< LED indicates an error condition.
 
-  /// Must be end of enum.
+  /// Must be the last element in the enumeration.
   kMaxNumb,
 };
 
+/// @brief Interface for controlling a status LED.
 struct IStatusLed {
+  /// @brief Enables the LED.
   virtual void Enable() = 0;
+
+  /// @brief Disables the LED.
   virtual void Disable() = 0;
 };
 
+/// @brief Class representing a status LED with various operational modes.
 class StatusLed {
   using delegate_type = etl::delegate<void(void)>;
 
   static constexpr int blink_mode_max_numb =
       static_cast<int>(StatusLedMode::kMaxNumb);
 
-  /// @brief Freq calculated to period befor disable led after enable was
-  /// called. Used in Blink().
+  /// @brief Frequency used to calculate the period before disabling the LED
+  /// after enabling it. This value is used in the Blink() method.
   static constexpr float enable_freq{20.0};
 
-  /// @brief Freq calculated to period befor enable led after disable was
-  /// called. Used in Blink().
+  /// @brief Frequency used to calculate the period before enabling the LED
+  /// after disabling it. This value is used in the Blink() method.
   static constexpr float disable_freq{1.0};
 
-  /// @brief Freq of blinking in error mode.
+  /// @brief Frequency of blinking in error mode.
   static constexpr float error_blink_freq{1.0};
 
  public:
+  /// @brief Constructs a StatusLed object.
+  ///
+  /// @param io_addr Reference to the IStatusLed interface for hardware control.
+  /// @param thread_sequence Reference to the thread sequence manager.
+  /// @param blink_mode Initial blinking mode of the LED (default: kIdle).
   StatusLed(
       IStatusLed &io_addr, IThreadSequence &thread_sequence,
-      StatusLedMode blink_mode = StatusLedMode::kIdle);
+      StatusLedMode blink_mode = StatusLedMode::kIdle)
+      : io_{io_addr}, thread_sequence_{thread_sequence} {
+    NewBlinkMode(blink_mode);
+  }
 
+  /// @brief Destructor for the StatusLed class.
   virtual ~StatusLed();
 
-  auto NewBlinkMode(StatusLedMode new_blink_mode) -> bool;
+  /// @brief Sets a new blinking mode for the LED.
+  ///
+  /// @param new_blink_mode The new blinking mode to set.
+  /// @return True if the mode was successfully changed, false otherwise.
+  auto NewBlinkMode(StatusLedMode new_blink_mode) -> bool {
+    bool is_new_blink_mode_set{false};
+    thread_sequence_.Unregister(id_);
 
+    auto blink_mode = static_cast<int>(new_blink_mode);
+    id_ = thread_sequence_.Register(
+        delegate_[blink_mode].delegate_, delegate_[blink_mode].freq_,
+        delegate_[blink_mode].is_continuous_);
+
+    if (id_ != etl::timer::id::NO_TIMER) {
+      is_new_blink_mode_set = true;
+    }
+
+    return is_new_blink_mode_set;
+  }
+
+  // Deleted copy and move constructors and assignment operators to prevent
+  // copying.
   StatusLed(StatusLed &&other) = delete;
   auto operator=(StatusLed &&other) -> StatusLed & = delete;
   auto operator=(const StatusLed &other) -> StatusLed & = delete;
   StatusLed(const StatusLed &other) = delete;
 
  private:
-  void Enable();
+  /// @brief Enables the LED.
+  PARAOS_INLINE_TRIVIAL void Enable() { io_.Enable(); }
 
-  void Disable();
+  /// @brief Disables the LED.
+  PARAOS_INLINE_TRIVIAL void Disable() { io_.Disable(); }
 
-  void Idle();
+  /// @brief Toggles the LED between enabled and disabled states.
+  void Idle() {
+    if (is_led_enable_) {
+      is_led_enable_ = false;
+      io_.Disable();
+    } else {
+      is_led_enable_ = true;
+      io_.Enable();
+    }
+  }
 
-  void Blink();
+  /// @brief Controls the blinking behavior of the LED.
+  ///
+  /// Alternates between enabling and disabling the LED based on the configured
+  /// frequencies.
+  void Blink() {
+    if (is_led_enable_) {
+      io_.Disable();
+      thread_sequence_.SetFreq(id_, disable_freq);
 
-  void Error();
+      // After a period of time, specified by the disable_freq, Blink() enables
+      // the LED again.
+      is_led_enable_ = false;
+    } else {
+      io_.Enable();
+      thread_sequence_.SetFreq(id_, enable_freq);
+
+      // After a period of time, specified by the enable_freq, Blink() disables
+      // the LED.
+      is_led_enable_ = true;
+    }
+  }
+
+  /// @brief Puts the LED into error mode.
+  ///
+  /// In error mode, the LED behaves similarly to the Idle mode.
+  PARAOS_INLINE_TRIVIAL void Error() { Idle(); }
 
  private:
+  /// Reference to the hardware interface.
   IStatusLed &io_;
+
+  /// Reference to the thread sequence manager.
   IThreadSequence &thread_sequence_;
+
+  /// Timer ID for the LED control.
   etl::timer::id::type id_{etl::timer::id::NO_TIMER};
 
+  /// Indicates whether the LED is currently enabled.
   bool is_led_enable_{false};
 
+  /// @brief Structure representing a delegate for LED operations.
   struct StatusLedDelegate {
-    delegate_type delegate_;
-    float freq_;
-    bool is_continuous_;
+    delegate_type delegate_;  ///< Delegate function for the operation.
+    float freq_;  ///< Frequency of the operation. Set to 0.0 if need calls at
+                  ///< once.
+    bool is_continuous_;  ///< Indicates whether the operation is continuous.
   };
 
+  /// @brief Array of delegates for each LED mode.
   std::array<StatusLedDelegate, blink_mode_max_numb> delegate_ = {
       {{delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0,
         false},
