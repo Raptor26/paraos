@@ -41,9 +41,9 @@
 
 namespace paraos {
 
-/// @brief Amount of time in milliseconds coop scheduler sleeps inside it's
-/// "Run()" method.
-inline constexpr size_t coop_scheduler_delay_ms{1000};
+/// @brief Amount of time in milliseconds the cooperative scheduler sleeps
+/// inside its `Run()` method.
+constexpr size_t coop_scheduler_delay_ms{1000};
 
 // =============================================================================
 // Scheduling policies.
@@ -57,15 +57,18 @@ inline constexpr size_t coop_scheduler_delay_ms{1000};
 ///
 /// @author Simakov Matvey.
 struct cooperative_scheduler_policy_run_all_at_once {
+  /// @brief Schedules all tasks in the list sequentially.
+  ///
+  /// @param[in] task_list: List of tasks to be scheduled.
+  /// @return Always returns `true` to indicate that the scheduler should call
+  /// the idle callback method.
   static auto schedule_tasks(etl::ivector<etl::task *> &task_list) -> bool {
-    // for (size_t index = 0UL; index < task_list.size(); ++index) {
     for (auto &scheduled_task : task_list) {
       etl::task &task = *(scheduled_task);
       task.task_process_work();
     }
-
-    // Always return true for indicate that scheduler must call idle callback
-    // method.
+    // Always return true to indicate that the scheduler should call the idle
+    // callback method.
     return true;
   }
 };
@@ -74,7 +77,7 @@ struct cooperative_scheduler_policy_run_all_at_once {
 // Cooperative scheduler realization.
 // =============================================================================
 
-/// @brief Params to pass in ICooperativeScheduling{} ctor.
+/// @brief Parameters to pass to `ICooperativeScheduling` constructor.
 struct ICooperativeSchedulingAttr : public paraos::ThreadAttr {
   IEmbeddedTimer *embedded_timer_ptr = &embedded_timer_empty;
 };
@@ -83,16 +86,14 @@ class ICooperativeScheduling : public paraos::Base {
   using idle_delegate = etl::delegate<void()>;
 
  protected:
-  /// @brief Construct a new ICooperativeScheduling object.
+  /// @brief Constructs a new `ICooperativeScheduling` object.
   ///
-  /// @param[in] attr: Attributes to initialize thread.
-  /// @param[in] scheduler: reference to created scheduler.
-  /// @param[in] embedded_timer: reference to profiler timer.
-  /// @param[in] thread_start_flag: Flag that indicates thread start condition.
-  /// May be useful in tests where there is no multithread environment needed.
+  /// @param[in] attr: Attributes to initialize the thread.
+  /// @param[in] scheduler: Reference to the scheduler.
+  /// @param[in] thread_start_flag: Flag indicating whether to start the thread
+  /// immediately. Useful in test environments without multithreading.
   ///
-  ///
-  /// @throw Can throw "thread_not_created_exception".
+  /// @throw Can throw `thread_not_created_exception`.
   // NOLINTBEGIN(performance-unnecessary-value-param)
   ICooperativeScheduling(
       const ICooperativeSchedulingAttr &attr, etl::ischeduler &scheduler,
@@ -103,14 +104,13 @@ class ICooperativeScheduling : public paraos::Base {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<
             ICooperativeScheduling, &ICooperativeScheduling::Run>(*this));
-
-    // scheduler_ will call all registered tasks while they have work.
-    // Only when all registered tasks complete their work, scheduler_ will call
-    // the idle function. Here, the registered idle function takes a semaphore
-    // and waits for a new program cycle.
+    // `scheduler_` will call all registered tasks while they have work.
+    // Only when all registered tasks complete their work, `scheduler_` will
+    // call the idle function. Here, the registered idle function takes a
+    // semaphore and waits for a new program cycle.
     SetIdleCallback(idle_callback);
-
-    // Connect embedded timers for each profiler used in ICooperativeScheduling.
+    // Connect embedded timers for each profiler used in
+    // `ICooperativeScheduling`.
     profiler_.period_.SetEmbeddedTimer(*attr.embedded_timer_ptr);
     profiler_.runtime_.SetEmbeddedTimer(*attr.embedded_timer_ptr);
   }
@@ -119,20 +119,17 @@ class ICooperativeScheduling : public paraos::Base {
  public:
   ~ICooperativeScheduling() override { Finish(); }
 
-  /// @brief The cooperative scheduler runs periodically.
-  /// This means the user code must provide periodic notifications.
+  /// @brief Notifies the cooperative scheduler to start a new scheduling cycle.
   ///
-  /// @param[in] is_isr Set to true if called from an interrupt.
+  /// @param[in] is_isr: Set to `true` if called from an interrupt service
+  /// routine.
   ///
-  /// @return Returns true if the notification was successfully given.
+  /// @return Returns `true` if the notification was successfully given.
   auto NotifyGive(const bool is_isr = false) {
     auto is_notify_given = new_cycle_ready_sem_.Give(is_isr);
-
     paraos::ProfilerPeriodRAII(profiler_.period_);
-
-    // Start runtime profiling. Complete runtime when idle will calling.
+    // Start runtime profiling. Complete runtime when `Idle()` is called.
     profiler_.runtime_.Start();
-
     return is_notify_given;
   }
 
@@ -141,36 +138,35 @@ class ICooperativeScheduling : public paraos::Base {
   /// @note Useful in unit tests when an exit from the cooperative scheduler is
   /// needed.
   ///
-  /// @param[in] is_dynamic Set to true if the cooperative scheduler was created
-  /// on the heap and is not managed by user code or smart pointers.
-  /// In this case, CooperativeScheduling() will be removed from the heap
-  /// after the thread completes all work. Otherwise, set to false.
+  /// @param[in] is_dynamic: Set to `true` if the cooperative scheduler was
+  /// created on the heap and is not managed by user code or smart pointers.
+  /// In this case, `CooperativeScheduling()` will be removed from the heap
+  /// after the thread completes all work. Otherwise, set to `false`.
   void Finish(bool is_dynamic = false) {
+    paraos::Base *deferred_destroy{nullptr};
     const paraos::CriticalSection critical;
 
-    paraos::Base *deferred_destroy{nullptr};
     if (is_dynamic) {
       deferred_destroy = this;
     }
 
     thread_.Finished(deferred_destroy);
-
     scheduler_.exit_scheduler();
 
-    // Force give notify for leave while cycle inside cooperative scheduler.
-    // Need because if Exit() calls cooperative scheduler may wait notify
-    // forever in Idle().
+    // Force give notify to exit the while loop inside the cooperative
+    // scheduler. Needed because if `Exit()` is called, the cooperative
+    // scheduler may wait indefinitely in `Idle()`.
     NotifyGive();
   }
 
-  /// @brief Adds a task to the execution list, which runs when Run() is called.
-  /// The task's position in the list depends on its priority, which is set in
-  /// the task constructor. This means tasks with higher priority will be
-  /// executed first in each scheduler iteration.
+  /// @brief Adds a task to the execution list, which runs when `Run()` is
+  /// called. The task's position in the list depends on its priority, which is
+  /// set in the task constructor. Tasks with higher priority will be executed
+  /// first in each scheduler iteration.
   ///
-  /// @param[in] task The task to be added to the private list. This means the
-  /// task will be scheduled for execution when Run() is called in the paraos
-  /// thread context.
+  /// @param[in] task: The task to be added to the private list.
+  /// @return Returns `true` if the task was successfully added, `false`
+  /// otherwise.
   virtual auto AddTask(etl::task &task) -> bool {
     bool is_task_add{false};
     try {
@@ -182,21 +178,21 @@ class ICooperativeScheduling : public paraos::Base {
           e.file_name() << "; --line: " << e.line_number()
                         << "; --what: " << e.what());
     }
-
     return is_task_add;
   }
 
-  /// @brief After all tasks complete their work in one iteration, the scheduler
-  /// calls the idle task. The user can set a custom idle function to be called
-  /// by the scheduler when there is no more work in the current iteration.
+  /// @brief Sets a custom idle function to be called by the scheduler when
+  /// there is no more work in the current iteration.
   ///
-  /// @param[in] callback User-defined function that is called after all tasks
+  /// @param[in] callback: User-defined function that is called after all tasks
   /// have completed their work.
   void SetIdleCallback(etl::ifunction<void> &callback) {
     const paraos::CriticalSection critical;
     scheduler_.set_idle_callback(callback);
   }
 
+  /// @brief Main loop function executed by the thread.
+  /// Runs until `Break()` is called.
   void Run() {
     try {
       scheduler_.start();
@@ -204,29 +200,29 @@ class ICooperativeScheduling : public paraos::Base {
       paraosTRACE_MESSAGE(
           e.file_name() << "; --line: " << e.line_number()
                         << "; --what: " << e.what());
-
     } catch (etl::exception &e) {
       paraosTRACE_MESSAGE(
           e.file_name() << "; --line: " << e.line_number()
                         << "; --what: " << e.what());
     }
-
-    // The Run() method is called in a loop. When there are no tasks to execute,
-    // scheduler_.start() throws an exception. After Run() catches the
-    // exception, scheduler_.start() is immediately called again in an infinite
-    // loop (since Run() executes in an external infinite loop). In this case,
-    // all processor time would be wasted. Therefore, DelayMs() yields processor
-    // time to other threads.
+    // The `Run()` method is called in a loop. When there are no tasks to
+    // execute, `scheduler_.start()` throws an exception. After `Run()` catches
+    // the exception, `scheduler_.start()` is immediately called again in an
+    // infinite loop (since `Run()` executes in an external infinite loop). In
+    // this case, all processor time would be wasted. Therefore, `DelayMs()`
+    // yields processor time to other threads.
     //
-    // Once a task is registered (when the user code calls AddTask()),
-    // scheduler_.start() begins execution in an internal loop,
-    // which blocks the Idle() method by taking a semaphore.
+    // Once a task is registered (when the user code calls `AddTask()`),
+    // `scheduler_.start()` begins execution in an internal loop, which blocks
+    // the `Idle()` method by taking a semaphore.
     paraos::Thread::DelayMs(coop_scheduler_delay_ms);
   }
 
+  /// @brief Returns a reference to the scheduler.
   auto GetScheduler() -> etl::ischeduler & { return scheduler_; }
 
-  /// @brief Five rule.
+  /// @brief Deleted move constructor and assignment operators to enforce
+  /// non-copyable and non-movable semantics.
   ICooperativeScheduling(ICooperativeScheduling &&other) = delete;
   auto operator=(ICooperativeScheduling &&other)
       -> ICooperativeScheduling & = delete;
@@ -235,37 +231,37 @@ class ICooperativeScheduling : public paraos::Base {
   ICooperativeScheduling(const ICooperativeScheduling &other) = delete;
 
  private:
-  /// @brief scheduler_ calls all registered tasks while they have work.
-  /// Once all registered tasks have completed their work, scheduler_ calls the
-  /// idle function. The `void Idle()` method provides the logic to wait for a
-  /// new program cycle and initiate the next scheduling step. To start new
-  /// iteration, user code must calls NotifyGive() periodically.
+  /// @brief Called by the scheduler when all tasks have completed their work.
+  /// Waits for a new program cycle and initiates the next scheduling step.
   void Idle() {
-    // Start runtime profiling when give notify and complete runtime here.
+    // Start runtime profiling when `NotifyGive()` is called and complete it
+    // here.
     profiler_.runtime_.Stop();
-
-    // After all work is completed, scheduler_ calls the idle implementation
-    // (see SetIdleCallback()). Here, it takes a semaphore and waits for the
+    // After all work is completed, `scheduler_` calls the idle implementation
+    // (see `SetIdleCallback()`). Here, it takes a semaphore and waits for the
     // next program cycle.
     new_cycle_ready_sem_.Take(paraos::max_delay);
   }
 
  private:
+  //// Thread instance.
   paraos::Thread thread_;
+  /// Scheduler reference.
   etl::ischeduler &scheduler_;
+  /// Binary semaphore for synchronization.
+
   SemaphoreBinary new_cycle_ready_sem_;
 
-  /// @brief Member function object, Need for registered Idle() method in
-  /// scheduler_.
+  /// @brief Member function object, needed to register the `Idle()` method in
+  /// the scheduler.
   etl::function<ICooperativeScheduling, void> idle_callback;
-
   struct {
-    TimerProfiler period_;
-    TimerProfiler runtime_;
+    TimerProfiler period_;   ///< Profiler for measuring the period.
+    TimerProfiler runtime_;  ///< Profiler for measuring runtime.
   } profiler_;
 };
 
-/// @brief Params to pass in CooperativeScheduling{} ctor.
+/// @brief Parameters to pass to `CooperativeScheduling` constructor.
 struct CooperativeSchedulingAttr : public ICooperativeSchedulingAttr {};
 
 /// @brief Constructs a cooperative scheduler.
@@ -277,18 +273,24 @@ struct CooperativeSchedulingAttr : public ICooperativeSchedulingAttr {};
 /// @tparam MAX_TASKS_ The maximum number of tasks that can be contained at a
 /// time.
 /// @tparam TSchedulerPolicy The policy used for executing registered tasks.
-
 template <
     std::size_t MAX_TASKS_,
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
-class CooperativeScheduling : etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
-                              public ICooperativeScheduling {
+class CooperativeScheduling
+    : public etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
+      public ICooperativeScheduling {
  public:
+  /// @brief Constructs a new `CooperativeScheduling` object.
+  ///
+  /// @param[in] attr: Attributes to initialize the thread.
+  /// @param[in] thread_start_flag: Flag indicating whether to start the thread
+  /// immediately. Useful in test environments without multithreading.
   explicit CooperativeScheduling(
       const CooperativeSchedulingAttr &attr, bool thread_start_flag = true)
       : ICooperativeScheduling{attr, *this, thread_start_flag} {}
 
-  /// @brief Five rule.
+  /// @brief Deleted move constructor and assignment operators to enforce
+  /// non-copyable and non-movable semantics.
   CooperativeScheduling(CooperativeScheduling &&other) = delete;
   auto operator=(CooperativeScheduling &&other)
       -> CooperativeScheduling & = delete;
@@ -303,6 +305,6 @@ class CooperativeScheduling : etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
   // `etl::scheduler` is fully constructed.
 };
 
-}  // namespace  paraos
+}  // namespace paraos
 
 #endif /* PARAOS_THREAD_COOPERATIVE_SCHEDULING_HPP */
