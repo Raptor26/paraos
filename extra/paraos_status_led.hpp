@@ -88,7 +88,7 @@ class StatusLed {
   }
 
   /// @brief Destructor for the StatusLed class.
-  virtual ~StatusLed();
+  virtual ~StatusLed() = default;
 
   /// @brief Sets a new blinking mode for the LED.
   ///
