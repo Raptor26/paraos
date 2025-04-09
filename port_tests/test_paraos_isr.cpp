@@ -30,30 +30,32 @@
 #include "paraos_isr.hpp"
 
 TEST(Isr, DefaultCtor) {
-  paraos::ISRbool isr_bool;
+  const paraos::ISRbool isr_bool;
 
   ASSERT_FALSE(static_cast<bool>(isr_bool));
   ASSERT_FALSE(isr_bool.IsNeedSwitchContext());
 }
 
 TEST(Isr, CtorWithTrueResult) {
-  paraos::ISRbool isr_bool{true};
+  const paraos::ISRbool isr_bool{true};
 
   ASSERT_TRUE(static_cast<bool>(isr_bool));
   ASSERT_FALSE(isr_bool.IsNeedSwitchContext());
 }
 
 TEST(Isr, CtorWithTrueResultAndNeedSwitchContext) {
-  paraos::ISRbool isr_bool{true, true};
+  const paraos::ISRbool isr_bool{true, true};
 
   ASSERT_TRUE(static_cast<bool>(isr_bool));
   ASSERT_TRUE(isr_bool.IsNeedSwitchContext());
 }
 
 TEST(Isr, CopyCtorIfFalseResultAndNoSwitchContext) {
-  paraos::ISRbool isr_bool;
+  const paraos::ISRbool isr_bool;
 
-  auto isr_bool_move{isr_bool};
+  // Code below need to test copy ctor
+  // NOLINTNEXTLINE(*-unnecessary-copy-initialization)
+  const auto isr_bool_move{isr_bool};
 
   ASSERT_FALSE(static_cast<bool>(isr_bool_move));
   ASSERT_FALSE(isr_bool_move.IsNeedSwitchContext());
@@ -62,23 +64,27 @@ TEST(Isr, CopyCtorIfFalseResultAndNoSwitchContext) {
 TEST(Isr, MoveCtorIfFalseResultAndNoSwitchContext) {
   paraos::ISRbool isr_bool;
 
-  auto isr_bool_move{std::move(isr_bool)};
+  // Code below need to test move ctor
+  // NOLINTNEXTLINE(*-unnecessary-copy-initialization)
+  const auto isr_bool_move{std::move(isr_bool)};
 
   ASSERT_FALSE(static_cast<bool>(isr_bool_move));
   ASSERT_FALSE(isr_bool_move.IsNeedSwitchContext());
 }
 
 TEST(Isr, CopyAssignmentIfFalseResultAndNoSwitchContext) {
-  paraos::ISRbool isr_bool;
+  const paraos::ISRbool isr_bool;
 
-  auto isr_bool_copy = isr_bool;
+  // Code below need to test copy operator.
+  // NOLINTNEXTLINE(*-unnecessary-copy-initialization)
+  const auto isr_bool_copy = isr_bool;
 
   ASSERT_FALSE(static_cast<bool>(isr_bool_copy));
   ASSERT_FALSE(isr_bool_copy.IsNeedSwitchContext());
 }
 
 TEST(Isr, CopyAssignmentIfFalseResultAndNeedSwitchContext) {
-  paraos::ISRbool isr_bool{false, true};
+  const paraos::ISRbool isr_bool{false, true};
   paraos::ISRbool isr_bool_copy{false, false};
 
   isr_bool_copy = isr_bool;
@@ -88,7 +94,7 @@ TEST(Isr, CopyAssignmentIfFalseResultAndNeedSwitchContext) {
 }
 
 TEST(Isr, CopyAssignmentIfFalseResultAndNeedSwitchContextInCopy) {
-  paraos::ISRbool isr_bool{false, false};
+  const paraos::ISRbool isr_bool{false, false};
   paraos::ISRbool isr_bool_copy{false, true};
 
   isr_bool_copy = isr_bool;
@@ -100,7 +106,7 @@ TEST(Isr, CopyAssignmentIfFalseResultAndNeedSwitchContextInCopy) {
 TEST(Isr, MoveAssignmentIfFalseResultAndNoSwitchContext) {
   paraos::ISRbool isr_bool;
 
-  auto isr_bool_copy = std::move(isr_bool);
+  const auto isr_bool_copy = std::move(isr_bool);
 
   ASSERT_FALSE(static_cast<bool>(isr_bool_copy));
   ASSERT_FALSE(isr_bool_copy.IsNeedSwitchContext());

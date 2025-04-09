@@ -176,7 +176,7 @@ TEST(MultiRingBuff, WriteSpanToRingBufferThenRead) {
   std::vector<uint8_t> myVector(str.begin(), str.end());
 
   constexpr std::size_t cbuff_id{0};
-  std::size_t expected_written_bytes{myVector.size()};
+  const std::size_t expected_written_bytes{myVector.size()};
   auto is_written_successful = multi_ring_buff.TryWrite(cbuff_id, myVector);
 
   ASSERT_TRUE(is_written_successful);
