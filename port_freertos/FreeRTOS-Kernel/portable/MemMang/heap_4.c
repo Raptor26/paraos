@@ -1,5 +1,5 @@
 /*
- * FreeRTOS Kernel <DEVELOPMENT BRANCH>
+ * FreeRTOS Kernel V11.1.0
  * Copyright (C) 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * SPDX-License-Identifier: MIT
@@ -89,7 +89,7 @@
 #if ( configAPPLICATION_ALLOCATED_HEAP == 1 )
 
 /* The application writer has already defined the array used for the RTOS
- * heap - probably so it can be placed in a special segment or address. */
+* heap - probably so it can be placed in a special segment or address. */
     extern uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #else
     PRIVILEGED_DATA static uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
@@ -177,7 +177,6 @@ void * pvPortMalloc( size_t xWantedSize )
     BlockLink_t * pxNewBlockLink;
     void * pvReturn = NULL;
     size_t xAdditionalRequiredSize;
-    size_t xAllocatedBlockSize = 0;
 
     if( xWantedSize > 0 )
     {
@@ -303,12 +302,10 @@ void * pvPortMalloc( size_t xWantedSize )
                         mtCOVERAGE_TEST_MARKER();
                     }
 
-                    xAllocatedBlockSize = pxBlock->xBlockSize;
-
                     /* The block is being returned - it is allocated and owned
                      * by the application and has no "next" block. */
                     heapALLOCATE_BLOCK( pxBlock );
-                    pxBlock->pxNextFreeBlock = heapPROTECT_BLOCK_POINTER( NULL );
+                    pxBlock->pxNextFreeBlock = NULL;
                     xNumberOfSuccessfulAllocations++;
                 }
                 else
@@ -326,10 +323,7 @@ void * pvPortMalloc( size_t xWantedSize )
             mtCOVERAGE_TEST_MARKER();
         }
 
-        traceMALLOC( pvReturn, xAllocatedBlockSize );
-
-        /* Prevent compiler warnings when trace macros are not used. */
-        ( void ) xAllocatedBlockSize;
+        traceMALLOC( pvReturn, xWantedSize );
     }
     ( void ) xTaskResumeAll();
 
@@ -367,11 +361,11 @@ void vPortFree( void * pv )
 
         heapVALIDATE_BLOCK_POINTER( pxLink );
         configASSERT( heapBLOCK_IS_ALLOCATED( pxLink ) != 0 );
-        configASSERT( pxLink->pxNextFreeBlock == heapPROTECT_BLOCK_POINTER( NULL ) );
+        configASSERT( pxLink->pxNextFreeBlock == NULL );
 
         if( heapBLOCK_IS_ALLOCATED( pxLink ) != 0 )
         {
-            if( pxLink->pxNextFreeBlock == heapPROTECT_BLOCK_POINTER( NULL ) )
+            if( pxLink->pxNextFreeBlock == NULL )
             {
                 /* The block is being returned to the heap - it is no longer
                  * allocated. */
@@ -419,12 +413,6 @@ size_t xPortGetFreeHeapSize( void )
 size_t xPortGetMinimumEverFreeHeapSize( void )
 {
     return xMinimumEverFreeBytesRemaining;
-}
-/*-----------------------------------------------------------*/
-
-void xPortResetHeapMinimumEverFreeHeapSize( void )
-{
-    xMinimumEverFreeBytesRemaining = xFreeBytesRemaining;
 }
 /*-----------------------------------------------------------*/
 
@@ -554,7 +542,7 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
         pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
     }
 
-    /* If the block being inserted plugged a gap, so was merged with the block
+    /* If the block being inserted plugged a gab, so was merged with the block
      * before and the block after, then it's pxNextFreeBlock pointer will have
      * already been set, and should not be set here as that would make it point
      * to itself. */

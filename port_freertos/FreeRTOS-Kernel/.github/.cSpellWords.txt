@@ -23,7 +23,6 @@ AIRCR
 ALMIEN
 ALMV
 ANDC
-andi
 ANDCCR
 APIC
 APROCFREQ
@@ -48,7 +47,6 @@ bcpc
 BCPC
 beevt
 BEEVT
-beqz
 BERR
 bfextu
 Biagioni
@@ -77,7 +75,6 @@ CCNT
 CCNTR
 CCPN
 CCPR
-CCRH
 CDTY
 CDTYR
 CFBS
@@ -89,7 +86,6 @@ CHSR
 CICR
 CISR
 CKDIV
-CKDIVMD
 CKEY
 CKGR
 CKLO
@@ -108,7 +104,6 @@ CLKSOURCE
 CLKSTA
 CLRB
 CLRF
-clrm
 CLRPSW
 CMCNT
 CMCON
@@ -130,7 +125,6 @@ CODR
 comms
 COMPA
 CONFG
-coreid
 coremqtt
 CORTUS
 coverity
@@ -155,7 +149,6 @@ CPRE
 cpsid
 cpsie
 CPSR
-CPUCLK
 CPUID
 CRCB
 crflash
@@ -171,8 +164,6 @@ csrs
 csrw
 CTCR
 ctest
-CTPC
-CTPSW
 CTRLA
 CTSIC
 CUPD
@@ -236,7 +227,6 @@ DTREN
 DTXD
 DUNITY
 DVAR
-Dxxx
 EABI
 ecall
 ECIT
@@ -247,7 +237,6 @@ EEVT
 eevtedg
 EEVTEDG
 EFRHD
-EIIC
 EINT
 EIPC
 EIPSW
@@ -300,7 +289,6 @@ FADD
 FCMD
 fcolor
 FCSE
-fcsr
 fdiagnostics
 fdiv
 FDIV
@@ -322,7 +310,6 @@ FNTR
 FOSC
 FPCCR
 FPCSR
-FPEPC
 FPSW
 FPUL
 FRDY
@@ -351,7 +338,6 @@ GPTA
 HCLK
 Hitach
 HRESP
-HTCFG
 HWHSH
 HWORD
 HWRD
@@ -367,7 +353,6 @@ ICCR
 ICCRPR
 ICCRX
 ICERST
-ICIPI
 ICSR
 IDCR
 IECR
@@ -387,7 +372,6 @@ INTTM
 IODEFINE
 IORLW
 IPEN
-IPIR
 IPLB
 ipsr
 IPSR
@@ -396,8 +380,8 @@ IRET
 IRXFCS
 ISRAM
 ISRR
-ISRS
 ISR's
+ISRS
 ISRTICK
 isystem
 ITIF
@@ -452,7 +436,6 @@ MAINRDY
 MAIR
 Mang
 Mbits
-mbranch
 mcause
 MCFR
 MCKA
@@ -581,7 +564,6 @@ OSCEN
 OSCOFF
 OSCOUNT
 OSMC
-OSTM
 outpw
 OVLY
 OVRE
@@ -591,8 +573,6 @@ OWATCOM
 OWDR
 OWER
 OWSR
-pacbti
-PACBTI
 PAGEN
 PCDR
 PCER
@@ -604,7 +584,6 @@ PCLKSEL
 PCSR
 PCXI
 PDSR
-PEID
 PEIE
 PENDSV
 PENDSVCLEAR
@@ -682,7 +661,6 @@ pylint
 pytest
 pyyaml
 RAMPZ
-randomisation
 RASR
 Rationalised
 Raynald
@@ -786,7 +764,6 @@ SHPR
 SHTIM
 SIFIVE
 sinclude
-slli
 SODR
 SOFTIRQ
 SPCK
@@ -822,8 +799,6 @@ SWINTR
 SWRST
 SWTRG
 synchronise
-SYNCM
-syncm
 SYSC
 sysclk
 Sysclk
@@ -909,7 +884,6 @@ TXTEN
 TXUBR
 TXVC
 TXVDIS
-UBTI
 UDCP
 UNACKED
 uncrustify
@@ -925,7 +899,6 @@ UNSUB
 UNSUBACK
 unsubscriptions
 unsuspended
-UPAC
 URAD
 URAT
 URSTEN
@@ -938,7 +911,6 @@ USRIO
 utest
 utilises
 utilising
-vcsr
 VDDCORE
 vect
 Vect
@@ -949,7 +921,6 @@ visualisation
 vldmdbeq
 vldmia
 vldmiaeq
-vlenb
 VMSRNE
 vpop
 VPOPNE
@@ -957,7 +928,6 @@ vpush
 VPUSHNE
 VRPM
 Vrtc
-vsetvl
 vstmdbeq
 vstmiaeq
 VTOR

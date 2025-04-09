@@ -1,5 +1,5 @@
 /*
- * FreeRTOS Kernel <DEVELOPMENT BRANCH>
+ * FreeRTOS Kernel V11.1.0
  * Copyright (C) 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * SPDX-License-Identifier: MIT
@@ -39,10 +39,6 @@
 #include <timeapi.h>
 #include <mmsystem.h>
 #include <winbase.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /******************************************************************************
 *   Defines
@@ -112,7 +108,7 @@ extern volatile BaseType_t xInsideInterrupt;
 
 /* Simulated interrupts return pdFALSE if no context switch should be performed,
  * or a non-zero number if a context switch should be performed. */
-#define portYIELD_FROM_ISR( x )       return x
+#define portYIELD_FROM_ISR( x )       ( void ) x
 #define portEND_SWITCHING_ISR( x )    portYIELD_FROM_ISR( ( x ) )
 
 void vPortCloseRunningThread( void * pvTaskToDelete,
@@ -188,9 +184,8 @@ void vPortExitCritical( void );
 #define portTASK_FUNCTION_PROTO( vFunction, pvParameters )    void vFunction( void * pvParameters )
 #define portTASK_FUNCTION( vFunction, pvParameters )          void vFunction( void * pvParameters )
 
-#define portINTERRUPT_YIELD                        ( 0UL )
-#define portINTERRUPT_TICK                         ( 1UL )
-#define portINTERRUPT_APPLICATION_DEFINED_START    ( 2UL )
+#define portINTERRUPT_YIELD    ( 0UL )
+#define portINTERRUPT_TICK     ( 1UL )
 
 /*
  * Raise a simulated interrupt represented by the bit mask in ulInterruptMask.
@@ -198,14 +193,6 @@ void vPortExitCritical( void );
  * two bits being used for the Yield and Tick interrupts respectively.
  */
 void vPortGenerateSimulatedInterrupt( uint32_t ulInterruptNumber );
-
-/*
- * Raise a simulated interrupt represented by the bit mask in ulInterruptMask.
- * Each bit can be used to represent an individual interrupt - with the first
- * two bits being used for the Yield and Tick interrupts respectively. This function
- * can be called in a windows thread.
- */
-void vPortGenerateSimulatedInterruptFromWindowsThread( uint32_t ulInterruptNumber );
 
 /*
  * Install an interrupt handler to be called by the simulated interrupt handler
@@ -218,9 +205,5 @@ void vPortGenerateSimulatedInterruptFromWindowsThread( uint32_t ulInterruptNumbe
  */
 void vPortSetInterruptHandler( uint32_t ulInterruptNumber,
                                uint32_t ( * pvHandler )( void ) );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* ifndef PORTMACRO_H */
