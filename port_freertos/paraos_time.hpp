@@ -39,7 +39,7 @@ namespace paraos {
 ///
 /// @return Return object with current time. Returned value used in
 /// CheckTimeout().
-inline auto GetCurrentTime() {
+inline auto GetCurrentTime() noexcept {
   TimeOut_t xTimeOut;
   vTaskInternalSetTimeOutState(&xTimeOut);
   return xTimeOut;
@@ -61,7 +61,7 @@ inline auto GetCurrentTime() {
 /// @param[in,out] ticks_to_wait: Wait time in ticks.
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
-inline auto CheckTimeout(TimeOut_t &xTimeOut, std::size_t &delay_ms) {
+inline auto CheckTimeout(TimeOut_t &xTimeOut, std::size_t &delay_ms) noexcept {
   // Conditions below useful in unit tests, because if scheduler not started,
   // xTaskCheckForTimeOut() catch segmentation fail.
   if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {

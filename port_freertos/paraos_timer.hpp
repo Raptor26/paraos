@@ -26,6 +26,9 @@
 #ifndef PARAOS_TIMER_HPP
 #define PARAOS_TIMER_HPP
 
+#include <etl/error_handler.h>
+
+#include <new>
 #include <string_view>
 
 #include "FreeRTOS.h"
@@ -56,6 +59,8 @@ class Timer {
         static_cast<BaseType_t>(is_auto_reload), static_cast<void *>(this),
         TimerCallback);
 
+    ETL_ASSERT(handle_ != nullptr, std::bad_alloc());
+
     if (start_immediately) {
       Start();
     }
@@ -76,12 +81,14 @@ class Timer {
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (handle_ != nullptr) {
       if (!is_isr) {
-        is_timer_started.SetSuccessStatus(static_cast<bool>(
-            xTimerStart(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
+        is_timer_started.SetSuccessStatus(
+            static_cast<bool>(xTimerStart(
+                handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
 
       } else {
-        is_timer_started.SetSuccessStatus(static_cast<bool>(
-            xTimerStartFromISR(handle_, &xHigherPriorityTaskWoken)));
+        is_timer_started.SetSuccessStatus(
+            static_cast<bool>(
+                xTimerStartFromISR(handle_, &xHigherPriorityTaskWoken)));
 
         if (xHigherPriorityTaskWoken != pdFALSE) {
           is_timer_started.SetSwitchContextStatus(true);
@@ -104,12 +111,13 @@ class Timer {
   /// switch RTOS context from ISR.
   auto ChangePeriod(
       std::size_t period_ms, std::size_t max_block_time_ms = max_delay,
-      bool is_isr = false) -> ISRbool {
+      bool is_isr = false) noexcept {
     ISRbool is_period_changed;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
-      is_period_changed.SetSuccessStatus(static_cast<bool>(xTimerChangePeriod(
-          handle_, period_ms, PARAOS_ConvertMsToTicks(max_block_time_ms))));
+      is_period_changed.SetSuccessStatus(
+          static_cast<bool>(xTimerChangePeriod(
+              handle_, period_ms, PARAOS_ConvertMsToTicks(max_block_time_ms))));
     } else {
       is_period_changed.SetSuccessStatus(
           static_cast<bool>(xTimerChangePeriodFromISR(
@@ -132,16 +140,17 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  auto Stop(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
-      -> ISRbool {
+  auto Stop(std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
     ISRbool is_stopped;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
-      is_stopped.SetSuccessStatus(static_cast<bool>(
-          xTimerStop(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
+      is_stopped.SetSuccessStatus(
+          static_cast<bool>(
+              xTimerStop(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
     } else {
-      is_stopped.SetSuccessStatus(static_cast<bool>(
-          xTimerStopFromISR(handle_, &xHigherPriorityTaskWoken)));
+      is_stopped.SetSuccessStatus(
+          static_cast<bool>(
+              xTimerStopFromISR(handle_, &xHigherPriorityTaskWoken)));
 
       if (xHigherPriorityTaskWoken != pdFALSE) {
         is_stopped.SetSwitchContextStatus(true);
@@ -170,16 +179,17 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  auto Reset(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
-      -> ISRbool {
+  auto Reset(
+      std::size_t max_block_time_ms = max_delay, bool is_isr = false) noexcept {
     // Reset not provided ISR API.
     PARAOS_CHECK_ASSERT(is_isr == false);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     ISRbool is_reset;
 
-    is_reset.SetSuccessStatus(static_cast<bool>(
-        xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
+    is_reset.SetSuccessStatus(
+        static_cast<bool>(
+            xTimerReset(handle_, PARAOS_ConvertMsToTicks(max_block_time_ms))));
 
     return is_reset;
   }
