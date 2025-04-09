@@ -1,5 +1,5 @@
 /*
- * FreeRTOS Kernel <DEVELOPMENT BRANCH>
+ * FreeRTOS Kernel V11.1.0
  * Copyright (C) 2020 Cambridge Consultants Ltd.
  *
  * SPDX-License-Identifier: MIT
@@ -49,10 +49,12 @@
 * only or serialized with a FreeRTOS primitive such as a binary
 * semaphore or mutex.
 *----------------------------------------------------------*/
-#ifdef __linux__
-    #define _GNU_SOURCE
-#endif
 #include "portmacro.h"
+
+#ifdef __linux__
+    #define __USE_GNU
+#endif
+
 #include <errno.h>
 #include <pthread.h>
 #include <limits.h>
@@ -165,15 +167,30 @@ StackType_t * pxPortInitialiseStack( StackType_t * pxTopOfStack,
     thread = ( Thread_t * ) ( pxTopOfStack + 1 ) - 1;
     pxTopOfStack = ( StackType_t * ) thread - 1;
 
-    /* Ensure that there is enough space to store Thread_t on the stack. */
+    #ifdef __APPLE__
+        pxEndOfStack = ( StackType_t * ) mach_vm_round_page( pxEndOfStack );
+    #endif
+
     ulStackSize = ( size_t ) ( pxTopOfStack + 1 - pxEndOfStack ) * sizeof( *pxTopOfStack );
-    configASSERT( ulStackSize > sizeof( Thread_t ) );
+
+    #ifdef __APPLE__
+        ulStackSize = mach_vm_trunc_page( ulStackSize );
+    #endif
 
     thread->pxCode = pxCode;
     thread->pvParams = pvParameters;
     thread->xDying = pdFALSE;
 
+    /* Ensure ulStackSize is at least PTHREAD_STACK_MIN */
+    ulStackSize = (ulStackSize < PTHREAD_STACK_MIN) ? PTHREAD_STACK_MIN : ulStackSize;
+
     pthread_attr_init( &xThreadAttributes );
+    iRet = pthread_attr_setstacksize( &xThreadAttributes, ulStackSize );
+
+    if( iRet != 0 )
+    {
+        fprintf( stderr, "[WARN] pthread_attr_setstacksize failed with return value: %d. Default stack size will be used.\n", iRet );
+    }
 
     thread->ev = event_create();
 
@@ -242,14 +259,14 @@ BaseType_t xPortStartScheduler( void )
     xSchedulerEnd = pdFALSE;
 
     /* Reset pthread_once_t, needed to restart the scheduler again.
-     * memset the internal struct members for MacOS/Linux Compatibility */
+     * memset the internal struct members for MacOS/Linux Compatability */
     #if __APPLE__
         hSigSetupThread.__sig = _PTHREAD_ONCE_SIG_init;
         memset( ( void * ) &hSigSetupThread.__opaque, 0, sizeof(hSigSetupThread.__opaque));
     #else /* Linux PTHREAD library*/
         hSigSetupThread = PTHREAD_ONCE_INIT;
     #endif /* __APPLE__*/
-
+    
     /* Restore original signal mask. */
     ( void ) pthread_sigmask( SIG_SETMASK, &xSchedulerOriginalSignalMask, NULL );
 
@@ -367,7 +384,7 @@ static uint64_t prvGetTimeNs( void )
 static void * prvTimerTickHandler( void * arg )
 {
     ( void ) arg;
-
+    
     prvPortSetCurrentThreadName("Scheduler timer");
 
     while( xTimerTickThreadShouldRun )
@@ -405,19 +422,36 @@ static void vPortSystemTickHandler( int sig )
 
     ( void ) sig;
 
+/* uint64_t xExpectedTicks; */
+
     uxCriticalNesting++; /* Signals are blocked in this signal handler. */
 
-    pxThreadToSuspend = prvGetThreadFromTask( xTaskGetCurrentTaskHandle() );
+    #if ( configUSE_PREEMPTION == 1 )
+        pxThreadToSuspend = prvGetThreadFromTask( xTaskGetCurrentTaskHandle() );
+    #endif
 
-    if( xTaskIncrementTick() != pdFALSE )
-    {
+    /* Tick Increment, accounting for any lost signals or drift in
+     * the timer. */
+
+/*
+ *      Comment code to adjust timing according to full demo requirements
+ *      xExpectedTicks = (prvGetTimeNs() - prvStartTimeNs)
+ *        / (portTICK_RATE_MICROSECONDS * 1000);
+ * do { */
+    xTaskIncrementTick();
+
+/*        prvTickCount++;
+ *    } while (prvTickCount < xExpectedTicks);
+ */
+
+    #if ( configUSE_PREEMPTION == 1 )
         /* Select Next Task. */
         vTaskSwitchContext();
 
         pxThreadToResume = prvGetThreadFromTask( xTaskGetCurrentTaskHandle() );
 
         prvSwitchThread( pxThreadToResume, pxThreadToSuspend );
-    }
+    #endif
 
     uxCriticalNesting--;
 }

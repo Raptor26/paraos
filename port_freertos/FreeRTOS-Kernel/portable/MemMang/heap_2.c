@@ -1,5 +1,5 @@
 /*
- * FreeRTOS Kernel <DEVELOPMENT BRANCH>
+ * FreeRTOS Kernel V11.1.0
  * Copyright (C) 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * SPDX-License-Identifier: MIT
@@ -87,7 +87,7 @@
 #if ( configAPPLICATION_ALLOCATED_HEAP == 1 )
 
 /* The application writer has already defined the array used for the RTOS
- * heap - probably so it can be placed in a special segment or address. */
+* heap - probably so it can be placed in a special segment or address. */
     extern uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #else
     PRIVILEGED_DATA static uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
@@ -160,7 +160,6 @@ void * pvPortMalloc( size_t xWantedSize )
     BlockLink_t * pxNewBlockLink;
     void * pvReturn = NULL;
     size_t xAdditionalRequiredSize;
-    size_t xAllocatedBlockSize = 0;
 
     if( xWantedSize > 0 )
     {
@@ -262,8 +261,6 @@ void * pvPortMalloc( size_t xWantedSize )
 
                     xFreeBytesRemaining -= pxBlock->xBlockSize;
 
-                    xAllocatedBlockSize = pxBlock->xBlockSize;
-
                     /* The block is being returned - it is allocated and owned
                      * by the application and has no "next" block. */
                     heapALLOCATE_BLOCK( pxBlock );
@@ -272,10 +269,7 @@ void * pvPortMalloc( size_t xWantedSize )
             }
         }
 
-        traceMALLOC( pvReturn, xAllocatedBlockSize );
-
-        /* Prevent compiler warnings when trace macros are not used. */
-        ( void ) xAllocatedBlockSize;
+        traceMALLOC( pvReturn, xWantedSize );
     }
     ( void ) xTaskResumeAll();
 
