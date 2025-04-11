@@ -60,6 +60,7 @@ struct IThreadSequenceAttr : public paraos::ThreadAttr {
 ///
 /// All blocking API calls should return a status indicating success or failure.
 class IThreadSequence : public paraos::Base {
+ public:
   using callback_type = etl::delegate<void()>;
 
  protected:
@@ -72,9 +73,8 @@ class IThreadSequence : public paraos::Base {
       : thread_{attr, thread_start_flag},
         period_in_us_{attr.period_in_us},
         timer_controller_{timer_controller} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<
-            IThreadSequence, &IThreadSequence::Run>(*this));
+    thread_.RegisterDelegate(paraos::thread_delegate_type::create<
+                             IThreadSequence, &IThreadSequence::Run>(*this));
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
@@ -123,8 +123,8 @@ class IThreadSequence : public paraos::Base {
   /// @return Returns `etl::timer::id::NO_TIMER` if registration fails.
   ///         Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
   PARAOS_POLYMORPHIC_EXTRA auto Register(
-      callback_type &callback, float freq, bool repeating)
-      -> etl::timer::id::type {
+      callback_type &callback, float freq,
+      bool repeating) -> etl::timer::id::type {
     const paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
