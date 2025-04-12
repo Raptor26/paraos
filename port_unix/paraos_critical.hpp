@@ -26,10 +26,6 @@
 #ifndef CRITICAL_HPP
 #define CRITICAL_HPP
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
-
 #include "paraos_mutex.hpp"
 
 namespace paraos {
