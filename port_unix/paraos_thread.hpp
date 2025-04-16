@@ -43,7 +43,6 @@
 #define PARAOS_THREAD_V2_HPP
 
 #include <pthread.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <cstddef>
