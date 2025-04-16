@@ -42,6 +42,8 @@ namespace paraos {
 /// @brief String type for error messages and filepaths where error occurs.
 using error_string_type = std::string_view;
 
+using error_numeric_type = int;
+
 /// @brief Get error text relying on definition of `PARAOS_VERBOSE_ERRORS`
 /// macro.
 ///
@@ -52,8 +54,8 @@ using error_string_type = std::string_view;
 /// @return verbose_text if `PARAOS_VERBOSE_ERRORS` is defined, otherwise -
 /// terse_text.
 inline auto GetErrorText(
-    error_string_type verbose_text, error_string_type terse_text)
-    -> error_string_type {
+    error_string_type verbose_text,
+    error_string_type terse_text) -> error_string_type {
 #if defined(PARAOS_VERBOSE_ERRORS)
   PARAOS_ATTR_UNUSED_VAR(terse_text);
   return verbose_text;
@@ -72,7 +74,7 @@ class exception : public std::exception, public etl::exception {
  public:
   exception(
       const error_string_type reason, const error_string_type file,
-      numeric_type line_number)
+      paraos::error_numeric_type line_number)
       : etl::exception{reason.data(), file.data(), line_number} {}
 
   ~exception() override = default;
