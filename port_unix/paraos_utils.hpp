@@ -26,7 +26,7 @@
 #ifndef PARAOS_UTILS_HPP
 #define PARAOS_UTILS_HPP
 
-#include <sys/time.h>
+#include <time.h>
 
 #include <cassert>
 #include <cstddef>
@@ -49,7 +49,7 @@ constexpr std::size_t stack_multiplier{1024};
 inline auto TimespecAdd(
     const struct timespec* const first, const struct timespec* const second,
     struct timespec* const pxResult) -> int {
-  int64_t llPartialSec = 0;
+  std::int64_t llPartialSec = 0;
   int iStatus = 0;
 
   /* Check parameters. */
