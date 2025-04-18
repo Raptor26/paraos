@@ -201,12 +201,18 @@ template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class MessageWritable final {
   using message_type = Message<ALLOCATOR>;
 
+  static_assert(
+      sizeof(typename std::allocator_traits<ALLOCATOR>::value_type) ==
+          sizeof(std::uint8_t),
+      "ALLOCATOR must allocate memory per byte");
+
  public:
   using value_type = typename message_type::value_type;
   using pointer = typename message_type::pointer;
   using reference = typename message_type::reference;
   using iterator = typename message_type::iterator;
   using const_iterator = typename message_type::const_iterator;
+  using iterator_category = typename message_type::iterator_category;
 
   MessageWritable(
       const std::size_t size_in_bytes,
