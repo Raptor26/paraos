@@ -44,7 +44,11 @@ namespace paraos {
 template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class Message {
   ALLOCATOR allocator_;
-  using alloc_traits = std::allocator_traits<decltype(allocator_)>;
+  using alloc_traits = std::allocator_traits<ALLOCATOR>;
+  static_assert(
+      sizeof(typename std::allocator_traits<ALLOCATOR>::value_type) ==
+          sizeof(std::uint8_t),
+      "ALLOCATOR must allocate memory per byte");
 
  public:
   using value_type = std::uint8_t;
