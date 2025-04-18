@@ -45,6 +45,7 @@ template <typename ALLOCATOR = std::allocator<std::uint8_t>>
 class Message {
   ALLOCATOR allocator_;
   using alloc_traits = std::allocator_traits<ALLOCATOR>;
+
   static_assert(
       sizeof(typename std::allocator_traits<ALLOCATOR>::value_type) ==
           sizeof(std::uint8_t),
@@ -56,6 +57,7 @@ class Message {
   using reference = std::uint8_t &;
   using iterator = pointer;
   using const_iterator = const pointer;
+  using iterator_category = std::random_access_iterator_tag;
 
   // ---------------------------------------------------------------------------
 
