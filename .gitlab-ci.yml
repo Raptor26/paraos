@@ -39,7 +39,7 @@ ci:windows:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
   - when: never
@@ -74,7 +74,7 @@ ci:windows_freertos:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
   - when: never
@@ -105,7 +105,7 @@ ci:windows_stress_gcc:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
 
@@ -137,7 +137,7 @@ ci:windows_stress_gcc_freertos:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
   
@@ -172,7 +172,7 @@ ci:linux:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
   - when: never
@@ -203,7 +203,7 @@ ci:linux_valgrind:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
   - when: never
@@ -238,7 +238,7 @@ ci:linux_freertos:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
   - when: never
@@ -269,7 +269,7 @@ ci:linux_stress_gcc:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
 
@@ -301,6 +301,6 @@ ci:linux_stress_gcc_freertos:
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: always
     allow_failure: false
-  - if: $CI_COMMIT_BRANCH == 'master'
+  - if: $CI_COMMIT_BRANCH == 'master' || $CI_COMMIT_BRANCH == 'develop'
     when: always
     allow_failure: false
