@@ -152,7 +152,7 @@ if(CLANG_TIDY_ENABLE)
       test_paraos_thread_only_stack_with_multiple_threads_in_one_object
       PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 
-    if(NOT FREERTOS)
+    if(NOT RTOS_NAME)
       set_target_properties(example_paraos_socket_udp
                             PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
     endif()
