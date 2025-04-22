@@ -313,7 +313,7 @@ class IMessageBuffer {
   /// @return Return container. Note - container way not contained requested
   /// memory. Befor start any operations with MessageWritable object, check his
   /// validation (use operator bool).
-  PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes) {
+  PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes) const {
     return MessageWritable(size_in_bytes, queue_);
   }
 

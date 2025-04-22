@@ -148,17 +148,17 @@ struct IQueueBlocking {
     queue_.clear();
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsEmpty(bool is_isr = false) -> bool {
+  PARAOS_INLINE_TRIVIAL auto IsEmpty(bool is_isr = false) const -> bool {
     const paraos::CriticalSection critical{is_isr};
     return queue_.empty();
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsFull(bool is_isr = false) -> bool {
+  PARAOS_INLINE_TRIVIAL auto IsFull(bool is_isr = false) const -> bool {
     const paraos::CriticalSection critical{is_isr};
     return queue_.full();
   }
 
-  PARAOS_INLINE_TRIVIAL auto Size(bool is_isr = false) -> size_t {
+  PARAOS_INLINE_TRIVIAL auto Size(bool is_isr = false) const -> size_t {
     const paraos::CriticalSection critical{is_isr};
     return queue_.size();
   }
