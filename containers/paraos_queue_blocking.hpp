@@ -183,7 +183,7 @@ class QueueBlocking final : public IQueueBlocking<T> {
   static_assert(SIZE > 1U, "Queue size must be greater then 1 item");
 
  public:
-  QueueBlocking()
+  QueueBlocking() noexcept(std::is_nothrow_constructible<SemaphoreBinary>())
       : IQueueBlocking<T>{queue_, pop_sem_, mutex_},
         pop_sem_{SemaphoreAttr{SIZE, SIZE}} {}
 
