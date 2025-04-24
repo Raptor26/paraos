@@ -187,7 +187,7 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `true` if the semaphore was successfully given, `false`
   /// otherwise.
-  PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr = false)
+  PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr)
       -> paraos::ISRbool {
     return new_cycle_ready_sem_.Give(is_isr);
   }
@@ -208,7 +208,7 @@ class IThreadSequence : public paraos::Base {
   /// on the heap and is not managed by user code or smart pointers.
   /// In this case, `CooperativeScheduling()` will be removed from the heap
   /// after the thread completes all work. Otherwise, set to `false`.
-  PARAOS_POLYMORPHIC_EXTRA void Finish(bool is_dynamic = false) {
+  PARAOS_POLYMORPHIC_EXTRA void Finish(bool is_dynamic) {
     const paraos::CriticalSection critical;
     paraos::Base *deferred_destroy{nullptr};
 
@@ -225,7 +225,7 @@ class IThreadSequence : public paraos::Base {
     // After `Run()` completes, the thread wrapper can safely delete the thread
     // (since `Thread::SetNeedWhile(false)` was called earlier),
     // and the thread object can be safely deleted in the thread destructor.
-    NotifyGive();
+    NotifyGive(false);
   }
 
  private:
