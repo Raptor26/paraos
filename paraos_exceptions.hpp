@@ -36,6 +36,7 @@
 
 #include "etl/exception.h"
 #include "paraos_attr.h"
+#include "paraos_check.h"
 
 namespace paraos {
 
