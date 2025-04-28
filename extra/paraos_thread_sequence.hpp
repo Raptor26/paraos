@@ -73,8 +73,9 @@ class IThreadSequence : public paraos::Base {
       : thread_{attr, thread_start_flag},
         period_in_us_{attr.period_in_us},
         timer_controller_{timer_controller} {
-    thread_.RegisterDelegate(paraos::thread_delegate_type::create<
-                             IThreadSequence, &IThreadSequence::Run>(*this));
+    thread_.RegisterDelegate(
+        paraos::thread_delegate_type::create<
+            IThreadSequence, &IThreadSequence::Run>(*this));
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
@@ -123,8 +124,8 @@ class IThreadSequence : public paraos::Base {
   /// @return Returns `etl::timer::id::NO_TIMER` if registration fails.
   ///         Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
   PARAOS_POLYMORPHIC_EXTRA auto Register(
-      callback_type &callback, float freq,
-      bool repeating) -> etl::timer::id::type {
+      callback_type &callback, float freq, bool repeating)
+      -> etl::timer::id::type {
     const paraos::CriticalSection critical;
     auto timer_id = timer_controller_.register_timer(
         callback, FreqToPeriod(freq), repeating);
@@ -177,18 +178,24 @@ class IThreadSequence : public paraos::Base {
     return registered_delegates_numb_;
   }
 
-  /// @brief Notifies the thread sequence to start a new scheduling cycle.
+  /// @brief Initiates a new scheduling cycle by notifying the thread sequence.
   ///
-  /// @note This method must be called at regular intervals, such as in a timer
-  /// overflow interrupt.
+  /// This method is designed to be invoked at regular intervals, typically from
+  /// a timer overflow interrupt or similar periodic event.
   ///
-  /// @param[in] is_isr: Set to `true` if called from an interrupt service
-  /// routine.
+  /// @warning Avoid using default arguments in virtual methods. For example,
+  /// do not use `auto NotifyGive(bool is_isr = false)` because `NotifyGive()`
+  /// may be declared as virtual if `PARAOS_USING_POLYMORPHIC_EXTRA` is defined.
+  /// Always explicitly specify the `is_isr` parameter when calling this method.
   ///
-  /// @return Returns `true` if the semaphore was successfully given, `false`
-  /// otherwise.
-  PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr)
-      -> paraos::ISRbool {
+  /// @param[in] is_isr Indicates whether this method is being called from an
+  /// interrupt service routine (ISR). Set to `true` if called from an ISR,
+  /// otherwise set to `false`.
+  ///
+  /// @return Returns `true` if the semaphore was successfully signaled, or
+  /// `false` if the operation failed (e.g., due to resource constraints or
+  /// invalid state).
+  PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr) -> paraos::ISRbool {
     return new_cycle_ready_sem_.Give(is_isr);
   }
 
