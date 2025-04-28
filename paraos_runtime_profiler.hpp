@@ -50,7 +50,7 @@ namespace paraos {
 using cnt_t = std::uint32_t;
 
 /// @brief Количество микросекунд в одной миллисекунде.
-inline constexpr cnt_t us_in_ms{1000};
+constexpr cnt_t us_in_ms{1000};
 
 struct IProfiler {
   /// @brief Start timer.
