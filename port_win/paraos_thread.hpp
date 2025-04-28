@@ -111,6 +111,13 @@ class Thread : public paraos::Base {
   /// paraos::ThreadAttr or registered later using RegisterDelegate().
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
+  ///
+  /// @example
+  /// ```cpp
+  /// thread_.RegisterDelegate(
+  ///   paraos::thread_delegate_type::create<
+  ///       UserClass, &UserClass::MethodToThreadExecute>(*this));
+  /// ```
   void RegisterDelegate(paraos::thread_delegate_type run) {
     // std::move of the variable of a trivially-copyable type has no effect
     run_ = run;
