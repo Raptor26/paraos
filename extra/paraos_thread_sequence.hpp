@@ -140,17 +140,21 @@ class IThreadSequence : public paraos::Base {
 
   /// @brief Removes a delegate from periodic execution.
   ///
-  /// @param[in] timer_id: ID of the delegate to be removed.
+  /// @param[in] timer_id: ID of the delegate to be removed. If delegate
+  /// successfully unregistered, timer_id will be set to
+  /// 'etl::timer::id::NO_TIMER'.
   ///
   /// @return Returns `true` if the delegate was successfully removed, `false`
   /// otherwise.
-  PARAOS_POLYMORPHIC_EXTRA auto Unregister(etl::timer::id::type timer_id)
+  PARAOS_POLYMORPHIC_EXTRA auto Unregister(etl::timer::id::type &timer_id)
       -> bool {
     const paraos::CriticalSection critical;
     auto is_unregistered = timer_controller_.unregister_timer(timer_id);
     if (is_unregistered) {
       --registered_delegates_numb_;
+      timer_id = etl::timer::id::NO_TIMER;
     }
+
     return is_unregistered;
   }
 
