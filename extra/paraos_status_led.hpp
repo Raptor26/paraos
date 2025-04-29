@@ -128,10 +128,10 @@ class StatusLed {
   void Idle() {
     if (is_led_enable_) {
       is_led_enable_ = false;
-      io_.Disable();
+      Disable();
     } else {
       is_led_enable_ = true;
-      io_.Enable();
+      Enable();
     }
   }
 
@@ -141,14 +141,14 @@ class StatusLed {
   /// frequencies.
   void Blink() {
     if (is_led_enable_) {
-      io_.Disable();
+      Disable();
       thread_sequence_.SetFreq(id_, disable_freq);
 
       // After a period of time, specified by the disable_freq, Blink() enables
       // the LED again.
       is_led_enable_ = false;
     } else {
-      io_.Enable();
+      Enable();
       thread_sequence_.SetFreq(id_, enable_freq);
 
       // After a period of time, specified by the enable_freq, Blink() disables
@@ -185,12 +185,12 @@ class StatusLed {
 
   /// @brief Array of delegates for each LED mode.
   std::array<StatusLedDelegate, blink_mode_max_numb> delegate_ = {
-      {{delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0,
+      {{delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0F,
         false},
-       {delegate_type::create<StatusLed, &StatusLed::Disable>(*this), 0.0,
+       {delegate_type::create<StatusLed, &StatusLed::Disable>(*this), 0.0F,
         false},
-       {delegate_type::create<StatusLed, &StatusLed::Idle>(*this), 1.0, true},
-       {delegate_type::create<StatusLed, &StatusLed::Blink>(*this), 0.0, true},
+       {delegate_type::create<StatusLed, &StatusLed::Idle>(*this), 1.0F, true},
+       {delegate_type::create<StatusLed, &StatusLed::Blink>(*this), 0.0F, true},
        {delegate_type::create<StatusLed, &StatusLed::Error>(*this),
         error_blink_freq, true}}};
 };
