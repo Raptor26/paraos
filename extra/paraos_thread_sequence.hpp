@@ -269,9 +269,9 @@ class IThreadSequence : public paraos::Base {
   std::size_t registered_delegates_numb_{0};
 };
 
-/// @brief Concrete implementation of `IThreadSequence`.
 struct ThreadSequenceAttr : public paraos::IThreadSequenceAttr {};
 
+/// @brief Concrete implementation of `IThreadSequence`.
 template <uint_least8_t MAX_TASKS = 4>
 class ThreadSequence : public IThreadSequence {
  public:
