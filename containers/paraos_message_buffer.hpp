@@ -78,7 +78,7 @@ class Message {
 
   // ---------------------------------------------------------------------------
 
-  Message(const Message &other)
+  Message(const Message &other) noexcept
       : size_in_bytes_{other.size_in_bytes_},
         data_ptr_{SafeAllocate(size_in_bytes_)} {
     if (data_ptr_ != nullptr) {
@@ -108,31 +108,33 @@ class Message {
   }
 
   // ---------------------------------------------------------------------------
-  [[nodiscard]] auto begin() { return reinterpret_cast<iterator>(data_ptr_); }
+  [[nodiscard]] auto begin() noexcept {
+    return reinterpret_cast<iterator>(data_ptr_);
+  }
 
-  [[nodiscard]] auto begin() const {
+  [[nodiscard]] auto begin() const noexcept {
     return reinterpret_cast<const_iterator>(data_ptr_);
   }
 
-  [[nodiscard]] auto cbegin() const {
+  [[nodiscard]] auto cbegin() const noexcept {
     return reinterpret_cast<const_iterator>(data_ptr_);
   }
 
-  [[nodiscard]] auto end() {
+  [[nodiscard]] auto end() noexcept {
     return reinterpret_cast<iterator>(begin() + size_in_bytes_);
   }
 
-  [[nodiscard]] auto end() const {
+  [[nodiscard]] auto end() const noexcept {
     return reinterpret_cast<const_iterator>(begin() + size_in_bytes_);
   }
 
-  [[nodiscard]] auto cend() const {
+  [[nodiscard]] auto cend() const noexcept {
     return reinterpret_cast<const_iterator>(begin() + size_in_bytes_);
   }
 
   // ---------------------------------------------------------------------------
 
-  explicit operator bool() const {
+  explicit operator bool() const noexcept {
     bool is_ready{false};
 
     if (data_ptr_ != nullptr) {
@@ -147,7 +149,7 @@ class Message {
   /// @brief Возвращает адрес выделенной области памяти.
   /// @return Указатель типа void.
   template <typename USER_DATA_TYPE = std::uint8_t>
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Data() const noexcept {
     return reinterpret_cast<USER_DATA_TYPE *>(data_ptr_);
   }
 
@@ -156,7 +158,7 @@ class Message {
   /// @brief Возвращает размер выделенной области памяти в байтах.
   /// @return Количество байт, выделенные по адресу, который возвращает метод
   /// Addr().
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Size() const {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Size() const noexcept {
     return size_in_bytes_;
   }
 
@@ -164,13 +166,13 @@ class Message {
 
   /// @brief Принудительно освобождает область памяти, выделенную под сообщение.
   /// После вызова данного метода, объект становиться не валидным.
-  PARAOS_INLINE_TRIVIAL void Free() { SafeDeallocate(); }
+  PARAOS_INLINE_TRIVIAL void Free() noexcept { SafeDeallocate(); }
 
   // ---------------------------------------------------------------------------
 
  private:
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto SafeAllocate(
-      std::size_t size_in_bytes) -> pointer {
+      std::size_t size_in_bytes) noexcept -> pointer {
     if (size_in_bytes > 0U) {
       return alloc_traits::allocate(allocator_, size_in_bytes);
     }
@@ -285,7 +287,11 @@ class MessageWritable final {
 
   /// @brief Пользователь может вызвать данный метод если передумал отправлять
   /// сообщение в буфер.
-  PARAOS_INLINE_TRIVIAL void Free() { message_.Free(); }
+  PARAOS_INLINE_TRIVIAL void Free() noexcept(
+      std::is_nothrow_invocable<
+          decltype(&message_type::Free), message_type>::value) {
+    message_.Free();
+  }
 
  private:
   message_type message_;
@@ -313,8 +319,10 @@ class IMessageBuffer {
   /// @return Return container. Note - container way not contained requested
   /// memory. Befor start any operations with MessageWritable object, check his
   /// validation (use operator bool).
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Alloc(
-      std::size_t size_in_bytes) const {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes)
+      const noexcept(std::is_nothrow_constructible<
+                     MessageWritable<BUFFER_ALLOCATOR>, decltype(size_in_bytes),
+                     decltype(queue_)>::value) {
     return MessageWritable(size_in_bytes, queue_);
   }
 
@@ -329,8 +337,13 @@ class IMessageBuffer {
     return queue_.Pop(timeout_ms);
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsFull() -> bool { return queue_.IsFull(); }
-  PARAOS_INLINE_TRIVIAL auto IsEmpty() -> bool { return queue_.IsEmpty(); }
+  PARAOS_INLINE_TRIVIAL auto IsFull() const noexcept -> bool {
+    return queue_.IsFull();
+  }
+
+  PARAOS_INLINE_TRIVIAL auto IsEmpty() const noexcept -> bool {
+    return queue_.IsEmpty();
+  }
 
  protected:
   explicit IMessageBuffer(
