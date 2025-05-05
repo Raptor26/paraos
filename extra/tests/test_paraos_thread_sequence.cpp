@@ -80,10 +80,12 @@ struct GyrAcc {
     assert(thread_seq_ptr);
 
     if (gyracc_call_cnt < gyr_acc_max_call_cnt) {
-      thread_seq_ptr->NotifyGive();
+      constexpr bool is_isr{false};
+      thread_seq_ptr->NotifyGive(is_isr);
     } else {
       // Stop test.
-      thread_seq_ptr->Finish();
+      constexpr bool is_dynamic{false};
+      thread_seq_ptr->Finish(is_dynamic);
       is_test_complete = true;
     }
   }
@@ -148,7 +150,8 @@ void ExitFromTest() {
     check_test_complete_and_exit.Finished();
 
     PARAOS_CHECK_ASSERT(thread_seq_ptr);
-    thread_seq_ptr->Finish();
+    constexpr bool is_dynamic{false};
+    thread_seq_ptr->Finish(is_dynamic);
 
     constexpr std::size_t delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
@@ -251,7 +254,8 @@ auto main() -> int {
     assert(timer_id == etl::timer::id::NO_TIMER);
   }
 
-  thread_seq_ptr->NotifyGive();
+  constexpr bool is_isr{false};
+  thread_seq_ptr->NotifyGive(is_isr);
 
   paraos::Thread::StartScheduler();
   paraos::Thread::DeleteAll();
