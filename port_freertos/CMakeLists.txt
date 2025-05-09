@@ -54,7 +54,7 @@ endif()
 
 # FreeRTOS-Kernel --------------------------------------------------------------
 set(FREERTOS_KERNEL_PATH "FreeRTOS-Kernel")
-add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
+add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel SYSTEM)
 
 # Supress compiler warnings related to the FreeRTOS implementation
 target_compile_options(
