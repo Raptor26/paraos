@@ -288,8 +288,8 @@ class MessageWritable final {
   /// @brief Пользователь может вызвать данный метод если передумал отправлять
   /// сообщение в буфер.
   PARAOS_INLINE_TRIVIAL void Free() noexcept(
-      std::is_nothrow_invocable<
-          decltype(&message_type::Free), message_type>::value) {
+      std::is_nothrow_invocable_v<
+          decltype(&message_type::Free), message_type>) {
     message_.Free();
   }
 
@@ -320,9 +320,9 @@ class IMessageBuffer {
   /// memory. Befor start any operations with MessageWritable object, check his
   /// validation (use operator bool).
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes)
-      const noexcept(std::is_nothrow_constructible<
+      const noexcept(std::is_nothrow_invocable_v<
                      MessageWritable<BUFFER_ALLOCATOR>, decltype(size_in_bytes),
-                     decltype(queue_)>::value) {
+                     decltype(queue_)>) {
     return MessageWritable(size_in_bytes, queue_);
   }
 
@@ -337,11 +337,11 @@ class IMessageBuffer {
     return queue_.Pop(timeout_ms);
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsFull() const noexcept -> bool {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsFull() const noexcept -> bool {
     return queue_.IsFull();
   }
 
-  PARAOS_INLINE_TRIVIAL auto IsEmpty() const noexcept -> bool {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsEmpty() const noexcept -> bool {
     return queue_.IsEmpty();
   }
 
