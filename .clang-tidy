@@ -14,9 +14,9 @@ Checks: >-
   -llvm-header-guard,
   -modernize-avoid-c-arrays,
   -readability-redundant-access-specifiers,
+  -readability-implicit-bool-conversion,
   -hicpp-static-assert,
-  -misc-static-assert,
-
+  -misc-static-assert
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*\.hpp'
 FormatStyle: file
