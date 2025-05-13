@@ -20,7 +20,13 @@ target_include_directories(${PROJECT_NAME}
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17 c_std_11)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+# '-Wno-cpp' added to suppress warnings after gcc update to 15.1.0:
+#[=[
+warning "<ciso646> is deprecated in C++17, use <version> to detect implementation-specific macros" [-Werror=cpp]
+]=]
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror
+                                               -Wno-cpp)
 
 gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS CONTAINERS]:")
 

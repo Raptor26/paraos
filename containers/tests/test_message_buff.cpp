@@ -146,7 +146,7 @@ TEST(Message, PushThenPop) {
 }
 
 TEST(Message, PushToFull) {
-  paraos::MessageBuffer<2> buff;
+  const paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 
   constexpr double val{12};
@@ -212,7 +212,7 @@ TEST(Message, MoveCtor) {
 }
 
 TEST(Message, PushButForceFree) {
-  paraos::MessageBuffer<2> buff;
+  const paraos::MessageBuffer<2> buff;
   ASSERT_TRUE(buff);
 
   ASSERT_TRUE(buff.IsEmpty());
