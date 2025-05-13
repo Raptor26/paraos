@@ -1,3 +1,31 @@
+## v0.12.0 (2025-05-13)
+
+### Feat
+
+- **paraos_messages**: add noexcept
+- **stavlink**: add transmitter telemetry module and definitions of payload data types
+
+### Fix
+
+- **paraos_expections**: include paraos_check.h to define PARAOS_VERBOSE_ERRORS from user config file
+- **paraos**: redefine ETL error string numbers in paraos
+- **status_led**: dtor marked as default
+
+### Refactor
+
+- **paraos::ThreadSequence**: when delegate successfully unregistered, timer_id set as etl::timer::id::NO_TIMER
+- **paraos**: replace std::string_view to «const char *» for exception message
+- **paraos**: add const to method without mutabling class states
+- **paraos_critical_unix**: delete unused #if directive
+- **extra**: add polymorphic macros with paraos_thread_sequence methods
+- **freertos**: add noexpect with methods and add throw std::back_alloc if freeRTOS primitive not create
+
+### Perf
+
+- **paraos_message_buffer**: add static assert to check allocator type to MessageWritable
+- **paraos_message_buffer**: add iterator category
+- **paraos_message_buffer**: add static assert to check allocator type
+
 ## v0.11.0 (2025-04-09)
 
 ### Feat
