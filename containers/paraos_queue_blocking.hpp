@@ -100,47 +100,38 @@ struct IQueueBlocking {
   /// available for read.
   /// @return Read object, contained in std::optional. If no object read,
   /// std::optional not contained any value.
-  auto Pop(paraos::delay_type timeout_ms, bool is_isr = false) -> std::optional<T> {
-    std::optional<T> optional;
+  auto Pop(paraos::delay_type timeout_ms, bool is_isr = false)
+      -> std::optional<T> {
+    auto start_time = paraos::GetCurrentTime();
+    const MutexGuard lock(mutex_);
 
-    const MutexGuard mutex(mutex_);
+    if (IsEmpty()) {
+      while (true) {
+        if (pop_sem_.Take(timeout_ms, is_isr)) {
+          paraosTRACE_MESSAGE("Sem taken");
+          break;
+        }
 
-    bool is_need_take{true};
-
-    auto timeout = paraos::GetCurrentTime();
-
-    while (IsEmpty()) {
-      if (pop_sem_.Take(timeout_ms, is_isr)) {
-        paraosTRACE_MESSAGE("Sem taken");
-        break;
-      }
-      paraosTRACE_MESSAGE("Sem not taken!!!");
-
-      // recalculate timeout. timeout_ms value will corrected in
-      // CheckTimeout().
-      if (paraos::CheckTimeout(timeout, timeout_ms)) {
-        is_need_take = false;
-        break;
+        if (paraos::CheckTimeout(start_time, timeout_ms)) {
+          paraosTRACE_MESSAGE("Timeout expired");
+          return std::nullopt;
+        }
       }
     }
 
-    if (is_need_take) {
-      const paraos::CriticalSection critical;
-
-      // This unnecessary check is needed to silence the warning
-      // "clang-analyzer-core.uninitialized.Assign". Clang-tidy is unable to
-      // analyze that we're using pop_sem_ to ensure the ability to pop from
-      // the queue with flag "is_need_take". Static analyzers are trying to
-      // take true branch and getting into the impossible condition.
-      if (!queue_.empty()) {
-        paraosTRACE_MESSAGE("Try pop form queue");
-        optional.emplace(std::move(queue_.front()));
-        queue_.pop();
-        paraosTRACE_MESSAGE("Queue Pop success");
-      }
+    const paraos::CriticalSection critical;
+    if (!queue_.empty()) {
+      paraosTRACE_MESSAGE("Try pop from queue");
+      std::optional<T> result = std::move(queue_.front());
+      queue_.pop();
+      paraosTRACE_MESSAGE("Queue Pop success");
+      return result;
     }
 
-    return optional;
+    // Если очередь всё-таки пуста — возможно, race или ошибка Push()
+    paraosTRACE_MESSAGE(
+        "Race condition detected: queue is empty after sem.Give()");
+    return std::nullopt;
   }
 
   PARAOS_INLINE_TRIVIAL void Erase(bool is_isr = false) {
