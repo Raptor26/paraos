@@ -1,20 +1,20 @@
 /// @file paraos_time.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
-/// 
+///
 /// @copyright (c) 2025 Stilsoft
-/// 
+///
 /// MIT License:
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the 'Software'), to
 /// deal in the Software without restriction, including without limitation the
 /// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 /// sell copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,6 +30,7 @@
 
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
+#include "paraos_utils.hpp"
 
 namespace paraos {
 
@@ -51,7 +52,8 @@ namespace paraos {
 /// CheckTimeout() call.
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
-inline auto CheckTimeout(OsProfiler &timeout, std::size_t &delay_ms) -> bool {
+inline auto CheckTimeout(OsProfiler &timeout, paraos::delay_type &delay_ms)
+    -> bool {
   const CriticalSection critical;
   bool is_timeout{true};
   timeout.Stop();

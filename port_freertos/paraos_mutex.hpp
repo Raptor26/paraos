@@ -66,7 +66,7 @@ class MutexBase {
     return static_cast<bool>(handle_ != nullptr);
   }
 
-  auto Lock(std::size_t timeout_ms = max_delay, bool is_isr = false)
+  auto Lock(paraos::delay_type timeout_ms = max_delay, bool is_isr = false)
       -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
     ISRbool is_mutex_taken;
@@ -150,7 +150,8 @@ class MutexBase {
   }
 
  private:
-  auto LockNormal(std::size_t timeout_ms = max_delay) noexcept -> ISRbool {
+  auto LockNormal(paraos::delay_type timeout_ms = max_delay) noexcept
+      -> ISRbool {
     ISRbool is_mutex_taken;
     if (xSemaphoreTake(handle_, PARAOS_ConvertMsToTicks(timeout_ms)) ==
         pdTRUE) {
@@ -160,7 +161,8 @@ class MutexBase {
     return is_mutex_taken;
   }
 
-  auto LockRecursive(std::size_t timeout_ms = max_delay) noexcept -> ISRbool {
+  auto LockRecursive(paraos::delay_type timeout_ms = max_delay) noexcept
+      -> ISRbool {
     ISRbool is_mutex_taken;
     if (xSemaphoreGetMutexHolder(handle_) == xTaskGetCurrentTaskHandle()) {
       ++recursive_holder_take_cnt_;

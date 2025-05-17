@@ -67,7 +67,8 @@ class SemaphoreBase {
   ///
   /// @return Return true if semaphore was taken under timeout, false in
   /// otherwise.
-  auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false) noexcept
+  auto Take(
+      paraos::delay_type timeout_ms = max_delay, bool from_isr = false) noexcept
       -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
 

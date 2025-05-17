@@ -100,7 +100,7 @@ struct IQueueBlocking {
   /// available for read.
   /// @return Read object, contained in std::optional. If no object read,
   /// std::optional not contained any value.
-  auto Pop(std::size_t timeout_ms, bool is_isr = false) -> std::optional<T> {
+  auto Pop(paraos::delay_type timeout_ms, bool is_isr = false) -> std::optional<T> {
     std::optional<T> optional;
 
     const MutexGuard mutex(mutex_);

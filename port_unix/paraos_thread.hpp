@@ -168,7 +168,7 @@ class Thread : public paraos::Base {
   ///
   /// @return paraos::ThreadPriority.
   [[nodiscard]] auto GetPriority() const {
-    struct sched_param param {};
+    struct sched_param param{};
     int policy{};
     const int ret = pthread_getschedparam(handle_, &policy, &param);
     PARAOS_CHECK_ASSERT(ret == 0);
@@ -191,7 +191,7 @@ class Thread : public paraos::Base {
   ///
   /// @param[in] sleep_ms: The amount of time, that the calling thead should
   /// block.
-  static void DelayMs(std::size_t sleep_ms) {
+  static void DelayMs(paraos::delay_type sleep_ms) {
     usleep(sleep_ms * MICROSECONDS_PER_MILISECONDS);
   }
 
@@ -275,7 +275,7 @@ class Thread : public paraos::Base {
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
 
     // Set thread priority.
-    struct sched_param param {};
+    struct sched_param param{};
     param.sched_priority = static_cast<int>(attr.priority);
     result_code = pthread_attr_setschedparam(&thread_attr, &param);
     ETL_ASSERT(

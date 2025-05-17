@@ -37,11 +37,11 @@ namespace {
 paraos::SemaphoreBinary sem;
 }  // namespace
 
-constexpr std::size_t period_ms_default{10};
-constexpr std::size_t global_timer_period_ms{500};
-constexpr std::size_t local_timer_period_ms{100};
+constexpr paraos::delay_type period_ms_default{10};
+constexpr paraos::delay_type global_timer_period_ms{500};
+constexpr paraos::delay_type local_timer_period_ms{100};
 
-constexpr std::size_t thread_waiting_delay_ms{100};
+constexpr paraos::delay_type thread_waiting_delay_ms{100};
 
 struct UserTimer : public paraos::Timer {
   UserTimer(std::string_view str, std::size_t period_ms)
