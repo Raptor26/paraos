@@ -44,9 +44,14 @@
               << std::endl;                                               \
   }
 
+/// @brief Print command and the result.
+/// @note https://en.cppreference.com/w/cpp/types/is_bounded_array.html
+#define paraosOUT(...) std::cout << #__VA_ARGS__ << " : " << __VA_ARGS__ << '\n'
+
 #else
 #define paraosTRACE_MESSAGE(__message__)
 #define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__)
+#define paraosOUT(...)
 #endif
 
 #endif /* PARAOS_TRACE_HPP */
