@@ -113,7 +113,6 @@ class Thread : public paraos::Base {
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
   void RegisterDelegate(paraos::thread_delegate_type run) noexcept {
     // std::move of the variable of a trivially-copyable type has no effect
-    const paraos::CriticalSection critical;
     run_ = run;
   }
 
