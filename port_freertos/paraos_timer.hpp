@@ -75,7 +75,8 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  auto Start(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
+  auto Start(
+      paraos::delay_type max_block_time_ms = max_delay, bool is_isr = false)
       -> ISRbool {
     ISRbool is_timer_started;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
@@ -110,7 +111,7 @@ class Timer {
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
   auto ChangePeriod(
-      std::size_t period_ms, std::size_t max_block_time_ms = max_delay,
+      std::size_t period_ms, paraos::delay_type max_block_time_ms = max_delay,
       bool is_isr = false) noexcept {
     ISRbool is_period_changed;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
@@ -140,7 +141,8 @@ class Timer {
   /// @return Return true if command successfully pushed in timer queue.
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
-  auto Stop(std::size_t max_block_time_ms = max_delay, bool is_isr = false) {
+  auto Stop(
+      paraos::delay_type max_block_time_ms = max_delay, bool is_isr = false) {
     ISRbool is_stopped;
     BaseType_t xHigherPriorityTaskWoken{pdFALSE};
     if (!is_isr) {
@@ -180,7 +182,8 @@ class Timer {
   /// @note If is_isr == true, return value contained field, specified is need
   /// switch RTOS context from ISR.
   auto Reset(
-      std::size_t max_block_time_ms = max_delay, bool is_isr = false) noexcept {
+      paraos::delay_type max_block_time_ms = max_delay,
+      bool is_isr = false) noexcept {
     // Reset not provided ISR API.
     PARAOS_CHECK_ASSERT(is_isr == false);
     PARAOS_ATTR_UNUSED_VAR(is_isr);

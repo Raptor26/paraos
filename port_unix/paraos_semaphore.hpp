@@ -51,7 +51,8 @@ class SemaphoreBase {
  public:
   // Unix specific semaphore realization.
   // NOLINTBEGIN(google-default-arguments)
-  virtual auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false)
+  virtual auto Take(
+      paraos::delay_type timeout_ms = max_delay, bool from_isr = false)
       -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
@@ -164,8 +165,8 @@ struct SemaphoreCounting final : public SemaphoreBase {
 
   /// @brief Semaphore non-copyable
   SemaphoreCounting(const SemaphoreCounting &other) = delete;
-  auto operator=(const SemaphoreCounting &other) -> SemaphoreCounting & =
-                                                        delete;
+  auto operator=(const SemaphoreCounting &other)
+      -> SemaphoreCounting & = delete;
 };
 
 struct SemaphoreBinary final : public SemaphoreBase {
@@ -194,7 +195,7 @@ struct SemaphoreBinary final : public SemaphoreBase {
     return status;
   }
 
-  auto Take(std::size_t timeout_ms = max_delay, bool from_isr = false)
+  auto Take(paraos::delay_type timeout_ms = max_delay, bool from_isr = false)
       -> ISRbool override {
     ISRbool status;
 

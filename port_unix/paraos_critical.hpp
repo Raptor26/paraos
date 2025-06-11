@@ -30,6 +30,7 @@
 
 namespace paraos {
 
+template <bool CAN_ISR = true>
 class CriticalSection final {
  public:
   /// @brief Constructor ensures automatic critical section entry.
@@ -69,8 +70,8 @@ class CriticalSection final {
   static inline MutexRecursive mutex_;
 };
 
-inline void DisableIsr() { CriticalSection::ForceEnter(); }
-inline void EnableIsr() { CriticalSection::ForceExit(); }
+inline void DisableIsr() { CriticalSection<false>::ForceEnter(); }
+inline void EnableIsr() { CriticalSection<false>::ForceExit(); }
 
 }  // namespace paraos
 

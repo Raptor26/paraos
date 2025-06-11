@@ -65,10 +65,10 @@ struct TestTimeout {
   void Run() {
     paraos::OsProfiler profiler;
 
-    constexpr std::size_t expected_delay_ms{1000};
-    std::size_t delay_ms{expected_delay_ms};
+    constexpr paraos::delay_type expected_delay_ms{1000};
+    paraos::delay_type delay_ms{expected_delay_ms};
 
-    constexpr std::size_t delay_one_iteration{200};
+    constexpr paraos::delay_type delay_one_iteration{200};
 
     profiler.Start();
     // Useless check here, because clang-tidy somehow can't see the
@@ -106,7 +106,7 @@ void ExitFromTest() {
   if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
-    constexpr std::size_t delay_ms{0};
+    constexpr paraos::delay_type delay_ms{0};
     PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
     paraos::Thread::DelayMs(delay_ms);
 

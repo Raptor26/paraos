@@ -66,6 +66,7 @@ class CriticalSectionFactory final {
   CRITICAL_SECTION critical_section_{};
 };
 
+template <bool CAN_ISR = true>
 class CriticalSection final {
  public:
   /// @brief Constructor ensures automatic critical section entry.
@@ -73,13 +74,11 @@ class CriticalSection final {
   /// @param is_isr
   explicit CriticalSection(bool is_isr = false) noexcept {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    EnterCriticalSection(critical_section_factory.GiveHandle());
+    EnterCriticalSection(GiveInstance());
   }
 
   /// @brief Destructor ensures automatic leaving of the critical section.
-  ~CriticalSection() {
-    LeaveCriticalSection(critical_section_factory.GiveHandle());
-  }
+  ~CriticalSection() { LeaveCriticalSection(GiveInstance()); }
 
   /// @brief Method is used for force disabling ISRs.
   ///
@@ -88,7 +87,7 @@ class CriticalSection final {
   /// @note This method is used inside ETL libray macros.
   static void ForceEnter(bool is_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    EnterCriticalSection(critical_section_factory.GiveHandle());
+    EnterCriticalSection(GiveInstance());
   }
 
   /// @brief Method is used for force enabling ISRs.
@@ -98,7 +97,7 @@ class CriticalSection final {
   /// @note This method is used inside ETL libray macros.
   static void ForceExit(bool is_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    LeaveCriticalSection(critical_section_factory.GiveHandle());
+    LeaveCriticalSection(GiveInstance());
   }
 
   /// @brief Five rule.
@@ -108,11 +107,14 @@ class CriticalSection final {
   CriticalSection(const CriticalSection& other) = delete;
 
  private:
-  static inline CriticalSectionFactory critical_section_factory;
+  static auto GiveInstance() -> LPCRITICAL_SECTION {
+    static CriticalSectionFactory critical_section_factory;
+    return critical_section_factory.GiveHandle();
+  }
 };
 
-inline void DisableIsr() { CriticalSection::ForceEnter(); }
-inline void EnableIsr() { CriticalSection::ForceExit(); }
+inline void DisableIsr() { CriticalSection<true>::ForceEnter(); }
+inline void EnableIsr() { CriticalSection<true>::ForceExit(); }
 
 }  // namespace paraos
 

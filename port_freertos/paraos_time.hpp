@@ -61,7 +61,8 @@ inline auto GetCurrentTime() noexcept {
 /// @param[in,out] ticks_to_wait: Wait time in ticks.
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
-inline auto CheckTimeout(TimeOut_t &xTimeOut, std::size_t &delay_ms) noexcept {
+inline auto CheckTimeout(
+    TimeOut_t &xTimeOut, paraos::delay_type &delay_ms) noexcept {
   // Conditions below useful in unit tests, because if scheduler not started,
   // xTaskCheckForTimeOut() catch segmentation fail.
   if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {

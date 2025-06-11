@@ -59,14 +59,14 @@
 
 /// @brief Время ожидания входных данных, задаваемое для неблокирующего сокета,
 /// мс.
-inline constexpr size_t nonblocking_socket_timeout_ms{0};
+inline constexpr paraos::delay_type nonblocking_socket_timeout_ms{0};
 
 /// @brief Время ожидания входных данных, задаваемое для "пустого" сокета, мс.
-inline constexpr size_t empty_socket_timeout_ms{0};
+inline constexpr paraos::delay_type empty_socket_timeout_ms{0};
 
 /// @brief Время ожидания входных данных, задаваемое для блокирующего сокета с
 /// ограниченным временем ожидания, мс.
-inline constexpr size_t blocking_socket_timeout_ms{1500};
+inline constexpr paraos::delay_type blocking_socket_timeout_ms{1500};
 
 /// @brief Размер массива для хранения принятых данных.
 inline constexpr size_t array_size{50};
@@ -81,13 +81,13 @@ inline constexpr uint16_t server_port{8080};
 inline constexpr uint16_t empty_server_port{9090};
 
 /// @brief Тайм-аут потока сокета с заданным временем ожидания, мс.
-inline constexpr size_t blocking_sock_thread_delay_ms{50};
+inline constexpr paraos::delay_type blocking_sock_thread_delay_ms{50};
 
 /// @brief Тайм-аут потока "пустого" сокета, мс.
-inline constexpr size_t empty_sock_thread_delay_ms{800};
+inline constexpr paraos::delay_type empty_sock_thread_delay_ms{800};
 
 /// @brief Тайм-аут потока неблокирующего сокета, мс.
-inline constexpr size_t nonblocking_sock_thread_delay_ms{70};
+inline constexpr paraos::delay_type nonblocking_sock_thread_delay_ms{70};
 
 /// @brief Количество итераций работы неблокирующего сокета.
 inline constexpr size_t nonblocking_socket_iterations_count{10};
