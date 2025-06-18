@@ -29,7 +29,6 @@
 #include "etl/delegate.h"
 #include "paraos_critical.hpp"
 #include "paraos_queue_blocking.hpp"
-#include "paraos_semaphore.hpp"
 #include "paraos_thread.hpp"
 
 namespace paraos {
@@ -49,28 +48,17 @@ class IOneShotExecutor {
  public:
   /// @brief Method is used to place delegate into executor's queue.
   ///
-  /// @param[in] delegate: Address of the delegate that needs to be executed.
+  /// @param[in] delegate: Delegate that needs to be executed.
   ///
   /// @return Returns true in case of successful delegate emplacing, otherwise
   /// returns false.
-  auto EnqueueDelegate(executor_delegate_type& delegate) -> bool {
-    const paraos::CriticalSection critical;
-
-    auto result = static_cast<bool>(queue_.TryPush(delegate));
-
-    delegate_ready_sem_.Give();
-
-    return result;
+  auto EnqueueDelegate(executor_delegate_type delegate) -> bool {
+    return static_cast<bool>(queue_.TryPush(delegate));
   }
 
   /// @brief Method describes one IOneShotExecutor thread iteration.
   void ExecuteDelegates() {
-    // If queue is empty, executor takes semaphore.
-    if (queue_.IsEmpty()) {
-      delegate_ready_sem_.Take();
-    }
-
-    auto delegate_opt = queue_.Pop(0);
+    auto delegate_opt = queue_.Pop(paraos::max_delay);
 
     if (delegate_opt) {
       delegate_opt->call_if();
@@ -80,7 +68,10 @@ class IOneShotExecutor {
   /// @brief Method is used to finish executor thread.
   void Finish() {
     thread_.Finished();
-    delegate_ready_sem_.Give();
+
+    // Enqueue empty delegate to unblock executor thread.
+    const executor_delegate_type empty_delegate;
+    EnqueueDelegate(empty_delegate);
   }
 
   virtual ~IOneShotExecutor() = default;
@@ -111,8 +102,6 @@ class IOneShotExecutor {
   paraos::Thread thread_;
 
   paraos::IQueueBlocking<executor_delegate_type>& queue_;
-
-  SemaphoreBinary delegate_ready_sem_;
 };
 
 /// @brief Attributes for OneShotExecutor initialization.
