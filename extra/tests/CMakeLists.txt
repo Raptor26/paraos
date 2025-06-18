@@ -12,7 +12,8 @@ project(test_paraos_extra VERSION 0.1.0)
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(${PROJECT_NAME} test_paraos_cooperative_scheduling.cpp)
+add_executable(${PROJECT_NAME} test_paraos_cooperative_scheduling.cpp
+                               test_oneshot_executor.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
@@ -40,6 +41,12 @@ if(THREAD_ENABLE)
                         PRIVATE paraos::paraos)
   add_test(NAME test_paraos_cooperative_scheduling_thread
            COMMAND test_paraos_cooperative_scheduling_thread)
+  # ----------------------------------------------------------------------------
+  add_executable(test_paraos_oneshot_executor test_oneshot_executor_thread.cpp)
+  target_link_libraries(test_paraos_oneshot_executor PRIVATE paraos::paraos)
+  add_test(NAME test_paraos_oneshot_executor
+           COMMAND test_paraos_oneshot_executor)
+
 endif()
 
 if(CLANG_TIDY_ENABLE)
