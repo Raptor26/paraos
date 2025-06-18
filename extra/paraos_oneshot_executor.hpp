@@ -52,8 +52,8 @@ class IOneShotExecutor {
   ///
   /// @return Returns true in case of successful delegate emplacing, otherwise
   /// returns false.
-  auto EnqueueDelegate(executor_delegate_type delegate) -> bool {
-    return static_cast<bool>(queue_.TryPush(delegate));
+  auto EnqueueDelegate(executor_delegate_type delegate) {
+    return queue_.TryPush(delegate);
   }
 
   /// @brief Method is used to place delegate into executor's queue using object
