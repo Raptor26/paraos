@@ -56,6 +56,31 @@ class IOneShotExecutor {
     return static_cast<bool>(queue_.TryPush(delegate));
   }
 
+  /// @brief Method is used to place delegate into executor's queue using object
+  /// and method.
+  ///
+  /// @tparam T Type of the object containing the method.
+  /// @tparam Method Pointer to the method to be called (must be void(void)).
+  ///
+  /// @param[in] instance Reference to the object instance.
+  ///
+  /// @return Returns true in case of successful delegate emplacing, otherwise
+  /// returns false.
+  ///
+  /// @example
+  /// @code
+  /// class MyClass {
+  ///   void MyMethod() { /* ... */ }
+  /// };
+  /// MyClass obj;
+  /// executor.EnqueueDelegate<MyClass, &MyClass::MyMethod>(obj);
+  /// @endcode
+  template <typename T, void (T::*Method)(void)>
+  auto EnqueueDelegate(T& instance) {
+    auto delegate = paraos::executor_delegate_type::create<T, Method>(instance);
+    return queue_.TryPush(delegate);
+  }
+
   /// @brief Method describes one IOneShotExecutor thread iteration.
   void ExecuteDelegates() {
     auto delegate_opt = queue_.Pop(paraos::max_delay);
