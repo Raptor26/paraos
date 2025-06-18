@@ -1,20 +1,20 @@
 /// @file test_oneshot_executor_thread.cpp
 /// @author Vyhodcev Egor (vyhodcev@internet.ru)
-/// 
+///
 /// @copyright (c) 2025 Stilsoft
-/// 
+///
 /// MIT License:
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the 'Software'), to
 /// deal in the Software without restriction, including without limitation the
 /// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 /// sell copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -42,7 +42,7 @@ paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
 
 etl::atomic_bool is_test_complete{false};
 
-constexpr uint_least8_t max_delegates_in_queue{3};
+constexpr uint_least8_t max_delegates_in_queue{4};
 using OneShotExecutorTest = paraos::OneShotExecutor<max_delegates_in_queue>;
 OneShotExecutorTest *oneshot_executor_ptr;
 
@@ -132,6 +132,7 @@ auto main() -> int {
       paraos::executor_delegate_type::create<Worker, &Worker::Work>(worker);
 
   oneshot_executor_ptr->EnqueueDelegate(producer_delegate);
+  oneshot_executor_ptr->EnqueueDelegate<Producer, &Producer::Produce>(producer);
 
   oneshot_executor_ptr->EnqueueDelegate(worker_delegate);
 
