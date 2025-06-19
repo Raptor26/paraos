@@ -49,11 +49,37 @@ class IOneShotExecutor {
   /// @brief Method is used to place delegate into executor's queue.
   ///
   /// @param[in] delegate: Delegate that needs to be executed.
+  /// @param is_isr Flag indicating that method was called from ISR.
   ///
   /// @return Returns true in case of successful delegate emplacing, otherwise
   /// returns false.
-  auto EnqueueDelegate(executor_delegate_type delegate) {
-    return queue_.TryPush(delegate);
+  auto EnqueueDelegate(executor_delegate_type delegate, bool is_isr = false) {
+    return queue_.TryPush(delegate, is_isr);
+  }
+
+  /// @brief Method is used to place delegate into executor's queue using
+  /// function object as a template.
+  ///
+  /// @tparam Function Name of the function that needs to be executed from
+  /// executors queue.
+  ///
+  /// @param is_isr Flag indicating that method was called from ISR.
+  ///
+  /// @return Returns true in case of successful delegate emplacing, otherwise
+  /// returns false.
+  ///
+  /// @note This overload automatically creates delegate from function name
+  /// template and places it into executors queue.
+  ///
+  /// @example
+  /// @code
+  /// void MyFunction() { /* ... */ };
+  /// executor.EnqueueDelegate<MyFunction>();
+  /// @endcode
+  template <void (*Function)(void)>
+  auto EnqueueDelegate(bool is_isr = false) {
+    auto delegate = paraos::executor_delegate_type::create<Function>();
+    return queue_.TryPush(delegate, is_isr);
   }
 
   /// @brief Method is used to place delegate into executor's queue using object
@@ -63,9 +89,13 @@ class IOneShotExecutor {
   /// @tparam Method Pointer to the method to be called (must be void(void)).
   ///
   /// @param[in] instance Reference to the object instance.
+  /// @param is_isr Flag indicating that method was called from ISR.
   ///
   /// @return Returns true in case of successful delegate emplacing, otherwise
   /// returns false.
+  ///
+  /// @note This overload automatically creates delegate from class type and
+  /// it's public method template.
   ///
   /// @example
   /// @code
@@ -76,9 +106,9 @@ class IOneShotExecutor {
   /// executor.EnqueueDelegate<MyClass, &MyClass::MyMethod>(obj);
   /// @endcode
   template <typename T, void (T::*Method)(void)>
-  auto EnqueueDelegate(T& instance) {
+  auto EnqueueDelegate(T& instance, bool is_isr = false) {
     auto delegate = paraos::executor_delegate_type::create<T, Method>(instance);
-    return queue_.TryPush(delegate);
+    return queue_.TryPush(delegate, is_isr);
   }
 
   /// @brief Method describes one IOneShotExecutor thread iteration.
@@ -91,12 +121,12 @@ class IOneShotExecutor {
   }
 
   /// @brief Method is used to finish executor thread.
-  void Finish() {
+  void Finish(bool is_isr = false) {
     thread_.Finished();
 
     // Enqueue empty delegate to unblock executor thread.
     const executor_delegate_type empty_delegate;
-    EnqueueDelegate(empty_delegate);
+    EnqueueDelegate(empty_delegate, is_isr);
   }
 
   virtual ~IOneShotExecutor() = default;

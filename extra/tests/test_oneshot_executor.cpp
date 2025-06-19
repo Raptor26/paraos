@@ -32,7 +32,19 @@
 
 namespace {
 
+/// @brief Функция, на примере которой будет создаваться делегат.
 void MockDelegate() {}
+
+// NOLINTBEGIN(*-special-member-functions)
+class TestClassMock {
+ public:
+  TestClassMock() = default;
+  ~TestClassMock() = default;
+
+  // Публичный метод, из которого будет создаваться делегат.
+  void DoSomething() {}
+};
+// NOLINTEND(*-special-member-functions)
 
 }  // namespace
 
@@ -46,6 +58,52 @@ TEST(OneShotExecutor, Create) {
   const paraos::OneShotExecutorAttributes attr;
   const static paraos::OneShotExecutor<queue_size> oneshot_executor{
       attr, thread_start_flag};
+}
+
+TEST(OneShotExecutor, EnqueueCreatedDelegate) {
+  // В рамках тестов нет необходимости запускать поток, создаваемый внутри
+  // единоразового исполнителя.
+  constexpr bool thread_start_flag{false};
+
+  constexpr size_t queue_size{2};
+
+  auto mock_delegate = paraos::executor_delegate_type::create<MockDelegate>();
+
+  const paraos::OneShotExecutorAttributes attr;
+  paraos::OneShotExecutor<queue_size> oneshot_executor{attr, thread_start_flag};
+
+  // Помещение в очередь созданного ранее делегата.
+  ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
+
+  static TestClassMock test_class{};
+
+  auto class_method_delegate = paraos::executor_delegate_type::create<
+      TestClassMock, &TestClassMock::DoSomething>(test_class);
+
+  ASSERT_TRUE(oneshot_executor.EnqueueDelegate(class_method_delegate));
+}
+
+TEST(OneShotExecutor, AutoCreateAndEnqueueDelegate) {
+  // В рамках тестов нет необходимости запускать поток, создаваемый внутри
+  // единоразового исполнителя.
+  constexpr bool thread_start_flag{false};
+
+  constexpr size_t queue_size{2};
+
+  const paraos::OneShotExecutorAttributes attr;
+  paraos::OneShotExecutor<queue_size> oneshot_executor{attr, thread_start_flag};
+
+  static TestClassMock test_class{};
+
+  // Помещение в очередь автоматически создаваемого делегата, являющегося
+  // публичным методом класса.
+  ASSERT_TRUE((oneshot_executor
+                   .EnqueueDelegate<TestClassMock, &TestClassMock::DoSomething>(
+                       test_class)));
+
+  // Помещение в очередь автоматически создаваемого делегата, являющегося
+  // свободной функцией.
+  ASSERT_TRUE((oneshot_executor.EnqueueDelegate<MockDelegate>()));
 }
 
 TEST(OneShotExecutor, EnqueueTooManyDelegates) {
