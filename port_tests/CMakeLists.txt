@@ -102,7 +102,8 @@ add_executable(
   test_switch_context.cpp
   test_testing_semaphore.cpp
   test_version.cpp
-  test_isr.cpp)
+  test_isr.cpp
+  test_critical.cpp)
 
 target_link_libraries(test_paraos_core PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(test_paraos_core

@@ -27,6 +27,9 @@
 #ifndef PARAOS_CRITICAL_HPP
 #define PARAOS_CRITICAL_HPP
 
+#include <type_traits>
+#include <variant>
+
 #include "FreeRTOS.h"
 #include "paraos_attr.h"
 #include "paraos_config.hpp"
@@ -35,19 +38,28 @@
 namespace paraos {
 
 /// @brief Realization of the critical section in freeRTOS.
+template <bool CAN_ISR = true>
 class CriticalSection final {
  public:
   /// @brief Constructor ensures automatic critical section entry.
   ///
   /// @param is_isr
-  explicit PARAOS_INLINE_CRITICAL CriticalSection(bool is_isr = false) noexcept
-      : is_isr_{is_isr} {
+  explicit PARAOS_INLINE_CRITICAL CriticalSection(bool is_isr) noexcept
+      : is_isr_{is_isr}, uxSavedInterruptStatus{0} {
     if (!is_isr_) {
       taskENTER_CRITICAL();
     } else {
       uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
     }
   }
+
+  /// @brief Reduce checking «if» condition if not using «is_isr» flag.
+  explicit PARAOS_INLINE_CRITICAL CriticalSection() noexcept : is_isr_{false} {
+    taskENTER_CRITICAL();
+  }
+
+  explicit PARAOS_INLINE_CRITICAL CriticalSection(std::false_type)
+      : CriticalSection() {}
 
   /// @brief Destructor ensures automatic leaving of the critical section.
   ~CriticalSection() {
@@ -65,7 +77,25 @@ class CriticalSection final {
 
  private:
   const bool is_isr_;
-  UBaseType_t uxSavedInterruptStatus{0};
+  UBaseType_t uxSavedInterruptStatus;
+};
+
+/// @brief RAII critical section without ISR.
+template <>
+class CriticalSection<false> final {
+ public:
+  /// @brief Constructor ensures automatic critical section entry.
+  explicit PARAOS_INLINE_CRITICAL CriticalSection() noexcept {
+    taskENTER_CRITICAL();
+  }
+
+  /// @brief Destructor ensures automatic leaving of the critical section.
+  ~CriticalSection() { taskEXIT_CRITICAL(); }
+
+  CriticalSection(const CriticalSection &other) = delete;
+  CriticalSection(CriticalSection &&other) = delete;
+  auto operator=(const CriticalSection &other) = delete;
+  auto operator=(const CriticalSection &&other) = delete;
 };
 
 inline void DisableIsr() noexcept { taskENTER_CRITICAL(); }

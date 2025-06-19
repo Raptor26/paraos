@@ -92,11 +92,11 @@ class Timer {
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return Return true is timer successfully started, false in otherwise.
-  auto Start(std::size_t max_block_time = max_delay, bool is_isr = false)
+  auto Start(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    struct itimerspec itval {};
+    struct itimerspec itval{};
     ISRbool is_timer_started{false};
 
     if (is_auto_reload_) {
@@ -126,7 +126,7 @@ class Timer {
   /// used in Unix.
   /// @return Return true if period update successfully, false in otherwise.
   auto ChangePeriod(
-      std::size_t period_ms, std::size_t max_block_time = max_delay,
+      std::size_t period_ms, paraos::delay_type max_block_time = max_delay,
       bool is_isr = false) -> ISRbool {
     period_ms_ = period_ms;
 
@@ -140,14 +140,14 @@ class Timer {
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return True if timer successfully stopped, false in otherwise.
-  auto Stop(std::size_t max_block_time = max_delay, bool is_isr = false)
+  auto Stop(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
     ISRbool is_timer_stopped{false};
 
-    const struct itimerspec itval {};
+    const struct itimerspec itval{};
 
     if (timer_settime(timer_id_, 0, &itval, nullptr) == 0) {
       is_timer_stopped.SetSuccessStatus(true);
@@ -165,7 +165,7 @@ class Timer {
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return Return true if timer successfully reset, false in otherwise.
-  auto Reset(std::size_t max_block_time = max_delay, bool is_isr = false)
+  auto Reset(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> ISRbool {
     return Start(max_block_time, is_isr);
   }
@@ -187,7 +187,7 @@ class Timer {
   auto Create() -> bool {
     bool is_timer_created{false};
 
-    struct sigevent sev {};
+    struct sigevent sev{};
 
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_value.sival_ptr = static_cast<void *>(this);

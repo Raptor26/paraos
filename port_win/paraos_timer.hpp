@@ -60,7 +60,7 @@ class Timer {
   /// @brief Start timer.
   /// @details In windows, timer's execute scheduling immediately. For simulate
   /// deferred timer start, create timer here instead creating in ctor.
-  auto Start(std::size_t max_block_time = max_delay, bool is_isr = false)
+  auto Start(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> ISRbool {
     // PARAOS wrapper for winapi not support isr context.
     PARAOS_CHECK_ASSERT(is_isr != true);
@@ -92,7 +92,7 @@ class Timer {
   /// @brief Stop periodical scheduling Run() execute.
   /// @details For simulate stop operation, we delete timer. When user call
   /// Start(), timer will be create again.
-  auto Stop(std::size_t max_block_time = max_delay, bool is_isr = false)
+  auto Stop(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> ISRbool {
     // PARAOS wrapper for winapi not support isr context.
     PARAOS_CHECK_ASSERT(is_isr != true);
@@ -110,7 +110,8 @@ class Timer {
   /// @param[in] is_isr: In winapi is fake parameter, which needed
   /// for compatibility for freeRTOS API.
   /// @return True is timer successfully restarted, false on otherwise.
-  auto Reset(std::size_t max_block_time_ms = max_delay, bool is_isr = false)
+  auto Reset(
+      paraos::delay_type max_block_time_ms = max_delay, bool is_isr = false)
       -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time_ms);
     PARAOS_ATTR_UNUSED_VAR(is_isr);

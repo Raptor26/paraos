@@ -1,7 +1,7 @@
-/// @file paraos_trace.hpp
+/// @file test_critical.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
+/// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
@@ -23,35 +23,20 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef PARAOS_TRACE_HPP
-#define PARAOS_TRACE_HPP
-
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
+#include <gtest/gtest.h>
 
 #include "paraos_critical.hpp"
+#include "paraos_trace.hpp"
 
-#define paraosTRACE_MESSAGE(__message__)          \
-  {                                               \
-    const paraos::CriticalSection macro_critical; \
-    std::cout << __message__ << std::endl;        \
-  }
+TEST(Critical, WithISR) {
+  const paraos::CriticalSection critical;
 
-#define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__) \
-  {                                                                       \
-    const paraos::CriticalSection macro_critical;                         \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__       \
-              << std::endl;                                               \
-  }
+  // To print message below use cmake presets with «*_trace».
+  paraosOUT(sizeof(critical));
+}
 
-/// @brief Print command and the result.
-/// @note https://en.cppreference.com/w/cpp/types/is_bounded_array.html
-#define paraosOUT(...) std::cout << #__VA_ARGS__ << " : " << __VA_ARGS__ << '\n'
+TEST(Critical, WithoutISR) {
+  const paraos::CriticalSection<false> critical;
 
-#else
-#define paraosTRACE_MESSAGE(__message__)
-#define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__)
-#define paraosOUT(...)
-#endif
-
-#endif /* PARAOS_TRACE_HPP */
+  ASSERT_EQ(sizeof(critical), 1U);
+}

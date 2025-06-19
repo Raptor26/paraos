@@ -63,7 +63,8 @@ inline auto GetCurrentTime() -> OsProfiler {
 /// CheckTimeout() call.
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
-inline auto CheckTimeout(OsProfiler &timeout, std::size_t &delay_ms) -> bool {
+inline auto CheckTimeout(OsProfiler &timeout, paraos::delay_type &delay_ms)
+    -> bool {
   const CriticalSection critical;
   bool is_timeout{true};
   timeout.Stop();

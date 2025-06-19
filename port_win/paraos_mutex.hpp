@@ -59,7 +59,7 @@ class MutexBase {
     return static_cast<bool>(handle_ != nullptr);
   }
 
-  auto Lock(std::size_t timeout_ms = max_delay, bool is_isr = false)
+  auto Lock(paraos::delay_type timeout_ms = max_delay, bool is_isr = false)
       -> ISRbool {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     PARAOS_CHECK_ASSERT(handle_);
