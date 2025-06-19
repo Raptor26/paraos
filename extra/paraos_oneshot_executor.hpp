@@ -33,43 +33,42 @@
 
 namespace paraos {
 
-/// @brief Delegates type used in executor.
+/// @brief Type alias for delegate used in executor operations.
 using executor_delegate_type = etl::delegate<void(void)>;
 
-/// @brief Default executor queue size.
+/// @brief Default capacity of the executor's delegate queue.
 inline constexpr size_t DEFAULT_EXECUTOR_QUEUE_SIZE{10};
 
-/// @brief Attributes to initialize IOneShotExecutor.
+/// @brief Attributes structure for initializing IOneShotExecutor.
+///
+/// @note Inherits thread attributes from ThreadAttr.
 struct IOneShotExecutorAttributes : public paraos::ThreadAttr {};
 
-/// @brief Interface that implements class whose job is to execute delegates
-/// from it's queue once.
+/// @brief Interface for a single-shot executor that processes delegates from a
+/// queue.
+///
+/// This interface provides mechanisms to enqueue delegates for asynchronous
+/// execution and manage the executor thread lifecycle.
 class IOneShotExecutor {
  public:
-  /// @brief Method is used to place delegate into executor's queue.
+  /// @brief Adds a delegate to the executor's queue for execution.
   ///
-  /// @param[in] delegate: Delegate that needs to be executed.
-  /// @param is_isr Flag indicating that method was called from ISR.
+  /// @param[in] delegate Delegate to be executed.
+  /// @param[in] is_isr Flag indicating if called from an ISR context.
   ///
-  /// @return Returns true in case of successful delegate emplacing, otherwise
-  /// returns false.
+  /// @return True if the delegate was successfully enqueued, false otherwise.
   auto EnqueueDelegate(executor_delegate_type delegate, bool is_isr = false) {
     return queue_.TryPush(delegate, is_isr);
   }
 
-  /// @brief Method is used to place delegate into executor's queue using
-  /// function object as a template.
+  /// @brief Adds a function as a delegate to the executor's queue.
   ///
-  /// @tparam Function Name of the function that needs to be executed from
-  /// executors queue.
+  /// @tparam Function Pointer to a free function (must be void(void)).
+  /// @param[in] is_isr Flag indicating if called from an ISR context.
   ///
-  /// @param is_isr Flag indicating that method was called from ISR.
+  /// @return True if the delegate was successfully enqueued, false otherwise.
   ///
-  /// @return Returns true in case of successful delegate emplacing, otherwise
-  /// returns false.
-  ///
-  /// @note This overload automatically creates delegate from function name
-  /// template and places it into executors queue.
+  /// @note Automatically wraps the function in a delegate.
   ///
   /// @example
   /// @code
@@ -82,20 +81,16 @@ class IOneShotExecutor {
     return queue_.TryPush(delegate, is_isr);
   }
 
-  /// @brief Method is used to place delegate into executor's queue using object
-  /// and method.
+  /// @brief Adds a method of an object as a delegate to the executor's queue.
   ///
   /// @tparam T Type of the object containing the method.
-  /// @tparam Method Pointer to the method to be called (must be void(void)).
-  ///
+  /// @tparam Method Pointer to a method (must be void(void)).
   /// @param[in] instance Reference to the object instance.
-  /// @param is_isr Flag indicating that method was called from ISR.
+  /// @param[in] is_isr Flag indicating if called from an ISR context.
   ///
-  /// @return Returns true in case of successful delegate emplacing, otherwise
-  /// returns false.
+  /// @return True if the delegate was successfully enqueued, false otherwise.
   ///
-  /// @note This overload automatically creates delegate from class type and
-  /// it's public method template.
+  /// @note Automatically wraps the method in a delegate.
   ///
   /// @example
   /// @code
@@ -111,7 +106,9 @@ class IOneShotExecutor {
     return queue_.TryPush(delegate, is_isr);
   }
 
-  /// @brief Method describes one IOneShotExecutor thread iteration.
+  /// @brief Processes one delegate from the queue in a single iteration.
+  ///
+  /// @note This method is intended for internal use by the executor thread.
   void ExecuteDelegates() {
     auto delegate_opt = queue_.Pop(paraos::max_delay);
 
@@ -120,7 +117,12 @@ class IOneShotExecutor {
     }
   }
 
-  /// @brief Method is used to finish executor thread.
+  /// @brief Terminates the executor thread gracefully.
+  ///
+  /// @param[in] is_isr Flag indicating if called from an ISR context.
+  ///
+  /// @note Sends an empty delegate to unblock the thread and signal
+  /// termination.
   void Finish(bool is_isr = false) {
     thread_.Finished();
 
@@ -137,12 +139,12 @@ class IOneShotExecutor {
   IOneShotExecutor(const IOneShotExecutor& other) = delete;
 
  protected:
-  /// @brief IOneShotExecutor constructor.
+  /// @brief Constructor for IOneShotExecutor.
   ///
-  /// @param[in] attrs: Class attributes needed for it's initialization.
-  /// @param[in] queue: Address of the blocking queue interface.
-  /// @param[in] thread_start_flag: Flag indicating whether to start the thread
-  /// immediately. Useful in test environments without multithreading.
+  /// @param[in] attrs Configuration attributes for the executor.
+  /// @param[in] queue Reference to the blocking queue implementation.
+  /// @param[in] thread_start_flag Whether to start the thread immediately
+  /// (useful for testing).
   IOneShotExecutor(
       const IOneShotExecutorAttributes& attrs,
       paraos::IQueueBlocking<executor_delegate_type>& queue,
@@ -155,26 +157,28 @@ class IOneShotExecutor {
 
  private:
   paraos::Thread thread_;
-
   paraos::IQueueBlocking<executor_delegate_type>& queue_;
 };
 
-/// @brief Attributes for OneShotExecutor initialization.
+/// @brief Attributes structure for OneShotExecutor initialization.
+///
+/// @note Extends IOneShotExecutorAttributes with additional parameters if
+/// needed.
 struct OneShotExecutorAttributes : public IOneShotExecutorAttributes {};
 
-/// @brief Realization of OneShotExecutor interface that stores delegates queue
-/// size.
+/// @brief Concrete implementation of IOneShotExecutor with fixed-size delegate
+/// queue.
 ///
-/// @tparam QUEUE_SIZE Maximum number of delegates that can be stored in
-/// blocking queue.
+/// @tparam QUEUE_SIZE Maximum number of delegates that can be stored in the
+/// queue.
 template <size_t QUEUE_SIZE = DEFAULT_EXECUTOR_QUEUE_SIZE>
 class OneShotExecutor : public IOneShotExecutor {
  public:
-  /// @brief Constructor of the OneShotExecutor class.
+  /// @brief Constructor for OneShotExecutor.
   ///
-  /// @param[in] attrs: Attributes to initialize OneShotExecutor class.
-  /// @param[in] thread_start_flag: Flag indicating whether to start the thread
-  /// immediately. Useful in test environments without multithreading.
+  /// @param[in] attrs Configuration attributes for the executor.
+  /// @param[in] thread_start_flag Whether to start the thread immediately
+  /// (useful for testing).
   explicit OneShotExecutor(
       const OneShotExecutorAttributes& attrs, bool thread_start_flag = true)
       : IOneShotExecutor{attrs, queue_, thread_start_flag} {}
@@ -187,6 +191,7 @@ class OneShotExecutor : public IOneShotExecutor {
   OneShotExecutor(const OneShotExecutor& other) = delete;
 
  private:
+  /// @brief Internal delegate queue with fixed capacity.
   paraos::QueueBlocking<executor_delegate_type, QUEUE_SIZE> queue_;
 };
 

@@ -1,24 +1,24 @@
 /// @file test_oneshot_executor.cpp
-/// @author Vyhodcev Egor (vyhodcev@internet.ru)
+/// @author Egor Vyhodcev (vyhodcev@internet.ru)
 ///
 /// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
+/// Permission is granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the "Software"), to
+/// deal in the Software without restriction, including the rights to use,
+/// copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+/// of the Software, and to permit persons to whom the Software is furnished
+/// to do so, subject to the following conditions:
 ///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
+/// The above copyright notice and this permission notice shall be included
+/// in all copies or substantial portions of the Software.
 ///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+/// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+/// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 /// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
@@ -32,7 +32,7 @@
 
 namespace {
 
-/// @brief Функция, на примере которой будет создаваться делегат.
+/// @brief Sample function for delegate creation.
 void MockDelegate() {}
 
 // NOLINTBEGIN(*-special-member-functions)
@@ -41,7 +41,7 @@ class TestClassMock {
   TestClassMock() = default;
   ~TestClassMock() = default;
 
-  // Публичный метод, из которого будет создаваться делегат.
+  /// Public method used for delegate creation.
   void DoSomething() {}
 };
 // NOLINTEND(*-special-member-functions)
@@ -49,8 +49,7 @@ class TestClassMock {
 }  // namespace
 
 TEST(OneShotExecutor, Create) {
-  // В рамках тестов нет необходимости запускать поток, создаваемый внутри
-  // единоразового исполнителя.
+  // Thread creation by the one-shot executor is unnecessary for testing.
   constexpr bool thread_start_flag{false};
 
   constexpr size_t queue_size{20};
@@ -61,8 +60,7 @@ TEST(OneShotExecutor, Create) {
 }
 
 TEST(OneShotExecutor, EnqueueCreatedDelegate) {
-  // В рамках тестов нет необходимости запускать поток, создаваемый внутри
-  // единоразового исполнителя.
+  // Thread creation by the one-shot executor is unnecessary for testing.
   constexpr bool thread_start_flag{false};
 
   constexpr size_t queue_size{2};
@@ -72,7 +70,7 @@ TEST(OneShotExecutor, EnqueueCreatedDelegate) {
   const paraos::OneShotExecutorAttributes attr;
   paraos::OneShotExecutor<queue_size> oneshot_executor{attr, thread_start_flag};
 
-  // Помещение в очередь созданного ранее делегата.
+  // Enqueue the pre-created delegate.
   ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
 
   static TestClassMock test_class{};
@@ -84,8 +82,7 @@ TEST(OneShotExecutor, EnqueueCreatedDelegate) {
 }
 
 TEST(OneShotExecutor, AutoCreateAndEnqueueDelegate) {
-  // В рамках тестов нет необходимости запускать поток, создаваемый внутри
-  // единоразового исполнителя.
+  // Thread creation by the one-shot executor is unnecessary for testing.
   constexpr bool thread_start_flag{false};
 
   constexpr size_t queue_size{2};
@@ -95,20 +92,17 @@ TEST(OneShotExecutor, AutoCreateAndEnqueueDelegate) {
 
   static TestClassMock test_class{};
 
-  // Помещение в очередь автоматически создаваемого делегата, являющегося
-  // публичным методом класса.
+  // Enqueue an automatically created delegate from a public class method.
   ASSERT_TRUE((oneshot_executor
                    .EnqueueDelegate<TestClassMock, &TestClassMock::DoSomething>(
                        test_class)));
 
-  // Помещение в очередь автоматически создаваемого делегата, являющегося
-  // свободной функцией.
+  // Enqueue an automatically created delegate from a free function.
   ASSERT_TRUE((oneshot_executor.EnqueueDelegate<MockDelegate>()));
 }
 
 TEST(OneShotExecutor, EnqueueTooManyDelegates) {
-  // В рамках тестов нет необходимости запускать поток, создаваемый внутри
-  // единоразового исполнителя.
+  // Thread creation by the one-shot executor is unnecessary for testing.
   constexpr bool thread_start_flag{false};
 
   constexpr size_t queue_size{2};
@@ -121,5 +115,6 @@ TEST(OneShotExecutor, EnqueueTooManyDelegates) {
   ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
   ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
 
+  // Verify queue capacity limits are enforced.
   ASSERT_FALSE(oneshot_executor.EnqueueDelegate(mock_delegate));
 }
