@@ -96,7 +96,7 @@ struct ThreadAttr {
 
   // NOLINTBEGIN(readability-redundant-member-init)
   /// @brief Run this delegate in thread context. User code can register
-  /// delegate later.
+  /// delegate later with paraos::Thread::RegisterDelegate().
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
   thread_delegate_type run_{};
