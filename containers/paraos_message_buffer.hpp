@@ -337,11 +337,11 @@ class IMessageBuffer {
     return queue_.Pop(timeout_ms);
   }
 
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsFull() const noexcept -> bool {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsFull() const noexcept {
     return queue_.IsFull();
   }
 
-  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsEmpty() const noexcept -> bool {
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto IsEmpty() const noexcept {
     return queue_.IsEmpty();
   }
 
