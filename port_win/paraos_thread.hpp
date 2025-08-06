@@ -203,6 +203,16 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
+  /// @brief Return the state of the scheduler.
+  ///
+  /// @return True - if user code called StartScheduler(), false - otherwise.
+  [[nodiscard]] static auto IsSchedulerRunning() noexcept {
+    const paraos::CriticalSection critical;
+    return is_scheduler_started_.load();
+  }
+
+  /// --------------------------------------------------------------------------
+
   /// @brief To resume calls Exit().
   static void DeleteAll() {
     paraosTRACE_MESSAGE_WITH_ACTOR_NAME(
