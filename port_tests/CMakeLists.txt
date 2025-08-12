@@ -96,6 +96,7 @@ include(GoogleTest)
 
 add_executable(
   test_paraos_core
+  test_mutex_raii.cpp
   test_mutex.cpp
   test_semaphore.cpp
   test_runtime_profiler.cpp
