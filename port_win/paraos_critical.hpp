@@ -23,8 +23,8 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef CRITICAL_HPP
-#define CRITICAL_HPP
+#ifndef PARAOS_CRITICAL_HPP
+#define PARAOS_CRITICAL_HPP
 
 #include <synchapi.h>
 
@@ -118,4 +118,4 @@ inline void EnableIsr() { CriticalSection<true>::ForceExit(); }
 
 }  // namespace paraos
 
-#endif /* CRITICAL_HPP */
+#endif /* PARAOS_CRITICAL_HPP */
