@@ -51,8 +51,8 @@ class SemaphoreBase {
   }
 
   auto Take(
-      paraos::delay_type timeout_ms = max_delay, bool from_isr = false) noexcept
-      -> ISRbool {
+      paraos::delay_type timeout_ms = paraos::max_delay,
+      bool from_isr = false) noexcept -> ISRbool {
     PARAOS_CHECK_ASSERT(handle_);
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 

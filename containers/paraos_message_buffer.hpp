@@ -323,7 +323,7 @@ class IMessageBuffer {
       const noexcept(std::is_nothrow_invocable_v<
                      MessageWritable<BUFFER_ALLOCATOR>, decltype(size_in_bytes),
                      decltype(queue_)>) {
-    return MessageWritable(size_in_bytes, queue_);
+    return MessageWritable<BUFFER_ALLOCATOR>(size_in_bytes, queue_);
   }
 
   /// @brief Return message container if any data available in buffer.

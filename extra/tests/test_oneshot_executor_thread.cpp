@@ -28,6 +28,10 @@
 #include "etl/atomic.h"
 #include "paraos_oneshot_executor.hpp"
 
+// clang-format off
+// NOLINTBEGIN (*-err58-cpp, *-macro-parentheses, *-global-variables, *-exception-escape, *-member-functions, *-identifier-naming)
+// clang-format on
+
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
     const paraos::CriticalSection macro_critical;                            \
@@ -112,7 +116,7 @@ auto main() -> int {
   }
 
   {
-    paraos::OneShotExecutorAttributes attr{
+    const paraos::OneShotExecutorAttributes attr{
         {{"OneShotExecutor thread", paraos::GetStackMinimumSizeInBytes(),
           paraos::ThreadPriority::kRealTime, nullptr}}};
 
@@ -145,3 +149,6 @@ auto main() -> int {
 
   return 0;
 }
+// clang-format off
+// NOLINTEND (*-err58-cpp, *-macro-parentheses, *-global-variables, *-exception-escape, *-member-functions, *-identifier-naming)
+// clang-format on

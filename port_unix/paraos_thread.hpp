@@ -224,10 +224,22 @@ class Thread : public paraos::Base {
       thread->sem_.Give();
     }
 
+    is_scheduler_started_ = true;
+
     // After that scheduler stated, no more need getting storage thread
     // pointers. New threads will be created and start immediately.
     to_resume_.clear();
     to_resume_.shrink_to_fit();
+  }
+
+  /// --------------------------------------------------------------------------
+
+  /// @brief Return the state of the scheduler.
+  ///
+  /// @return True - if user code called StartScheduler(), false - otherwise.
+  [[nodiscard]] static auto IsSchedulerRunning() noexcept {
+    const paraos::CriticalSection critical;
+    return is_scheduler_started_;
   }
 
   /// --------------------------------------------------------------------------
@@ -286,7 +298,11 @@ class Thread : public paraos::Base {
     ETL_ASSERT(
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
 
-    to_resume_.push_back(this);
+    if (is_scheduler_started_) {
+      sem_.Give();
+    } else {
+      to_resume_.push_back(this);
+    }
   }
 
   /// --------------------------------------------------------------------------
@@ -405,6 +421,8 @@ class Thread : public paraos::Base {
   /// @brief Semaphore used to suspend the thread until StartScheduler() is
   /// called.
   paraos::SemaphoreBinary sem_;
+
+  static inline bool is_scheduler_started_{false};
 };
 
 }  // namespace paraos

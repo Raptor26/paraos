@@ -62,6 +62,9 @@ struct IQueueBlocking {
   auto TryEmplaceBack(bool is_isr, Args&&... args) noexcept -> paraos::ISRbool {
     paraos::ISRbool is_pushed;
 
+#if !defined(ETL_CHECK_PUSH_POP)
+#error "try/catch section below needs to ETL_CHECK_PUSH_POP definition"
+#endif
     try {
       const paraos::CriticalSection critical{is_isr};
       queue_.emplace(std::forward<Args>(args)...);

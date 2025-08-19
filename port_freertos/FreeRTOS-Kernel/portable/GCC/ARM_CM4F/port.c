@@ -503,8 +503,8 @@ void vPortExitCritical( void )
 /*-----------------------------------------------------------*/
 
 void xPortPendSVHandler( void )
-{
     /* This is a naked function. */
+{
 
     __asm volatile
     (

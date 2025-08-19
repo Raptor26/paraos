@@ -1,7 +1,7 @@
-/// @file paraos_mutex_raii.hpp
+/// @file test_mutex_raii.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
+/// @copyright (c) 2025 Stilsoft
 ///
 /// MIT License:
 ///
@@ -23,36 +23,16 @@
 /// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 /// IN THE SOFTWARE.
 
-#ifndef PARAOS_MUTEX_RAII_HPP
-#define PARAOS_MUTEX_RAII_HPP
+#include <gtest/gtest.h>
+
+#include <utility>
 
 #include "paraos_mutex.hpp"
-#include "paraos_trace.hpp"
+#include "paraos_mutex_raii.hpp"
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
+TEST(MutexRAII, Create) {
+  paraos::Mutex mutex{};
+  const paraos::MutexGuard mutex_guard(mutex);
 
-namespace paraos {
-class MutexGuard {
- public:
-  explicit MutexGuard(MutexBase& mutex, std::size_t timeout_ms = max_delay)
-      : mutex_{mutex}, is_locked{mutex_.Lock(timeout_ms)} {}
-
-  ~MutexGuard() { mutex_.Unlock(); }
-
-  MutexGuard(const MutexGuard& other) = delete;
-  MutexGuard(MutexGuard&& other) = delete;
-
-  auto operator=(const MutexGuard& other) -> MutexGuard& = delete;
-  auto operator=(MutexGuard&& other) -> MutexGuard& = delete;
-
-  auto IsLocked() const { return is_locked; }
-
- private:
-  MutexBase& mutex_;
-  const bool is_locked{};
-};
-}  // namespace paraos
-
-#endif /* PARAOS_MUTEX_RAII_HPP */
+  ASSERT_TRUE(mutex_guard.IsLocked());
+}
