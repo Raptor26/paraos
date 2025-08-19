@@ -47,7 +47,7 @@ class MutexGuard {
   auto operator=(const MutexGuard& other) -> MutexGuard& = delete;
   auto operator=(MutexGuard&& other) -> MutexGuard& = delete;
 
-  auto IsLocked() const { return is_locked; }
+  [[nodiscard]] auto IsLocked() const { return is_locked; }
 
  private:
   MutexBase& mutex_;
