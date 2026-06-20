@@ -2,7 +2,11 @@
 
 ## What This Is
 
-PARAOS — это C++ слой абстракции ОС (OSAL) для встраиваемых систем, оборачивающий примитивы Windows, Linux и FreeRTOS так, чтобы один и тот же прикладной код мог нативно запускаться на ПК для тестирования и на целевом устройстве в продакшене. Веха v1.0 добавила поддержку macOS, а веха v1.1 обеспечила прохождение `*_clang_tidy` CMake-пресетов на macOS без регрессий на других платформах.
+PARAOS — это C++ слой абстракции ОС (OSAL) для встраиваемых систем, оборачивающий примитивы Windows, Linux и FreeRTOS так, чтобы один и тот же прикладной код мог нативно запускаться на ПК для тестирования и на целевом устройстве в продакшене.
+
+- Веха v1.0 добавила поддержку macOS.
+- Веха v1.1 обеспечила прохождение `*_clang_tidy` CMake-пресетов на macOS без регрессий на других платформах.
+- Веха v1.2 добавила новый публичный API `paraos::jthread` в стиле `std::jthread`, единый для Windows, Unix и FreeRTOS, рядом с существующим `paraos::Thread`.
 
 ## Core Value
 
@@ -10,22 +14,19 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 ## Current State
 
-**Shipped:** v1.1 Static Analysis Cleanup (2026-06-20)
+**Shipped:** v1.2 std::jthread-style Thread API (2026-06-20)
 
-- `*_clang_tidy` пресеты (`pc_debug_gcc_clang_tidy`, `freertos_debug_gcc_clang_tidy`) собираются на macOS без предупреждений clang-tidy.
-- Публичное API PARAOS не изменено.
-- `port_win/` и `port_freertos/` не затронуты; Linux-пути оставлены семантически неизменными.
-- Все 50 тестов CTest проходят для `pc_debug_gcc_clang_tidy`.
-- Не-tidy пресеты (`pc_debug_gcc`, `freertos_debug_gcc`) продолжают собираться.
+- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
+- PC-порт реализован как тонкая обёртка над `std::jthread`.
+- FreeRTOS-порт реализован поверх FreeRTOS API с поддержкой capturing lambdas через heap-allocated invoker.
+- Поддержан `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
+- Минимальная версия C++ повышена до 20.
+- Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
+- `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
+- FreeRTOS runtime-тесты с созданием задач на macOS зависят от POSIX-порта и не выполняются на этом хосте (известное ограничение среды).
 
 ## Next Milestone Goals
-
-**Кандидаты для v1.2:**
-
-- CI-01: добавить GitLab CI job для macOS-раннера.
-- CI-02: добавить GitLab CI job для `*_clang_tidy` пресетов на macOS.
-- DOCS-01: документировать macOS-специфичные инструкции по сборке в `README.md`.
-- DOCS-02: задокументировать политику статического анализа и правила добавления суппрессий.
 
 Финальный выбор следующей вехи определяется через `/gsd-new-milestone`.
 
@@ -39,24 +40,33 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - ✓ Публичные примитивы PARAOS ведут себя одинаково на Linux и macOS — v1.0 Phase 2.
 - ✓ Все доступные CMake-пресеты на macOS конфигурируются и собираются — v1.0 Phase 3.
 - ✓ Нет регрессий для Linux, Windows и FreeRTOS — v1.0 Phase 4.
-- ✓ Все предупреждения clang-tidy из `*_clang_tidy` пресетов на macOS классифицированы в `.planning/phases/phase-05/WARNINGS.md` — v1.1 Phase 5.
+- ✓ Все предупреждения clang-tidy из `*_clang_tidy` пресетов на macOS классифицированы — v1.1 Phase 5.
 - ✓ `*_clang_tidy` пресеты успешно конфигурируются и собираются на macOS — v1.1 Phase 6.
-- ✓ Публичное API PARAOS осталось неизменным — v1.1 Phase 6.
+- ✓ Публичное API PARAUS осталось неизменным — v1.1 Phase 6.
 - ✓ Предупреждения в тестах и примерах исправлены или документированы — v1.1 Phase 7.
 - ✓ Регрессионная защита пройдена — v1.1 Phase 8.
+- ✓ JT-01: добавить `paraos::jthread` и `paraos::stop_token` в `port_pc/paraos_jthread.hpp` — v1.2 Phase 9.
+- ✓ JT-02: добавить `port_unix/paraos_jthread.hpp`, включающий `port_pc/paraos_jthread.hpp` — v1.2 Phase 9.
+- ✓ JT-03: добавить `port_win/paraos_jthread.hpp`, включающий `port_pc/paraos_jthread.hpp` — v1.2 Phase 9.
+- ✓ JT-04: добавить `paraos::jthread` в `port_freertos/paraos_jthread.hpp` — v1.2 Phase 10.
+- ✓ JT-05: поддержать `ThreadAttr` в конструкторе `jthread` — v1.2 Phase 11.
+- ✓ JT-06: обеспечить единый пользовательский API без платформенных `#ifdef` — v1.2 Phases 9–11.
+- ✓ JT-07: обновить CMake до C++20 — v1.2 Phase 12.
+- ✓ JT-08: добавить тест `port_tests/test_jthread_basic.cpp` — v1.2 Phase 12.
+- ✓ JT-09: пройти сборку и тесты на PC; FreeRTOS runtime ограничен POSIX-портом macOS — v1.2 Phase 12.
+- ✓ JT-10: обеспечить прохождение `*_clang_tidy` пресетов без регрессий — v1.2 Phase 12.
 
 ### Active
 
-- [ ] CI-01: добавить GitLab CI job для macOS-раннера.
-- [ ] CI-02: добавить GitLab CI job для `*_clang_tidy` пресетов на macOS.
-- [ ] DOCS-01: документировать macOS-специфичные инструкции по сборке в `README.md`.
-- [ ] DOCS-02: задокументировать политику статического анализа и правила добавления суппрессий.
+None — milestone v1.2 complete. Use `/gsd-new-milestone` to define the next milestone.
 
 ### Out of Scope
 
-- Добавление новых портов или платформ — текущий фокус на macOS-хосте, не расширение списка портов.
-- Оптимизация runtime-производительности вне необходимого для сборки.
-- Изменение публичного API или заголовочной поверхности PARAOS.
+- Полная замена `paraos::Thread` на `paraos::jthread` — веха v1.2 добавила новый API рядом со старым.
+- Миграция `extra/` и `containers/` на `jthread` — откладывается на будущие вехи.
+- Добавление новых портов (macOS, Zephyr и т.д.) — веха v1.2 поддерживает Windows, Unix, FreeRTOS.
+- `std::stop_callback`-совместимый API — в минимальной версии не требуется.
+- Полная бинарная совместимость с `std::jthread` (например, `get_id`, `detach`, `hardware_concurrency`) — только базовый API.
 - Тестирование на физических целевых устройствах — только host-сборки.
 - Глобальное переписывание CI/CD вне явно выделенных CI-задач следующей вехи.
 
@@ -64,12 +74,11 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 - PARAOS — библиотека только из исходников; потребители подключают через `add_subdirectory`.
 - `.clang-tidy` настроен широким набором проверок и `WarningsAsErrors: '*'`, поэтому любое предупреждение ломает сборку.
-- Веха v1.0 оставила `*_clang_tidy` пресеты падающими на macOS из-за прежних предупреждений в core и тестах.
 - macOS — основная машина разработки; валидация других платформ обеспечивается изоляцией изменений и сохранением существующих платформенных путей.
 
 ## Constraints
 
-- **Стек**: C++17, CMake ≥ 3.20, Clang/GCC/MSVC, GoogleTest, clang-tidy.
+- **Стек**: C++20, CMake ≥ 3.20, Clang/GCC/MSVC, GoogleTest, clang-tidy.
 - **Статический анализ**: набор проверок `.clang-tidy` сохраняется; суппрессии требуют явного обоснования.
 - **Безопасность платформ**: изменения не должны затрагивать поведение или сборку `port_win/` и `port_freertos/`.
 - **Минимальные изменения**: предпочтение точечным исправлениям и inline-суппрессиям вместо отключения целых категорий.
@@ -85,6 +94,10 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 | Preserve `.clang-tidy` check set and only add documented suppressions | Keeps the project's static-analysis bar high while removing false positives | ✓ Good |
 | Use `ninja -k 0` for warning classification | `WarningsAsErrors:'*'` останавливает сборку; `-k 0` собирает все диагностики за один проход | ✓ Good |
 | Inline `NOLINTBEGIN/NOLINTEND` with rationale comments | Обоснование сидит рядом с классом, будущие изменения внутри класса остаются покрыты | ✓ Good |
+| `jthread` API поверх `std::jthread` для PC и собственная реализация для FreeRTOS | Позволяет получить единый кроссплатформенный API с минимальными затратами на PC | ✓ Good |
+| Capturing lambdas для FreeRTOS через heap-allocated invoker | `etl::delegate` не поддерживает capturing lambdas и variadic args; `std::function` требует динамического выделения | ✓ Good |
+| `ThreadAttr` в конструкторе `jthread` | Необходимость задавать приоритет/стек/имя FreeRTOS-потока при создании | ✓ Good |
+| Минимальная версия C++ — 20 | Использование `std::jthread`, `std::stop_token`, `std::apply`, `std::invoke` | ✓ Good |
 
 ## Evolution
 
@@ -104,4 +117,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-20 after v1.1 milestone completed*
+*Last updated: 2026-06-20 after v1.2 milestone completion*
