@@ -141,7 +141,11 @@ class Thread : public paraos::Base {
             false && "pthread_getschedparam() return error code");
       }
 
+#ifdef __APPLE__
+      sched.sched_priority = MapPriorityToSchedRange(priority);
+#else
       sched.sched_priority = static_cast<int>(priority);
+#endif
       auto prior_update_status =
           pthread_setschedparam(handle_, SCHED_RR, &sched);
 
@@ -270,8 +274,8 @@ class Thread : public paraos::Base {
 
     // Lambda will be call after Make complete work. If exception will be throw,
     // pthread_attr_destroy will be call.
-    auto free_resourse =
-        gsl::finally([&] { pthread_attr_destroy(&thread_attr); });
+    auto free_resourse = gsl::finally(
+        [&thread_attr]() -> void { pthread_attr_destroy(&thread_attr); });
 
     result_code = pthread_attr_init(&thread_attr);
     ETL_ASSERT(
@@ -288,7 +292,11 @@ class Thread : public paraos::Base {
 
     // Set thread priority.
     struct sched_param param{};
+#ifdef __APPLE__
+    param.sched_priority = MapPriorityToSchedRange(attr.priority);
+#else
     param.sched_priority = static_cast<int>(attr.priority);
+#endif
     result_code = pthread_attr_setschedparam(&thread_attr, &param);
     ETL_ASSERT(
         result_code == 0, ETL_ERROR(paraos::thread_not_created_exception));
@@ -344,13 +352,45 @@ class Thread : public paraos::Base {
 
   /// --------------------------------------------------------------------------
 
+#ifdef __APPLE__
+  /// @brief Map public ThreadPriority enum values to the valid macOS SCHED_RR
+  /// range. macOS SCHED_RR priorities start at 15 (not 1), so the raw enum
+  /// value would be rejected by pthread_attr_setschedparam(). This mapping
+  /// keeps the public enum unchanged while producing a valid priority for the
+  /// underlying POSIX scheduler.
+  [[nodiscard]] static auto MapPriorityToSchedRange(
+      paraos::ThreadPriority priority) -> int {
+    const auto min = sched_get_priority_min(sch_policy);
+    const auto max = sched_get_priority_max(sch_policy);
+
+    constexpr auto k_min_enum =
+        static_cast<int>(paraos::ThreadPriority::kIdle);
+    constexpr auto k_max_enum =
+        static_cast<int>(paraos::ThreadPriority::kRealTime);
+    const auto prior = static_cast<int>(priority);
+
+    if (max <= min) {
+      return min;
+    }
+
+    const auto mapped =
+        (min + (((prior - k_min_enum) * (max - min)) /
+                    (k_max_enum - k_min_enum)));
+    return mapped;
+  }
+#endif
+
   [[nodiscard]] static auto IsPriorityInRange(paraos::ThreadPriority priority)
       -> bool {
     bool is_in_range{false};
 
     auto min = sched_get_priority_min(sch_policy);
     auto max = sched_get_priority_max(sch_policy);
+#ifdef __APPLE__
+    auto prior = MapPriorityToSchedRange(priority);
+#else
     auto prior = static_cast<int>(priority);
+#endif
 
     if ((prior >= min) && (prior <= max)) {
       is_in_range = true;
@@ -403,7 +443,11 @@ class Thread : public paraos::Base {
   /// the loop.
   etl::atomic_bool is_need_while_{true};
 
+#ifdef __APPLE__
+  pthread_t handle_{nullptr};
+#else
   pthread_t handle_{0};
+#endif
 
   /// @brief Until the user code calls RegisterDelegate(), the thread will
   /// sleep after each check for delegate availability.

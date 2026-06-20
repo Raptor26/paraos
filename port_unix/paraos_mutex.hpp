@@ -26,9 +26,12 @@
 #ifndef PARAOS_MUTEX_HPP
 #define PARAOS_MUTEX_HPP
 
+#include <errno.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <atomic>
+#include <cstdint>
 
 #include "paraos_attr.h"
 #include "paraos_check.h"
@@ -60,6 +63,7 @@ class MutexBase {
     } else if (timeout_ms == max_delay) {
       result = pthread_mutex_lock(&m_obj_);
     } else {
+#ifdef __linux__
       timespec delay{};
       delay.tv_nsec =
           static_cast<int64_t>(timeout_ms) * NANOSECONDS_PER_MILISECONDS;
@@ -70,6 +74,11 @@ class MutexBase {
       TimespecAdd(&current_time, &delay, &delay);
 
       result = pthread_mutex_timedlock(&m_obj_, &delay);
+#elif defined(__APPLE__)
+      result = TimedLock(timeout_ms);
+#else
+#error "Unsupported Unix-like platform"
+#endif
     }
 
     if (result == 0) {
@@ -138,6 +147,48 @@ class MutexBase {
 
     return *this;
   }
+
+#ifdef __APPLE__
+  /// @brief macOS replacement for pthread_mutex_timedlock().
+  ///
+  /// Polls pthread_mutex_trylock() with 1 ms sleeps until the timeout expires.
+  /// This keeps the pthread_mutex_t storage and initialization unchanged and
+  /// is acceptable for the PC/test port.
+  auto TimedLock(std::size_t timeout_ms) noexcept -> int {
+    struct timespec start_time {};
+    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0) {
+      return -1;
+    }
+
+    while (true) {
+      const int result_code = pthread_mutex_trylock(&m_obj_);
+      if (result_code != EBUSY) {
+        return result_code;
+      }
+
+      struct timespec now {};
+      if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
+        return -1;
+      }
+
+      const std::int64_t elapsed_ns =
+          (((static_cast<std::int64_t>(now.tv_sec) -
+             static_cast<std::int64_t>(start_time.tv_sec)) *
+            NANOSECONDS_PER_SECOND) +
+           (static_cast<std::int64_t>(now.tv_nsec) -
+            static_cast<std::int64_t>(start_time.tv_nsec)));
+      const auto elapsed_ms = static_cast<std::size_t>(
+          elapsed_ns / NANOSECONDS_PER_MILISECONDS);
+
+      if (elapsed_ms >= timeout_ms) {
+        return ETIMEDOUT;
+      }
+
+      constexpr std::uint32_t k_us_per_ms = 1000U;
+      usleep(k_us_per_ms);
+    }
+  }
+#endif
 
  protected:
   // NOLINTBEGIN(misc-non-private-member-variables-in-classes)
@@ -210,7 +261,7 @@ class MutexRecursive final : public MutexBase {
     return *this;
   }
 
-  /// @brief  Mutex non-copyable.
+  /// @brief  Mutex non-copyable
   MutexRecursive(const MutexRecursive& other) = delete;
   auto operator=(const MutexRecursive& other) -> MutexRecursive& = delete;
 };

@@ -23,7 +23,7 @@
 // If build system is windows or linux, we can provide definitions for
 // PARAOS_CHECK_LOOP() and PARAOS_CHECK_ASSERT()
 #if defined(__WIN32__) || defined(__WIN64__) || defined(__linux__) || \
-    defined(__unix__)
+    defined(__unix__) || defined(__APPLE__)
 
 #ifndef PARAOS_CHECK_LOOP
 #define PARAOS_CHECK_LOOP() assert(false)
