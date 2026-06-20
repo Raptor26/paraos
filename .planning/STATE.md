@@ -7,10 +7,10 @@ last_updated: "2026-06-20T19:20:00.000Z"
 last_activity: 2026-06-20
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-20)
 
 **Core value:** All `*_clang_tidy` CMake presets configure, build, and pass `ctest` on the current macOS hardware without regressing any other platform's build or behavior.
-**Current focus:** Phase 10 — FreeRTOS jthread implementation
+**Current focus:** Phase 11 — Thread attributes integration
 
 ## Current Position
 
-Phase: 10
-Plan: 10-01
+Phase: 11
+Plan: 11-01
 Status: In Progress
-Last activity: 2026-06-20 — Phase 9 PC jthread implementation complete
+Last activity: 2026-06-20 — Phase 10 FreeRTOS jthread implementation complete
 
 ## Accumulated Context
 
@@ -47,7 +47,7 @@ Last activity: 2026-06-20 — Phase 9 PC jthread implementation complete
 ### Pending Todos
 
 - [x] Phase 9: implement PC jthread
-- [ ] Phase 10: implement FreeRTOS jthread
+- [x] Phase 10: implement FreeRTOS jthread
 - [ ] Phase 11: integrate ThreadAttr
 - [ ] Phase 12: build, tests and static analysis
 

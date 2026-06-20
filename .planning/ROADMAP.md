@@ -11,7 +11,7 @@
 ### 🚧 v1.2 std::jthread-style Thread API
 
 - [x] **Phase 9: PC jthread implementation** — Реализовать `paraos::jthread` для Windows и Unix поверх `std::jthread` (completed 2026-06-20)
-- [ ] **Phase 10: FreeRTOS jthread implementation** — Реализовать `paraos::jthread` поверх FreeRTOS API с поддержкой capturing lambdas
+- [x] **Phase 10: FreeRTOS jthread implementation** — Реализовать `paraos::jthread` поверх FreeRTOS API с поддержкой capturing lambdas (completed 2026-06-20)
 - [ ] **Phase 11: Thread attributes integration** — Поддержать `ThreadAttr` (приоритет, стек, имя) в `jthread` для всех портов
 - [ ] **Phase 12: Build, tests and static analysis** — Обновить CMake до C++20, добавить `test_jthread_basic.cpp`, прогнать все пресеты и tidy
 
@@ -52,7 +52,7 @@ Plans:
 
 Plans:
 
-- [ ] 10-01: Реализовать `paraos::jthread` поверх FreeRTOS API с поддержкой capturing lambdas (JTHREAD-01..06, PORT-04)
+- [x] 10-01: Реализовать `paraos::jthread` поверх FreeRTOS API с поддержкой capturing lambdas (JTHREAD-01..06, PORT-04)
 
 ### Phase 11: Thread attributes integration
 
@@ -96,6 +96,6 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 | ----- | --------- | -------------- | ------ | --------- |
 | 9. PC jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
-| 10. FreeRTOS jthread implementation | v1.2 | 0/1 | Planned | - |
+| 10. FreeRTOS jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
 | 11. Thread attributes integration | v1.2 | 0/1 | Planned | - |
 | 12. Build, tests and static analysis | v1.2 | 0/1 | Planned | - |
