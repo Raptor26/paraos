@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <iterator>
+#include <memory>
 
 #include "etl/error_handler.h"
 #include "gsl/gsl"
@@ -103,7 +104,9 @@ class IRingBuff {
  public:
   virtual ~IRingBuff() = default;
 
-  explicit operator bool() { return static_cast<bool>(lwrb_is_ready(&lwrb_)); }
+  explicit operator bool() const {
+    return static_cast<bool>(lwrb_is_ready(&lwrb_));
+  }
 
   PARAOS_INLINE_TRIVIAL auto Write(const void* src, lwrb_sz_t size_in_bytes) {
     lwrb_sz_t written{0};
@@ -111,8 +114,8 @@ class IRingBuff {
     return written;
   }
 
-  PARAOS_INLINE_TRIVIAL auto Write(const gsl::span<const T> src) {
-    return Write(reinterpret_cast<const void*>(src.data()), src.size_bytes());
+  PARAOS_INLINE_TRIVIAL auto Write(gsl::span<const T> src) {
+    return Write(static_cast<const void*>(src.data()), src.size_bytes());
   }
 
   template <
@@ -120,9 +123,15 @@ class IRingBuff {
       typename U = std::enable_if_t<std::is_base_of_v<
           std::random_access_iterator_tag, iterator_category_t<TIterator>>>>
   PARAOS_INLINE_TRIVIAL auto Write(TIterator begin, TIterator end) {
+    const auto elem_count = std::distance(begin, end);
+    PARAOS_CHECK_ASSERT(elem_count >= 0);
+
+    const T* data = (begin == end) ? static_cast<const T*>(nullptr)
+                                   : std::addressof(*begin);
     return Write(
-        reinterpret_cast<const void*>(begin),
-        static_cast<lwrb_sz_t>(std::distance(begin, end)));
+        static_cast<const void*>(data),
+        static_cast<lwrb_sz_t>(
+            static_cast<std::size_t>(elem_count) * sizeof(T)));
   }
 
   PARAOS_INLINE_TRIVIAL auto Read(void* dst, lwrb_sz_t dst_size_in_bytes) {
@@ -131,7 +140,7 @@ class IRingBuff {
 
   PARAOS_INLINE_TRIVIAL auto Read(gsl::span<T> dst) {
     return Read(
-        reinterpret_cast<void*>(dst.data()),
+        static_cast<void*>(dst.data()),
         static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
@@ -143,7 +152,7 @@ class IRingBuff {
 
   PARAOS_INLINE_TRIVIAL auto Peek(gsl::span<T> dst) {
     return Peek(
-        reinterpret_cast<void*>(dst.data()),
+        static_cast<void*>(dst.data()),
         static_cast<lwrb_sz_t>(dst.size_bytes()));
   }
 
@@ -154,11 +163,11 @@ class IRingBuff {
   /// @brief Return how many elements can be written.
   ///
   /// @return How many elements can be written before buffer be full.
-  PARAOS_INLINE_TRIVIAL auto Free() { return lwrb_get_free(&lwrb_); }
+  PARAOS_INLINE_TRIVIAL auto Free() const { return lwrb_get_free(&lwrb_); }
 
   /// @brief Return numbers of bytes currently available in buffer.
   /// @return Number of bytes ready to be read
-  auto Size() { return lwrb_get_full(&lwrb_); }
+  auto Size() const { return lwrb_get_full(&lwrb_); }
 
   /// @brief Return how many elements of T type buffer can contained in each
   /// time.
@@ -166,7 +175,7 @@ class IRingBuff {
   /// @note lwrb buff can contained 'size - 1' bytes numb
   ///
   /// @return Buffer capacity in 'T' object type.
-  auto Capacity() { return lwrb_.size - 1; }
+  auto Capacity() const { return lwrb_.size - 1; }
 
   /// @brief Reset ring buffer is inital state. Invalidate all data in ring
   /// buffer.
@@ -176,19 +185,19 @@ class IRingBuff {
   /// write elements numb, equal Capacity().
   ///
   /// @return Return tue if buffer empty, false in otherwise.
-  auto IsEmpty() -> bool { return Size() == 0; }
+  auto IsEmpty() const -> bool { return Size() == 0; }
 
   /// @brief Check is buffer full. If full, thats mean user code must read or
   /// Clear() buffer before write anything again.
   ///
   /// @return Return full if buffer is full, false in otherwise.
-  auto IsFull() -> bool { return Size() == Capacity(); }
+  auto IsFull() const -> bool { return Size() == Capacity(); }
 
   /// @brief Five rule.
-  IRingBuff(IRingBuff&& other) = delete;
-  auto operator=(IRingBuff&& other) -> IRingBuff& = delete;
-  auto operator=(const IRingBuff& other) -> IRingBuff& = delete;
   IRingBuff(const IRingBuff& other) = delete;
+  IRingBuff(IRingBuff&& other) = delete;
+  auto operator=(const IRingBuff& other) -> IRingBuff& = delete;
+  auto operator=(IRingBuff&& other) -> IRingBuff& = delete;
 
  protected:
   IRingBuff(void* buff, lwrb_sz_t buff_size_in_bytes) {
