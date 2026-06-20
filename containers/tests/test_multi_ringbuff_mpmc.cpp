@@ -64,11 +64,12 @@ paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
     paraos::ThreadPriority::kRealTime, nullptr}};
 
-auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
+auto CalcTotalBytesInStringArray(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+const std::vector<std::string>& str_arr)
     -> std::size_t {
   std::size_t total_bytes_numb{0};
 
-  for (const auto &str : str_arr) {
+  for (const auto& str : str_arr) {
     total_bytes_numb += str.length();
   }
   return total_bytes_numb;
@@ -103,10 +104,9 @@ paraos::MultiRingBuff<
     paraos::RingBuff<char, ring_buff_size>,
     paraos::RingBuff<char, ring_buff_size>>
     multi_ring_buff{};
-}  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr &attr, std::size_t str_idx)
+  explicit Producer(const paraos::ThreadAttr& attr, std::size_t str_idx)
       : thread_{attr}, str_idx_{str_idx} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
@@ -161,7 +161,7 @@ struct Producer {
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
+  explicit Consumer(const paraos::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
@@ -203,8 +203,8 @@ struct Consumer {
   paraos::Thread thread_;
 };
 
-namespace {
-void AssertsForTestComplete() {
+void AssertsForTestComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   PrintDebug(
       "Total read bytes numb is " << consumer_total_read_bytes
                                   << ". Expected bytes numb is "
@@ -220,7 +220,8 @@ void AssertsForTestComplete() {
       "written bytes not equal with expected");
 }
 
-void ExitFromTest() {
+void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   if (((consumer_thread_exit_cnt >= consumer_thread_numb) &&
        (producer_thread_exit_cnt >= producer_thread_numb))) {
     check_test_complete_and_exit.Finished();
@@ -233,7 +234,7 @@ void ExitFromTest() {
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
 
-#if defined(PARAOS_LIKE_FREERTOS)
+#ifdef PARAOS_LIKE_FREERTOS
     // Forces program exit to reduce execution time. Needed to terminate tests
     // early, especially when running multiple tests. In other case, program
     // will exit in 1 second later.

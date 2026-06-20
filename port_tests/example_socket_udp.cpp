@@ -129,7 +129,6 @@ bool nonblocking_thread_exit_flag = false;
 /// @brief Флаг, который устанавливается в true потоком, использующим
 /// сокет с заданным временем ожидания, во время завершения своей работы.
 bool blocking_thread_exit_flag = false;
-}  // namespace
 
 /// @brief Структура потока, использующего неблокирующий сокет.
 struct NonBlockingSocketThread {
@@ -386,7 +385,7 @@ struct ForeverBlockingSocketThread {
 
     // Если потоки с ограниченным временем ожидания завершили свою работу,
     // данный поток также завершается.
-    if ((nonblocking_thread_exit_flag) && (blocking_thread_exit_flag)) {
+    if (nonblocking_thread_exit_flag && blocking_thread_exit_flag) {
       socket_ptr_->Transmit(
           static_cast<void*>(disconnect_data.data()), disconnect_data.size());
 
@@ -405,6 +404,7 @@ struct ForeverBlockingSocketThread {
 
   std::array<uint8_t, array_size> receiver_array_{0};
 };
+}  // namespace
 
 auto main() -> int {
   // Аттрибуты для инициализации неблокирующего сокета

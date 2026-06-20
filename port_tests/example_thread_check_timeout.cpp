@@ -56,7 +56,7 @@ paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
 // address of it's name could be invalid later.
 // NOLINTBEGIN(performance-unnecessary-value-param)
 struct TestTimeout {
-  explicit TestTimeout(const paraos::ThreadAttr &attr) : thread_{attr} {
+  explicit TestTimeout(const paraos::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<TestTimeout, &TestTimeout::Run>(
             *this));
@@ -102,7 +102,8 @@ struct TestTimeout {
 };
 // NOLINTEND(performance-unnecessary-value-param)
 
-void ExitFromTest() {
+void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 

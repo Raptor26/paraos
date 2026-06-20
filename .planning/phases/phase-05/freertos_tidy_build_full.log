@@ -1,0 +1,351 @@
+[1/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/croutine.c.o
+[2/69] Building C object lwrb/lwrb/CMakeFiles/lwrb_ex.dir/src/lwrb/lwrb_ex.c.o
+[3/69] Building C object lwrb/lwrb/CMakeFiles/lwrb.dir/src/lwrb/lwrb.c.o
+[4/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/event_groups.c.o
+[5/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/list.c.o
+[6/69] Linking C static library lwrb/lwrb/liblwrb.a
+[7/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/stream_buffer.c.o
+[8/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/queue.c.o
+[9/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/portable/MemMang/heap_3.c.o
+[10/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/timers.c.o
+[11/69] Building CXX object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/__/paraos_freertos_hooks.cpp.o
+In file included from /Users/raptor/_vcs/paraos/port_freertos/paraos_freertos_hooks.cpp:31:
+/Users/raptor/_vcs/paraos/port_freertos/paraos_utils.hpp:67:1: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+   67 | inline FreeRTOSIdleFncPtr freertos_idle_fnc_ptr{nullptr};
+      | ^
+1 warning generated.
+[12/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/tasks.c.o
+[13/69] Building C object port_freertos/FreeRTOS-Kernel/portable/CMakeFiles/freertos_kernel_port.dir/ThirdParty/GCC/Posix/utils/wait_for_event.c.o
+[14/69] Linking C static library lwrb/lwrb/liblwrb_ex.a
+[15/69] Building C object port_freertos/FreeRTOS-Kernel/portable/CMakeFiles/freertos_kernel_port.dir/ThirdParty/GCC/Posix/port.c.o
+[16/69] Linking CXX static library port_freertos/FreeRTOS-Kernel/libfreertos_kernel.a
+[17/69] Building CXX object CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o
+[18/69] Linking CXX static library libparaos.a
+[19/69] Building CXX object port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o
+[20/69] Building CXX object port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o
+[21/69] Building CXX object port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o
+[22/69] Building CXX object port_tests/CMakeFiles/test_thread_create_then_delete_many_threads.dir/test_thread_create_then_delete_many_threads.cpp.o
+[23/69] Building CXX object port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/example_timer.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o -MF port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o.d -o port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/example_timer.cpp
+/Users/raptor/_vcs/paraos/port_tests/example_timer.cpp:46:8: error: struct 'UserTimer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   46 | struct UserTimer : public paraos::Timer {
+      |        ^
+/Users/raptor/_vcs/paraos/port_tests/example_timer.cpp:64:8: error: struct 'UserTimerWithCnt' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   64 | struct UserTimerWithCnt : public paraos::Timer {
+      |        ^
+1744 warnings generated.
+Suppressed 1742 warnings (1742 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+2 warnings treated as errors
+[24/69] Building CXX object port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o
+[25/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex_raii.cpp.o
+[26/69] Building CXX object port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/example_thread_check_timeout.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o -MF port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o.d -o port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/example_thread_check_timeout.cpp
+/Users/raptor/_vcs/paraos/port_tests/example_thread_check_timeout.cpp:105:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  105 | void ExitFromTest() {
+      |      ^
+1747 warnings generated.
+Suppressed 1747 warnings (1746 in non-user code, 1 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+1 warning treated as error
+[27/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_semaphore.cpp.o
+[28/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex.cpp.o
+[29/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_switch_context.cpp.o
+[30/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_testing_semaphore.cpp.o
+[31/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_version.cpp.o
+[32/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_isr.cpp.o
+[33/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_critical.cpp.o
+[34/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+1835 warnings generated.
+Suppressed 1834 warnings (1834 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+1 warning treated as error
+[35/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/port_tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++20 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o -MF port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o.d -o port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp
+/Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp:38:7: error: class 'Profiler' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   38 | class Profiler : public testing::Test {
+      |       ^
+/Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp:48:8: error: visibility of function 'SetUp' is changed from protected in class 'Test' to public [misc-override-with-different-visibility,-warnings-as-errors]
+   48 |   void SetUp() override {
+      |        ^
+/opt/homebrew/include/gtest/gtest.h:312:16: note: function declared here as protected
+  312 |   virtual void SetUp();
+      |                ^
+1791 warnings generated.
+Suppressed 1790 warnings (1789 in non-user code, 1 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+2 warnings treated as errors
+[36/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_message_buff.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_message_buff.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+1858 warnings generated.
+Suppressed 1857 warnings (1857 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+1 warning treated as error
+[37/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_message_buff_with_user_allocator.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_message_buff_with_user_allocator.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_message_buff_with_user_allocator.cpp:42:7: error: class 'MyAllocBuffer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   42 | class MyAllocBuffer {
+      |       ^
+1841 warnings generated.
+Suppressed 1839 warnings (1839 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+2 warnings treated as errors
+[38/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o
+[39/69] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o -MF containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o.d -o containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:83:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   83 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:142:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  142 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:186:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  186 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:210:9: error: use an LLVM range-based algorithm [llvm-use-ranges,-warnings-as-errors]
+  210 |         std::find(elems_vector.begin(), elems_vector.end(), str) !=
+      |         ^~~~~~~~~ ~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~
+      |         llvm::findelems_vector
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'
+   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)
+      |                         ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:216:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  216 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:236:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  236 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1842 warnings generated.
+Suppressed 1838 warnings (1835 in non-user code, 3 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+7 warnings treated as errors
+[40/69] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o -MF containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o.d -o containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:67:6: error: function 'CalcTotalBytesInStringArray' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+   67 | auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:108:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  108 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:163:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  163 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:207:6: error: function 'AssertsForTestComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  207 | void AssertsForTestComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:223:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  223 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:236:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  236 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1891 warnings generated.
+Suppressed 1887 warnings (1884 in non-user code, 3 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+7 warnings treated as errors
+[41/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o -MF containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o.d -o containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:76:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   76 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:122:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  122 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:163:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  163 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:174:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  174 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:187:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  187 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1825 warnings generated.
+Suppressed 1820 warnings (1819 in non-user code, 1 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+6 warnings treated as errors
+[42/69] Building CXX object containers/tests/CMakeFiles/bench_paraos_containers.dir/bench_paraos_containers.cpp.o
+[43/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+1913 warnings generated.
+Suppressed 1916 warnings (1912 in non-user code, 4 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+1 warning treated as error
+[44/69] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/extra/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o -MF extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling.cpp
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:67:26: error: redundant parentheses around expression [readability-redundant-parentheses,-warnings-as-errors]
+   67 |       etl::task &task = *(scheduled_task);
+      |                          ^              ~
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:279:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+  279 | class CooperativeScheduling
+      | ^
+1881 warnings generated.
+Suppressed 1879 warnings (1879 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+2 warnings treated as errors
+[45/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o -MF containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o.d -o containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:78:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   78 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:122:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  122 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:165:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  165 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:176:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  176 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:189:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  189 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1825 warnings generated.
+Suppressed 1820 warnings (1819 in non-user code, 1 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+6 warnings treated as errors
+[46/69] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_oneshot_executor.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos/extra/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o -MF extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_oneshot_executor.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/extra/tests/test_oneshot_executor.cpp:36:6: error: function 'MockDelegate' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+   36 | void MockDelegate() {}
+      |      ^
+1866 warnings generated.
+Suppressed 1865 warnings (1864 in non-user code, 1 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+2 warnings treated as errors
+[47/69] Building CXX object extra/tests/CMakeFiles/test_paraos_oneshot_executor.dir/test_oneshot_executor_thread.cpp.o
+[48/69] Linking CXX executable port_tests/test_thread_only_static
+[49/69] Linking CXX executable port_tests/test_thread_only_global
+[50/69] Linking CXX executable port_tests/test_thread_only_stack
+[51/69] Linking CXX executable port_tests/test_thread_only_stack_with_multiple_threads
+[52/69] Linking CXX executable port_tests/test_thread_create_then_delete_many_threads
+[53/69] Linking CXX executable containers/tests/bench_paraos_containers
+[54/69] Linking CXX executable extra/tests/test_paraos_oneshot_executor
+[55/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o -MF containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o.d -o containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:77:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   77 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:123:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  123 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:162:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  162 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:171:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  171 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:184:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  184 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1825 warnings generated.
+Suppressed 1821 warnings (1819 in non-user code, 2 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+6 warnings treated as errors
+[56/69] Building CXX object extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o -MF extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp:148:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  148 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp:161:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  161 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1768 warnings generated.
+Suppressed 1769 warnings (1766 in non-user code, 3 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+2 warnings treated as errors
+[57/69] Building CXX object extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp -- /usr/bin/g++ -DFREERTOS -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_FREERTOS -DUNIT_TESTS_ENABLE -DfreeRTOS -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_freertos/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -I/Users/raptor/_vcs/paraos/port_freertos/config/unix -isystem /Users/raptor/_vcs/paraos/port_freertos -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /Users/raptor/_vcs/paraos/port_freertos/.. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/include/. -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix -isystem /Users/raptor/_vcs/paraos/port_freertos/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils -g -std=gnu++17 -arch arm64 -MD -MT extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o -MF extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:67:26: error: redundant parentheses around expression [readability-redundant-parentheses,-warnings-as-errors]
+   67 |       etl::task &task = *(scheduled_task);
+      |                          ^              ~
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:279:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+  279 | class CooperativeScheduling
+      | ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:63:7: error: class 'Task1' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   63 | class Task1 : public etl::task {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:84:7: error: class 'Task2' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   84 | class Task2 : public etl::task {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:105:7: error: class 'Task3' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  105 | class Task3 : public etl::task {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:126:7: error: class 'Idle' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  126 | class Idle {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:167:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  167 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:179:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  179 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+1846 warnings generated.
+Suppressed 1839 warnings (1838 in non-user code, 1 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+8 warnings treated as errors
+ninja: build stopped: cannot make progress due to previous errors.

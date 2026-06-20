@@ -78,10 +78,9 @@ std::atomic_size_t producer_total_thread_numb{0};
 std::atomic_size_t producer_thread_exit_cnt{0};
 std::atomic_size_t consumer_thread_exit_cnt{0};
 std::atomic_size_t consumer_total_thread_numb{0};
-}  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr &attr, std::size_t str_idx)
+  explicit Producer(const paraos::ThreadAttr& attr, std::size_t str_idx)
       : thread_{attr}, str_idx_{str_idx} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
@@ -140,7 +139,7 @@ struct Producer {
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
+  explicit Consumer(const paraos::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
@@ -156,11 +155,11 @@ struct Consumer {
       const paraos::CriticalSection critical;
 
       consumers_str_container.emplace_back(
-          reinterpret_cast<char *>(read_message->Data()));
+          reinterpret_cast<char*>(read_message->Data()));
 
       PrintDebug(
           " string read successful: "
-              << reinterpret_cast<char *>(read_message->Data()),
+              << reinterpret_cast<char*>(read_message->Data()),
           thread_.GiveName());
 
       read_message.reset();
@@ -182,8 +181,8 @@ struct Consumer {
   paraos::Thread thread_;
 };
 
-namespace {
-void CheckIfTestSuccessfullyComplete() {
+void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   const paraos::CriticalSection critical;
 
   PrintDebug(
@@ -205,7 +204,9 @@ void CheckIfTestSuccessfullyComplete() {
       "'consumers_str_container'");
 
   // Check each string in consumers_str_container contained in elems_vector.
-  for (auto &str : consumers_str_container) {
+  for (auto& str : consumers_str_container) {
+    // Project targets C++17; std::ranges is unavailable.
+    // NOLINTNEXTLINE(llvm-use-ranges)
     assert(
         std::find(elems_vector.begin(), elems_vector.end(), str) !=
             elems_vector.end() &&
@@ -213,7 +214,8 @@ void CheckIfTestSuccessfullyComplete() {
   }
 }
 
-void ExitFromTest() {
+void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   bool is_test_complete{false};
   {
     const paraos::CriticalSection critical;
@@ -233,7 +235,7 @@ void ExitFromTest() {
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
 
-#if defined(PARAOS_LIKE_FREERTOS)
+#ifdef PARAOS_LIKE_FREERTOS
     // Forces program exit to reduce execution time. Needed to terminate tests
     // early, especially when running multiple tests. In other case, program
     // will exit in 1 second later.

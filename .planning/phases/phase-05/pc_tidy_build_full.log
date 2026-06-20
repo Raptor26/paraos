@@ -1,0 +1,796 @@
+[1/56] Building CXX object CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o
+FAILED: [code=1] CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/paraos_status_led.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o -MF CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o.d -o CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o -c /Users/raptor/_vcs/paraos/extra/paraos_status_led.cpp
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1641 warnings generated.
+Suppressed 1653 warnings (1635 in non-user code, 18 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+6 warnings treated as errors
+[2/56] Building CXX object port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/test_thread_only_global.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o -MF port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o.d -o port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/test_thread_only_global.cpp
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1646 warnings generated.
+Suppressed 1666 warnings (1642 in non-user code, 24 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[3/56] Building CXX object port_tests/CMakeFiles/test_thread_create_then_delete_many_threads.dir/test_thread_create_then_delete_many_threads.cpp.o
+[4/56] Building CXX object port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/test_thread_only_stack.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o -MF port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o.d -o port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/test_thread_only_stack.cpp
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1646 warnings generated.
+Suppressed 1667 warnings (1642 in non-user code, 25 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[5/56] Building CXX object port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/test_thread_only_static.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o -MF port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o.d -o port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/test_thread_only_static.cpp
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1646 warnings generated.
+Suppressed 1665 warnings (1642 in non-user code, 23 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[6/56] Building CXX object port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/test_thread_only_stack_with_multiple_threads.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o -MF port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o.d -o port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/test_thread_only_stack_with_multiple_threads.cpp
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1652 warnings generated.
+Suppressed 1673 warnings (1648 in non-user code, 25 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[7/56] Building CXX object port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/example_timer.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o -MF port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o.d -o port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/example_timer.cpp
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/port_tests/example_timer.cpp:46:8: error: struct 'UserTimer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   46 | struct UserTimer : public paraos::Timer {
+      |        ^
+/Users/raptor/_vcs/paraos/port_tests/example_timer.cpp:64:8: error: struct 'UserTimerWithCnt' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   64 | struct UserTimerWithCnt : public paraos::Timer {
+      |        ^
+1653 warnings generated.
+Suppressed 1662 warnings (1647 in non-user code, 15 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+6 warnings treated as errors
+[8/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex_raii.cpp.o
+[9/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex.cpp.o
+[10/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_semaphore.cpp.o
+[11/56] Building CXX object port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/example_thread_check_timeout.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o -MF port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o.d -o port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/example_thread_check_timeout.cpp
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/port_tests/example_thread_check_timeout.cpp:105:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  105 | void ExitFromTest() {
+      |      ^
+1653 warnings generated.
+Suppressed 1665 warnings (1646 in non-user code, 19 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+7 warnings treated as errors
+[12/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_switch_context.cpp.o
+[13/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_testing_semaphore.cpp.o
+[14/56] Building CXX object port_tests/CMakeFiles/example_socket_udp.dir/example_socket_udp.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/example_socket_udp.dir/example_socket_udp.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/example_socket_udp.dir/example_socket_udp.cpp.o -MF port_tests/CMakeFiles/example_socket_udp.dir/example_socket_udp.cpp.o.d -o port_tests/CMakeFiles/example_socket_udp.dir/example_socket_udp.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp:135:8: error: struct 'NonBlockingSocketThread' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  135 | struct NonBlockingSocketThread {
+      |        ^
+/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp:208:8: error: struct 'EmptySocketThread' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  208 | struct EmptySocketThread {
+      |        ^
+/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp:262:8: error: struct 'BlockingSocketThread' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  262 | struct BlockingSocketThread {
+      |        ^
+/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp:336:8: error: struct 'ForeverBlockingSocketThread' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  336 | struct ForeverBlockingSocketThread {
+      |        ^
+/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp:389:9: error: redundant parentheses around expression [readability-redundant-parentheses,-warnings-as-errors]
+  389 |     if ((nonblocking_thread_exit_flag) && (blocking_thread_exit_flag)) {
+      |         ^                            ~
+/Users/raptor/_vcs/paraos/port_tests/example_socket_udp.cpp:389:43: error: redundant parentheses around expression [readability-redundant-parentheses,-warnings-as-errors]
+  389 |     if ((nonblocking_thread_exit_flag) && (blocking_thread_exit_flag)) {
+      |                                           ^                         ~
+1746 warnings generated.
+Suppressed 1753 warnings (1734 in non-user code, 19 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+12 warnings treated as errors
+[15/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_version.cpp.o
+[16/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_isr.cpp.o
+[17/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_critical.cpp.o
+[18/56] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o
+FAILED: [code=1] port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/port_tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++20 -arch arm64 -Wall -Wextra -Wpedantic -Werror -MD -MT port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o -MF port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o.d -o port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o -c /Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp:38:7: error: class 'Profiler' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   38 | class Profiler : public testing::Test {
+      |       ^
+/Users/raptor/_vcs/paraos/port_tests/test_runtime_profiler.cpp:48:8: error: visibility of function 'SetUp' is changed from protected in class 'Test' to public [misc-override-with-different-visibility,-warnings-as-errors]
+   48 |   void SetUp() override {
+      |        ^
+/opt/homebrew/include/gtest/gtest.h:312:16: note: function declared here as protected
+  312 |   virtual void SetUp();
+      |                ^
+1791 warnings generated.
+Suppressed 1791 warnings (1787 in non-user code, 4 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[19/56] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_lwrb.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_lwrb.cpp
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+1687 warnings generated.
+Suppressed 1685 warnings (1683 in non-user code, 2 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[20/56] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_message_buff_with_user_allocator.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_message_buff_with_user_allocator.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_message_buff_with_user_allocator.cpp:42:7: error: class 'MyAllocBuffer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   42 | class MyAllocBuffer {
+      |       ^
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+1736 warnings generated.
+Suppressed 1748 warnings (1732 in non-user code, 16 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+4 warnings treated as errors
+[21/56] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+1730 warnings generated.
+Suppressed 1743 warnings (1727 in non-user code, 16 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+3 warnings treated as errors
+[22/56] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_message_buff.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_message_buff.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+1753 warnings generated.
+Suppressed 1766 warnings (1750 in non-user code, 16 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+3 warnings treated as errors
+[23/56] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o -MF containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o.d -o containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:83:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   83 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:142:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  142 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:186:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  186 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:210:9: error: use an LLVM range-based algorithm [llvm-use-ranges,-warnings-as-errors]
+  210 |         std::find(elems_vector.begin(), elems_vector.end(), str) !=
+      |         ^~~~~~~~~ ~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~
+      |         llvm::findelems_vector
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'
+   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)
+      |                         ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:216:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  216 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_message_multithread_many_producer_many_consumers.cpp:236:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  236 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1736 warnings generated.
+Suppressed 1744 warnings (1723 in non-user code, 21 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+13 warnings treated as errors
+[24/56] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o -MF containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o.d -o containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:67:6: error: function 'CalcTotalBytesInStringArray' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+   67 | auto CalcTotalBytesInStringArray(const std::vector<std::string> &str_arr)
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:108:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  108 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:163:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  163 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:207:6: error: function 'AssertsForTestComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  207 | void AssertsForTestComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:223:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  223 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff_mpmc.cpp:236:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  236 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1785 warnings generated.
+Suppressed 1793 warnings (1772 in non-user code, 21 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+13 warnings treated as errors
+[25/56] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o -MF containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o.d -o containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:76:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   76 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:122:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  122 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:163:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  163 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:174:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  174 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_spmc.cpp:187:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  187 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1719 warnings generated.
+Suppressed 1726 warnings (1707 in non-user code, 19 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+12 warnings treated as errors
+[26/56] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/containers/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o -MF containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o.d -o containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_multi_ringbuff.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+1809 warnings generated.
+Suppressed 1825 warnings (1804 in non-user code, 21 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+5 warnings treated as errors
+[27/56] Building CXX object containers/tests/CMakeFiles/bench_paraos_containers.dir/bench_paraos_containers.cpp.o
+[28/56] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/extra/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o -MF extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling.cpp
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:67:26: error: redundant parentheses around expression [readability-redundant-parentheses,-warnings-as-errors]
+   67 |       etl::task &task = *(scheduled_task);
+      |                          ^              ~
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:279:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+  279 | class CooperativeScheduling
+      | ^
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1791 warnings generated.
+Suppressed 1801 warnings (1783 in non-user code, 18 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+8 warnings treated as errors
+[29/56] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o -MF containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o.d -o containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:78:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   78 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:122:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  122 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:165:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  165 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:176:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  176 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpsc.cpp:189:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  189 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1719 warnings generated.
+Suppressed 1726 warnings (1707 in non-user code, 19 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+12 warnings treated as errors
+[30/56] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+FAILED: [code=1] containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o -MF containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o.d -o containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o -c /Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:77:8: error: struct 'Producer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   77 | struct Producer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:123:8: error: struct 'Consumer' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  123 | struct Consumer {
+      |        ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:162:6: error: function 'CheckIfTestSuccessfullyComplete' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  162 | void CheckIfTestSuccessfullyComplete() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:171:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  171 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/containers/tests/test_queue_blocking_mpmc.cpp:184:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  184 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1719 warnings generated.
+Suppressed 1727 warnings (1707 in non-user code, 20 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+12 warnings treated as errors
+[31/56] Building CXX object extra/tests/CMakeFiles/test_paraos_oneshot_executor.dir/test_oneshot_executor_thread.cpp.o
+[32/56] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_oneshot_executor.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos/extra/tests -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -isystem /opt/homebrew/include -g -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -Werror -Wno-cpp -MD -MT extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o -MF extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_oneshot_executor.cpp
+/Users/raptor/_vcs/paraos/containers/paraos_queue_blocking.hpp:65:2: error: preprocessor condition can be written more concisely using '#ifndef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   65 | #if !defined(ETL_CHECK_PUSH_POP)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifndef ETL_CHECK_PUSH_POP
+/Users/raptor/_vcs/paraos/extra/tests/test_oneshot_executor.cpp:36:6: error: function 'MockDelegate' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+   36 | void MockDelegate() {}
+      |      ^
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1764 warnings generated.
+Suppressed 1775 warnings (1756 in non-user code, 19 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+8 warnings treated as errors
+[33/56] Building CXX object extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o -MF extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp:148:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  148 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_thread_sequence.cpp:161:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  161 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1662 warnings generated.
+Suppressed 1675 warnings (1654 in non-user code, 21 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+8 warnings treated as errors
+[34/56] Building CXX object extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o
+FAILED: [code=1] extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o 
+/opt/homebrew/bin/cmake -E __run_co_compile --tidy="/usr/local/bin/clang-tidy;--extra-arg-before=--driver-mode=g++" --source=/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp -- /usr/bin/g++ -DPARAOS_CHECK_LOOP_ENABLE -DPARAOS_LIKE_UNIX -DUNIT_TESTS_ENABLE -I/Users/raptor/_vcs/paraos -I/Users/raptor/_vcs/paraos/port_unix -I/Users/raptor/_vcs/paraos/containers -I/Users/raptor/_vcs/paraos/extra -I/Users/raptor/_vcs/paraos/port_unix/config -I/Users/raptor/_vcs/paraos/leaf/include -I/Users/raptor/_vcs/paraos/lwrb/lwrb/src/include -isystem /Users/raptor/_vcs/paraos/GSL/include -isystem /Users/raptor/_vcs/paraos/etl/include -g -std=gnu++17 -arch arm64 -MD -MT extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o -MF extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o.d -o extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o -c /Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:67:26: error: redundant parentheses around expression [readability-redundant-parentheses,-warnings-as-errors]
+   67 |       etl::task &task = *(scheduled_task);
+      |                          ^              ~
+/Users/raptor/_vcs/paraos/extra/paraos_thread_cooperative_scheduling.hpp:279:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+  279 | class CooperativeScheduling
+      | ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:63:7: error: class 'Task1' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   63 | class Task1 : public etl::task {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:84:7: error: class 'Task2' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+   84 | class Task2 : public etl::task {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:105:7: error: class 'Task3' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  105 | class Task3 : public etl::task {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:126:7: error: class 'Idle' can be moved into an anonymous namespace to enforce internal linkage [misc-use-internal-linkage,-warnings-as-errors]
+  126 | class Idle {
+      |       ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:167:6: error: function 'ExitFromTest' is declared in an anonymous namespace; prefer using 'static' for restricting visibility [llvm-prefer-static-over-anonymous-namespace,-warnings-as-errors]
+  167 | void ExitFromTest() {
+      |      ^
+/Users/raptor/_vcs/paraos/extra/tests/test_paraos_cooperative_scheduling_thread.cpp:179:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+  179 | #if defined(PARAOS_LIKE_FREERTOS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_FREERTOS
+/Users/raptor/_vcs/paraos/paraos_config.hpp:17:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   17 | #if defined(__clang__)
+      |  ^~~~~~~~~~~~~~~~~~~~~
+      |  ifdef __clang__
+/Users/raptor/_vcs/paraos/paraos_config.hpp:33:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   33 | #if defined(_MSC_VER)
+      |  ^~~~~~~~~~~~~~~~~~~~
+      |  ifdef _MSC_VER
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:60:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   60 | #if defined(PARAOS_VERBOSE_ERRORS)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_VERBOSE_ERRORS
+/Users/raptor/_vcs/paraos/paraos_exceptions.hpp:74:1: error: inheriting multiple classes that aren't pure virtual is discouraged [misc-multiple-inheritance,-warnings-as-errors]
+   74 | class exception : public std::exception, public etl::exception {
+      | ^
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:37:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   37 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+/Users/raptor/_vcs/paraos/paraos_thread_common.hpp:46:2: error: preprocessor condition can be written more concisely using '#ifdef' [readability-use-concise-preprocessor-directives,-warnings-as-errors]
+   46 | #if defined(PARAOS_LIKE_WINAPI)
+      |  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |  ifdef PARAOS_LIKE_WINAPI
+1752 warnings generated.
+Suppressed 1757 warnings (1738 in non-user code, 19 NOLINT).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
+14 warnings treated as errors
+ninja: build stopped: cannot make progress due to previous errors.

@@ -34,7 +34,7 @@
 #include "paraos_base.hpp"
 #include "paraos_utils.hpp"
 
-#if defined(PARAOS_LIKE_WINAPI)
+#ifdef PARAOS_LIKE_WINAPI
 #include <winbase.h>
 #endif
 
@@ -43,7 +43,7 @@ namespace paraos {
 /// @brief Delegate type.
 using thread_delegate_type = etl::delegate<void()>;
 
-#if defined(PARAOS_LIKE_WINAPI)
+#ifdef PARAOS_LIKE_WINAPI
 enum ThreadPriority : int8_t {
   kIdle = THREAD_PRIORITY_IDLE,
   kLowest = THREAD_PRIORITY_LOWEST,

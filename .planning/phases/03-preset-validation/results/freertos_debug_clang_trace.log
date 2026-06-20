@@ -1,0 +1,149 @@
+=== Preset: freertos_debug_clang_trace ===
+=== Configure ===
+-- The C compiler identification is AppleClang 21.0.0.21000101
+-- The CXX compiler identification is AppleClang 21.0.0.21000101
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/clang - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+paraos trace enable
+-- PARAOS project version is 0.13.0
+CMake Deprecation Warning at etl/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- etl | Determined ETL version 20.40.0 from version.txt file
+paraos trace enable
+Using freeRTOS implementation
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Found GTest: /opt/homebrew/lib/cmake/GTest/GTestConfig.cmake (found version "1.17.0")
+-- Configuring done (0.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/raptor/_vcs/paraos/build/freertos_debug_clang_trace
+Configure exit: 0
+=== Build ===
+[1/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/croutine.c.o
+[2/69] Building C object lwrb/lwrb/CMakeFiles/lwrb_ex.dir/src/lwrb/lwrb_ex.c.o
+[3/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/portable/MemMang/heap_3.c.o
+[4/69] Building C object lwrb/lwrb/CMakeFiles/lwrb.dir/src/lwrb/lwrb.c.o
+[5/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/event_groups.c.o
+[6/69] Building CXX object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/__/paraos_freertos_hooks.cpp.o
+In file included from /Users/raptor/_vcs/paraos/port_freertos/paraos_freertos_hooks.cpp:31:
+/Users/raptor/_vcs/paraos/port_freertos/paraos_utils.hpp:67:1: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+   67 | inline FreeRTOSIdleFncPtr freertos_idle_fnc_ptr{nullptr};
+      | ^
+1 warning generated.
+[7/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/stream_buffer.c.o
+[8/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/list.c.o
+[9/69] Building C object port_freertos/FreeRTOS-Kernel/portable/CMakeFiles/freertos_kernel_port.dir/ThirdParty/GCC/Posix/utils/wait_for_event.c.o
+[10/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/queue.c.o
+[11/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/timers.c.o
+[12/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/tasks.c.o
+[13/69] Building C object port_freertos/FreeRTOS-Kernel/portable/CMakeFiles/freertos_kernel_port.dir/ThirdParty/GCC/Posix/port.c.o
+[14/69] Linking C static library lwrb/lwrb/liblwrb.a
+[15/69] Linking CXX static library port_freertos/FreeRTOS-Kernel/libfreertos_kernel.a
+[16/69] Linking C static library lwrb/lwrb/liblwrb_ex.a
+[17/69] Building CXX object CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o
+[18/69] Building CXX object port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o
+[19/69] Building CXX object port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o
+[20/69] Building CXX object port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o
+[21/69] Building CXX object port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o
+[22/69] Building CXX object port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o
+[23/69] Building CXX object port_tests/CMakeFiles/test_thread_create_then_delete_many_threads.dir/test_thread_create_then_delete_many_threads.cpp.o
+[24/69] Building CXX object port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o
+[25/69] Linking CXX static library libparaos.a
+[26/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex_raii.cpp.o
+[27/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_switch_context.cpp.o
+[28/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o
+[29/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_testing_semaphore.cpp.o
+[30/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_semaphore.cpp.o
+[31/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex.cpp.o
+[32/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o
+[33/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o
+[34/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_version.cpp.o
+[35/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o
+[36/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_isr.cpp.o
+[37/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_critical.cpp.o
+[38/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o
+[39/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+[40/69] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+[41/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+[42/69] Linking CXX executable port_tests/test_thread_only_static
+[43/69] Linking CXX executable port_tests/test_thread_only_global
+[44/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o
+[45/69] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+[46/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+[47/69] Linking CXX executable port_tests/test_thread_only_stack
+[48/69] Linking CXX executable port_tests/test_thread_only_stack_with_multiple_threads
+[49/69] Linking CXX executable port_tests/example_thread_check_timeout
+[50/69] Linking CXX executable port_tests/test_thread_create_then_delete_many_threads
+[51/69] Linking CXX executable port_tests/example_timer
+[52/69] Linking CXX executable port_tests/test_paraos_core
+[53/69] Building CXX object containers/tests/CMakeFiles/bench_paraos_containers.dir/bench_paraos_containers.cpp.o
+[54/69] Linking CXX executable containers/tests/test_message_multithread_many_producer_many_consumers
+[55/69] Linking CXX executable containers/tests/test_multi_ringbuff_mpmc
+[56/69] Linking CXX executable containers/tests/test_queue_blocking_spmc
+[57/69] Linking CXX executable containers/tests/test_queue_blocking_mpmc
+[58/69] Linking CXX executable containers/tests/test_queue_blocking_mpsc
+[59/69] Linking CXX executable containers/tests/bench_paraos_containers
+[60/69] Building CXX object extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o
+[61/69] Linking CXX executable extra/tests/test_paraos_thread_sequence
+[62/69] Building CXX object extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o
+[63/69] Linking CXX executable extra/tests/test_paraos_cooperative_scheduling_thread
+[64/69] Building CXX object extra/tests/CMakeFiles/test_paraos_oneshot_executor.dir/test_oneshot_executor_thread.cpp.o
+[65/69] Linking CXX executable extra/tests/test_paraos_oneshot_executor
+[66/69] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o
+[67/69] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o
+[68/69] Linking CXX executable containers/tests/test_paraos_containers
+[69/69] Linking CXX executable extra/tests/test_paraos_extra
+Build exit: 0
+=== Test (timeout 20s per test) ===
+Test project /Users/raptor/_vcs/paraos/build/freertos_debug_clang_trace
+      Start 49: test_paraos_oneshot_executor
+      Start 14: [PARAOS CONTAINERS]:Message.CopyCtor
+      Start 43: [PARAOS EXTRA]:OneShotExecutor.Create
+      Start 32: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead
+ 1/49 Test #43: [PARAOS EXTRA]:OneShotExecutor.Create .............................***Exception: SegFault  0.00 sec
+Running main() from /private/tmp/googletest-20250910-5249-qce8ci/googletest-1.17.0/googletest/src/gtest_main.cc
+Note: Google Test filter = OneShotExecutor.Create
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from OneShotExecutor
+[ RUN      ] OneShotExecutor.Create
+[       OK ] OneShotExecutor.Create (0 ms)
+[----------] 1 test from OneShotExecutor (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+
+ 2/49 Test #14: [PARAOS CONTAINERS]:Message.CopyCtor ..............................   Passed    0.00 sec
+ 3/49 Test #32: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead ...   Passed    0.00 sec
+ 4/49 Test #49: test_paraos_oneshot_executor ......................................***Timeout  20.02 sec
+
+
+50% tests passed, 2 tests failed out of 4
+
+Label Time Summary:
+stress    =   0.00 sec*proc (0 test)
+
+Total Test time (real) =  20.02 sec
+
+The following tests FAILED:
+	 43 - [PARAOS EXTRA]:OneShotExecutor.Create (SEGFAULT)
+	 49 - test_paraos_oneshot_executor (Timeout)
+Errors while running CTest
+Test exit: 8

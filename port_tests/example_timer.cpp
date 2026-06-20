@@ -35,12 +35,10 @@
 
 namespace {
 paraos::SemaphoreBinary sem;
-}  // namespace
 
 constexpr paraos::delay_type period_ms_default{10};
 constexpr paraos::delay_type global_timer_period_ms{500};
 constexpr paraos::delay_type local_timer_period_ms{100};
-
 constexpr paraos::delay_type thread_waiting_delay_ms{100};
 
 struct UserTimer : public paraos::Timer {
@@ -52,10 +50,10 @@ struct UserTimer : public paraos::Timer {
   void Run() override { std::cout << str_ << "\n"; }
 
   /// @brief Five rule.
-  UserTimer(UserTimer &&other) = delete;
-  auto operator=(UserTimer &&other) -> UserTimer & = delete;
-  auto operator=(const UserTimer &other) -> UserTimer & = delete;
-  UserTimer(const UserTimer &other) = delete;
+  UserTimer(UserTimer&& other) = delete;
+  auto operator=(UserTimer&& other) -> UserTimer& = delete;
+  auto operator=(const UserTimer& other) -> UserTimer& = delete;
+  UserTimer(const UserTimer& other) = delete;
 
  private:
   std::string_view str_;
@@ -77,10 +75,10 @@ struct UserTimerWithCnt : public paraos::Timer {
   }
 
   /// @brief Five rule.
-  UserTimerWithCnt(UserTimerWithCnt &&other) = delete;
-  auto operator=(UserTimerWithCnt &&other) -> UserTimerWithCnt & = delete;
-  auto operator=(const UserTimerWithCnt &other) -> UserTimerWithCnt & = delete;
-  UserTimerWithCnt(const UserTimerWithCnt &other) = delete;
+  UserTimerWithCnt(UserTimerWithCnt&& other) = delete;
+  auto operator=(UserTimerWithCnt&& other) -> UserTimerWithCnt& = delete;
+  auto operator=(const UserTimerWithCnt& other) -> UserTimerWithCnt& = delete;
+  UserTimerWithCnt(const UserTimerWithCnt& other) = delete;
 
  private:
   std::string_view str_;
@@ -88,7 +86,6 @@ struct UserTimerWithCnt : public paraos::Timer {
   static constexpr std::size_t runtime_max_ms_{1000};
 };
 
-namespace {
 UserTimer user_timer{"Global timer", global_timer_period_ms};
 }  // namespace
 

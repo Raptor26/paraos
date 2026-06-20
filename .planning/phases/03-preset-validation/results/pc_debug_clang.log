@@ -1,0 +1,204 @@
+=== Preset: pc_debug_clang ===
+=== Configure ===
+-- The C compiler identification is AppleClang 21.0.0.21000101
+-- The CXX compiler identification is AppleClang 21.0.0.21000101
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/clang - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- PARAOS project version is 0.13.0
+CMake Deprecation Warning at etl/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- etl | Determined ETL version 20.40.0 from version.txt file
+-- Found GTest: /opt/homebrew/lib/cmake/GTest/GTestConfig.cmake (found version "1.17.0")
+-- Found Threads: TRUE
+-- Configuring done (0.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/raptor/_vcs/paraos/build/pc_debug_clang
+Configure exit: 0
+=== Build ===
+[1/61] Building C object lwrb/lwrb/CMakeFiles/lwrb_ex.dir/src/lwrb/lwrb_ex.c.o
+[2/61] Building C object lwrb/lwrb/CMakeFiles/lwrb.dir/src/lwrb/lwrb.c.o
+[3/61] Linking C static library lwrb/lwrb/liblwrb.a
+[4/61] Linking C static library lwrb/lwrb/liblwrb_ex.a
+[5/61] Building CXX object CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o
+[6/61] Building CXX object port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o
+[7/61] Building CXX object port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o
+[8/61] Linking CXX static library libparaos.a
+[9/61] Building CXX object port_tests/CMakeFiles/test_thread_create_then_delete_many_threads.dir/test_thread_create_then_delete_many_threads.cpp.o
+[10/61] Building CXX object port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o
+[11/61] Building CXX object port_tests/CMakeFiles/example_socket_udp.dir/example_socket_udp.cpp.o
+[12/61] Building CXX object port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o
+[13/61] Building CXX object port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o
+[14/61] Building CXX object port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o
+[15/61] Building CXX object port_unix/tests/CMakeFiles/test_paraos_unix.dir/test_paraos_utils.cpp.o
+[16/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex_raii.cpp.o
+[17/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex.cpp.o
+[18/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_semaphore.cpp.o
+[19/61] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o
+[20/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o
+[21/61] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o
+[22/61] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o
+[23/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_switch_context.cpp.o
+[24/61] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o
+[25/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_critical.cpp.o
+[26/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_version.cpp.o
+[27/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_isr.cpp.o
+[28/61] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_testing_semaphore.cpp.o
+[29/61] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o
+[30/61] Linking CXX executable port_unix/tests/test_paraos_unix
+[31/61] Linking CXX executable port_tests/test_thread_only_static
+[32/61] Linking CXX executable port_tests/test_thread_only_global
+[33/61] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+[34/61] Linking CXX executable port_tests/test_thread_only_stack
+[35/61] Linking CXX executable port_tests/test_thread_create_then_delete_many_threads
+[36/61] Linking CXX executable port_tests/test_thread_only_stack_with_multiple_threads
+[37/61] Linking CXX executable port_tests/example_timer
+[38/61] Linking CXX executable port_tests/example_thread_check_timeout
+[39/61] Linking CXX executable port_tests/example_socket_udp
+[40/61] Linking CXX executable port_tests/test_paraos_core
+[41/61] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+[42/61] Linking CXX executable containers/tests/test_message_multithread_many_producer_many_consumers
+[43/61] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+[44/61] Linking CXX executable containers/tests/test_queue_blocking_mpsc
+[45/61] Linking CXX executable containers/tests/test_multi_ringbuff_mpmc
+[46/61] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+[47/61] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+[48/61] Building CXX object containers/tests/CMakeFiles/bench_paraos_containers.dir/bench_paraos_containers.cpp.o
+[49/61] Building CXX object extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o
+[50/61] Linking CXX executable containers/tests/test_queue_blocking_spmc
+[51/61] Linking CXX executable containers/tests/test_queue_blocking_mpmc
+[52/61] Building CXX object extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o
+[53/61] Linking CXX executable containers/tests/bench_paraos_containers
+[54/61] Linking CXX executable extra/tests/test_paraos_cooperative_scheduling_thread
+[55/61] Linking CXX executable extra/tests/test_paraos_thread_sequence
+[56/61] Building CXX object extra/tests/CMakeFiles/test_paraos_oneshot_executor.dir/test_oneshot_executor_thread.cpp.o
+[57/61] Linking CXX executable extra/tests/test_paraos_oneshot_executor
+[58/61] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o
+[59/61] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o
+[60/61] Linking CXX executable containers/tests/test_paraos_containers
+[61/61] Linking CXX executable extra/tests/test_paraos_extra
+Build exit: 0
+=== Test (timeout 20s per test) ===
+Test project /Users/raptor/_vcs/paraos/build/pc_debug_clang
+      Start 49: test_paraos_cooperative_scheduling_thread
+      Start  2: test_thread_only_static
+      Start  6: test_paraos_core
+      Start  7: [PARAOS CONTAINERS]:QueueBlocking.Create
+ 1/50 Test  #7: [PARAOS CONTAINERS]:QueueBlocking.Create ..........................   Passed    0.00 sec
+      Start 48: test_paraos_thread_sequence
+ 2/50 Test #49: test_paraos_cooperative_scheduling_thread .........................   Passed    0.64 sec
+      Start 37: test_message_multithread_many_producer_many_consumers
+ 3/50 Test  #2: test_thread_only_static ...........................................   Passed    1.12 sec
+      Start 13: [PARAOS CONTAINERS]:Message.PushThenPop
+ 4/50 Test #13: [PARAOS CONTAINERS]:Message.PushThenPop ...........................   Passed    0.01 sec
+      Start 23: [PARAOS CONTAINERS]:RingBuff.WriteThenRead
+ 5/50 Test #23: [PARAOS CONTAINERS]:RingBuff.WriteThenRead ........................   Passed    0.00 sec
+      Start  8: [PARAOS CONTAINERS]:QueueBlocking.EmplaceThenRead
+ 6/50 Test  #8: [PARAOS CONTAINERS]:QueueBlocking.EmplaceThenRead .................   Passed    0.00 sec
+      Start 29: [PARAOS CONTAINERS]:MultiRingBuff.Create
+ 7/50 Test #29: [PARAOS CONTAINERS]:MultiRingBuff.Create ..........................   Passed    0.00 sec
+      Start 45: [PARAOS EXTRA]:OneShotExecutor.EnqueueCreatedDelegate
+ 8/50 Test #45: [PARAOS EXTRA]:OneShotExecutor.EnqueueCreatedDelegate .............   Passed    0.00 sec
+      Start  4: test_thread_only_stack
+ 9/50 Test  #6: test_paraos_core ..................................................   Passed    1.46 sec
+      Start 11: [PARAOS CONTAINERS]:Message.Example
+10/50 Test #11: [PARAOS CONTAINERS]:Message.Example ...............................   Passed    0.00 sec
+      Start 21: [PARAOS CONTAINERS]:RingBuff.IsEmpty
+11/50 Test #21: [PARAOS CONTAINERS]:RingBuff.IsEmpty ..............................   Passed    0.00 sec
+      Start  3: test_thread_only_global
+12/50 Test #48: test_paraos_thread_sequence .......................................   Passed    1.91 sec
+      Start 46: [PARAOS EXTRA]:OneShotExecutor.AutoCreateAndEnqueueDelegate
+13/50 Test #46: [PARAOS EXTRA]:OneShotExecutor.AutoCreateAndEnqueueDelegate .......   Passed    0.01 sec
+      Start 40: test_queue_blocking_mpsc
+14/50 Test #37: test_message_multithread_many_producer_many_consumers .............   Passed    1.72 sec
+      Start 22: [PARAOS CONTAINERS]:RingBuff.IsFull
+15/50 Test #22: [PARAOS CONTAINERS]:RingBuff.IsFull ...............................   Passed    0.01 sec
+      Start 33: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead
+16/50 Test #33: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead ...   Passed    0.00 sec
+      Start 16: [PARAOS CONTAINERS]:Message.MoveCtor
+17/50 Test #16: [PARAOS CONTAINERS]:Message.MoveCtor ..............................   Passed    0.00 sec
+      Start 43: [PARAOS EXTRA]:Cooperative.TryPutOverflowTasks
+18/50 Test #43: [PARAOS EXTRA]:Cooperative.TryPutOverflowTasks ....................   Passed    0.00 sec
+      Start 38: test_multi_ringbuff_mpmc
+19/50 Test  #4: test_thread_only_stack ............................................   Passed    1.63 sec
+      Start 24: [PARAOS CONTAINERS]:RingBuff.WriteThenReadIterator
+20/50 Test #24: [PARAOS CONTAINERS]:RingBuff.WriteThenReadIterator ................   Passed    0.01 sec
+      Start 19: [PARAOS CONTAINERS]:RingBuff.Create
+21/50 Test #19: [PARAOS CONTAINERS]:RingBuff.Create ...............................   Passed    0.00 sec
+      Start 36: [PARAOS CONTAINERS]:MultiRingBuff.TryReadSpan
+22/50 Test #36: [PARAOS CONTAINERS]:MultiRingBuff.TryReadSpan .....................   Passed    0.00 sec
+      Start 39: test_queue_blocking_spmc
+23/50 Test  #3: test_thread_only_global ...........................................   Passed    1.80 sec
+      Start 41: test_queue_blocking_mpmc
+24/50 Test #40: test_queue_blocking_mpsc ..........................................   Passed    1.74 sec
+      Start 50: test_paraos_oneshot_executor
+25/50 Test #38: test_multi_ringbuff_mpmc ..........................................   Passed    1.69 sec
+      Start 31: [PARAOS CONTAINERS]:MultiRingBuff.WriteReadMultipleBuffers
+26/50 Test #31: [PARAOS CONTAINERS]:MultiRingBuff.WriteReadMultipleBuffers ........   Passed    0.01 sec
+      Start 34: [PARAOS CONTAINERS]:MultiRingBuff.WriteIteratorThenReadIterator
+27/50 Test #34: [PARAOS CONTAINERS]:MultiRingBuff.WriteIteratorThenReadIterator ...   Passed    0.00 sec
+      Start 30: [PARAOS CONTAINERS]:MultiRingBuff.WriteDataToRingBufferThenRead
+28/50 Test #30: [PARAOS CONTAINERS]:MultiRingBuff.WriteDataToRingBufferThenRead ...   Passed    0.00 sec
+      Start 17: [PARAOS CONTAINERS]:Message.PushButForceFree
+29/50 Test #17: [PARAOS CONTAINERS]:Message.PushButForceFree ......................   Passed    0.00 sec
+      Start 42: [PARAOS EXTRA]:Cooperative.Create
+30/50 Test #42: [PARAOS EXTRA]:Cooperative.Create .................................   Passed    0.00 sec
+      Start 27: [PARAOS CONTAINERS]:RingBuff.WriteSpanThenReadSpan
+31/50 Test #27: [PARAOS CONTAINERS]:RingBuff.WriteSpanThenReadSpan ................   Passed    0.00 sec
+      Start 10: [PARAOS CONTAINERS]:QueueBlocking.PopOnEmptyQueue
+32/50 Test #10: [PARAOS CONTAINERS]:QueueBlocking.PopOnEmptyQueue .................   Passed    0.00 sec
+      Start 14: [PARAOS CONTAINERS]:Message.PushToFull
+33/50 Test #14: [PARAOS CONTAINERS]:Message.PushToFull ............................   Passed    0.00 sec
+      Start 47: [PARAOS EXTRA]:OneShotExecutor.EnqueueTooManyDelegates
+34/50 Test #47: [PARAOS EXTRA]:OneShotExecutor.EnqueueTooManyDelegates ............   Passed    0.00 sec
+      Start 28: [PARAOS CONTAINERS]:RingBuff.WriteOverflow
+35/50 Test #28: [PARAOS CONTAINERS]:RingBuff.WriteOverflow ........................   Passed    0.00 sec
+      Start 20: [PARAOS CONTAINERS]:RingBuff.Capacity
+36/50 Test #20: [PARAOS CONTAINERS]:RingBuff.Capacity .............................   Passed    0.00 sec
+      Start 15: [PARAOS CONTAINERS]:Message.CopyCtor
+37/50 Test #15: [PARAOS CONTAINERS]:Message.CopyCtor ..............................   Passed    0.00 sec
+      Start 32: [PARAOS CONTAINERS]:MultiRingBuff.WriteTwiceReadTwice
+38/50 Test #32: [PARAOS CONTAINERS]:MultiRingBuff.WriteTwiceReadTwice .............   Passed    0.00 sec
+      Start  1: test_paraos_unix
+39/50 Test #39: test_queue_blocking_spmc ..........................................   Passed    1.78 sec
+      Start  9: [PARAOS CONTAINERS]:QueueBlocking.TryPushThenRead
+40/50 Test  #9: [PARAOS CONTAINERS]:QueueBlocking.TryPushThenRead .................   Passed    0.01 sec
+      Start 26: [PARAOS CONTAINERS]:RingBuff.Skip
+41/50 Test #26: [PARAOS CONTAINERS]:RingBuff.Skip .................................   Passed    0.00 sec
+      Start 12: [PARAOS CONTAINERS]:Message.Create
+42/50 Test #12: [PARAOS CONTAINERS]:Message.Create ................................   Passed    0.00 sec
+      Start 35: [PARAOS CONTAINERS]:MultiRingBuff.TryRead
+43/50 Test #35: [PARAOS CONTAINERS]:MultiRingBuff.TryRead .........................   Passed    0.00 sec
+      Start 25: [PARAOS CONTAINERS]:RingBuff.Clear
+44/50 Test #25: [PARAOS CONTAINERS]:RingBuff.Clear ................................   Passed    0.00 sec
+      Start 18: [PARAOS CONTAINERS]:Buffer.UserAllocCreate
+45/50 Test #18: [PARAOS CONTAINERS]:Buffer.UserAllocCreate ........................   Passed    0.00 sec
+      Start 44: [PARAOS EXTRA]:OneShotExecutor.Create
+46/50 Test #44: [PARAOS EXTRA]:OneShotExecutor.Create .............................   Passed    0.00 sec
+      Start  5: test_thread_only_stack_with_multiple_threads
+47/50 Test #41: test_queue_blocking_mpmc ..........................................   Passed    1.80 sec
+48/50 Test #50: test_paraos_oneshot_executor ......................................   Passed    1.86 sec
+49/50 Test  #1: test_paraos_unix ..................................................   Passed    1.82 sec
+50/50 Test  #5: test_thread_only_stack_with_multiple_threads ......................   Passed    1.83 sec
+
+100% tests passed, 0 tests failed out of 50
+
+Label Time Summary:
+stress    =   8.73 sec*proc (5 tests)
+
+Total Test time (real) =   6.43 sec
+Test exit: 0

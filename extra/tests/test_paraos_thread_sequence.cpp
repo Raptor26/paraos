@@ -57,7 +57,7 @@ std::size_t baro_call_cnt{0};
 
 constexpr uint_least8_t max_task_in_sequence{3};
 using ThreadSequenceTest = paraos::ThreadSequence<max_task_in_sequence>;
-ThreadSequenceTest *thread_seq_ptr;
+ThreadSequenceTest* thread_seq_ptr;
 
 constexpr uint32_t gyr_acc_max_call_cnt{4};
 
@@ -91,10 +91,10 @@ struct GyrAcc {
   }
 
   /// @brief Five rule.
-  GyrAcc(GyrAcc &&other) = delete;
-  auto operator=(GyrAcc &&other) -> GyrAcc & = delete;
-  auto operator=(const GyrAcc &other) -> GyrAcc & = delete;
-  GyrAcc(const GyrAcc &other) = delete;
+  GyrAcc(GyrAcc&& other) = delete;
+  auto operator=(GyrAcc&& other) -> GyrAcc& = delete;
+  auto operator=(const GyrAcc& other) -> GyrAcc& = delete;
+  GyrAcc(const GyrAcc& other) = delete;
 };
 
 using GyrAccFloat = GyrAcc<float>;
@@ -115,10 +115,10 @@ struct Mag {
   // NOLINTEND(readability-convert-member-functions-to-static)
 
   /// @brief Five rule.
-  Mag(Mag &&other) = delete;
-  auto operator=(Mag &&other) -> Mag & = delete;
-  auto operator=(const Mag &other) -> Mag & = delete;
-  Mag(const Mag &other) = delete;
+  Mag(Mag&& other) = delete;
+  auto operator=(Mag&& other) -> Mag& = delete;
+  auto operator=(const Mag& other) -> Mag& = delete;
+  Mag(const Mag& other) = delete;
 };
 
 struct Baro {
@@ -137,15 +137,16 @@ struct Baro {
   // NOLINTEND(readability-convert-member-functions-to-static)
 
   /// @brief Five rule.
-  Baro(Baro &&other) = delete;
-  auto operator=(Baro &&other) -> Baro & = delete;
-  auto operator=(const Baro &other) -> Baro & = delete;
-  Baro(const Baro &other) = delete;
+  Baro(Baro&& other) = delete;
+  auto operator=(Baro&& other) -> Baro& = delete;
+  auto operator=(const Baro& other) -> Baro& = delete;
+  Baro(const Baro& other) = delete;
 };
 
 GyrAccFloat gyr_acc;
 
-void ExitFromTest() {
+void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
@@ -158,7 +159,7 @@ void ExitFromTest() {
     paraos::Thread::DelayMs(delay_ms);
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-#if defined(PARAOS_LIKE_FREERTOS)
+#ifdef PARAOS_LIKE_FREERTOS
     std::_Exit(EXIT_SUCCESS);
 #else
     paraos::Thread::Exit();
