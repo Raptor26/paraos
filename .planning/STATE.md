@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: "std::jthread-style Thread API"
-status: planning
-last_updated: "2026-06-20T16:16:59.162Z"
+status: in_progress
+last_updated: "2026-06-20T19:20:00.000Z"
 last_activity: 2026-06-20
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 4
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-20)
 
 **Core value:** All `*_clang_tidy` CMake presets configure, build, and pass `ctest` on the current macOS hardware without regressing any other platform's build or behavior.
-**Current focus:** Phase phase-07 — Fix Tests, Examples & Document Suppressions
+**Current focus:** Phase 10 — FreeRTOS jthread implementation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-20 — Milestone v1.2 started
+Phase: 10
+Plan: 10-01
+Status: In Progress
+Last activity: 2026-06-20 — Phase 9 PC jthread implementation complete
 
 ## Accumulated Context
 
@@ -39,10 +39,17 @@ Last activity: 2026-06-20 — Milestone v1.2 started
 - Replace deprecated unnamed POSIX semaphores on macOS with a `pthread_cond_t` + counter backend.
 - Validate every available CMake preset on this machine.
 - Preserve `.clang-tidy` check set; only add documented false-positive suppressions.
+- `jthread` API поверх `std::jthread` для PC и собственная реализация для FreeRTOS.
+- Capturing lambdas для FreeRTOS через heap-allocated invoker.
+- `ThreadAttr` в конструкторе `jthread`.
+- Минимальная версия C++ — 20.
 
 ### Pending Todos
 
-None yet.
+- [x] Phase 9: implement PC jthread
+- [ ] Phase 10: implement FreeRTOS jthread
+- [ ] Phase 11: integrate ThreadAttr
+- [ ] Phase 12: build, tests and static analysis
 
 ### Blockers/Concerns
 
@@ -57,8 +64,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-20T13:10:41.250Z
-Stopped at: Completed phase-05-01 warning classification
+Last session: 2026-06-20T19:20:00.000Z
+Stopped at: Starting phase-09 autonomous execution
 Resume file: None
 
 ## Performance Metrics
@@ -72,4 +79,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Execute phase 9 via /gsd-autonomous --from 9
