@@ -109,7 +109,7 @@ class stop_source {
 /// @brief jthread implementation for FreeRTOS.
 class jthread {
  public:
-  /// @brief Construct a thread and start execution.
+  /// @brief Construct a thread with default attributes and start execution.
   ///
   /// The callable receives the provided arguments followed by a
   /// paraos::stop_token as its last argument.
@@ -118,29 +118,28 @@ class jthread {
   /// @tparam Args Argument types.
   /// @param[in] f Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
-  template <typename Function, typename... Args>
+  template <typename Function, typename... Args,
+            typename = std::enable_if_t<
+                !std::is_same_v<std::decay_t<Function>, ThreadAttr>>>
   explicit jthread(Function&& f, Args&&... args) {
-    using decayed_function = std::decay_t<Function>;
-    using decayed_args = std::tuple<std::decay_t<Args>...>;
+    MakeThread(ThreadAttr{}, std::forward<Function>(f),
+               std::forward<Args>(args)...);
+  }
 
-    auto* invoker = new Invoker<decayed_function, decayed_args>(
-        std::forward<Function>(f), std::forward<Args>(args)...);
-
-    context_ = new Context{};
-    context_->invoker = invoker;
-
-    xTaskCreate(
-        RunTask, "jthread",
-        paraos::ConvertStackSizeInWords(paraos::GetStackMinimumSizeInBytes()),
-        context_, static_cast<UBaseType_t>(paraos::ThreadPriority::kNormal),
-        &context_->handle);
-
-    if (context_->handle == nullptr) {
-      delete invoker;
-      delete context_;
-      context_ = nullptr;
-      ETL_ASSERT(false, ETL_ERROR(paraos::thread_not_created_exception));
-    }
+  /// @brief Construct a thread with the specified attributes and start
+  /// execution.
+  ///
+  /// The callable receives the provided arguments followed by a
+  /// paraos::stop_token as its last argument.
+  ///
+  /// @tparam Function Callable type.
+  /// @tparam Args Argument types.
+  /// @param[in] attr Thread attributes (name, stack depth, priority).
+  /// @param[in] f Callable to run in the new thread.
+  /// @param[in] args Arguments to forward to the callable.
+  template <typename Function, typename... Args>
+  explicit jthread(const ThreadAttr& attr, Function&& f, Args&&... args) {
+    MakeThread(attr, std::forward<Function>(f), std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -197,6 +196,30 @@ class jthread {
   }
 
  private:
+  /// @brief Common implementation for both constructors.
+  template <typename Function, typename... Args>
+  void MakeThread(const ThreadAttr& attr, Function&& f, Args&&... args) {
+    using decayed_function = std::decay_t<Function>;
+    using decayed_args = std::tuple<std::decay_t<Args>...>;
+
+    auto* invoker = new Invoker<decayed_function, decayed_args>(
+        std::forward<Function>(f), std::forward<Args>(args)...);
+
+    context_ = new Context{false, invoker, {}, nullptr, attr};
+
+    xTaskCreate(
+        RunTask, attr.thread_name.data(),
+        paraos::ConvertStackSizeInWords(attr.stack_depth), context_,
+        static_cast<UBaseType_t>(attr.priority), &context_->handle);
+
+    if (context_->handle == nullptr) {
+      delete invoker;
+      delete context_;
+      context_ = nullptr;
+      ETL_ASSERT(false, ETL_ERROR(paraos::thread_not_created_exception));
+    }
+  }
+
   /// @brief Abstract invoker base.
   class InvokerBase {
    public:
@@ -236,6 +259,7 @@ class jthread {
     InvokerBase* invoker{nullptr};
     SemaphoreBinary join_sem;
     TaskHandle_t handle{nullptr};
+    ThreadAttr attr{};
   };
 
   static void RunTask(void* param) {

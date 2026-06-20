@@ -34,6 +34,16 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef PARAOS_LIKE_UNIX
+#include <pthread.h>
+#include <unistd.h>
+#elif defined(PARAOS_LIKE_WINAPI)
+#include <windows.h>
+#endif
+
+#include "paraos_attr.h"
+#include "paraos_thread_common.hpp"
+
 namespace paraos {
 
 /// @brief Wrapper around std::stop_token.
@@ -97,7 +107,7 @@ class stop_source {
 /// @brief std::jthread-style thread wrapper for PC platforms.
 class jthread {
  public:
-  /// @brief Construct a thread and start execution.
+  /// @brief Construct a thread with default attributes and start execution.
   ///
   /// The callable receives the provided arguments followed by a
   /// paraos::stop_token as its last argument.
@@ -106,15 +116,38 @@ class jthread {
   /// @tparam Args Argument types.
   /// @param[in] f Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
+  /// @brief Construct a thread with default attributes and start execution.
+  ///
+  /// The callable receives the provided arguments followed by a
+  /// paraos::stop_token as its last argument.
+  ///
+  /// @tparam Function Callable type.
+  /// @tparam Args Argument types.
+  /// @param[in] f Callable to run in the new thread.
+  /// @param[in] args Arguments to forward to the callable.
+  template <typename Function, typename... Args,
+            typename = std::enable_if_t<
+                !std::is_same_v<std::decay_t<Function>, ThreadAttr>>>
+  explicit jthread(Function&& f, Args&&... args) {
+    MakeThread(ThreadAttr{}, std::forward<Function>(f),
+               std::forward<Args>(args)...);
+  }
+
+  /// @brief Construct a thread with the specified attributes and start
+  /// execution.
+  ///
+  /// The callable receives the provided arguments followed by a
+  /// paraos::stop_token as its last argument.
+  ///
+  /// @tparam Function Callable type.
+  /// @tparam Args Argument types.
+  /// @param[in] attr Thread attributes (name, stack depth, priority).
+  /// @param[in] f Callable to run in the new thread.
+  /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-  explicit jthread(Function&& f, Args&&... args)
-      : thread_(
-            [func = std::forward<Function>(f),
-             ... captured_args = std::forward<Args>(args)](
-                std::stop_token std_token) mutable -> void {
-              std::invoke(std::move(func), std::move(captured_args)...,
-                          stop_token{std::move(std_token)});
-            }) {}
+  explicit jthread(const ThreadAttr& attr, Function&& f, Args&&... args) {
+    MakeThread(attr, std::forward<Function>(f), std::forward<Args>(args)...);
+  }
 
   /// @brief Copy operations are disabled.
   jthread(const jthread& other) = delete;
@@ -148,6 +181,71 @@ class jthread {
   }
 
  private:
+  /// @brief Common implementation for both constructors.
+  template <typename Function, typename... Args>
+  void MakeThread(const ThreadAttr& attr, Function&& f, Args&&... args) {
+    attr_ = attr;
+    thread_ = std::jthread(
+        [func = std::forward<Function>(f),
+         ...captured_args = std::forward<Args>(args)](
+            std::stop_token std_token) mutable -> void {
+          std::invoke(std::move(func), std::move(captured_args)...,
+                      stop_token{std::move(std_token)});
+        });
+    ApplyAttr();
+  }
+
+  /// @brief Apply platform-specific thread attributes after creation.
+  void ApplyAttr() {
+#ifdef PARAOS_LIKE_UNIX
+    if (thread_.joinable()) {
+      sched_param param{};
+#ifdef __APPLE__
+      param.sched_priority = MapPriorityToSchedRange(attr_.priority);
+#else
+      param.sched_priority = static_cast<int>(attr_.priority);
+#endif
+      // Ignore return value: changing priority requires privileges; failing
+      // here must not break user code.
+      (void)pthread_setschedparam(thread_.native_handle(), SCHED_RR, &param);
+    }
+#elif defined(PARAOS_LIKE_WINAPI)
+    if (thread_.joinable()) {
+      (void)SetThreadPriority(thread_.native_handle(),
+                              static_cast<int>(attr_.priority));
+    }
+#endif
+  }
+
+#ifdef PARAOS_LIKE_UNIX
+  /// @brief Map public ThreadPriority enum values to the valid macOS SCHED_RR
+  /// range. macOS SCHED_RR priorities start at 15 (not 1), so the raw enum
+  /// value would be rejected by pthread_setschedparam(). This mapping keeps the
+  /// public enum unchanged while producing a valid priority for the underlying
+  /// POSIX scheduler.
+  [[nodiscard]] static auto MapPriorityToSchedRange(
+      paraos::ThreadPriority priority) -> int {
+    const auto min = sched_get_priority_min(SCHED_RR);
+    const auto max = sched_get_priority_max(SCHED_RR);
+
+    constexpr auto k_min_enum =
+        static_cast<int>(paraos::ThreadPriority::kIdle);
+    constexpr auto k_max_enum =
+        static_cast<int>(paraos::ThreadPriority::kRealTime);
+    const auto prior = static_cast<int>(priority);
+
+    if (max <= min) {
+      return min;
+    }
+
+    const auto mapped =
+        (min + (((prior - k_min_enum) * (max - min)) /
+                (k_max_enum - k_min_enum)));
+    return mapped;
+  }
+#endif
+
+  ThreadAttr attr_{};
   std::jthread thread_{};
 };
 
