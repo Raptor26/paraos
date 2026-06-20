@@ -118,11 +118,10 @@ class jthread {
   /// @tparam Args Argument types.
   /// @param[in] f Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
-  template <typename Function, typename... Args,
-            typename = std::enable_if_t<
-                !std::is_same_v<std::decay_t<Function>, ThreadAttr>>>
-  explicit jthread(Function&& f, Args&&... args) {
-    MakeThread(ThreadAttr{}, std::forward<Function>(f),
+  template <typename Function, typename... Args>
+    requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
+  explicit jthread(Function&& func, Args&&... args) {
+    MakeThread(ThreadAttr{}, std::forward<Function>(func),
                std::forward<Args>(args)...);
   }
 
@@ -135,11 +134,12 @@ class jthread {
   /// @tparam Function Callable type.
   /// @tparam Args Argument types.
   /// @param[in] attr Thread attributes (name, stack depth, priority).
-  /// @param[in] f Callable to run in the new thread.
+  /// @param[in] func Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-  explicit jthread(const ThreadAttr& attr, Function&& f, Args&&... args) {
-    MakeThread(attr, std::forward<Function>(f), std::forward<Args>(args)...);
+  explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
+    MakeThread(attr, std::forward<Function>(func),
+               std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -198,12 +198,12 @@ class jthread {
  private:
   /// @brief Common implementation for both constructors.
   template <typename Function, typename... Args>
-  void MakeThread(const ThreadAttr& attr, Function&& f, Args&&... args) {
+  void MakeThread(const ThreadAttr& attr, Function&& func, Args&&... args) {
     using decayed_function = std::decay_t<Function>;
     using decayed_args = std::tuple<std::decay_t<Args>...>;
 
     auto* invoker = new Invoker<decayed_function, decayed_args>(
-        std::forward<Function>(f), std::forward<Args>(args)...);
+        std::forward<Function>(func), std::forward<Args>(args)...);
 
     context_ = new Context{false, invoker, {}, nullptr, attr};
 

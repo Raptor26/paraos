@@ -67,7 +67,7 @@ class stop_token {
   }
 
  private:
-  std::stop_token token_{};
+  std::stop_token token_;
 };
 
 /// @brief Wrapper around std::stop_source.
@@ -125,11 +125,10 @@ class jthread {
   /// @tparam Args Argument types.
   /// @param[in] f Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
-  template <typename Function, typename... Args,
-            typename = std::enable_if_t<
-                !std::is_same_v<std::decay_t<Function>, ThreadAttr>>>
-  explicit jthread(Function&& f, Args&&... args) {
-    MakeThread(ThreadAttr{}, std::forward<Function>(f),
+  template <typename Function, typename... Args>
+    requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
+  explicit jthread(Function&& func, Args&&... args) {
+    MakeThread(ThreadAttr{}, std::forward<Function>(func),
                std::forward<Args>(args)...);
   }
 
@@ -145,8 +144,8 @@ class jthread {
   /// @param[in] f Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-  explicit jthread(const ThreadAttr& attr, Function&& f, Args&&... args) {
-    MakeThread(attr, std::forward<Function>(f), std::forward<Args>(args)...);
+  explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
+    MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -183,10 +182,10 @@ class jthread {
  private:
   /// @brief Common implementation for both constructors.
   template <typename Function, typename... Args>
-  void MakeThread(const ThreadAttr& attr, Function&& f, Args&&... args) {
+  void MakeThread(const ThreadAttr& attr, Function&& func, Args&&... args) {
     attr_ = attr;
     thread_ = std::jthread(
-        [func = std::forward<Function>(f),
+        [func = std::forward<Function>(func),
          ...captured_args = std::forward<Args>(args)](
             std::stop_token std_token) mutable -> void {
           std::invoke(std::move(func), std::move(captured_args)...,
@@ -246,7 +245,7 @@ class jthread {
 #endif
 
   ThreadAttr attr_{};
-  std::jthread thread_{};
+  std::jthread thread_;
 };
 
 }  // namespace paraos

@@ -13,7 +13,7 @@
 - [x] **Phase 9: PC jthread implementation** — Реализовать `paraos::jthread` для Windows и Unix поверх `std::jthread` (completed 2026-06-20)
 - [x] **Phase 10: FreeRTOS jthread implementation** — Реализовать `paraos::jthread` поверх FreeRTOS API с поддержкой capturing lambdas (completed 2026-06-20)
 - [x] **Phase 11: Thread attributes integration** — Поддержать `ThreadAttr` (приоритет, стек, имя) в `jthread` для всех портов (completed 2026-06-20)
-- [ ] **Phase 12: Build, tests and static analysis** — Обновить CMake до C++20, добавить `test_jthread_basic.cpp`, прогнать все пресеты и tidy
+- [x] **Phase 12: Build, tests and static analysis** — Обновить CMake до C++20, добавить `test_jthread_basic.cpp`, прогнать все пресеты и tidy (completed 2026-06-20)
 
 ## Phase Details
 
@@ -89,7 +89,7 @@ Plans:
 
 Plans:
 
-- [ ] 12-01: Обновить CMake до C++20, добавить `test_jthread_basic.cpp`, прогнать все пресеты и tidy (BUILD-01..02, TEST-01..05)
+- [x] 12-01: Обновить CMake до C++20, добавить `test_jthread_basic.cpp`, прогнать все пресеты и tidy (BUILD-01..02, TEST-01..05)
 
 ## Progress
 
@@ -98,4 +98,4 @@ Plans:
 | 9. PC jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
 | 10. FreeRTOS jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
 | 11. Thread attributes integration | v1.2 | 1/1 | Complete | 2026-06-20 |
-| 12. Build, tests and static analysis | v1.2 | 0/1 | Planned | - |
+| 12. Build, tests and static analysis | v1.2 | 1/1 | Complete | 2026-06-20 |

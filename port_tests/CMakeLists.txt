@@ -50,6 +50,25 @@ target_compile_options(test_thread_only_stack_with_multiple_threads
 add_test(NAME test_thread_only_stack_with_multiple_threads
          COMMAND test_thread_only_stack_with_multiple_threads)
 
+# jthread basic ----------------------------------------------------------------
+add_executable(test_jthread_basic test_jthread_basic.cpp)
+target_link_libraries(test_jthread_basic PRIVATE paraos::paraos)
+
+target_compile_features(test_jthread_basic PRIVATE cxx_std_20 c_std_11)
+target_compile_options(test_jthread_basic PRIVATE -Wall -Wextra -Wpedantic
+                                                  -Werror)
+
+add_test(NAME test_jthread_basic COMMAND test_jthread_basic)
+
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(test_jthread_basic PROPERTIES CXX_CLANG_TIDY
+                                                        "${DO_CLANG_TIDY}")
+  endif()
+endif()
+
 # test_thread_create_then_delete_many_threads ---------------------------
 
 add_executable(test_thread_create_then_delete_many_threads
