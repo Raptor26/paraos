@@ -64,7 +64,7 @@ struct cooperative_scheduler_policy_run_all_at_once {
   /// the idle callback method.
   static auto schedule_tasks(etl::ivector<etl::task *> &task_list) -> bool {
     for (auto &scheduled_task : task_list) {
-      etl::task &task = *(scheduled_task);
+      etl::task &task = *scheduled_task;
       task.task_process_work();
     }
     // Always return true to indicate that the scheduler should call the idle
@@ -276,6 +276,11 @@ struct CooperativeSchedulingAttr : public ICooperativeSchedulingAttr {};
 template <
     std::size_t MAX_TASKS_,
     typename TSchedulerPolicy = etl::scheduler_policy_sequential_single>
+// Intentional multiple inheritance: CooperativeScheduling combines the ETL
+// scheduler implementation with the PARAOS cooperative-scheduling interface.
+// This is a documented false positive for clang-tidy's
+// misc-multiple-inheritance check.
+// NOLINTBEGIN(misc-multiple-inheritance)
 class CooperativeScheduling
     : public etl::scheduler<TSchedulerPolicy, MAX_TASKS_>,
       public ICooperativeScheduling {
@@ -304,6 +309,7 @@ class CooperativeScheduling
   // `ICooperativeScheduling()` constructor will be called before
   // `etl::scheduler` is fully constructed.
 };
+// NOLINTEND(misc-multiple-inheritance)
 
 }  // namespace paraos
 

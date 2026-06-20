@@ -58,7 +58,6 @@ constexpr etl::task_priority_t task2_priority{9};
 constexpr etl::task_priority_t task3_priority{8};
 
 constexpr size_t max_tasks_number{10};
-}  // namespace
 
 class Task1 : public etl::task {
  public:
@@ -149,7 +148,6 @@ class Idle {
 // nothing calls). It's help to reduced memory check warnings.
 // -----------------------------------------------------------------------------
 
-namespace {
 paraos::CooperativeScheduling<
     max_tasks_number, etl::scheduler_policy_highest_priority>
     cooperative_scheduler{paraos::CooperativeSchedulingAttr{
@@ -164,7 +162,8 @@ Task1 task1;
 Task2 task2;
 Task3 task3;
 
-void ExitFromTest() {
+void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   if (is_test_complete) {
     check_test_complete_and_exit.Finished();
 
@@ -176,7 +175,7 @@ void ExitFromTest() {
     paraos::Thread::DelayMs(delay_ms);
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-#if defined(PARAOS_LIKE_FREERTOS)
+#ifdef PARAOS_LIKE_FREERTOS
     // Forces program exit to reduce execution time. Needed to terminate tests
     // early, especially when running multiple tests. In other case, program
     // will exit in 1 second later.

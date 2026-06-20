@@ -33,7 +33,6 @@
 namespace {
 uint16_t high;
 uint16_t low;
-}  // namespace
 
 class Profiler : public testing::Test {
  public:
@@ -45,11 +44,13 @@ class Profiler : public testing::Test {
     auto operator()() volatile -> decltype(&high) { return &high; }
   };
 
+ protected:
   void SetUp() override {
     high = 0U;
     low = 0U;
   }
 };
+}  // namespace
 
 TEST_F(Profiler, TimerProfiler) {
   using embedded_timer_t = paraos::EmbeddedTimer<LowCnt, HightCnt>;

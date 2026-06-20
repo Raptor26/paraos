@@ -14,7 +14,7 @@
 #endif
 
 #define PARAOS_CLANG 0
-#if defined(__clang__)
+#ifdef __clang__
 #undef PARAOS_CLANG
 #define PARAOS_CLANG (__clang_major__ * 100 + __clang_minor__)
 #endif
@@ -30,7 +30,7 @@
 #endif
 
 #ifndef PARAOS_FORCEINLINE
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 #define PARAOS_FORCEINLINE __forceinline
 #elif defined(__GNUC__) && __GNUC__ > 3
 #define PARAOS_FORCEINLINE inline __attribute__((always_inline))

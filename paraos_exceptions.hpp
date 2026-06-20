@@ -57,7 +57,7 @@ using error_numeric_type = int;
 inline auto GetErrorText(
     error_string_type verbose_text, error_string_type terse_text)
     -> error_string_type {
-#if defined(PARAOS_VERBOSE_ERRORS)
+#ifdef PARAOS_VERBOSE_ERRORS
   PARAOS_ATTR_UNUSED_VAR(terse_text);
   return verbose_text;
 #else
@@ -71,6 +71,11 @@ inline auto GetErrorText(
 /// @note paraos::exception is based on std::exceptions and etl::exception, so
 /// it can be caught by reference to `paraos::exception` as well as by reference
 /// to `std::exception` and `etl::exception`.
+///
+/// Intentional multiple inheritance: paraos::exception must be catchable as both
+/// std::exception and etl::exception. This is a documented false positive for
+/// clang-tidy's misc-multiple-inheritance check.
+// NOLINTBEGIN(misc-multiple-inheritance)
 class exception : public std::exception, public etl::exception {
  public:
   exception(
@@ -90,6 +95,7 @@ class exception : public std::exception, public etl::exception {
   exception(exception &&) = default;
   auto operator=(exception &&) -> exception & = default;
 };
+// NOLINTEND(misc-multiple-inheritance)
 }  // namespace paraos
 
 #endif /* PARAOS_EXCEPTIONS_HPP */

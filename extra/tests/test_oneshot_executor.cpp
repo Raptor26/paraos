@@ -33,7 +33,10 @@
 namespace {
 
 /// @brief Sample function for delegate creation.
-void MockDelegate() {}
+void MockDelegate() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace):
+                       // using static triggers misc-use-anonymous-namespace;
+                       // keep internal linkage via anonymous namespace.
+}
 
 // NOLINTBEGIN(*-special-member-functions)
 class TestClassMock {

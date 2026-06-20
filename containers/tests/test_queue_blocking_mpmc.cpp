@@ -72,17 +72,16 @@ paraos::QueueBlocking<char, max_queue_size> queue;
 paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
     "Check test complete", paraos::GetStackMinimumSizeInBytes(),
     paraos::ThreadPriority::kRealTime, nullptr}};
-}  // namespace
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr &attr) : thread_{attr} {
+  explicit Producer(const paraos::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
   }
 
   /// @brief Producer thread.
   void Run() {
-    char symb{'a'};
+    const char symb{'a'};
 
     while (true) {
       PrintDebug(" call queue.TryPush()", thread_.GiveName());
@@ -121,7 +120,7 @@ struct Producer {
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr &attr) : thread_{attr} {
+  explicit Consumer(const paraos::ThreadAttr& attr) : thread_{attr} {
     thread_.RegisterDelegate(
         paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
   }
@@ -158,8 +157,8 @@ struct Consumer {
   paraos::OsProfiler runtime_profiler;
 };
 
-namespace {
-void CheckIfTestSuccessfullyComplete() {
+void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   PARAOS_CHECK_ASSERT(
       push_item_cnt == expected_total_items_in_queue &&
       "Pushed items cnt not equal expected value");
@@ -168,7 +167,8 @@ void CheckIfTestSuccessfullyComplete() {
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
 }
 
-void ExitFromTest() {
+void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
+) {
   if (((consumers_exit_numb >= consumers_total_numb) &&
        (producers_exit_numb >= producers_total_numb))) {
     check_test_complete_and_exit.Finished();
@@ -181,7 +181,7 @@ void ExitFromTest() {
 
     PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
 
-#if defined(PARAOS_LIKE_FREERTOS)
+#ifdef PARAOS_LIKE_FREERTOS
     // Forces program exit to reduce execution time. Needed to terminate tests
     // early, especially when running multiple tests. In other case, program
     // will exit in 1 second later.
