@@ -4,7 +4,8 @@
 
 - ✅ **v1.0 macOS Support** — Phases 1-4 (shipped earlier)
 - ✅ **v1.1 Static Analysis Cleanup** — Phases 5-8 (shipped 2026-06-20) — see `.planning/milestones/v1.1-ROADMAP.md`
-- 🚧 **v1.2 CI & Documentation for macOS** — добавление macOS GitLab CI и документации (planned)
+- ✅ **v1.1 Static Analysis Cleanup** — Phases 5-8 (shipped 2026-06-20) — see `.planning/milestones/v1.1-ROADMAP.md`
+- 🚧 **v1.2 std::jthread-style Thread API** — добавление `paraos::jthread`, единого API для Windows/Unix/FreeRTOS (planned)
 
 ## Phases
 
@@ -18,14 +19,16 @@
 
 </details>
 
-### 🚧 v1.2 CI & Documentation for macOS (Planned)
+### 🚧 v1.2 std::jthread-style Thread API (Planned)
 
-- [ ] Phase 9: macOS GitLab CI pipeline (2 plans)
-  - [ ] 09-01: Добавить GitLab CI job для macOS-раннера (CI-01)
-  - [ ] 09-02: Добавить GitLab CI job для `*_clang_tidy` пресетов на macOS (CI-02)
-- [ ] Phase 10: macOS Build Documentation (2 plans)
-  - [ ] 10-01: Документировать macOS-специфичные инструкции по сборке в `README.md` (DOCS-01)
-  - [ ] 10-02: Задокументировать политику статического анализа и правила суппрессий (DOCS-02)
+- [ ] Phase 9: PC jthread implementation (1 plan)
+  - [ ] 09-01: Реализовать `paraos::jthread` для Windows и Unix поверх `std::jthread` (JTHREAD-01..06, PORT-01..03)
+- [ ] Phase 10: FreeRTOS jthread implementation (1 plan)
+  - [ ] 10-01: Реализовать `paraos::jthread` поверх FreeRTOS API с поддерж capturing lambdas (JTHREAD-01..06, PORT-04)
+- [ ] Phase 11: Thread attributes integration (1 plan)
+  - [ ] 11-01: Поддержать `ThreadAttr` (приоритет, стек, имя) в `jthread` для всех портов (JTHREAD-07..10)
+- [ ] Phase 12: Build, tests and static analysis (1 plan)
+  - [ ] 12-01: Обновить CMake до C++20, добавить `test_jthread_basic.cpp`, прогнать все пресеты и tidy (BUILD-01..02, TEST-01..05)
 
 ## Progress
 
@@ -35,5 +38,7 @@
 | 6. Fix Core, Headers & port_unix | v1.1 | 1/1 | Complete | 2026-06-20 |
 | 7. Fix Tests, Examples & Document Suppressions | v1.1 | 1/1 | Complete | 2026-06-20 |
 | 8. Regression Guard | v1.1 | 1/1 | Complete | 2026-06-20 |
-| 9. macOS GitLab CI pipeline | v1.2 | 0/2 | Planned | - |
-| 10. macOS Build Documentation | v1.2 | 0/2 | Planned | - |
+| 9. PC jthread implementation | v1.2 | 0/1 | Planned | - |
+| 10. FreeRTOS jthread implementation | v1.2 | 0/1 | Planned | - |
+| 11. Thread attributes integration | v1.2 | 0/1 | Planned | - |
+| 12. Build, tests and static analysis | v1.2 | 0/1 | Planned | - |

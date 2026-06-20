@@ -18,14 +18,22 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Все 50 тестов CTest проходят для `pc_debug_gcc_clang_tidy`.
 - Не-tidy пресеты (`pc_debug_gcc`, `freertos_debug_gcc`) продолжают собираться.
 
+## Current Milestone: v1.2 std::jthread-style Thread API
+
+**Goal:** Добавить в PARAOS API для создания потоков в стиле `std::jthread`, единое для всех платформ (Windows, Unix, FreeRTOS).
+
+**Target features:**
+- `paraos::jthread` с конструктором, принимающим callable + аргументы; `stop_token` передаётся последним аргументом.
+- `paraos::stop_token` с `stop_requested()`.
+- `request_stop()` и `join()`; деструктор автоматически останавливает и ожидает joinable-поток.
+- Поддержка `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для FreeRTOS и PC-портов.
+- Единый пользовательский API: один и тот же код `paraos::jthread` компилируется без изменений под Windows, Unix и FreeRTOS.
+- PC-порт (Windows + Unix) реализован как тонкая обёртка над `std::jthread` в `port_pc/paraos_jthread.hpp`.
+- FreeRTOS-порт реализован в `port_freertos/paraos_jthread.hpp` поверх FreeRTOS API с capturing-lambdas через heap-allocated invoker.
+- Новый тест `port_tests/test_jthread_basic.cpp` проходит на всех платформах.
+- Обновление минимальной версии C++ до 20 в CMake.
+
 ## Next Milestone Goals
-
-**Кандидаты для v1.2:**
-
-- CI-01: добавить GitLab CI job для macOS-раннера.
-- CI-02: добавить GitLab CI job для `*_clang_tidy` пресетов на macOS.
-- DOCS-01: документировать macOS-специфичные инструкции по сборке в `README.md`.
-- DOCS-02: задокументировать политику статического анализа и правила добавления суппрессий.
 
 Финальный выбор следующей вехи определяется через `/gsd-new-milestone`.
 
@@ -47,10 +55,16 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 ### Active
 
-- [ ] CI-01: добавить GitLab CI job для macOS-раннера.
-- [ ] CI-02: добавить GitLab CI job для `*_clang_tidy` пресетов на macOS.
-- [ ] DOCS-01: документировать macOS-специфичные инструкции по сборке в `README.md`.
-- [ ] DOCS-02: задокументировать политику статического анализа и правила добавления суппрессий.
+- [ ] JT-01: добавить `paraos::jthread` и `paraos::stop_token` в `port_pc/paraos_jthread.hpp` (обёртка над `std::jthread`).
+- [ ] JT-02: добавить `port_unix/paraos_jthread.hpp`, включающий `port_pc/paraos_jthread.hpp`.
+- [ ] JT-03: добавить `port_win/paraos_jthread.hpp`, включающий `port_pc/paraos_jthread.hpp`.
+- [ ] JT-04: добавить `paraos::jthread` в `port_freertos/paraos_jthread.hpp` поверх FreeRTOS API с поддержкой capturing-lambdas.
+- [ ] JT-05: поддержать `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` на всех платформах.
+- [ ] JT-06: обеспечить единый пользовательский API без платформенных `#ifdef` в коде пользователя.
+- [ ] JT-07: обновить CMake: минимальная версия C++ — 20, подключить `paraos_jthread.hpp` для всех портов.
+- [ ] JT-08: добавить тест `port_tests/test_jthread_basic.cpp` и зарегистрировать его в CTest.
+- [ ] JT-09: пройти сборку и тесты на `pc_debug_clang`, `pc_debug_gcc`, `freertos_debug_clang`, `freertos_debug_gcc`.
+- [ ] JT-10: обеспечить прохождение `*_clang_tidy` пресетов без регрессий.
 
 ### Out of Scope
 
@@ -85,6 +99,10 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 | Preserve `.clang-tidy` check set and only add documented suppressions | Keeps the project's static-analysis bar high while removing false positives | ✓ Good |
 | Use `ninja -k 0` for warning classification | `WarningsAsErrors:'*'` останавливает сборку; `-k 0` собирает все диагностики за один проход | ✓ Good |
 | Inline `NOLINTBEGIN/NOLINTEND` with rationale comments | Обоснование сидит рядом с классом, будущие изменения внутри класса остаются покрыты | ✓ Good |
+| `jthread` API поверх `std::jthread` для PC и собственная реализация для FreeRTOS | Позволяет получить единый кроссплатформенный API с минимальными затратами на PC | Pending |
+| Capturing lambdas для FreeRTOS через heap-allocated invoker | `etl::delegate` не поддерживает capturing lambdas и variadic args; `std::function` требует динамического выделения | Pending |
+| `ThreadAttr` в конструкторе `jthread` | Необходимость задавать приоритет/стек/имя FreeRTOS-потока при создании | Pending |
+| Минимальная версия C++ — 20 | Использование `std::jthread`, `std::stop_token`, `std::apply`, `std::invoke` | Pending |
 
 ## Evolution
 
@@ -104,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-20 after v1.1 milestone completed*
+*Last updated: 2026-06-20 after milestone v1.2 initialized*
