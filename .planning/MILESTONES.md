@@ -1,5 +1,37 @@
 # Project Milestones: PARAOS
 
+## v1.2 std::jthread-style Thread API (Shipped: 2026-06-20)
+
+**Delivered:** Добавлен кроссплатформенный API `paraos::jthread` рядом со старым `paraos::Thread`; минимальная версия C++ повышена до 20; PC- и FreeRTOS-порты реализованы; базовый тест добавлен и проходит на PC.
+
+**Phases completed:** 9–12 (4 plans total)
+
+**Key accomplishments:**
+
+- Реализован `paraos::jthread`, `paraos::stop_token` и `paraos::stop_source` для PC (`port_pc/`) как обёртка над `std::jthread`.
+- Добавлены forwarding-заголовки `port_unix/paraos_jthread.hpp` и `port_win/paraos_jthread.hpp`.
+- Реализован собственный `paraos::jthread` для FreeRTOS (`port_freertos/`) с поддержкой capturing lambdas через heap-allocated invoker.
+- Добавлена поддержка `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
+- Повышена минимальная версия C++ до 20 в корневом `CMakeLists.txt`.
+- Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
+- `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
+
+**Stats:**
+
+- 22 файла изменено
+- +1687 / −43 строк
+- 4 phases, 4 plans
+- 1 день на выполнение вехи
+
+**Git range:** `f2c4ad1` → `20c2f15`
+
+**Known deferred items at close:** FreeRTOS runtime-тесты с созданием задач на macOS зависают из-за ограничений POSIX-порта (pre-existing issue). Windows runtime не проверялся на macOS-хосте.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.1 Static Analysis Cleanup (Shipped: 2026-06-20)
 
 **Delivered:** `*_clang_tidy` CMake presets теперь собираются на macOS без предупреждений; публичное API и поведение других платформ сохранены.
