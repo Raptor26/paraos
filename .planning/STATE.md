@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: completed
-stopped_at: Completed phase-08-01 regression guard; milestone v1.1 complete
-last_updated: "2026-06-20T17:00:00.000Z"
-last_activity: 2026-06-20 -- Phase phase-08 completed; milestone v1.1 complete
+status: Awaiting next milestone
+stopped_at: Completed phase-05-01 warning classification
+last_updated: "2026-06-20T15:45:00.780Z"
+last_activity: 2026-06-20 — Milestone v1.1 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -25,9 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-20)
 
 ## Current Position
 
-Phase: phase-08 (Regression Guard) — COMPLETE
-Milestone: v1.1 Static Analysis Cleanup — COMPLETE
-Last activity: 2026-06-20 -- Phase phase-08 completed; milestone v1.1 complete
+Phase: Milestone v1.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-20 — Milestone v1.1 completed and archived
 
 ## Accumulated Context
 
@@ -69,3 +70,7 @@ Resume file: None
 | Phase phase-06 P06-01 | - | library/header fixes | 6 files |
 | Phase phase-07 P07-01 | - | test/example fixes | 13 files |
 | Phase phase-08 P08-01 | - | regression guard | diff audit + builds |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
