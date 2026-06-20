@@ -25,11 +25,25 @@ If you want to run your code written for microcontrollers on Windows/Linux in na
 
 - **Windows** (default)
 - **Linux** (default)
+- **macOS** (via `port_unix`, community-tested)
 - **FreeRTOS** (requires configuration)
 
 To use **FreeRTOS**, you need to define the CMake cache variable `FREERTOS=true` during the configuration process. FreeRTOS can also be used on **Windows** and **Linux** if specified during the FreeRTOS configuration. Ensure that the appropriate FreeRTOS port is selected by setting the variable `FREERTOS_PORT` accordingly.
 
 An example of how to define these variables can be found in [Installation and Usage](#installation-and-usage).
+
+> **macOS note:** The `port_unix` implementation now builds on macOS using native
+> substitutes for unavailable POSIX timers and unnamed semaphores. On Apple
+> Silicon machines where the default `clang` in `PATH` may target Linux, use
+> AppleClang explicitly when configuring a Clang preset:
+> ```bash
+> cmake --preset pc_debug_clang \
+>       -D CMAKE_C_COMPILER=/usr/bin/clang \
+>       -D CMAKE_CXX_COMPILER=/usr/bin/clang++
+> ```
+> The FreeRTOS POSIX simulator presets currently hang at runtime on macOS and
+> are considered unsupported on this platform; PC presets pass the full test
+> suite.
 
 ## Key Features
 

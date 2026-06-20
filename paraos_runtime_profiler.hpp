@@ -27,7 +27,7 @@
 #define PARAOS_RUNTIME_PROFILER_HPP
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || \
-    defined(__unix__)
+    defined(__unix__) || defined(__APPLE__)
 #include <chrono>
 // Can't use duration cast etc. directly because these namings are platform
 // dependent. Also, long names with namespaces are bad for readability.
@@ -162,7 +162,7 @@ inline EmptyProfiler empty_profiler;
 /// Operation system high resolution timer profiler ----------------------------
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__) || \
-    defined(__unix__)
+    defined(__unix__) || defined(__APPLE__)
 /// @brief Профилировщик, предназначенный для использования в операционных
 /// системах общего назначения.
 struct OsProfiler final : public IProfiler {
