@@ -1,0 +1,74 @@
+[1/69] Building C object lwrb/lwrb/CMakeFiles/lwrb_ex.dir/src/lwrb/lwrb_ex.c.o
+[2/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/croutine.c.o
+[3/69] Building C object lwrb/lwrb/CMakeFiles/lwrb.dir/src/lwrb/lwrb.c.o
+[4/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/event_groups.c.o
+[5/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/list.c.o
+[6/69] Linking C static library lwrb/lwrb/liblwrb.a
+[7/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/stream_buffer.c.o
+[8/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/queue.c.o
+[9/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/portable/MemMang/heap_3.c.o
+[10/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/timers.c.o
+[11/69] Building CXX object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/__/paraos_freertos_hooks.cpp.o
+In file included from /Users/raptor/_vcs/paraos/port_freertos/paraos_freertos_hooks.cpp:31:
+/Users/raptor/_vcs/paraos/port_freertos/paraos_utils.hpp:67:1: warning: inline variables are a C++17 extension [-Wc++17-extensions]
+   67 | inline FreeRTOSIdleFncPtr freertos_idle_fnc_ptr{nullptr};
+      | ^
+1 warning generated.
+[12/69] Building C object port_freertos/FreeRTOS-Kernel/CMakeFiles/freertos_kernel.dir/tasks.c.o
+[13/69] Building C object port_freertos/FreeRTOS-Kernel/portable/CMakeFiles/freertos_kernel_port.dir/ThirdParty/GCC/Posix/utils/wait_for_event.c.o
+[14/69] Linking C static library lwrb/lwrb/liblwrb_ex.a
+[15/69] Building C object port_freertos/FreeRTOS-Kernel/portable/CMakeFiles/freertos_kernel_port.dir/ThirdParty/GCC/Posix/port.c.o
+[16/69] Linking CXX static library port_freertos/FreeRTOS-Kernel/libfreertos_kernel.a
+[17/69] Building CXX object CMakeFiles/paraos.dir/extra/paraos_status_led.cpp.o
+[18/69] Linking CXX static library libparaos.a
+[19/69] Building CXX object port_tests/CMakeFiles/test_thread_only_static.dir/test_thread_only_static.cpp.o
+[20/69] Building CXX object port_tests/CMakeFiles/test_thread_only_global.dir/test_thread_only_global.cpp.o
+[21/69] Building CXX object port_tests/CMakeFiles/test_thread_only_stack.dir/test_thread_only_stack.cpp.o
+[22/69] Building CXX object port_tests/CMakeFiles/test_thread_create_then_delete_many_threads.dir/test_thread_create_then_delete_many_threads.cpp.o
+[23/69] Building CXX object port_tests/CMakeFiles/test_thread_only_stack_with_multiple_threads.dir/test_thread_only_stack_with_multiple_threads.cpp.o
+[24/69] Building CXX object port_tests/CMakeFiles/example_timer.dir/example_timer.cpp.o
+[25/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex_raii.cpp.o
+[26/69] Building CXX object port_tests/CMakeFiles/example_thread_check_timeout.dir/example_thread_check_timeout.cpp.o
+[27/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_semaphore.cpp.o
+[28/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_mutex.cpp.o
+[29/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_switch_context.cpp.o
+[30/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_testing_semaphore.cpp.o
+[31/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_version.cpp.o
+[32/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_isr.cpp.o
+[33/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_critical.cpp.o
+[34/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_queue_blocking.cpp.o
+[35/69] Building CXX object port_tests/CMakeFiles/test_paraos_core.dir/test_runtime_profiler.cpp.o
+[36/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff_with_user_allocator.cpp.o
+[37/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_message_buff.cpp.o
+[38/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_lwrb.cpp.o
+[39/69] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+[40/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+[41/69] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+[42/69] Building CXX object containers/tests/CMakeFiles/bench_paraos_containers.dir/bench_paraos_containers.cpp.o
+[43/69] Building CXX object containers/tests/CMakeFiles/test_paraos_containers.dir/test_multi_ringbuff.cpp.o
+[44/69] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_paraos_cooperative_scheduling.cpp.o
+[45/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+[46/69] Building CXX object extra/tests/CMakeFiles/test_paraos_extra.dir/test_oneshot_executor.cpp.o
+[47/69] Building CXX object extra/tests/CMakeFiles/test_paraos_oneshot_executor.dir/test_oneshot_executor_thread.cpp.o
+[48/69] Linking CXX executable port_tests/test_thread_only_static
+[49/69] Linking CXX executable port_tests/test_thread_only_global
+[50/69] Linking CXX executable port_tests/test_thread_only_stack
+[51/69] Linking CXX executable port_tests/test_thread_only_stack_with_multiple_threads
+[52/69] Linking CXX executable port_tests/test_thread_create_then_delete_many_threads
+[53/69] Linking CXX executable port_tests/example_timer
+[54/69] Linking CXX executable port_tests/example_thread_check_timeout
+[55/69] Linking CXX executable port_tests/test_paraos_core
+[56/69] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+[57/69] Linking CXX executable containers/tests/test_message_multithread_many_producer_many_consumers
+[58/69] Linking CXX executable containers/tests/test_multi_ringbuff_mpmc
+[59/69] Linking CXX executable containers/tests/test_queue_blocking_spmc
+[60/69] Linking CXX executable containers/tests/test_queue_blocking_mpsc
+[61/69] Linking CXX executable containers/tests/test_queue_blocking_mpmc
+[62/69] Linking CXX executable containers/tests/bench_paraos_containers
+[63/69] Building CXX object extra/tests/CMakeFiles/test_paraos_thread_sequence.dir/test_paraos_thread_sequence.cpp.o
+[64/69] Linking CXX executable extra/tests/test_paraos_thread_sequence
+[65/69] Linking CXX executable extra/tests/test_paraos_oneshot_executor
+[66/69] Building CXX object extra/tests/CMakeFiles/test_paraos_cooperative_scheduling_thread.dir/test_paraos_cooperative_scheduling_thread.cpp.o
+[67/69] Linking CXX executable extra/tests/test_paraos_cooperative_scheduling_thread
+[68/69] Linking CXX executable containers/tests/test_paraos_containers
+[69/69] Linking CXX executable extra/tests/test_paraos_extra
