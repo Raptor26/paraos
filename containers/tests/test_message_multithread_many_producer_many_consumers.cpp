@@ -143,8 +143,8 @@ struct Consumer {
   explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumers thread.
-  void operator()(const paraos::stop_token& /*token*/) {
-    while (true) {
+  void operator()(const paraos::stop_token& token) {
+    while (!token.stop_requested()) {
       // Small delay for yeld resources.
       constexpr std::size_t delay_ms{2000};
 
