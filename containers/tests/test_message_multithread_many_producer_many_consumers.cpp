@@ -82,14 +82,14 @@ struct Producer {
       : name_{name}, str_idx_{str_idx} {}
 
   /// @brief Producer thread.
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     if (str_idx_ >= elems_vector.size()) {
       Exit();
       return;
     }
 
     // Trying to write message in buffer will not work yet.
-    while (true) {
+    while (!token.stop_requested()) {
       auto write =
           message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);
 
