@@ -19,6 +19,15 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 ## Current State
 
+**Shipped:** v1.4 std::semaphore-style Semaphore API (2026-06-22)
+
+- Добавлены `paraos::counting_semaphore<LeastMaxValue>` и `paraos::binary_semaphore`.
+- PC, Unix и Windows используют `std::counting_semaphore` через `port_pc/paraos_semaphore_std.hpp`.
+- FreeRTOS реализован поверх `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive`.
+- Обеспечена совместимость с `std::chrono` таймаутами (`try_acquire_for`, `try_acquire_until`).
+- Добавлен тест `port_tests/test_semaphore_std.cpp` и зарегистрирован в CTest.
+- PC-пресеты собираются и проходят `ctest` (55/55); `*_clang_tidy` пресеты без новых предупреждений.
+
 **Shipped:** v1.3 std::mutex-style Mutex API (2026-06-22)
 
 - Добавлен `paraos::mutex` с `lock()`, `try_lock()`, `unlock()` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).

@@ -6,7 +6,8 @@
 - ✅ **v1.1 Static Analysis Cleanup** — Phases 5-8 (shipped 2026-06-20) — see `.planning/milestones/v1.1-ROADMAP.md`
 - ✅ **v1.2 std::jthread-style Thread API** — Phases 9-12 (shipped 2026-06-20) — see `.planning/milestones/v1.2-ROADMAP.md`
 - ✅ **v1.3 std::mutex-style Mutex API** — Phases 13-15 (shipped 2026-06-22) — see `.planning/milestones/v1.3-ROADMAP.md`
-
+- ✅ **v1.4 std::semaphore-style Semaphore API** — Phases 16-18 (shipped 2026-06-22) — see `.planning/milestones/v1.4-ROADMAP.md`
+- 
 ## Phases
 
 <details>
@@ -45,8 +46,6 @@
 - [x] Phase 13: PC mutex implementation (1/1 plan) — completed 2026-06-22
 - [x] Phase 14: FreeRTOS mutex implementation (1/1 plan) — completed 2026-06-22
 - [x] Phase 15: Build, tests and static analysis (1/1 plan) — completed 2026-06-22
-
-</details>
 
 ## Phase Details
 

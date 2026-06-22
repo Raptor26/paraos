@@ -88,6 +88,25 @@ if(CLANG_TIDY_ENABLE)
   endif()
 endif()
 
+# semaphore std ----------------------------------------------------------------
+add_executable(test_semaphore_std test_semaphore_std.cpp)
+target_link_libraries(test_semaphore_std PRIVATE paraos::paraos)
+
+target_compile_features(test_semaphore_std PRIVATE cxx_std_20 c_std_11)
+target_compile_options(test_semaphore_std PRIVATE -Wall -Wextra -Wpedantic
+                                                  -Werror)
+
+add_test(NAME test_semaphore_std COMMAND test_semaphore_std)
+
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(test_semaphore_std PROPERTIES CXX_CLANG_TIDY
+                                                        "${DO_CLANG_TIDY}")
+  endif()
+endif()
+
 # test_thread_create_then_delete_many_threads ---------------------------
 
 add_executable(test_thread_create_then_delete_many_threads
