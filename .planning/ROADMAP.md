@@ -7,7 +7,9 @@
 - ✅ **v1.2 std::jthread-style Thread API** — Phases 9-12 (shipped 2026-06-20) — see `.planning/milestones/v1.2-ROADMAP.md`
 - ✅ **v1.3 std::mutex-style Mutex API** — Phases 13-15 (shipped 2026-06-22) — see `.planning/milestones/v1.3-ROADMAP.md`
 - ✅ **v1.4 std::semaphore-style Semaphore API** — Phases 16-18 (shipped 2026-06-22) — see `.planning/milestones/v1.4-ROADMAP.md`
-- 
+- ✅ **v1.5 Modernize container tests on std-like primitives** — Phases 19-23 (shipped 2026-06-22) — see `.planning/milestones/v1.5-ROADMAP.md`
+- 🚧 **v1.6 Next** — TBD (in planning)
+
 ## Phases
 
 <details>
@@ -47,9 +49,31 @@
 - [x] Phase 14: FreeRTOS mutex implementation (1/1 plan) — completed 2026-06-22
 - [x] Phase 15: Build, tests and static analysis (1/1 plan) — completed 2026-06-22
 
-## Phase Details
+</details>
 
-_No active phases — start the next milestone with `/gsd-new-milestone`._
+<details>
+<summary>✅ v1.4 std::semaphore-style Semaphore API (Phases 16-18) — SHIPPED 2026-06-22</summary>
+
+- [x] Phase 16: PC counting_semaphore implementation (1/1 plan) — completed 2026-06-22
+- [x] Phase 17: FreeRTOS counting_semaphore implementation (1/1 plan) — completed 2026-06-22
+- [x] Phase 18: Build, tests and static analysis (1/1 plan) — completed 2026-06-22
+
+</details>
+
+<details>
+<summary>✅ v1.5 Modernize container tests on std-like primitives (Phases 19-23) — SHIPPED 2026-06-22</summary>
+
+- [x] Phase 19: Inventory & gap analysis (1/1 plan) — completed 2026-06-22
+- [x] Phase 20: Migrate thread primitives in container tests (1/1 plan) — completed 2026-06-22
+- [x] Phase 21: Migrate synchronization primitives in container tests (1/1 plan) — completed 2026-06-22
+- [x] Phase 22: FreeRTOS std-like primitives hardening (1/1 plan) — completed 2026-06-22
+- [x] Phase 23: Build, tests and static analysis (1/1 plan) — completed 2026-06-22
+
+</details>
+
+### 🚧 v1.6 Next (In Planning)
+
+- [ ] Phase 24: TBD
 
 ## Progress
 
@@ -67,3 +91,12 @@ _No active phases — start the next milestone with `/gsd-new-milestone`._
 | 13. PC mutex implementation | v1.3 | 1/1 | Complete | 2026-06-22 |
 | 14. FreeRTOS mutex implementation | v1.3 | 1/1 | Complete | 2026-06-22 |
 | 15. Build, tests and static analysis | v1.3 | 1/1 | Complete | 2026-06-22 |
+| 16. PC counting_semaphore implementation | v1.4 | 1/1 | Complete | 2026-06-22 |
+| 17. FreeRTOS counting_semaphore implementation | v1.4 | 1/1 | Complete | 2026-06-22 |
+| 18. Build, tests and static analysis | v1.4 | 1/1 | Complete | 2026-06-22 |
+| 19. Inventory & gap analysis | v1.5 | 1/1 | Complete | 2026-06-22 |
+| 20. Migrate thread primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
+| 21. Migrate synchronization primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
+| 22. FreeRTOS std-like primitives hardening | v1.5 | 1/1 | Complete | 2026-06-22 |
+| 23. Build, tests and static analysis | v1.5 | 1/1 | Complete | 2026-06-22 |
+| 24. TBD | v1.6 | 0/0 | Not started | - |

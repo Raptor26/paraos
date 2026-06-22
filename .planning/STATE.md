@@ -1,17 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: "std::semaphore-style Semaphore API"
-status: complete
-last_updated: "2026-06-22"
+milestone: v1.5
+milestone_name: Modernize container tests on std-like primitives
+current_phase: 5
+status: Awaiting next milestone
+stopped_at: Milestone v1.5 shipped
+last_updated: "2026-06-22T12:28:31.879Z"
 last_activity: 2026-06-22
+last_activity_desc: Milestone v1.5 completed and archived
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
   percent: 100
-stopped_at: Milestone v1.4 complete
+current_phase_name: Build, tests and static analysis
 ---
 
 # Project State
@@ -21,13 +24,14 @@ stopped_at: Milestone v1.4 complete
 See: .planning/PROJECT.md (updated 2026-06-22)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.4 — std::semaphore-style Semaphore API; complete. Start the next milestone with `/gsd-new-milestone`.
+**Current focus:** Ожидание следующей вехи (`/gsd-new-milestone`).
 
 ## Current Position
 
-Milestone: v1.4 — Complete ✅
+Phase: Milestone v1.5 complete
+Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-06-22 — Milestone v1.4 completed and archived
+Last activity: 2026-06-22 — Milestone v1.5 completed and archived
 
 ## Accumulated Context
 
@@ -48,10 +52,12 @@ Last activity: 2026-06-22 — Milestone v1.4 completed and archived
 - `paraos::counting_semaphore` и `paraos::binary_semaphore` добавлены рядом с legacy `paraos::SemaphoreCounting` / `paraos::SemaphoreBinary`.
 - PC/Unix/Windows используют `std::counting_semaphore` через `port_pc/paraos_semaphore_std.hpp`.
 - FreeRTOS использует `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive` с `std::chrono` таймаутами.
+- Локальные `SleepMs()` в migrated тестах заменены на `paraos::sleep_for(std::chrono::milliseconds)`.
+- Гонка в `test_message_multithread_many_producer_many_consumers` устранена вызовом `write.Free()` после неуспешного `TryPush()`.
 
 ### Pending Todos
 
-None — milestone v1.4 complete.
+None — milestone v1.5 complete.
 
 ### Blockers/Concerns
 
@@ -68,9 +74,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-22T00:00:00.000Z
-Stopped at: Milestone v1.4 complete
-Resume file: None
+Last session: 2026-06-22T22:00:00.000Z
+Stopped at: Milestone v1.5 shipped
+Resume file: .planning/phases/23-build-tests-static-analysis/23-PLAN.md
 
 ## Operator Next Steps
 

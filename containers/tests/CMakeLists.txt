@@ -41,31 +41,31 @@ if(THREAD_ENABLE)
            COMMAND test_message_multithread_many_producer_many_consumers)
 
   set_tests_properties(test_message_multithread_many_producer_many_consumers
-                       PROPERTIES LABELS stress)
+                       PROPERTIES LABELS stress TIMEOUT 20)
 
   # ----------------------------------------------------------------------------
   add_executable(test_multi_ringbuff_mpmc test_multi_ringbuff_mpmc.cpp)
   target_link_libraries(test_multi_ringbuff_mpmc PRIVATE paraos::paraos)
   add_test(NAME test_multi_ringbuff_mpmc COMMAND test_multi_ringbuff_mpmc)
-  set_tests_properties(test_multi_ringbuff_mpmc PROPERTIES LABELS stress)
+  set_tests_properties(test_multi_ringbuff_mpmc PROPERTIES LABELS stress TIMEOUT 10)
 
   # ----------------------------------------------------------------------------
   add_executable(test_queue_blocking_spmc test_queue_blocking_spmc.cpp)
   target_link_libraries(test_queue_blocking_spmc PRIVATE paraos::paraos)
   add_test(NAME test_queue_blocking_spmc COMMAND test_queue_blocking_spmc)
-  set_tests_properties(test_queue_blocking_spmc PROPERTIES LABELS stress)
+  set_tests_properties(test_queue_blocking_spmc PROPERTIES LABELS stress TIMEOUT 10)
 
   # ----------------------------------------------------------------------------
   add_executable(test_queue_blocking_mpsc test_queue_blocking_mpsc.cpp)
   target_link_libraries(test_queue_blocking_mpsc PRIVATE paraos::paraos)
   add_test(NAME test_queue_blocking_mpsc COMMAND test_queue_blocking_mpsc)
-  set_tests_properties(test_queue_blocking_mpsc PROPERTIES LABELS stress)
+  set_tests_properties(test_queue_blocking_mpsc PROPERTIES LABELS stress TIMEOUT 10)
 
   # ----------------------------------------------------------------------------
   add_executable(test_queue_blocking_mpmc test_queue_blocking_mpmc.cpp)
   target_link_libraries(test_queue_blocking_mpmc PRIVATE paraos::paraos)
   add_test(NAME test_queue_blocking_mpmc COMMAND test_queue_blocking_mpmc)
-  set_tests_properties(test_queue_blocking_mpmc PROPERTIES LABELS stress)
+  set_tests_properties(test_queue_blocking_mpmc PROPERTIES LABELS stress TIMEOUT 10)
 endif()
 
 # Benchmark --------------------------------------------------------------------

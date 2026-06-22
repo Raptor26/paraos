@@ -27,8 +27,12 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <mutex>
 
+#include "paraos_jthread.hpp"
+#include "paraos_mutex_std.hpp"
 #include "paraos_queue_blocking.hpp"
+#include "paraos_semaphore_std.hpp"
 
 constexpr std::size_t block_time_ms{0};
 
@@ -106,4 +110,33 @@ TEST(QueueBlocking, PopOnEmptyQueue) {
     auto result = queue.Pop(block_time_ms);
     ASSERT_FALSE(result);
   }
+}
+
+TEST(MutexStd, LockGuardAndUniqueLockCompileAndRun) {
+  paraos::mutex mtx;
+  {
+    const std::scoped_lock<paraos::mutex> lock{mtx};
+    // Critical section
+  }
+  {
+    std::unique_lock<paraos::mutex> lock{mtx};
+    ASSERT_TRUE(lock.owns_lock());
+    lock.unlock();
+    ASSERT_FALSE(lock.owns_lock());
+  }
+}
+
+TEST(SemaphoreStd, BinarySemaphoreReleaseAndAcquire) {
+  paraos::binary_semaphore sem{0};
+  sem.release();
+  ASSERT_TRUE(sem.try_acquire());
+  ASSERT_FALSE(sem.try_acquire());
+}
+
+TEST(SemaphoreStd, CountingSemaphoreReleaseNAndAcquire) {
+  paraos::counting_semaphore<3> sem{0};
+  sem.release(2);
+  ASSERT_TRUE(sem.try_acquire());
+  ASSERT_TRUE(sem.try_acquire());
+  ASSERT_FALSE(sem.try_acquire());
 }

@@ -1,5 +1,34 @@
 # Project Milestones: PARAOS
 
+## v1.5 Modernize container tests on std-like primitives (Shipped: 2026-06-22)
+
+**Delivered:** Многопоточные тесты контейнеров в `containers/tests/` переведены с legacy-примитивов `paraos::Thread` на современные `paraos::jthread`, `paraos::mutex` и `paraos::*_semaphore`; добавлен кроссплатформенный `paraos::sleep_for`; PC-пресеты проходят 58/58 тестов, FreeRTOS-пресеты компилируются без ошибок.
+
+**Phases completed:** 19–23 (5 plans total)
+
+**Key accomplishments:**
+
+- Проведён аудит пяти multithread-тестов `containers/tests/` и зафиксирована карта замены legacy-примитивов на std-like.
+- Переведены `test_queue_blocking_spmc/mpsc/mpmc`, `test_multi_ringbuff_mpmc` и `test_message_multithread_many_producer_many_consumers` на `paraos::jthread` с RAII-завершением.
+- Добавлены smoke-тесты `paraos::mutex` + `std::lock_guard` / `std::unique_lock`, `paraos::binary_semaphore` и `paraos::counting_semaphore` в `containers/tests/test_queue_blocking.cpp`.
+- Добавлен кроссплатформенный хелпер `paraos::sleep_for(std::chrono::milliseconds)` (`paraos_sleep.hpp`) и устранена гонка в `test_message_multithread_many_producer_many_consumers`.
+- Исправлены предупреждения clang-tidy в `containers/paraos_ringbuff.hpp` и `containers/paraos_multi_ringbuff.hpp`; все пресеты (`pc_debug_clang`, `pc_debug_gcc`, `freertos_debug_clang`, `freertos_debug_gcc`, `*_clang_tidy`) собираются без новых ошибок.
+
+**Stats:**
+
+- 11 файлов изменено
+- +643 / −759 строк
+- 5 phases, 5 plans
+- ~2.5 часа с начала вехи до закрытия
+
+**Git range:** `691bfdf` → `7a3e564`
+
+**Known deferred items at close:** macOS GitLab CI runner, macOS-specific build instructions, FreeRTOS runtime tests on macOS POSIX simulator, Windows jthread runtime verification.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.4 std::semaphore-style Semaphore API (Shipped: 2026-06-22)
 
 **Delivered:** Добавлен кроссплатформенный API `paraos::counting_semaphore<LeastMaxValue>` и `paraos::binary_semaphore` в стиле `std::counting_semaphore` рядом со старым `paraos::SemaphoreCounting` / `paraos::SemaphoreBinary`.

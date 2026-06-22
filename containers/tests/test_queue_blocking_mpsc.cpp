@@ -1,4 +1,4 @@
-/// @file test_queue_blocking_spmc_v3.cpp
+/// @file test_queue_blocking_mpsc.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
 /// @copyright (c) 2024 Stilsoft
@@ -25,19 +25,24 @@
 
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <thread>
+#include <vector>
 
 #include "etl/atomic.h"
 #include "paraos_check.h"
 #include "paraos_critical.hpp"
+#include "paraos_jthread.hpp"
 #include "paraos_queue_blocking.hpp"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_sleep.hpp"
 #include "paraos_thread_common.hpp"
 #include "paraos_utils.hpp"
+
 
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
@@ -49,89 +54,74 @@
               << "': " << __message__ << "\n";                 \
   }
 
-constexpr std::size_t max_queue_size{2};
+namespace {
 
+constexpr std::size_t max_queue_size{2};
 constexpr std::size_t one_producer_expected_push_items_numb{1};
 
-namespace {
-paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
-    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, nullptr}};
-
 etl::atomic<std::size_t> consumer_thread_numb{0};
-
 etl::atomic<std::size_t> producer_thread_exit_cnt{0};
-
 etl::atomic<std::size_t> consumer_thread_exit_cnt{0};
-
 etl::atomic<std::size_t> push_item_cnt{0};
-
 etl::atomic<std::size_t> pop_item_cnt{0};
 
 std::size_t total_items_to_be_pushed{0};
-
 std::size_t total_producer_threads_numb{0};
 
 paraos::QueueBlocking<char, max_queue_size> queue;
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr& attr) : thread_{attr} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
-  }
+  explicit Producer(std::string_view name) : name_{name} {}
 
-  void Run() {
+  void operator()(const paraos::stop_token& /*token*/) {
     const char symb{'a'};
 
+    paraos::OsProfiler runtime_profiler;
+
     while (true) {
-      PrintDebug(" call queue.TryPush()", thread_.GiveName());
+      PrintDebug(" call queue.TryPush()", name_);
 
       runtime_profiler.Start();
       if (queue.TryPush(symb)) {
         ++push_item_cnt;
         runtime_profiler.Stop();
-        PrintDebug(
-            " queue.TryPush() success and put "
-                << "'" << symb << "'"
-                << "" << ". Real delay is "
-                << runtime_profiler.LastDurationMs(),
-            thread_.GiveName());
+        PrintDebug(" queue.TryPush() success and put "
+                       << "'" << symb << "'"
+                       << "" << ". Real delay is "
+                       << runtime_profiler.LastDurationMs(),
+                   name_);
 
-        PrintDebug(" exiting ... ", thread_.GiveName());
+        PrintDebug(" exiting ... ", name_);
         ++producer_thread_exit_cnt;
-        thread_.Finished();
-        break;
+        return;
       }
       PrintDebug(
           " WARN: queue.TryPush() no space, try again "
               << runtime_profiler.LastDurationMs(),
-          thread_.GiveName());
+          name_);
 
-      // Yeld processor time for consumers read data from queue.
-      paraos::Thread::DelayMs(3);
+      // Yield processor time for consumers read data from queue.
+      paraos::sleep_for(std::chrono::milliseconds(3));
     }
   }
 
  private:
-  paraos::Thread thread_;
-
-  paraos::OsProfiler runtime_profiler;
+  std::string_view name_;
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr& attr) : thread_{attr} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
-  }
+  explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumer thread.
-  void Run() {
+  void operator()(const paraos::stop_token& /*token*/) {
     constexpr std::size_t timeout_ms{2000};
+
+    paraos::OsProfiler runtime_profiler;
 
     while (true) {
       PrintDebug(
           " call queue.Pop() with " << timeout_ms << " ms timeout",
-          thread_.GiveName());
+          name_);
 
       runtime_profiler.Start();
       auto read_item = queue.Pop(timeout_ms);
@@ -139,25 +129,22 @@ struct Consumer {
 
       if (read_item) {
         ++pop_item_cnt;
-        PrintDebug(" successfully read item from queue", thread_.GiveName());
+        PrintDebug(" successfully read item from queue", name_);
         if (pop_item_cnt >= total_items_to_be_pushed) {
-          PrintDebug(" exiting ... ", thread_.GiveName());
+          PrintDebug(" exiting ... ", name_);
           ++consumer_thread_exit_cnt;
-          thread_.Finished();
-          break;
+          return;
         }
       } else {
         PrintDebug(
             "--ERROR: don't read item from queue with timeout. Try again",
-            thread_.GiveName());
+            name_);
       }
     }
   }
 
  private:
-  paraos::Thread thread_;
-
-  paraos::OsProfiler runtime_profiler;
+  std::string_view name_;
 };
 
 void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
@@ -172,94 +159,64 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
 }
 
-void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
-) {
-  if (((consumer_thread_exit_cnt >= consumer_thread_numb) &&
-       (producer_thread_exit_cnt >= total_producer_threads_numb))) {
-    check_test_complete_and_exit.Finished();
-
-    constexpr std::size_t delay_ms{0};
-    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::Thread::DelayMs(delay_ms);
-
-    CheckIfTestSuccessfullyComplete();
-
-    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-
-#ifdef PARAOS_LIKE_FREERTOS
-    // Forces program exit to reduce execution time. Needed to terminate tests
-    // early, especially when running multiple tests. In other case, program
-    // will exit in 1 second later.
-    std::_Exit(EXIT_SUCCESS);
-#else
-    paraos::Thread::Exit();
-#endif
-  }
-
-  PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::Thread::DelayMs(10);
-}
 }  // namespace
 
 auto main() -> int {
-  {
-    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
-    check_test_complete_and_exit.RegisterDelegate(delegate);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Create consumers
-  // ---------------------------------------------------------------------------
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 0";
-    const static Consumer cons_0{attr};
-    consumer_thread_numb += 1;
-  }
-  // ---------------------------------------------------------------------------
-  // Create producers
-  // ---------------------------------------------------------------------------
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 0";
-    const static Producer prod_0{attr};
-    total_producer_threads_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 1";
-    const static Producer prod_1{attr};
-    total_producer_threads_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 2";
-    const static Producer prod_2{attr};
-    total_producer_threads_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 3";
-    const static Producer prod_3{attr};
-    total_producer_threads_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 4";
-    const static Producer prod_4{attr};
-    total_producer_threads_numb += 1;
-  }
-
+  total_producer_threads_numb = 5;
   total_items_to_be_pushed =
       total_producer_threads_numb * one_producer_expected_push_items_numb;
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  // ---------------------------------------------------------------------------
+  // Create consumers and producers inside an inner scope so that jthread
+  // destructors join before final assertions.
+  // ---------------------------------------------------------------------------
+  {
+    std::vector<paraos::jthread> threads;
 
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 0";
+      threads.emplace_back(attr, Consumer{"--Cons 0"});
+      consumer_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 0";
+      threads.emplace_back(attr, Producer{"Prod 0"});
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 1";
+      threads.emplace_back(attr, Producer{"Prod 1"});
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 2";
+      threads.emplace_back(attr, Producer{"Prod 2"});
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 3";
+      threads.emplace_back(attr, Producer{"Prod 3"});
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 4";
+      threads.emplace_back(attr, Producer{"Prod 4"});
+    }
+  }
+
+  CheckIfTestSuccessfullyComplete();
+
+#ifdef PARAOS_LIKE_FREERTOS
+  std::_Exit(EXIT_SUCCESS);
+#else
   return 0;
+#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)

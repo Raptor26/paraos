@@ -27,18 +27,22 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "paraos_config.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_jthread.hpp"
 #include "paraos_message_buffer.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_sleep.hpp"
 #include "paraos_thread_common.hpp"
+
 
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
@@ -58,9 +62,6 @@ const std::vector<std::string> elems_vector{
 };
 
 namespace {
-paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
-    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, nullptr}};
 
 /// @brief Контейнер в который записываются строки, считанные потоками
 /// 'Consumer'.
@@ -80,105 +81,108 @@ std::atomic_size_t consumer_thread_exit_cnt{0};
 std::atomic_size_t consumer_total_thread_numb{0};
 
 struct Producer {
-  explicit Producer(const paraos::ThreadAttr& attr, std::size_t str_idx)
-      : thread_{attr}, str_idx_{str_idx} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Producer, &Producer::Run>(*this));
-  }
+  explicit Producer(std::string_view name, std::size_t str_idx)
+      : name_{name}, str_idx_{str_idx} {}
 
   /// @brief Producer thread.
-  void Run() {
-    if (str_idx_ < elems_vector.size()) {
-      // Trying to write message in buffer will not work yet.
-      while (true) {
-        paraos::ISRbool is_push_success{false};
+  void operator()(const paraos::stop_token& /*token*/) {
+    if (str_idx_ >= elems_vector.size()) {
+      Exit();
+      return;
+    }
 
-        auto write =
-            message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);
+    // Trying to write message in buffer will not work yet.
+    while (true) {
+      auto write =
+          message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);
 
-        // If memory alloc successful.
-        if (write) {
-          memcpy(write.Data(), elems_vector.at(str_idx_).data(), write.Size());
-          is_push_success = write.TryPush();
-        }
+      // If memory alloc successful.
+      if (write) {
+        memcpy(write.Data(), elems_vector.at(str_idx_).data(), write.Size());
+        const auto is_push_success = write.TryPush();
 
         if (is_push_success) {
           PrintDebug(
               " string write successful: " << elems_vector.at(str_idx_).c_str(),
-              thread_.GiveName());
+              name_);
 
-          const paraos::CriticalSection critical;
-          producers_str_container.emplace_back(
-              elems_vector.at(str_idx_).c_str());
+          {
+            const paraos::CriticalSection critical;
+            producers_str_container.emplace_back(
+                elems_vector.at(str_idx_).c_str());
+          }
 
           Exit();
-          break;
+          return;
         }
-        PrintDebug(
-            " WARN: Nothin written, try again after delay. " << "String idx is "
-                                                             << str_idx_,
-            thread_.GiveName());
 
-        // Small delay for yeld resources.
-        paraos::Thread::DelayMs(producer_waiting_timeout_ms);
+        // Explicit TryPush() failed and the MessageWritable destructor would
+        // retry the push automatically. Prevent that so a producer does not
+        // insert a duplicate message while it is spinning waiting for a free
+        // queue slot.
+        write.Free();
       }
-    } else {
-      Exit();
+      PrintDebug(
+          " WARN: Nothin written, try again after delay. " << "String idx is "
+                                                           << str_idx_,
+          name_);
+
+      // Small delay for yeld resources.
+      paraos::sleep_for(std::chrono::milliseconds(producer_waiting_timeout_ms));
     }
   }
 
  private:
   void Exit() {
     ++producer_thread_exit_cnt;
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    thread_.Finished();
+    PrintDebug(" exiting ... ", name_);
   }
 
-  paraos::Thread thread_;
+  std::string_view name_;
   std::size_t str_idx_{1000};
 };
 
 struct Consumer {
-  explicit Consumer(const paraos::ThreadAttr& attr) : thread_{attr} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<Consumer, &Consumer::Run>(*this));
-  }
+  explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumers thread.
-  void Run() {
-    // Small delay for yeld resources.
-    constexpr std::size_t delay_ms{1};
+  void operator()(const paraos::stop_token& /*token*/) {
+    while (true) {
+      // Small delay for yeld resources.
+      constexpr std::size_t delay_ms{2000};
 
-    auto read_message = message_buff.Pop(delay_ms);
+      auto read_message = message_buff.Pop(delay_ms);
 
-    if (read_message) {
-      const paraos::CriticalSection critical;
+      if (read_message) {
+        std::string read_str;
+        {
+          const paraos::CriticalSection critical;
+          read_str = reinterpret_cast<char*>(read_message->Data());
+        }
 
-      consumers_str_container.emplace_back(
-          reinterpret_cast<char*>(read_message->Data()));
+        {
+          const paraos::CriticalSection critical;
+          consumers_str_container.emplace_back(read_str);
+        }
 
-      PrintDebug(
-          " string read successful: "
-              << reinterpret_cast<char*>(read_message->Data()),
-          thread_.GiveName());
+        PrintDebug(" string read successful: " << read_str, name_);
 
-      read_message.reset();
+        read_message.reset();
 
-      Exit();
-    } else {
-      paraos::Thread::DelayMs(consumer_waiting_timeout_ms);
+        Exit();
+        return;
+      }
+      paraos::sleep_for(std::chrono::milliseconds(consumer_waiting_timeout_ms));
     }
   }
 
  private:
   void Exit() {
     ++consumer_thread_exit_cnt;
-    PrintDebug(" exiting ... ", thread_.GiveName());
-    thread_.Finished();
+    PrintDebug(" exiting ... ", name_);
   }
 
- private:
-  paraos::Thread thread_;
+  std::string_view name_;
 };
 
 void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
@@ -214,150 +218,116 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
   }
 }
 
-void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
-) {
-  bool is_test_complete{false};
-  {
-    const paraos::CriticalSection critical;
-    if (consumers_str_container.size() >= elems_vector.size()) {
-      is_test_complete = true;
-    }
-  }
-
-  if (is_test_complete) {
-    check_test_complete_and_exit.Finished();
-
-    constexpr std::size_t delay_ms{0};
-    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::Thread::DelayMs(delay_ms);
-
-    CheckIfTestSuccessfullyComplete();
-
-    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-
-#ifdef PARAOS_LIKE_FREERTOS
-    // Forces program exit to reduce execution time. Needed to terminate tests
-    // early, especially when running multiple tests. In other case, program
-    // will exit in 1 second later.
-    std::_Exit(EXIT_SUCCESS);
-#else
-    paraos::Thread::Exit();
-#endif
-  }
-
-  PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::Thread::DelayMs(10);
-}
 }  // namespace
 
 auto main() -> int {
-  {
-    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
-    check_test_complete_and_exit.RegisterDelegate(delegate);
-  }
-
   // ---------------------------------------------------------------------------
-  // Consumers Init
+  // Create consumers and producers inside an inner scope so that jthread
+  // destructors join before final assertions.
   // ---------------------------------------------------------------------------
   {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 0";
-    attr.priority = paraos::ThreadPriority::kLowest;
-    const static Consumer cons_0{attr};
-    consumer_total_thread_numb += 1;
+    std::vector<paraos::jthread> threads;
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 0";
+      attr.priority = paraos::ThreadPriority::kLowest;
+      threads.emplace_back(attr, Consumer{"--Cons 0"});
+      consumer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 1";
+      attr.priority = paraos::ThreadPriority::kBelowNormal;
+      threads.emplace_back(attr, Consumer{"--Cons 1"});
+      consumer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 2";
+      attr.priority = paraos::ThreadPriority::kNormal;
+      threads.emplace_back(attr, Consumer{"--Cons 2"});
+      consumer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 3";
+      attr.priority = paraos::ThreadPriority::kNormal;
+      threads.emplace_back(attr, Consumer{"--Cons 3"});
+      consumer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 4";
+      attr.priority = paraos::ThreadPriority::kNormal;
+      threads.emplace_back(attr, Consumer{"--Cons 4"});
+      consumer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "--Cons 5";
+      attr.priority = paraos::ThreadPriority::kLowest;
+      threads.emplace_back(attr, Consumer{"--Cons 5"});
+      consumer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 0";
+      attr.priority = paraos::ThreadPriority::kAboveNormal;
+      threads.emplace_back(attr, Producer{"Prod 0", 0});
+      producer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 1";
+      attr.priority = paraos::ThreadPriority::kHighest;
+      threads.emplace_back(attr, Producer{"Prod 1", 1});
+      producer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 2";
+      threads.emplace_back(attr, Producer{"Prod 2", 2});
+      producer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 3";
+      threads.emplace_back(attr, Producer{"Prod 3", 3});
+      producer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 4";
+      threads.emplace_back(attr, Producer{"Prod 4", 4});
+      producer_total_thread_numb += 1;
+    }
+
+    {
+      paraos::ThreadAttr attr{};
+      attr.thread_name = "Prod 5";
+      attr.priority = paraos::ThreadPriority::kAboveNormal;
+      threads.emplace_back(attr, Producer{"Prod 5", 5});
+      producer_total_thread_numb += 1;
+    }
   }
 
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 1";
-    attr.priority = paraos::ThreadPriority::kBelowNormal;
-    const static Consumer cons_1{attr};
-    consumer_total_thread_numb += 1;
-  }
+  CheckIfTestSuccessfullyComplete();
 
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 2";
-    attr.priority = paraos::ThreadPriority::kNormal;
-    const static Consumer cons_2{attr};
-    consumer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 3";
-    attr.priority = paraos::ThreadPriority::kNormal;
-    const static Consumer cons_3{attr};
-    consumer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 4";
-    attr.priority = paraos::ThreadPriority::kNormal;
-    const static Consumer cons_4{attr};
-    consumer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "--Cons 5";
-    attr.priority = paraos::ThreadPriority::kLowest;
-    const static Consumer cons_5{attr};
-    consumer_total_thread_numb += 1;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Producers Init
-  // ---------------------------------------------------------------------------
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 0";
-    attr.priority = paraos::ThreadPriority::kAboveNormal;
-    const static Producer prod_0{attr, 0};
-    producer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 1";
-    attr.priority = paraos::ThreadPriority::kHighest;
-    const static Producer prod_1{attr, 1};
-    producer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 2";
-    const static Producer prod_2{attr, 2};
-    producer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 3";
-    const static Producer prod_3{attr, 3};
-    producer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 4";
-    const static Producer prod_4{attr, 4};
-    producer_total_thread_numb += 1;
-  }
-
-  {
-    paraos::ThreadAttr attr{};
-    attr.thread_name = "Prod 5";
-    attr.priority = paraos::ThreadPriority::kAboveNormal;
-    const static Producer prod_5{attr, 5};
-    producer_total_thread_numb += 1;
-  }
-
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
-
+#ifdef PARAOS_LIKE_FREERTOS
+  std::_Exit(EXIT_SUCCESS);
+#else
   return 0;
+#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)
