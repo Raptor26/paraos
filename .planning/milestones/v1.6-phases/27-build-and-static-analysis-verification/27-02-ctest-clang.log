@@ -1,0 +1,248 @@
+Test project /Users/raptor/_vcs/paraos/build/pc_debug_clang
+      Start  1: test_paraos_unix
+ 1/58 Test  #1: test_paraos_unix .......................................................   Passed    0.51 sec
+      Start  2: test_thread_only_static
+ 2/58 Test  #2: test_thread_only_static ................................................   Passed    0.38 sec
+      Start  3: test_thread_only_global
+ 3/58 Test  #3: test_thread_only_global ................................................   Passed    0.72 sec
+      Start  4: test_thread_only_stack
+ 4/58 Test  #4: test_thread_only_stack .................................................   Passed    0.49 sec
+      Start  5: test_thread_only_stack_with_multiple_threads
+ 5/58 Test  #5: test_thread_only_stack_with_multiple_threads ...........................   Passed    0.40 sec
+      Start  6: test_jthread_basic
+ 6/58 Test  #6: test_jthread_basic .....................................................   Passed    0.53 sec
+      Start  7: test_mutex_basic
+ 7/58 Test  #7: test_mutex_basic .......................................................   Passed    0.49 sec
+      Start  8: test_semaphore_std
+ 8/58 Test  #8: test_semaphore_std .....................................................   Passed    0.58 sec
+      Start  9: test_paraos_core
+ 9/58 Test  #9: test_paraos_core .......................................................   Passed    0.50 sec
+      Start 10: [PARAOS CONTAINERS]:QueueBlocking.Create
+10/58 Test #10: [PARAOS CONTAINERS]:QueueBlocking.Create ...............................   Passed    0.00 sec
+      Start 11: [PARAOS CONTAINERS]:QueueBlocking.EmplaceThenRead
+11/58 Test #11: [PARAOS CONTAINERS]:QueueBlocking.EmplaceThenRead ......................   Passed    0.00 sec
+      Start 12: [PARAOS CONTAINERS]:QueueBlocking.TryPushThenRead
+12/58 Test #12: [PARAOS CONTAINERS]:QueueBlocking.TryPushThenRead ......................   Passed    0.00 sec
+      Start 13: [PARAOS CONTAINERS]:QueueBlocking.PopOnEmptyQueue
+13/58 Test #13: [PARAOS CONTAINERS]:QueueBlocking.PopOnEmptyQueue ......................   Passed    0.00 sec
+      Start 14: [PARAOS CONTAINERS]:MutexStd.LockGuardAndUniqueLockCompileAndRun
+14/58 Test #14: [PARAOS CONTAINERS]:MutexStd.LockGuardAndUniqueLockCompileAndRun .......   Passed    0.00 sec
+      Start 15: [PARAOS CONTAINERS]:SemaphoreStd.BinarySemaphoreReleaseAndAcquire
+15/58 Test #15: [PARAOS CONTAINERS]:SemaphoreStd.BinarySemaphoreReleaseAndAcquire ......   Passed    0.00 sec
+      Start 16: [PARAOS CONTAINERS]:SemaphoreStd.CountingSemaphoreReleaseNAndAcquire
+16/58 Test #16: [PARAOS CONTAINERS]:SemaphoreStd.CountingSemaphoreReleaseNAndAcquire ...   Passed    0.00 sec
+      Start 17: [PARAOS CONTAINERS]:Message.Example
+17/58 Test #17: [PARAOS CONTAINERS]:Message.Example ....................................   Passed    0.00 sec
+      Start 18: [PARAOS CONTAINERS]:Message.Create
+18/58 Test #18: [PARAOS CONTAINERS]:Message.Create .....................................   Passed    0.00 sec
+      Start 19: [PARAOS CONTAINERS]:Message.PushThenPop
+19/58 Test #19: [PARAOS CONTAINERS]:Message.PushThenPop ................................   Passed    0.00 sec
+      Start 20: [PARAOS CONTAINERS]:Message.PushToFull
+20/58 Test #20: [PARAOS CONTAINERS]:Message.PushToFull .................................   Passed    0.00 sec
+      Start 21: [PARAOS CONTAINERS]:Message.CopyCtor
+21/58 Test #21: [PARAOS CONTAINERS]:Message.CopyCtor ...................................   Passed    0.00 sec
+      Start 22: [PARAOS CONTAINERS]:Message.MoveCtor
+22/58 Test #22: [PARAOS CONTAINERS]:Message.MoveCtor ...................................   Passed    0.00 sec
+      Start 23: [PARAOS CONTAINERS]:Message.PushButForceFree
+23/58 Test #23: [PARAOS CONTAINERS]:Message.PushButForceFree ...........................   Passed    0.00 sec
+      Start 24: [PARAOS CONTAINERS]:Buffer.UserAllocCreate
+24/58 Test #24: [PARAOS CONTAINERS]:Buffer.UserAllocCreate .............................   Passed    0.00 sec
+      Start 25: [PARAOS CONTAINERS]:RingBuff.Create
+25/58 Test #25: [PARAOS CONTAINERS]:RingBuff.Create ....................................   Passed    0.00 sec
+      Start 26: [PARAOS CONTAINERS]:RingBuff.Capacity
+26/58 Test #26: [PARAOS CONTAINERS]:RingBuff.Capacity ..................................   Passed    0.00 sec
+      Start 27: [PARAOS CONTAINERS]:RingBuff.IsEmpty
+27/58 Test #27: [PARAOS CONTAINERS]:RingBuff.IsEmpty ...................................   Passed    0.00 sec
+      Start 28: [PARAOS CONTAINERS]:RingBuff.IsFull
+28/58 Test #28: [PARAOS CONTAINERS]:RingBuff.IsFull ....................................   Passed    0.00 sec
+      Start 29: [PARAOS CONTAINERS]:RingBuff.WriteThenRead
+29/58 Test #29: [PARAOS CONTAINERS]:RingBuff.WriteThenRead .............................   Passed    0.00 sec
+      Start 30: [PARAOS CONTAINERS]:RingBuff.WriteThenReadIterator
+30/58 Test #30: [PARAOS CONTAINERS]:RingBuff.WriteThenReadIterator .....................   Passed    0.00 sec
+      Start 31: [PARAOS CONTAINERS]:RingBuff.Clear
+31/58 Test #31: [PARAOS CONTAINERS]:RingBuff.Clear .....................................   Passed    0.00 sec
+      Start 32: [PARAOS CONTAINERS]:RingBuff.Skip
+32/58 Test #32: [PARAOS CONTAINERS]:RingBuff.Skip ......................................   Passed    0.00 sec
+      Start 33: [PARAOS CONTAINERS]:RingBuff.WriteSpanThenReadSpan
+33/58 Test #33: [PARAOS CONTAINERS]:RingBuff.WriteSpanThenReadSpan .....................   Passed    0.00 sec
+      Start 34: [PARAOS CONTAINERS]:RingBuff.WriteOverflow
+34/58 Test #34: [PARAOS CONTAINERS]:RingBuff.WriteOverflow .............................   Passed    0.00 sec
+      Start 35: [PARAOS CONTAINERS]:RingBuff.WriteIteratorThenReadUint32
+35/58 Test #35: [PARAOS CONTAINERS]:RingBuff.WriteIteratorThenReadUint32 ...............   Passed    0.00 sec
+      Start 36: [PARAOS CONTAINERS]:MultiRingBuff.Create
+36/58 Test #36: [PARAOS CONTAINERS]:MultiRingBuff.Create ...............................   Passed    0.00 sec
+      Start 37: [PARAOS CONTAINERS]:MultiRingBuff.WriteDataToRingBufferThenRead
+37/58 Test #37: [PARAOS CONTAINERS]:MultiRingBuff.WriteDataToRingBufferThenRead ........   Passed    0.00 sec
+      Start 38: [PARAOS CONTAINERS]:MultiRingBuff.WriteReadMultipleBuffers
+38/58 Test #38: [PARAOS CONTAINERS]:MultiRingBuff.WriteReadMultipleBuffers .............   Passed    0.00 sec
+      Start 39: [PARAOS CONTAINERS]:MultiRingBuff.WriteTwiceReadTwice
+39/58 Test #39: [PARAOS CONTAINERS]:MultiRingBuff.WriteTwiceReadTwice ..................   Passed    0.00 sec
+      Start 40: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead
+40/58 Test #40: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead ........   Passed    0.00 sec
+      Start 41: [PARAOS CONTAINERS]:MultiRingBuff.WriteIteratorThenReadIterator
+41/58 Test #41: [PARAOS CONTAINERS]:MultiRingBuff.WriteIteratorThenReadIterator ........   Passed    0.00 sec
+      Start 42: [PARAOS CONTAINERS]:MultiRingBuff.WriteVectorIteratorThenRead
+42/58 Test #42: [PARAOS CONTAINERS]:MultiRingBuff.WriteVectorIteratorThenRead ..........   Passed    0.00 sec
+      Start 43: [PARAOS CONTAINERS]:MultiRingBuff.TryRead
+43/58 Test #43: [PARAOS CONTAINERS]:MultiRingBuff.TryRead ..............................   Passed    0.00 sec
+      Start 44: [PARAOS CONTAINERS]:MultiRingBuff.TryReadSpan
+44/58 Test #44: [PARAOS CONTAINERS]:MultiRingBuff.TryReadSpan ..........................   Passed    0.00 sec
+      Start 45: test_message_multithread_many_producer_many_consumers
+45/58 Test #45: test_message_multithread_many_producer_many_consumers ..................   Passed    0.50 sec
+      Start 46: test_multi_ringbuff_mpmc
+46/58 Test #46: test_multi_ringbuff_mpmc ...............................................   Passed    2.58 sec
+      Start 47: test_queue_blocking_spmc
+47/58 Test #47: test_queue_blocking_spmc ...............................................   Passed    0.51 sec
+      Start 48: test_queue_blocking_mpsc
+48/58 Test #48: test_queue_blocking_mpsc ...............................................   Passed    0.59 sec
+      Start 49: test_queue_blocking_mpmc
+49/58 Test #49: test_queue_blocking_mpmc ...............................................   Passed    0.60 sec
+      Start 50: [PARAOS EXTRA]:Cooperative.Create
+50/58 Test #50: [PARAOS EXTRA]:Cooperative.Create ......................................   Passed    0.01 sec
+      Start 51: [PARAOS EXTRA]:Cooperative.TryPutOverflowTasks
+51/58 Test #51: [PARAOS EXTRA]:Cooperative.TryPutOverflowTasks .........................   Passed    0.00 sec
+      Start 52: [PARAOS EXTRA]:OneShotExecutor.Create
+52/58 Test #52: [PARAOS EXTRA]:OneShotExecutor.Create ..................................   Passed    0.00 sec
+      Start 53: [PARAOS EXTRA]:OneShotExecutor.EnqueueCreatedDelegate
+53/58 Test #53: [PARAOS EXTRA]:OneShotExecutor.EnqueueCreatedDelegate ..................   Passed    0.00 sec
+      Start 54: [PARAOS EXTRA]:OneShotExecutor.AutoCreateAndEnqueueDelegate
+54/58 Test #54: [PARAOS EXTRA]:OneShotExecutor.AutoCreateAndEnqueueDelegate ............   Passed    0.00 sec
+      Start 55: [PARAOS EXTRA]:OneShotExecutor.EnqueueTooManyDelegates
+55/58 Test #55: [PARAOS EXTRA]:OneShotExecutor.EnqueueTooManyDelegates .................   Passed    0.00 sec
+      Start 56: test_paraos_thread_sequence
+56/58 Test #56: test_paraos_thread_sequence ............................................   Passed    0.45 sec
+      Start 57: test_paraos_cooperative_scheduling_thread
+57/58 Test #57: test_paraos_cooperative_scheduling_thread ..............................   Passed    0.45 sec
+      Start 58: test_paraos_oneshot_executor
+58/58 Test #58: test_paraos_oneshot_executor ...........................................   Passed    0.48 sec
+
+100% tests passed, 0 tests failed out of 58
+
+Label Time Summary:
+stress    =   4.77 sec*proc (5 tests)
+
+Total Test time (real) =  10.94 sec
+Test project /Users/raptor/_vcs/paraos/build/pc_debug_gcc
+      Start  1: test_paraos_unix
+ 1/58 Test  #1: test_paraos_unix .......................................................   Passed    0.52 sec
+      Start  2: test_thread_only_static
+ 2/58 Test  #2: test_thread_only_static ................................................   Passed    0.58 sec
+      Start  3: test_thread_only_global
+ 3/58 Test  #3: test_thread_only_global ................................................   Passed    0.61 sec
+      Start  4: test_thread_only_stack
+ 4/58 Test  #4: test_thread_only_stack .................................................   Passed    0.55 sec
+      Start  5: test_thread_only_stack_with_multiple_threads
+ 5/58 Test  #5: test_thread_only_stack_with_multiple_threads ...........................   Passed    0.48 sec
+      Start  6: test_jthread_basic
+ 6/58 Test  #6: test_jthread_basic .....................................................   Passed    0.63 sec
+      Start  7: test_mutex_basic
+ 7/58 Test  #7: test_mutex_basic .......................................................   Passed    0.84 sec
+      Start  8: test_semaphore_std
+ 8/58 Test  #8: test_semaphore_std .....................................................   Passed    0.57 sec
+      Start  9: test_paraos_core
+ 9/58 Test  #9: test_paraos_core .......................................................   Passed    0.55 sec
+      Start 10: [PARAOS CONTAINERS]:QueueBlocking.Create
+10/58 Test #10: [PARAOS CONTAINERS]:QueueBlocking.Create ...............................   Passed    0.01 sec
+      Start 11: [PARAOS CONTAINERS]:QueueBlocking.EmplaceThenRead
+11/58 Test #11: [PARAOS CONTAINERS]:QueueBlocking.EmplaceThenRead ......................   Passed    0.01 sec
+      Start 12: [PARAOS CONTAINERS]:QueueBlocking.TryPushThenRead
+12/58 Test #12: [PARAOS CONTAINERS]:QueueBlocking.TryPushThenRead ......................   Passed    0.01 sec
+      Start 13: [PARAOS CONTAINERS]:QueueBlocking.PopOnEmptyQueue
+13/58 Test #13: [PARAOS CONTAINERS]:QueueBlocking.PopOnEmptyQueue ......................   Passed    0.00 sec
+      Start 14: [PARAOS CONTAINERS]:MutexStd.LockGuardAndUniqueLockCompileAndRun
+14/58 Test #14: [PARAOS CONTAINERS]:MutexStd.LockGuardAndUniqueLockCompileAndRun .......   Passed    0.00 sec
+      Start 15: [PARAOS CONTAINERS]:SemaphoreStd.BinarySemaphoreReleaseAndAcquire
+15/58 Test #15: [PARAOS CONTAINERS]:SemaphoreStd.BinarySemaphoreReleaseAndAcquire ......   Passed    0.00 sec
+      Start 16: [PARAOS CONTAINERS]:SemaphoreStd.CountingSemaphoreReleaseNAndAcquire
+16/58 Test #16: [PARAOS CONTAINERS]:SemaphoreStd.CountingSemaphoreReleaseNAndAcquire ...   Passed    0.00 sec
+      Start 17: [PARAOS CONTAINERS]:Message.Example
+17/58 Test #17: [PARAOS CONTAINERS]:Message.Example ....................................   Passed    0.00 sec
+      Start 18: [PARAOS CONTAINERS]:Message.Create
+18/58 Test #18: [PARAOS CONTAINERS]:Message.Create .....................................   Passed    0.00 sec
+      Start 19: [PARAOS CONTAINERS]:Message.PushThenPop
+19/58 Test #19: [PARAOS CONTAINERS]:Message.PushThenPop ................................   Passed    0.00 sec
+      Start 20: [PARAOS CONTAINERS]:Message.PushToFull
+20/58 Test #20: [PARAOS CONTAINERS]:Message.PushToFull .................................   Passed    0.00 sec
+      Start 21: [PARAOS CONTAINERS]:Message.CopyCtor
+21/58 Test #21: [PARAOS CONTAINERS]:Message.CopyCtor ...................................   Passed    0.00 sec
+      Start 22: [PARAOS CONTAINERS]:Message.MoveCtor
+22/58 Test #22: [PARAOS CONTAINERS]:Message.MoveCtor ...................................   Passed    0.00 sec
+      Start 23: [PARAOS CONTAINERS]:Message.PushButForceFree
+23/58 Test #23: [PARAOS CONTAINERS]:Message.PushButForceFree ...........................   Passed    0.00 sec
+      Start 24: [PARAOS CONTAINERS]:Buffer.UserAllocCreate
+24/58 Test #24: [PARAOS CONTAINERS]:Buffer.UserAllocCreate .............................   Passed    0.00 sec
+      Start 25: [PARAOS CONTAINERS]:RingBuff.Create
+25/58 Test #25: [PARAOS CONTAINERS]:RingBuff.Create ....................................   Passed    0.00 sec
+      Start 26: [PARAOS CONTAINERS]:RingBuff.Capacity
+26/58 Test #26: [PARAOS CONTAINERS]:RingBuff.Capacity ..................................   Passed    0.00 sec
+      Start 27: [PARAOS CONTAINERS]:RingBuff.IsEmpty
+27/58 Test #27: [PARAOS CONTAINERS]:RingBuff.IsEmpty ...................................   Passed    0.00 sec
+      Start 28: [PARAOS CONTAINERS]:RingBuff.IsFull
+28/58 Test #28: [PARAOS CONTAINERS]:RingBuff.IsFull ....................................   Passed    0.00 sec
+      Start 29: [PARAOS CONTAINERS]:RingBuff.WriteThenRead
+29/58 Test #29: [PARAOS CONTAINERS]:RingBuff.WriteThenRead .............................   Passed    0.00 sec
+      Start 30: [PARAOS CONTAINERS]:RingBuff.WriteThenReadIterator
+30/58 Test #30: [PARAOS CONTAINERS]:RingBuff.WriteThenReadIterator .....................   Passed    0.00 sec
+      Start 31: [PARAOS CONTAINERS]:RingBuff.Clear
+31/58 Test #31: [PARAOS CONTAINERS]:RingBuff.Clear .....................................   Passed    0.00 sec
+      Start 32: [PARAOS CONTAINERS]:RingBuff.Skip
+32/58 Test #32: [PARAOS CONTAINERS]:RingBuff.Skip ......................................   Passed    0.00 sec
+      Start 33: [PARAOS CONTAINERS]:RingBuff.WriteSpanThenReadSpan
+33/58 Test #33: [PARAOS CONTAINERS]:RingBuff.WriteSpanThenReadSpan .....................   Passed    0.00 sec
+      Start 34: [PARAOS CONTAINERS]:RingBuff.WriteOverflow
+34/58 Test #34: [PARAOS CONTAINERS]:RingBuff.WriteOverflow .............................   Passed    0.00 sec
+      Start 35: [PARAOS CONTAINERS]:RingBuff.WriteIteratorThenReadUint32
+35/58 Test #35: [PARAOS CONTAINERS]:RingBuff.WriteIteratorThenReadUint32 ...............   Passed    0.00 sec
+      Start 36: [PARAOS CONTAINERS]:MultiRingBuff.Create
+36/58 Test #36: [PARAOS CONTAINERS]:MultiRingBuff.Create ...............................   Passed    0.00 sec
+      Start 37: [PARAOS CONTAINERS]:MultiRingBuff.WriteDataToRingBufferThenRead
+37/58 Test #37: [PARAOS CONTAINERS]:MultiRingBuff.WriteDataToRingBufferThenRead ........   Passed    0.00 sec
+      Start 38: [PARAOS CONTAINERS]:MultiRingBuff.WriteReadMultipleBuffers
+38/58 Test #38: [PARAOS CONTAINERS]:MultiRingBuff.WriteReadMultipleBuffers .............   Passed    0.00 sec
+      Start 39: [PARAOS CONTAINERS]:MultiRingBuff.WriteTwiceReadTwice
+39/58 Test #39: [PARAOS CONTAINERS]:MultiRingBuff.WriteTwiceReadTwice ..................   Passed    0.00 sec
+      Start 40: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead
+40/58 Test #40: [PARAOS CONTAINERS]:MultiRingBuff.WriteSpanToRingBufferThenRead ........   Passed    0.00 sec
+      Start 41: [PARAOS CONTAINERS]:MultiRingBuff.WriteIteratorThenReadIterator
+41/58 Test #41: [PARAOS CONTAINERS]:MultiRingBuff.WriteIteratorThenReadIterator ........   Passed    0.00 sec
+      Start 42: [PARAOS CONTAINERS]:MultiRingBuff.WriteVectorIteratorThenRead
+42/58 Test #42: [PARAOS CONTAINERS]:MultiRingBuff.WriteVectorIteratorThenRead ..........   Passed    0.00 sec
+      Start 43: [PARAOS CONTAINERS]:MultiRingBuff.TryRead
+43/58 Test #43: [PARAOS CONTAINERS]:MultiRingBuff.TryRead ..............................   Passed    0.00 sec
+      Start 44: [PARAOS CONTAINERS]:MultiRingBuff.TryReadSpan
+44/58 Test #44: [PARAOS CONTAINERS]:MultiRingBuff.TryReadSpan ..........................   Passed    0.00 sec
+      Start 45: test_message_multithread_many_producer_many_consumers
+45/58 Test #45: test_message_multithread_many_producer_many_consumers ..................   Passed    0.50 sec
+      Start 46: test_multi_ringbuff_mpmc
+46/58 Test #46: test_multi_ringbuff_mpmc ...............................................   Passed    2.56 sec
+      Start 47: test_queue_blocking_spmc
+47/58 Test #47: test_queue_blocking_spmc ...............................................   Passed    0.49 sec
+      Start 48: test_queue_blocking_mpsc
+48/58 Test #48: test_queue_blocking_mpsc ...............................................   Passed    0.59 sec
+      Start 49: test_queue_blocking_mpmc
+49/58 Test #49: test_queue_blocking_mpmc ...............................................   Passed    1.37 sec
+      Start 50: [PARAOS EXTRA]:Cooperative.Create
+50/58 Test #50: [PARAOS EXTRA]:Cooperative.Create ......................................   Passed    0.01 sec
+      Start 51: [PARAOS EXTRA]:Cooperative.TryPutOverflowTasks
+51/58 Test #51: [PARAOS EXTRA]:Cooperative.TryPutOverflowTasks .........................   Passed    0.00 sec
+      Start 52: [PARAOS EXTRA]:OneShotExecutor.Create
+52/58 Test #52: [PARAOS EXTRA]:OneShotExecutor.Create ..................................   Passed    0.00 sec
+      Start 53: [PARAOS EXTRA]:OneShotExecutor.EnqueueCreatedDelegate
+53/58 Test #53: [PARAOS EXTRA]:OneShotExecutor.EnqueueCreatedDelegate ..................   Passed    0.00 sec
+      Start 54: [PARAOS EXTRA]:OneShotExecutor.AutoCreateAndEnqueueDelegate
+54/58 Test #54: [PARAOS EXTRA]:OneShotExecutor.AutoCreateAndEnqueueDelegate ............   Passed    0.00 sec
+      Start 55: [PARAOS EXTRA]:OneShotExecutor.EnqueueTooManyDelegates
+55/58 Test #55: [PARAOS EXTRA]:OneShotExecutor.EnqueueTooManyDelegates .................   Passed    0.00 sec
+      Start 56: test_paraos_thread_sequence
+56/58 Test #56: test_paraos_thread_sequence ............................................   Passed    0.56 sec
+      Start 57: test_paraos_cooperative_scheduling_thread
+57/58 Test #57: test_paraos_cooperative_scheduling_thread ..............................   Passed    0.59 sec
+      Start 58: test_paraos_oneshot_executor
+58/58 Test #58: test_paraos_oneshot_executor ...........................................   Passed    0.60 sec
+
+100% tests passed, 0 tests failed out of 58
+
+Label Time Summary:
+stress    =   5.52 sec*proc (5 tests)
+
+Total Test time (real) =  12.81 sec

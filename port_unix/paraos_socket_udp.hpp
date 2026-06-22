@@ -1,3 +1,8 @@
+/// @file paraos_socket_udp.hpp
+/// @author Mickle Isaev (mrraptor26@gmail.com)
+///
+/// SPDX-License-Identifier: MIT.
+/// See LICENSE file in the project root for full license information.
 #ifndef PARAOS_SOCKET_UDP_HPP
 #define PARAOS_SOCKET_UDP_HPP
 

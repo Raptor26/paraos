@@ -1,0 +1,203 @@
+=== Running build/pc_debug_clang/port_tests/test_jthread_basic ===
+OK
+EXIT_CODE=0
+=== Running build/pc_debug_clang/containers/tests/test_queue_blocking_mpsc ===
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 0': --ERROR: don't read item from queue with timeout. Try again
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 0': --ERROR: don't read item from queue with timeout. Try again
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 Prod 0':  call queue.TryPush()
+Time: '1782137460 Prod 0':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137460 Prod 0':  exiting ... 
+Time: '1782137460 Prod 1':  call queue.TryPush()
+Time: '1782137460 Prod 1':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137460 Prod 1':  exiting ... 
+Time: '1782137460 Prod 2':  call queue.TryPush()
+Time: '1782137460 Prod 2':  WARN: queue.TryPush() no space, try again 0
+Time: '1782137460 Prod 3':  call queue.TryPush()
+Time: '1782137460 Prod 3':  WARN: queue.TryPush() no space, try again 0
+Time: '1782137460 Prod 4':  call queue.TryPush()
+Time: '1782137460 Prod 4':  WARN: queue.TryPush() no space, try again 0
+Time: '1782137460 --Cons 0':  successfully read item from queue
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 0':  successfully read item from queue
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 Prod 2':  call queue.TryPush()
+Time: '1782137460 Prod 4':  call queue.TryPush()
+Time: '1782137460 Prod 2':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137460 Prod 2':  exiting ... 
+Time: '1782137460 Prod 3':  call queue.TryPush()
+Time: '1782137460 Prod 3':  WARN: queue.TryPush() no space, try again 0
+Time: '1782137460 Prod 4':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137460 Prod 4':  exiting ... 
+Time: '1782137460 --Cons 0':  successfully read item from queue
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 0':  successfully read item from queue
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 Prod 3':  call queue.TryPush()
+Time: '1782137460 Prod 3':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137460 Prod 3':  exiting ... 
+Time: '1782137460 --Cons 0':  successfully read item from queue
+Time: '1782137460 --Cons 0':  exiting ... 
+EXIT_CODE=0
+=== Running build/pc_debug_clang/containers/tests/test_queue_blocking_spmc ===
+Time: '1782137460 --Cons 4':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 2':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 1':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 Prod 0':  call queue.TryPush()
+Time: '1782137460 --Cons 3':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 Prod 0':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137460 --Cons 4': --ERROR: don't read item from queue with timeout. Try again
+Time: '1782137460 --Cons 4':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 --Cons 2':  successfully read item from queue
+Time: '1782137460 --Cons 2':  exiting ... 
+Time: '1782137460 --Cons 1': --ERROR: don't read item from queue with timeout. Try again
+Time: '1782137460 --Cons 1':  call queue.Pop() with 2000 ms timeout
+Time: '1782137460 Prod 0':  call queue.TryPush()
+Time: '1782137460 Prod 0':  queue.TryPush() success and put 'b'. Real delay is 0
+Time: '1782137460 --Cons 1':  successfully read item from queue
+Time: '1782137460 --Cons 1':  exiting ... 
+Time: '1782137460 Prod 0':  call queue.TryPush()
+Time: '1782137460 Prod 0':  queue.TryPush() success and put 'c'. Real delay is 0
+Time: '1782137460 --Cons 3':  successfully read item from queue
+Time: '1782137460 --Cons 3':  exiting ... 
+Time: '1782137460 Prod 0':  call queue.TryPush()
+Time: '1782137460 Prod 0':  queue.TryPush() success and put 'd'. Real delay is 0
+Time: '1782137460 --Cons 4':  successfully read item from queue
+Time: '1782137460 --Cons 4':  exiting ... 
+Time: '1782137460 Prod 0':  call queue.TryPush()
+Time: '1782137460 Prod 0':  queue.TryPush() success and put 'e'. Real delay is 0
+Time: '1782137460 Prod 0':  exiting ... 
+Time: '1782137460 --Cons 0':  successfully read item from queue
+Time: '1782137460 --Cons 0':  exiting ... 
+EXIT_CODE=0
+=== Running build/pc_debug_clang/containers/tests/test_queue_blocking_mpmc ===
+Time: '1782137461 --Prod 2':  call queue.TryPush()
+Time: '1782137461 --Consumer 0':  call queue.Pop() with 2000 ms timeout
+Time: '1782137461 --Prod 1':  call queue.TryPush()
+Time: '1782137461 --Prod 0':  call queue.TryPush()
+Time: '1782137461 --Prod 0':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137461 --Prod 0':  exiting ... 
+Time: '1782137461 --Prod 1':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137461 --Prod 1':  exiting ... 
+Time: '1782137461 --Consumer 1':  call queue.Pop() with 2000 ms timeout
+Time: '1782137461 --Consumer 0':  successfully read item from queue
+Time: '1782137461 --Consumer 0':  exiting ... 
+Time: '1782137461 --Consumer 1':  successfully read item from queue
+Time: '1782137461 --Consumer 1':  exiting ... 
+Time: '1782137461 --Prod 2':  queue.TryPush() success and put 'a'. Real delay is 0
+Time: '1782137461 --Prod 2':  exiting ... 
+Time: '1782137461 --Consumer 2':  call queue.Pop() with 2000 ms timeout
+Time: '1782137461 --Consumer 2':  successfully read item from queue
+Time: '1782137461 --Consumer 2':  exiting ... 
+EXIT_CODE=0
+=== Running build/pc_debug_clang/containers/tests/test_multi_ringbuff_mpmc ===
+Time: '1782137461 --Cons 5':  Nothing read, try again. Already read total bytes is 0
+Time: '1782137461 Prod 5':  string write successful: 6) Oh, I'll be comin' for your love, okay
+Time: '1782137461 Prod 1':  string write successful: 2) I don't know what I'm to say
+Time: '1782137461 Prod 1':  exiting ... 
+Time: '1782137461 Prod 4': WARN: Nothin written, try again after delay. String idx is 4
+Time: '1782137461 Prod 7': WARN: Nothin written, try again after delay. String idx is 7
+Time: '1782137461 Prod 0': WARN: Nothin written, try again after delay. String idx is 0
+Time: '1782137461 Prod 3':  string write successful: 4) Today is another day to find you
+Time: '1782137461 Prod 3':  exiting ... 
+Time: '1782137461 Prod 6': WARN: Nothin written, try again after delay. String idx is 6
+Time: '1782137461 Prod 5':  exiting ... 
+Time: '1782137461 --Cons 1':  read 2) I don't know what I'm to say
+Time: '1782137461 --Cons 1':  exiting ... 
+Time: '1782137461 --Cons 0':  read 4) Today is another day to find you
+Time: '1782137461 --Cons 0':  exiting ... 
+Time: '1782137461 Prod 2':  string write successful: 3) I'll say it anyway
+Time: '1782137461 Prod 2':  exiting ... 
+Time: '1782137461 --Cons 2':  read 3) I'll say it anyway
+Time: '1782137461 --Cons 2':  exiting ... 
+Time: '1782137461 --Cons 3':  read 6) Oh, I'll be comin' for your love, okay
+Time: '1782137461 --Cons 3':  exiting ... 
+Time: '1782137461 --Cons 7':  Nothing read, try again. Already read total bytes is 128
+Time: '1782137461 --Cons 5':  Nothing read, try again. Already read total bytes is 128
+Time: '1782137461 Prod 4':  string write successful: 5) Shyin' away
+Time: '1782137461 Prod 4':  exiting ... 
+Time: '1782137461 --Cons 7':  read 5) Shyin' away
+Time: '1782137461 --Cons 7':  exiting ... 
+Time: '1782137461 Prod 7':  string write successful: 8) -------------------------------------------
+Time: '1782137461 Prod 7':  exiting ... 
+Time: '1782137461 Prod 0':  string write successful: 1) We're talking away
+Time: '1782137461 Prod 0':  exiting ... 
+Time: '1782137461 --Cons 6':  read 8) -------------------------------------------
+Time: '1782137461 --Cons 6':  exiting ... 
+Time: '1782137461 --Cons 4':  read 1) We're talking away
+Time: '1782137461 --Cons 4':  exiting ... 
+Time: '1782137461 Prod 6':  string write successful: 7) Take on me
+Time: '1782137461 Prod 6':  exiting ... 
+Time: '1782137461 --Cons 5':  read 7) Take on me
+Time: '1782137461 --Cons 5':  exiting ... 
+Time: '1782137461 AssertsForTestComplete()': Total read bytes numb is 222. Expected bytes numb is 222
+EXIT_CODE=0
+=== Running build/pc_debug_clang/containers/tests/test_message_multithread_many_producer_many_consumers ===
+Time: '1782137462 Prod 5':  string write successful: 6)  Against all hope
+Time: '1782137462 Prod 5':  exiting ... 
+Time: '1782137462 Prod 1':  string write successful: 2)  Rival nations
+Time: '1782137462 Prod 2':  string write successful: 3)  It's a primitive clash
+Time: '1782137462 Prod 1':  exiting ... 
+Time: '1782137462 Prod 3':  WARN: Nothin written, try again after delay. String idx is 3
+Time: '1782137462 Prod 2':  exiting ... 
+Time: '1782137462 Prod 4':  WARN: Nothin written, try again after delay. String idx is 4
+Time: '1782137462 --Cons 2':  string read successful: 6)  Against all hope
+Time: '1782137462 Prod 0':  string write successful: 1)  Two worlds collide
+Time: '1782137462 Prod 0':  exiting ... 
+Time: '1782137462 --Cons 2':  exiting ... 
+Time: '1782137462 --Cons 4':  string read successful: 2)  Rival nations
+Time: '1782137462 --Cons 4':  exiting ... 
+Time: '1782137462 --Cons 3':  string read successful: 3)  It's a primitive clash
+Time: '1782137462 --Cons 3':  exiting ... 
+Time: '1782137462 --Cons 1':  string read successful: 1)  Two worlds collide
+Time: '1782137462 --Cons 1':  exiting ... 
+Time: '1782137462 Prod 3':  string write successful: 4)  Venting years of frustration
+Time: '1782137462 Prod 3':  exiting ... 
+Time: '1782137462 Prod 4':  string write successful: 5)  Bravely we hope
+Time: '1782137462 Prod 4':  exiting ... 
+Time: '1782137462 --Cons 5':  string read successful: 4)  Venting years of frustration
+Time: '1782137462 --Cons 5':  exiting ... 
+Time: '1782137462 --Cons 0':  string read successful: 5)  Bravely we hope
+Time: '1782137462 --Cons 0':  exiting ... 
+Time: '1782137462 CheckIfTestSuccessfullyComplete()': Expected written strings numb is 6. Actual written is 6
+Time: '1782137462 CheckIfTestSuccessfullyComplete()': Expected read strings numb is 6. Actual read is 6
+EXIT_CODE=0
+=== freertos_debug_clang test_jthread_basic ===
+[1/2] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/2] Linking CXX executable port_tests/test_jthread_basic
+=== freertos_debug_gcc test_jthread_basic ===
+[1/2] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/2] Linking CXX executable port_tests/test_jthread_basic
+=== freertos_debug_clang test_queue_blocking_mpsc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_queue_blocking_mpsc
+=== freertos_debug_gcc test_queue_blocking_mpsc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_queue_blocking_mpsc
+=== freertos_debug_clang test_queue_blocking_spmc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_queue_blocking_spmc
+=== freertos_debug_gcc test_queue_blocking_spmc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_queue_blocking_spmc
+=== freertos_debug_clang test_queue_blocking_mpmc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_queue_blocking_mpmc
+=== freertos_debug_gcc test_queue_blocking_mpmc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_queue_blocking_mpmc
+=== freertos_debug_clang test_multi_ringbuff_mpmc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_multi_ringbuff_mpmc
+=== freertos_debug_gcc test_multi_ringbuff_mpmc ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+[2/2] Linking CXX executable containers/tests/test_multi_ringbuff_mpmc
+=== freertos_debug_clang test_message_multithread_many_producer_many_consumers ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+[2/2] Linking CXX executable containers/tests/test_message_multithread_many_producer_many_consumers
+=== freertos_debug_gcc test_message_multithread_many_producer_many_consumers ===
+[1/2] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+[2/2] Linking CXX executable containers/tests/test_message_multithread_many_producer_many_consumers

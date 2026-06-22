@@ -1,3 +1,8 @@
+/// @file paraos_attr.h
+/// @author Mickle Isaev (mrraptor26@gmail.com)
+///
+/// SPDX-License-Identifier: MIT.
+/// See LICENSE file in the project root for full license information.
 #ifndef PARAOS_ATTR_H
 #define PARAOS_ATTR_H
 

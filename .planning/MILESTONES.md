@@ -1,5 +1,37 @@
 # Project Milestones: PARAOS
 
+## v1.6 paraos::jthread scheduler control (Shipped: 2026-06-22)
+
+**Delivered:** Добавлено кроссплатформенное управление планировщиком в `paraos::jthread`; FreeRTOS-порт делегирует вызовы в `vTaskStartScheduler()` / `vTaskEndScheduler()`; PC-порт эмулирует семантику FreeRTOS через гейтинг запуска и реестр активных потоков; multithread-тесты унифицированы и проходят на PC.
+
+**Phases completed:** 24–27 (18 plans total)
+
+**Key accomplishments:**
+
+- Добавлены `paraos::jthread::start_scheduler()`, `end_scheduler()` и `is_scheduler_running()` в `port_freertos/paraos_jthread.hpp` с делегированием в FreeRTOS API.
+- Реализован PC-порт управления планировщиком с heap-allocated контекстом, per-thread gate, статическим реестром и корректной обработкой move/join/request_stop.
+- Переписан `port_tests/test_jthread_basic.cpp` без `std::_Exit()` и платформенных ветвей; используется единый паттерн со stopper-потоком.
+- Обновлены пять контейнерных multithread-тестов (`test_queue_blocking_mpsc/spmc/mpmc`, `test_multi_ringbuff_mpmc`, `test_message_multithread_many_producer_many_consumers`) для явного вызова `start_scheduler()`.
+- Сохранён неизменным `paraos::Thread`; `paraos::jthread` не использует legacy Thread API.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`) проходят `ctest` 58/58 с таймаутом 20 секунд.
+- `pc_debug_gcc_clang_tidy` собирается без новых предупреждений от кода `paraos::jthread`.
+- `freertos_debug_clang` и `freertos_debug_gcc` успешно компилируются.
+
+**Stats:**
+
+- 13 файлов изменено (код)
+- 4 новых/обновлённых заголовка/теста
+- 4 phases, 18 plans
+- ~1 день на выполнение вехи
+
+**Git range:** `7a3e564` → `HEAD`
+
+**Known deferred items at close:** FreeRTOS runtime tests на macOS POSIX-симуляторе остаются ограничены средой; Windows runtime verification не проводился на macOS-хосте.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.5 Modernize container tests on std-like primitives (Shipped: 2026-06-22)
 
 **Delivered:** Многопоточные тесты контейнеров в `containers/tests/` переведены с legacy-примитивов `paraos::Thread` на современные `paraos::jthread`, `paraos::mutex` и `paraos::*_semaphore`; добавлен кроссплатформенный `paraos::sleep_for`; PC-пресеты проходят 58/58 тестов, FreeRTOS-пресеты компилируются без ошибок.

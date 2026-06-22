@@ -8,7 +8,7 @@
 - ✅ **v1.3 std::mutex-style Mutex API** — Phases 13-15 (shipped 2026-06-22) — see `.planning/milestones/v1.3-ROADMAP.md`
 - ✅ **v1.4 std::semaphore-style Semaphore API** — Phases 16-18 (shipped 2026-06-22) — see `.planning/milestones/v1.4-ROADMAP.md`
 - ✅ **v1.5 Modernize container tests on std-like primitives** — Phases 19-23 (shipped 2026-06-22) — see `.planning/milestones/v1.5-ROADMAP.md`
-- 🚧 **v1.6 Next** — TBD (in planning)
+- ✅ **v1.6 paraos::jthread scheduler control** — Phases 24-27 (shipped 2026-06-22) — see `.planning/milestones/v1.6-ROADMAP.md`
 
 ## Phases
 
@@ -71,9 +71,15 @@
 
 </details>
 
-### 🚧 v1.6 Next (In Planning)
+<details>
+<summary>✅ v1.6 paraos::jthread scheduler control (Phases 24-27) — SHIPPED 2026-06-22</summary>
 
-- [ ] Phase 24: TBD
+- [x] Phase 24: FreeRTOS scheduler API (2/2 plans) — completed 2026-06-22
+- [x] Phase 25: PC scheduler state and gating (3/3 plans) — completed 2026-06-22
+- [x] Phase 26: Test unification (7/7 plans) — completed 2026-06-22
+- [x] Phase 27: Build and static analysis verification (6/6 plans) — completed 2026-06-22
+
+</details>
 
 ## Progress
 
@@ -99,4 +105,7 @@
 | 21. Migrate synchronization primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
 | 22. FreeRTOS std-like primitives hardening | v1.5 | 1/1 | Complete | 2026-06-22 |
 | 23. Build, tests and static analysis | v1.5 | 1/1 | Complete | 2026-06-22 |
-| 24. TBD | v1.6 | 0/0 | Not started | - |
+| 24. FreeRTOS scheduler API | v1.6 | 2/2 | Complete | 2026-06-22 |
+| 25. PC scheduler state and gating | v1.6 | 3/3 | Complete | 2026-06-22 |
+| 26. Test unification | v1.6 | 7/7 | Complete | 2026-06-22 |
+| 27. Build and static analysis verification | v1.6 | 6/6 | Complete | 2026-06-22 |

@@ -1,48 +1,8 @@
-/// @file example_paraos_socket_udp.cpp
+/// @file example_socket_udp.cpp
 /// @author Vyhodcev Egor (vyhodcev@internet.ru)
 ///
-/// @copyright (c) 2025 Stilsoft
-///
-/// MIT License:
-///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-/// IN THE SOFTWARE.
-
-/// NAME
-///     Пример использования UDP сокета из библиотеки Paraos.
-///
-/// DESCRIPTION
-///     Данный модуль предоставляет варианты инициализации UDP сокетов
-///     (неблокирующий/с заданным временем ожидания входных данных/бесконечное
-///     ожидание входных данных) а также примеры их использования внутри
-///     раздельных потоков.
-///
-///     Для сохранения наглядности примера рекомендуется первым запускать модуль
-///     "test_udp_socket.py", например, с помощью команды:
-///     `python test_udp_socket.py`. Затем можно запускать пример из данного
-///     файла.
-///
-/// NOTE
-///     Обратите внимание, что модуль "test_udp_socket.py" завершается
-///     корректно, но через непродолжительный промежуток времени после
-///     завершения примера из данного модуля - нет необходимости завершать его
-///     принудительно (Ctrl + C).
-
+/// SPDX-License-Identifier: MIT.
+/// See LICENSE file in the project root for full license information.
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <array>
 #include <cstdint>

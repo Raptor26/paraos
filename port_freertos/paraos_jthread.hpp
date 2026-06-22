@@ -1,34 +1,13 @@
 /// @file paraos_jthread.hpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2025 Stilsoft
-///
-/// MIT License:
-///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-/// IN THE SOFTWARE.
-///
-/// @brief FreeRTOS implementation of paraos::jthread.
-
+/// SPDX-License-Identifier: MIT.
+/// See LICENSE file in the project root for full license information.
 #ifndef PARAOS_JTHREAD_HPP
 #define PARAOS_JTHREAD_HPP
 
 #include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -37,6 +16,7 @@
 #include "FreeRTOS.h"
 #include "etl/atomic.h"
 #include "paraos_attr.h"
+#include "paraos_check.h"
 #include "paraos_exceptions.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread_common.hpp"
@@ -121,8 +101,9 @@ class jthread {
   template <typename Function, typename... Args>
     requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
   explicit jthread(Function&& func, Args&&... args) {
-    MakeThread(ThreadAttr{}, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(
+        ThreadAttr{}, std::forward<Function>(func),
+        std::forward<Args>(args)...);
   }
 
   /// @brief Construct a thread with the specified attributes and start
@@ -138,8 +119,7 @@ class jthread {
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
   explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
-    MakeThread(attr, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -195,6 +175,53 @@ class jthread {
     return context_ != nullptr && context_->handle != nullptr;
   }
 
+  /// @brief Start the FreeRTOS scheduler.
+  ///
+  /// Delegates to `vTaskStartScheduler()`. The calling task does not return
+  /// while the scheduler is running.
+  ///
+  /// @note Calling this method more than once is a programming error; the
+  ///   repeated-call guard is asserted in debug builds.
+  /// @warning Runtime validation of FreeRTOS tasks is not available on the
+  ///   macOS POSIX simulator; on that host this call is validated by
+  ///   compilation only.
+  static void start_scheduler() {
+    PARAOS_CHECK_ASSERT(xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED);
+    vTaskStartScheduler();
+  }
+
+  /// @brief Check whether the FreeRTOS scheduler is running.
+  ///
+  /// @return `true` if the scheduler has been started, `false` otherwise.
+  [[nodiscard]] static auto is_scheduler_running() noexcept -> bool {
+    return xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED;
+  }
+
+  /// @brief Stop the FreeRTOS scheduler.
+  ///
+  /// If the scheduler is running, calls `vTaskEndScheduler()` and returns
+  /// `true`. If the scheduler is not running, returns `false` without calling
+  /// `vTaskEndScheduler()`.
+  ///
+  /// @note The behavior of `vTaskEndScheduler()` depends on the target
+  ///   FreeRTOS port's implementation of `vPortEndScheduler()`; callers must
+  ///   ensure the target port supports scheduler shutdown.
+  /// @warning Runtime validation of FreeRTOS tasks is not available on the
+  ///   macOS POSIX simulator; on that host this call is validated by
+  ///   compilation only.
+  [[nodiscard]] static auto end_scheduler() noexcept -> bool {
+    if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
+      return false;
+    }
+// В UNIX vTaskEndScheduler() не завершает корректно потоки, поэтому нужно
+// принудительно выйти из программы.
+#ifdef __APPLE__ || __UNIX__
+    std::exit(0);
+#endif
+    vTaskEndScheduler();
+    return true;
+  }
+
  private:
   /// @brief Common implementation for both constructors.
   template <typename Function, typename... Args>
@@ -235,15 +262,15 @@ class jthread {
    public:
     template <typename F, typename... ArgsIn>
     Invoker(F&& f, ArgsIn&&... args)
-        : func_(std::forward<F>(f)),
-          args_(std::forward<ArgsIn>(args)...) {}
+        : func_(std::forward<F>(f)), args_(std::forward<ArgsIn>(args)...) {}
 
     void Invoke(stop_token token) override {
       std::apply(
           [&](auto&&... captured_args) {
-            std::invoke(std::move(func_),
-                        std::forward<decltype(captured_args)>(captured_args)...,
-                        std::move(token));
+            std::invoke(
+                std::move(func_),
+                std::forward<decltype(captured_args)>(captured_args)...,
+                std::move(token));
           },
           std::move(args_));
     }

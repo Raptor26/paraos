@@ -1,35 +1,17 @@
 /// @file test_queue_blocking_mpsc.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
-///
-/// MIT License:
-///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-/// IN THE SOFTWARE.
-
+/// SPDX-License-Identifier: MIT.
+/// See LICENSE file in the project root for full license information.
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -68,17 +50,32 @@ etl::atomic<std::size_t> pop_item_cnt{0};
 std::size_t total_items_to_be_pushed{0};
 std::size_t total_producer_threads_numb{0};
 
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
+
 paraos::QueueBlocking<char, max_queue_size> queue;
+
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  const std::scoped_lock lock{g_done_mtx};
+  g_scheduler_ended = true;
+  g_done_cv.notify_one();
+}
+
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
 
 struct Producer {
   explicit Producer(std::string_view name) : name_{name} {}
 
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     const char symb{'a'};
 
     paraos::OsProfiler runtime_profiler;
 
-    while (true) {
+    while (!token.stop_requested()) {
       PrintDebug(" call queue.TryPush()", name_);
 
       runtime_profiler.Start();
@@ -113,12 +110,12 @@ struct Consumer {
   explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumer thread.
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     constexpr std::size_t timeout_ms{2000};
 
     paraos::OsProfiler runtime_profiler;
 
-    while (true) {
+    while (!token.stop_requested()) {
       PrintDebug(
           " call queue.Pop() with " << timeout_ms << " ms timeout",
           name_);
@@ -157,6 +154,12 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
 
   PARAOS_CHECK_ASSERT(
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
+}
+
+void IdleHook() {
+  WaitForSchedulerEnded();
+  CheckIfTestSuccessfullyComplete();
+  (void)paraos::jthread::end_scheduler();
 }
 
 }  // namespace
@@ -209,14 +212,36 @@ auto main() -> int {
       attr.thread_name = "Prod 4";
       threads.emplace_back(attr, Producer{"Prod 4"});
     }
+
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (pop_item_cnt.load() < total_items_to_be_pushed) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
+    paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
-  CheckIfTestSuccessfullyComplete();
+  // В методе ниже проверяется что все данные считаны и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
-#ifdef PARAOS_LIKE_FREERTOS
-  std::_Exit(EXIT_SUCCESS);
-#else
   return 0;
-#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)

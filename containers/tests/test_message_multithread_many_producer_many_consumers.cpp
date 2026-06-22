@@ -1,37 +1,19 @@
-/// @file test_message_multithread_one_producer_many_consumers.cpp
+/// @file test_message_multithread_many_producer_many_consumers.cpp
 /// @author Mickle Isaev (mrraptor26@gmail.com)
 ///
-/// @copyright (c) 2024 Stilsoft
-///
-/// MIT License:
-///
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the 'Software'), to
-/// deal in the Software without restriction, including without limitation the
-/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-///
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-///
-/// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-/// IN THE SOFTWARE.
-
+/// SPDX-License-Identifier: MIT.
+/// See LICENSE file in the project root for full license information.
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -80,19 +62,34 @@ std::atomic_size_t producer_thread_exit_cnt{0};
 std::atomic_size_t consumer_thread_exit_cnt{0};
 std::atomic_size_t consumer_total_thread_numb{0};
 
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
+
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  const std::scoped_lock lock{g_done_mtx};
+  g_scheduler_ended = true;
+  g_done_cv.notify_one();
+}
+
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
+
 struct Producer {
   explicit Producer(std::string_view name, std::size_t str_idx)
       : name_{name}, str_idx_{str_idx} {}
 
   /// @brief Producer thread.
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     if (str_idx_ >= elems_vector.size()) {
       Exit();
       return;
     }
 
     // Trying to write message in buffer will not work yet.
-    while (true) {
+    while (!token.stop_requested()) {
       auto write =
           message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);
 
@@ -146,8 +143,8 @@ struct Consumer {
   explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumers thread.
-  void operator()(const paraos::stop_token& /*token*/) {
-    while (true) {
+  void operator()(const paraos::stop_token& token) {
+    while (!token.stop_requested()) {
       // Small delay for yeld resources.
       constexpr std::size_t delay_ms{2000};
 
@@ -216,6 +213,12 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
             elems_vector.end() &&
         "Can't find consumer string in source container");
   }
+}
+
+void IdleHook() {
+  WaitForSchedulerEnded();
+  CheckIfTestSuccessfullyComplete();
+  (void)paraos::jthread::end_scheduler();
 }
 
 }  // namespace
@@ -320,14 +323,37 @@ auto main() -> int {
       threads.emplace_back(attr, Producer{"Prod 5", 5});
       producer_total_thread_numb += 1;
     }
+
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (consumer_thread_exit_cnt.load() <
+                 consumer_total_thread_numb.load()) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
+    paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
-  CheckIfTestSuccessfullyComplete();
+  // В методе ниже проверяется что все данные считаны и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
-#ifdef PARAOS_LIKE_FREERTOS
-  std::_Exit(EXIT_SUCCESS);
-#else
   return 0;
-#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)
