@@ -167,13 +167,14 @@ StackType_t * pxPortInitialiseStack( StackType_t * pxTopOfStack,
     thread = ( Thread_t * ) ( pxTopOfStack + 1 ) - 1;
     pxTopOfStack = ( StackType_t * ) thread - 1;
 
-    #ifdef __APPLE__
-        pxEndOfStack = ( StackType_t * ) mach_vm_round_page( pxEndOfStack );
-    #endif
-
     ulStackSize = ( size_t ) ( pxTopOfStack + 1 - pxEndOfStack ) * sizeof( *pxTopOfStack );
 
     #ifdef __APPLE__
+        /* On Apple platforms the stack size passed to pthread_create must be
+         * a multiple of the page size. Truncate the requested size down to a
+         * page boundary so that it never exceeds the memory actually allocated
+         * by FreeRTOS; it will be bumped up to PTHREAD_STACK_MIN below if it is
+         * smaller than one page. */
         ulStackSize = mach_vm_trunc_page( ulStackSize );
     #endif
 
