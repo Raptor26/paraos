@@ -6,18 +6,25 @@ If you want to run your code written for microcontrollers on Windows/Linux in na
 
 ## Table of Contents
 
-- [Supported Operating Systems](#supported-operating-systems)
-- [Key Features](#key-features)
-  - [Core Functionality](#core-functionality)
-  - [Auxiliary Tools](#auxiliary-tools)
-- [Highlights](#highlights)
-- [Code Quality](#code-quality)
-- [Installation and Usage](#installation-and-usage)
-  - [Installation](#installation)
-  - [Usage Example](#usage-example)
-  - [Running Tests](#running-tests)
-- [License](#license)
-- [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
+- [PARAOS](#paraos)
+  - [Table of Contents](#table-of-contents)
+  - [Supported Operating Systems](#supported-operating-systems)
+  - [Key Features](#key-features)
+    - [Core Functionality:](#core-functionality)
+    - [Auxiliary Tools:](#auxiliary-tools)
+  - [Highlights](#highlights)
+  - [Code Quality](#code-quality)
+  - [Installation and Usage](#installation-and-usage)
+    - [Installation](#installation)
+    - [Usage Example](#usage-example)
+    - [Running Tests](#running-tests)
+  - [License](#license)
+  - [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
+    - [What is paraos?](#what-is-paraos)
+    - [Can paraos be used on multiple platforms?](#can-paraos-be-used-on-multiple-platforms)
+    - [What tools are needed to work with the library?](#what-tools-are-needed-to-work-with-the-library)
+    - [What are the main advantages of paraos?](#what-are-the-main-advantages-of-paraos)
+    - [Is paraos free to use?](#is-paraos-free-to-use)
 
 ## Supported Operating Systems
 
@@ -136,6 +143,13 @@ In most cases, users do not need to run **PARAOS** tests in their projects. Howe
    ```bash
    ctest --test-dir build/<name-of-preset>
    ```
+
+5. To run stress tests with 100 repetitions, use the command:
+   ```bash
+   ctest --test-dir build/<name-of-preset> -L stress --repeat-until-fail 100 --timeout 20 --schedule-random
+   ```
+   Stress tests are marked with the CTest label `stress`. The command above
+   repeats each stress test up to 100 times or until a failure occurs.
 
 ## License
 
