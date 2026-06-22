@@ -25,7 +25,6 @@
 #include "paraos_thread_common.hpp"
 #include "paraos_utils.hpp"
 
-
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
     const paraos::CriticalSection macro_critical;              \
@@ -70,6 +69,8 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
 struct Producer {
   explicit Producer(std::string_view name) : name_{name} {}
 
+  ~Producer() { PrintDebug("~Dtor:", name_); }
+
   /// @brief Producer thread.
   void operator()(const paraos::stop_token& token) {
     const char symb{'a'};
@@ -84,11 +85,12 @@ struct Producer {
         ++push_item_cnt;
         runtime_profiler.Stop();
 
-        PrintDebug(" queue.TryPush() success and put "
-                       << "'" << symb << "'"
-                       << "" << ". Real delay is "
-                       << runtime_profiler.LastDurationMs(),
-                   name_);
+        PrintDebug(
+            " queue.TryPush() success and put "
+                << "'" << symb << "'"
+                << "" << ". Real delay is "
+                << runtime_profiler.LastDurationMs(),
+            name_);
 
         PrintDebug(" exiting ... ", name_);
         ++producers_exit_numb;
@@ -111,6 +113,8 @@ struct Producer {
 struct Consumer {
   explicit Consumer(std::string_view name) : name_{name} {}
 
+  ~Consumer() { PrintDebug("~Dtor:", name_); }
+
   /// @brief Consumer thread.
   void operator()(const paraos::stop_token& token) {
     // Small delay for yeld resources for other threads.
@@ -120,8 +124,7 @@ struct Consumer {
 
     while (!token.stop_requested()) {
       PrintDebug(
-          " call queue.Pop() with " << timeout_ms << " ms timeout",
-          name_);
+          " call queue.Pop() with " << timeout_ms << " ms timeout", name_);
 
       runtime_profiler.Start();
       auto read_item = queue.Pop(timeout_ms);
@@ -152,6 +155,12 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
 
   PARAOS_CHECK_ASSERT(
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
+}
+
+void IdleHook() {
+  WaitForSchedulerEnded();
+  CheckIfTestSuccessfullyComplete();
+  (void)paraos::jthread::end_scheduler();
 }
 
 }  // namespace
@@ -205,19 +214,34 @@ auto main() -> int {
       threads.emplace_back(attr, Producer{"--Prod 2"});
     }
 
-    const paraos::jthread stopper([](const paraos::stop_token& /*token*/) -> void {
-      while (pop_item_cnt.load() < expected_total_items_in_queue.load()) {
-        paraos::sleep_for(std::chrono::milliseconds{10});
-      }
-      (void)paraos::jthread::end_scheduler();
-      NotifySchedulerEnded();
-    });
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (pop_item_cnt.load() < expected_total_items_in_queue.load()) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
 
     paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
     WaitForSchedulerEnded();
   }
 
-  CheckIfTestSuccessfullyComplete();
+  // В методе ниже проверяется что все данные считаны и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
   return 0;
 }

@@ -7,6 +7,7 @@
 #define PARAOS_JTHREAD_HPP
 
 #include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -100,8 +101,9 @@ class jthread {
   template <typename Function, typename... Args>
     requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
   explicit jthread(Function&& func, Args&&... args) {
-    MakeThread(ThreadAttr{}, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(
+        ThreadAttr{}, std::forward<Function>(func),
+        std::forward<Args>(args)...);
   }
 
   /// @brief Construct a thread with the specified attributes and start
@@ -117,8 +119,7 @@ class jthread {
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
   explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
-    MakeThread(attr, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -212,6 +213,11 @@ class jthread {
     if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
       return false;
     }
+// В UNIX vTaskEndScheduler() не завершает корректно потоки, поэтому нужно
+// принудительно выйти из программы.
+#ifdef __APPLE__ || __UNIX__
+    std::exit(0);
+#endif
     vTaskEndScheduler();
     return true;
   }
@@ -256,15 +262,15 @@ class jthread {
    public:
     template <typename F, typename... ArgsIn>
     Invoker(F&& f, ArgsIn&&... args)
-        : func_(std::forward<F>(f)),
-          args_(std::forward<ArgsIn>(args)...) {}
+        : func_(std::forward<F>(f)), args_(std::forward<ArgsIn>(args)...) {}
 
     void Invoke(stop_token token) override {
       std::apply(
           [&](auto&&... captured_args) {
-            std::invoke(std::move(func_),
-                        std::forward<decltype(captured_args)>(captured_args)...,
-                        std::move(token));
+            std::invoke(
+                std::move(func_),
+                std::forward<decltype(captured_args)>(captured_args)...,
+                std::move(token));
           },
           std::move(args_));
     }
