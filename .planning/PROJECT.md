@@ -15,16 +15,18 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
-## Current Milestone
-
-**Next milestone:** определяется через `/gsd-new-milestone`.
-
-**Target features (TBD):**
-- Определить следующий приоритет развития PARAOS совместно с командой.
-
 ## Current State
 
 **In progress:** планирование следующей вехи после `/gsd-new-milestone`.
+
+**Shipped:** v1.6 paraos::jthread scheduler control (2026-06-22)
+
+- Добавлены `paraos::jthread::start_scheduler()`, `end_scheduler()` и `is_scheduler_running()` для FreeRTOS и PC.
+- FreeRTOS-порт делегирует вызовы в `vTaskStartScheduler()` / `vTaskEndScheduler()`.
+- PC-порт эмулирует семантику FreeRTOS: потоки ждут `start_scheduler()` и останавливаются по `end_scheduler()`.
+- `port_tests/test_jthread_basic.cpp` переписан без `std::_Exit()` и платформенных ветвей; контейнерные multithread-тесты используют единый кроссплатформенный паттерн.
+- `paraos::Thread` остался неизменным.
+- PC-пресеты проходят `ctest` 58/58; `*_clang_tidy` пресеты без новых предупреждений; FreeRTOS-пресеты компилируются.
 
 **Shipped:** v1.5 Modernize container tests on std-like primitives (2026-06-22)
 
@@ -120,6 +122,11 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - ✓ SYNC-01..03: smoke-тесты `paraos::mutex` / `paraos::*_semaphore` в `containers/tests/` — v1.5 Phase 21.
 - ✓ FR-01..03: hardening std-like примитивов FreeRTOS (`sleep_for`, `join`, `try_acquire_for`) — v1.5 Phase 22.
 - ✓ BLD-01..04: PC/FreeRTOS сборка, `ctest`, `*_clang_tidy`, стресс-тесты — v1.5 Phase 23.
+- ✓ SCHED-01..03: `paraos::jthread` предоставляет `start_scheduler()`, `end_scheduler()` и `is_scheduler_running()` для FreeRTOS — v1.6 Phase 24.
+- ✓ SCHED-04..06: PC-порт эмулирует семантику FreeRTOS для запуска и остановки планировщика — v1.6 Phase 25.
+- ✓ SCHED-07: `paraos::Thread` не изменён; `paraos::jthread` не зависит от `paraos::Thread` — v1.6 Phase 24.
+- ✓ TEST-01..04: `test_jthread_basic` и контейнерные multithread-тесты унифицированы без `std::_Exit()` — v1.6 Phase 26.
+- ✓ BLD-01..03: PC/FreeRTOS сборка, `ctest`, `*_clang_tidy` без новых предупреждений — v1.6 Phase 27.
 
 ### Active
 
@@ -190,4 +197,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-22 after v1.5 milestone completed*
+*Last updated: 2026-06-22 after starting milestone v1.6*

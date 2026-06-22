@@ -1,0 +1,12 @@
+[1/12] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/12] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_spmc.dir/test_queue_blocking_spmc.cpp.o
+[3/12] Building CXX object containers/tests/CMakeFiles/test_multi_ringbuff_mpmc.dir/test_multi_ringbuff_mpmc.cpp.o
+[4/12] Building CXX object containers/tests/CMakeFiles/test_message_multithread_many_producer_many_consumers.dir/test_message_multithread_many_producer_many_consumers.cpp.o
+[5/12] Linking CXX executable port_tests/test_jthread_basic
+[6/12] Linking CXX executable containers/tests/test_message_multithread_many_producer_many_consumers
+[7/12] Linking CXX executable containers/tests/test_multi_ringbuff_mpmc
+[8/12] Linking CXX executable containers/tests/test_queue_blocking_spmc
+[9/12] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpsc.dir/test_queue_blocking_mpsc.cpp.o
+[10/12] Linking CXX executable containers/tests/test_queue_blocking_mpsc
+[11/12] Building CXX object containers/tests/CMakeFiles/test_queue_blocking_mpmc.dir/test_queue_blocking_mpmc.cpp.o
+[12/12] Linking CXX executable containers/tests/test_queue_blocking_mpmc

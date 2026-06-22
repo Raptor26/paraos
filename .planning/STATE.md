@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Modernize container tests on std-like primitives
-current_phase: 5
-status: Awaiting next milestone
-stopped_at: Milestone v1.5 shipped
-last_updated: "2026-06-22T12:28:31.879Z"
+milestone: v1.6
+milestone_name: "paraos::jthread scheduler control"
+current_phase: null
+current_phase_name: null
+status: complete
+stopped_at: Milestone v1.6 archived; awaiting next milestone
+last_updated: "2026-06-22T20:00:00.000Z"
 last_activity: 2026-06-22
-last_activity_desc: Milestone v1.5 completed and archived
+last_activity_desc: Milestone v1.6 completed and archived
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
-current_phase_name: Build, tests and static analysis
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,14 +24,14 @@ current_phase_name: Build, tests and static analysis
 See: .planning/PROJECT.md (updated 2026-06-22)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Ожидание следующей вехи (`/gsd-new-milestone`).
+**Current focus:** Milestone v1.6 complete — ready for audit
 
 ## Current Position
 
-Phase: Milestone v1.5 complete
+Phase: 27 — Build and static analysis verification
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-22 — Milestone v1.5 completed and archived
+Status: Complete
+Last activity: 2026-06-22 — Phase 27 completed, milestone v1.6 ready for audit
 
 ## Accumulated Context
 
@@ -74,10 +74,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-22T22:00:00.000Z
-Stopped at: Milestone v1.5 shipped
-Resume file: .planning/phases/23-build-tests-static-analysis/23-PLAN.md
+Last session: 2026-06-22T19:00:00.000Z
+Stopped at: Milestone v1.6 complete
+Resume file: .planning/phases/27-build-and-static-analysis-verification/27-VERIFICATION.md
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run milestone audit, complete milestone, and cleanup planning artifacts

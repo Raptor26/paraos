@@ -28,11 +28,13 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -98,6 +100,21 @@ std::atomic_size_t producer_thread_numb{0};
 std::atomic_size_t producer_thread_exit_cnt{0};
 
 std::atomic_size_t consumer_thread_exit_cnt{0};
+
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
+
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  const std::scoped_lock lock{g_done_mtx};
+  g_scheduler_ended = true;
+  g_done_cv.notify_one();
+}
+
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
 /// ----------------------------------------------------------------------------
 
 paraos::MultiRingBuff<
@@ -327,14 +344,21 @@ auto main() -> int {
       attr.thread_name = "--Cons 7";
       threads.emplace_back(attr, Consumer{"--Cons 7"});
     }
+
+    const paraos::jthread stopper([](const paraos::stop_token& /*token*/) -> void {
+      while (consumer_total_read_bytes.load() < container_bytes_numb) {
+        paraos::sleep_for(std::chrono::milliseconds{10});
+      }
+      (void)paraos::jthread::end_scheduler();
+      NotifySchedulerEnded();
+    });
+
+    paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
   AssertsForTestComplete();
 
-#ifdef PARAOS_LIKE_FREERTOS
-  std::_Exit(EXIT_SUCCESS);
-#else
   return 0;
-#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)

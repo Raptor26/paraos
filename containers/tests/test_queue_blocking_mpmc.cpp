@@ -26,10 +26,12 @@
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -68,7 +70,22 @@ etl::atomic<std::size_t> expected_total_items_in_queue{0};
 std::atomic_size_t push_item_cnt{0};
 std::atomic_size_t pop_item_cnt{0};
 
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
+
 paraos::QueueBlocking<char, max_queue_size> queue;
+
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  const std::scoped_lock lock{g_done_mtx};
+  g_scheduler_ended = true;
+  g_done_cv.notify_one();
+}
+
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
 
 struct Producer {
   explicit Producer(std::string_view name) : name_{name} {}
@@ -207,14 +224,21 @@ auto main() -> int {
       attr.thread_name = "--Prod 2";
       threads.emplace_back(attr, Producer{"--Prod 2"});
     }
+
+    const paraos::jthread stopper([](const paraos::stop_token& /*token*/) -> void {
+      while (pop_item_cnt.load() < expected_total_items_in_queue.load()) {
+        paraos::sleep_for(std::chrono::milliseconds{10});
+      }
+      (void)paraos::jthread::end_scheduler();
+      NotifySchedulerEnded();
+    });
+
+    paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
   CheckIfTestSuccessfullyComplete();
 
-#ifdef PARAOS_LIKE_FREERTOS
-  std::_Exit(EXIT_SUCCESS);
-#else
   return 0;
-#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)

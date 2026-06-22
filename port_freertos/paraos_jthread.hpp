@@ -37,6 +37,7 @@
 #include "FreeRTOS.h"
 #include "etl/atomic.h"
 #include "paraos_attr.h"
+#include "paraos_check.h"
 #include "paraos_exceptions.hpp"
 #include "paraos_semaphore.hpp"
 #include "paraos_thread_common.hpp"
@@ -193,6 +194,48 @@ class jthread {
   /// @brief Check whether the thread is joinable.
   [[nodiscard]] auto joinable() const noexcept -> bool {
     return context_ != nullptr && context_->handle != nullptr;
+  }
+
+  /// @brief Start the FreeRTOS scheduler.
+  ///
+  /// Delegates to `vTaskStartScheduler()`. The calling task does not return
+  /// while the scheduler is running.
+  ///
+  /// @note Calling this method more than once is a programming error; the
+  ///   repeated-call guard is asserted in debug builds.
+  /// @warning Runtime validation of FreeRTOS tasks is not available on the
+  ///   macOS POSIX simulator; on that host this call is validated by
+  ///   compilation only.
+  static void start_scheduler() {
+    PARAOS_CHECK_ASSERT(xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED);
+    vTaskStartScheduler();
+  }
+
+  /// @brief Check whether the FreeRTOS scheduler is running.
+  ///
+  /// @return `true` if the scheduler has been started, `false` otherwise.
+  [[nodiscard]] static auto is_scheduler_running() noexcept -> bool {
+    return xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED;
+  }
+
+  /// @brief Stop the FreeRTOS scheduler.
+  ///
+  /// If the scheduler is running, calls `vTaskEndScheduler()` and returns
+  /// `true`. If the scheduler is not running, returns `false` without calling
+  /// `vTaskEndScheduler()`.
+  ///
+  /// @note The behavior of `vTaskEndScheduler()` depends on the target
+  ///   FreeRTOS port's implementation of `vPortEndScheduler()`; callers must
+  ///   ensure the target port supports scheduler shutdown.
+  /// @warning Runtime validation of FreeRTOS tasks is not available on the
+  ///   macOS POSIX simulator; on that host this call is validated by
+  ///   compilation only.
+  [[nodiscard]] static auto end_scheduler() noexcept -> bool {
+    if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
+      return false;
+    }
+    vTaskEndScheduler();
+    return true;
   }
 
  private:

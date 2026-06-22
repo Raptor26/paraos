@@ -1,0 +1,6 @@
+=== pc_debug_clang build test_jthread_basic ===
+[1/2] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/2] Linking CXX executable port_tests/test_jthread_basic
+=== pc_debug_gcc build test_jthread_basic ===
+[1/2] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/2] Linking CXX executable port_tests/test_jthread_basic

@@ -1,0 +1,40 @@
+=== freertos_debug_clang configure ===
+-- PARAOS project version is 0.13.0
+CMake Deprecation Warning at etl/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+Using freeRTOS implementation
+-- Configuring done (0.2s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Users/raptor/_vcs/paraos/build/freertos_debug_clang
+=== freertos_debug_clang build ===
+ninja: no work to do.
+=== freertos_debug_gcc configure ===
+-- PARAOS project version is 0.13.0
+CMake Deprecation Warning at etl/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+Using freeRTOS implementation
+-- Configuring done (0.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Users/raptor/_vcs/paraos/build/freertos_debug_gcc
+=== freertos_debug_gcc build ===
+ninja: no work to do.
+=== freertos_debug_clang build test_jthread_basic ===
+[1/2] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/2] Linking CXX executable port_tests/test_jthread_basic
+=== freertos_debug_gcc build test_jthread_basic ===
+[1/2] Building CXX object port_tests/CMakeFiles/test_jthread_basic.dir/test_jthread_basic.cpp.o
+[2/2] Linking CXX executable port_tests/test_jthread_basic

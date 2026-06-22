@@ -28,10 +28,12 @@
 #include <atomic>
 #include <cassert>
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -79,6 +81,21 @@ std::atomic_size_t producer_total_thread_numb{0};
 std::atomic_size_t producer_thread_exit_cnt{0};
 std::atomic_size_t consumer_thread_exit_cnt{0};
 std::atomic_size_t consumer_total_thread_numb{0};
+
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
+
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  const std::scoped_lock lock{g_done_mtx};
+  g_scheduler_ended = true;
+  g_done_cv.notify_one();
+}
+
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
 
 struct Producer {
   explicit Producer(std::string_view name, std::size_t str_idx)
@@ -320,14 +337,21 @@ auto main() -> int {
       threads.emplace_back(attr, Producer{"Prod 5", 5});
       producer_total_thread_numb += 1;
     }
+
+    const paraos::jthread stopper([](const paraos::stop_token& /*token*/) -> void {
+      while (consumer_thread_exit_cnt.load() < consumer_total_thread_numb.load()) {
+        paraos::sleep_for(std::chrono::milliseconds{10});
+      }
+      (void)paraos::jthread::end_scheduler();
+      NotifySchedulerEnded();
+    });
+
+    paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
   CheckIfTestSuccessfullyComplete();
 
-#ifdef PARAOS_LIKE_FREERTOS
-  std::_Exit(EXIT_SUCCESS);
-#else
   return 0;
-#endif
 }
 // NOLINTEND(misc-include-cleaner, readability-magic-numbers)
