@@ -8,16 +8,31 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Веха v1.1 обеспечила прохождение `*_clang_tidy` CMake-пресетов на macOS без регрессий на других платформах.
 - Веха v1.2 добавила новый публичный API `paraos::jthread` в стиле `std::jthread`, единый для Windows, Unix и FreeRTOS, рядом с существующим `paraos::Thread`.
 - Веха v1.3 добавила новый публичный API `paraos::mutex` в стиле `std::mutex` для PC и FreeRTOS, рядом с существующим `paraos::Mutex`.
+- Веха v1.4 добавила `paraos::counting_semaphore` / `paraos::binary_semaphore` в стиле `std::counting_semaphore`.
+- Веха v1.5 перевела многопоточные тесты контейнеров на std-like примитивы и добавила кроссплатформенный `paraos::sleep_for`.
 
 ## Core Value
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
-## Current Milestone: TBD
+## Current Milestone
 
-**Goal:** Определяется через `/gsd-new-milestone`.
+**Next milestone:** определяется через `/gsd-new-milestone`.
+
+**Target features (TBD):**
+- Определить следующий приоритет развития PARAOS совместно с командой.
 
 ## Current State
+
+**In progress:** планирование следующей вехи после `/gsd-new-milestone`.
+
+**Shipped:** v1.5 Modernize container tests on std-like primitives (2026-06-22)
+
+- Проведён аудит и миграция пяти multithread-тестов `containers/tests/` с `paraos::Thread` на `paraos::jthread`.
+- Добавлены smoke-тесты `paraos::mutex` / `paraos::*_semaphore` в `containers/tests/test_queue_blocking.cpp`.
+- Добавлен кроссплатформенный `paraos::sleep_for(std::chrono::milliseconds)` (`paraos_sleep.hpp`).
+- Исправлены предупреждения clang-tidy в заголовках `containers/paraos_ringbuff.hpp` и `containers/paraos_multi_ringbuff.hpp`.
+- PC-пресеты проходят `ctest` 58/58; FreeRTOS-пресеты компилируются; `*_clang_tidy` пресеты без новых предупреждений.
 
 **Shipped:** v1.4 std::semaphore-style Semaphore API (2026-06-22)
 
@@ -100,6 +115,11 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - ✓ BUILD-01: `paraos_mutex_std.hpp` доступен из всех портов — v1.3 Phase 13.
 - ✓ TEST-01..04: `test_mutex_basic.cpp` компилируется и проходит на PC/FreeRTOS — v1.3 Phase 15.
 - ✓ TEST-05: `*_clang_tidy` пресеты без новых предупреждений от кода мьютекса — v1.3 Phase 15.
+- ✓ ANL-01..03: аудит multithread-тестов контейнеров и карта замены legacy → std-like — v1.5 Phase 19.
+- ✓ THR-01..04: миграция `paraos::Thread` → `paraos::jthread` в целевых тестах — v1.5 Phase 20.
+- ✓ SYNC-01..03: smoke-тесты `paraos::mutex` / `paraos::*_semaphore` в `containers/tests/` — v1.5 Phase 21.
+- ✓ FR-01..03: hardening std-like примитивов FreeRTOS (`sleep_for`, `join`, `try_acquire_for`) — v1.5 Phase 22.
+- ✓ BLD-01..04: PC/FreeRTOS сборка, `ctest`, `*_clang_tidy`, стресс-тесты — v1.5 Phase 23.
 
 ### Active
 
@@ -108,17 +128,20 @@ _None — start the next milestone with `/gsd-new-milestone`._
 ### Out of Scope
 
 - Полная замена существующего `paraos::Mutex` на `paraos::mutex` — веха v1.3 добавляет новый API рядом со старым.
-- Миграция `extra/` и `containers/` на `paraos::mutex` — откладывается на будущие вехи.
+- Миграция `extra/` и `containers/` на `paraos::mutex` — частично выполнена для тестов контейнеров в v1.5; миграция `extra/` и production-кода остаётся на будущее.
 - Добавление `std::recursive_mutex`-подобного API или таймаутов (`try_lock_for` / `try_lock_until`) — только базовый `std::mutex`-подобный интерфейс.
 - Изменение семантики существующих примитивов синхронизации PARAOS.
 - Тестирование на физических целевых устройствах — только host-сборки.
 - Глобальное переписывание CI/CD вне явно выделенных CI-задач следующей вехи.
+- Runtime-запуск FreeRTOS-тестов на macOS POSIX-симуляторе — environment limitation.
 
 ## Context
 
 - PARAOS — библиотека только из исходников; потребители подключают через `add_subdirectory`.
 - `.clang-tidy` настроен широким набором проверок и `WarningsAsErrors: '*'`, поэтому любое предупреждение ломает сборку.
 - macOS — основная машина разработки; валидация других платформ обеспечивается изоляцией изменений и сохранением существующих платформенных путей.
+- Минимальная версия C++ — 20 (с v1.2).
+- Все 58 PC-тестов проходят после v1.5; multithread-тесты контейнеров используют std-like примитивы.
 
 ## Constraints
 
@@ -145,6 +168,9 @@ _None — start the next milestone with `/gsd-new-milestone`._
 | `paraos::mutex` API в стиле `std::mutex` | Единый кроссплатформенный API рядом с legacy `paraos::Mutex` | ✓ Good |
 | Header name `paraos_mutex_std.hpp` | Avoids include-guard collision with legacy `PARAOS_MUTEX_HPP` | ✓ Good |
 | FreeRTOS `paraos::mutex` поверх `xSemaphoreCreateMutex` / `xSemaphoreTake` / `xSemaphoreGive` | Минимальная реализация, совпадающая с семантикой `std::mutex` | ✓ Good |
+| `paraos::sleep_for` как корневой заголовок | Реализация тривиальна; `#ifdef PARAOS_LIKE_FREERTOS` достаточно | ✓ Good |
+| Локальный `write.Free()` после неуспешного `TryPush()` | Устраняет гонку в `test_message_multithread_many_producer_many_consumers`, при которой деструктор пушил сообщение после выхода потребителей | ✓ Good |
+| `[[nodiscard]]` на read-only методах `RingBuff` и `MultiRingBuff` | Удовлетворяет clang-tidy без изменения семантики | ✓ Good |
 
 ## Evolution
 
@@ -164,4 +190,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-22 after v1.3 milestone started*
+*Last updated: 2026-06-22 after v1.5 milestone completed*

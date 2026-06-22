@@ -43,7 +43,7 @@ TEST(RingBuff, Create) {
 }
 
 TEST(RingBuff, Capacity) {
-  paraos::RingBuff<char, 2> ring_buff;
+  const paraos::RingBuff<char, 2> ring_buff;
   ASSERT_EQ(2, ring_buff.Capacity());
   ASSERT_EQ(2, ring_buff.Free());
 }

@@ -78,7 +78,7 @@ class IMultiRingBuff {
       return paraos::ISRbool{false};
     }
 
-    const paraos::ISRbool is_write_successful = queue_.TryPush(buff_id, is_isr);
+    paraos::ISRbool is_write_successful = queue_.TryPush(buff_id, is_isr);
 
     // queue_.Push() can't return false because we check inside critical
     // section if queue full before push.
@@ -219,9 +219,7 @@ class MultiRingBuff : public IMultiRingBuff<T> {
 
  public:
   constexpr MultiRingBuff()
-      : IMultiRingBuff<T>{queue_, &ring_buff_ptr_[0], ring_buffs_numbs},
-        queue_{},
-        ringbuff_tuple_{} {
+      : IMultiRingBuff<T>{queue_, &ring_buff_ptr_[0], ring_buffs_numbs} {
     // Copy ring buff addresses from tuple in ring_buff_ptr_.
     SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }
@@ -253,10 +251,10 @@ class MultiRingBuff : public IMultiRingBuff<T> {
   }
 
  private:
-  paraos::QueueBlocking<std::size_t, QUEUE_SIZE> queue_;
+  paraos::QueueBlocking<std::size_t, QUEUE_SIZE> queue_{};
 
   /// @brief Tuple for contained ring buffers.
-  std::tuple<RINGBUFF...> ringbuff_tuple_;
+  std::tuple<RINGBUFF...> ringbuff_tuple_{};
 
   // NOLINTBEGIN(hicpp-avoid-c-arrays)
   /// @brief Array of pointers for polymorphic classes, each element

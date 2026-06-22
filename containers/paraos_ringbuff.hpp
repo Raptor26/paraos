@@ -105,7 +105,7 @@ class IRingBuff {
   virtual ~IRingBuff() = default;
 
   explicit operator bool() const {
-    return static_cast<bool>(lwrb_is_ready(&lwrb_));
+    return static_cast<bool>(lwrb_is_ready(const_cast<lwrb_t*>(&lwrb_)));
   }
 
   PARAOS_INLINE_TRIVIAL auto Write(const void* src, lwrb_sz_t size_in_bytes) {
@@ -163,11 +163,13 @@ class IRingBuff {
   /// @brief Return how many elements can be written.
   ///
   /// @return How many elements can be written before buffer be full.
-  PARAOS_INLINE_TRIVIAL auto Free() const { return lwrb_get_free(&lwrb_); }
+  [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Free() const {
+    return lwrb_get_free(&lwrb_);
+  }
 
   /// @brief Return numbers of bytes currently available in buffer.
   /// @return Number of bytes ready to be read
-  auto Size() const { return lwrb_get_full(&lwrb_); }
+  [[nodiscard]] auto Size() const { return lwrb_get_full(&lwrb_); }
 
   /// @brief Return how many elements of T type buffer can contained in each
   /// time.
@@ -175,7 +177,7 @@ class IRingBuff {
   /// @note lwrb buff can contained 'size - 1' bytes numb
   ///
   /// @return Buffer capacity in 'T' object type.
-  auto Capacity() const { return lwrb_.size - 1; }
+  [[nodiscard]] auto Capacity() const { return lwrb_.size - 1; }
 
   /// @brief Reset ring buffer is inital state. Invalidate all data in ring
   /// buffer.
@@ -185,13 +187,13 @@ class IRingBuff {
   /// write elements numb, equal Capacity().
   ///
   /// @return Return tue if buffer empty, false in otherwise.
-  auto IsEmpty() const -> bool { return Size() == 0; }
+  [[nodiscard]] auto IsEmpty() const -> bool { return Size() == 0; }
 
   /// @brief Check is buffer full. If full, thats mean user code must read or
   /// Clear() buffer before write anything again.
   ///
   /// @return Return full if buffer is full, false in otherwise.
-  auto IsFull() const -> bool { return Size() == Capacity(); }
+  [[nodiscard]] auto IsFull() const -> bool { return Size() == Capacity(); }
 
   /// @brief Five rule.
   IRingBuff(const IRingBuff& other) = delete;
