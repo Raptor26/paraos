@@ -1,8 +1,33 @@
 # Project Milestones: PARAOS
 
-## v1.4 : std::semaphore-style Semaphore API (Backfilled: 2026-06-22)
+## v1.4 std::semaphore-style Semaphore API (Shipped: 2026-06-22)
 
-**Note:** Synthesized from archive snapshot by `/gsd-health --backfill`. Original completion date unknown.
+**Delivered:** Добавлен кроссплатформенный API `paraos::counting_semaphore<LeastMaxValue>` и `paraos::binary_semaphore` в стиле `std::counting_semaphore` рядом со старым `paraos::SemaphoreCounting` / `paraos::SemaphoreBinary`.
+
+**Phases completed:** 16–18 (3 plans total)
+
+**Key accomplishments:**
+
+- Реализован `paraos::counting_semaphore` для PC (`port_pc/` → `port_unix/`, `port_win/`) как тонкая обёртка над `std::counting_semaphore`.
+- Реализован `paraos::counting_semaphore` для FreeRTOS (`port_freertos/`) поверх FreeRTOS counting semaphore API.
+- Добавлены forwarding-заголовки `port_unix/paraos_semaphore_std.hpp` и `port_win/paraos_semaphore_std.hpp`.
+- Обеспечена совместимость с `std::chrono` таймаутами (`try_acquire_for`, `try_acquire_until`) на FreeRTOS.
+- Добавлен тест `port_tests/test_semaphore_std.cpp` и зарегистрирован в CTest.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`) собираются и проходят `ctest`.
+- `*_clang_tidy` пресеты не получили новых предупреждений от кода семафоров.
+
+**Stats:**
+
+- 16 файлов изменено
+- +1758 / −31 строк
+- 3 phases, 3 plans
+- 1 день на выполнение вехи
+
+**Git range:** `edf6c42` → `HEAD`
+
+**Known deferred items at close:** macOS GitLab CI runner, macOS-specific build instructions, FreeRTOS runtime tests on macOS POSIX simulator, Windows jthread runtime verification.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
 
 ---
 

@@ -11,6 +11,7 @@ progress:
   total_plans: 3
   completed_plans: 3
   percent: 100
+stopped_at: Milestone v1.4 complete
 ---
 
 # Project State
@@ -25,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-22)
 ## Current Position
 
 Milestone: v1.4 — Complete ✅
-Status: All phases verified and committed
-Last activity: 2026-06-22 — Milestone v1.4 completed
+Status: Awaiting next milestone
+Last activity: 2026-06-22 — Milestone v1.4 completed and archived
 
 ## Accumulated Context
 
@@ -73,4 +74,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd-new-milestone`.
+- Start the next milestone with /gsd-new-milestone
