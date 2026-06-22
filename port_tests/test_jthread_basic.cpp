@@ -13,6 +13,7 @@
 #include "paraos_jthread.hpp"
 #include "paraos_sleep.hpp"
 #include "paraos_thread.hpp"
+#include "paraos_utils.hpp"
 
 // NOLINTBEGIN(*-magic-numbers, google-build-using-namespace,
 // readability-function-cognitive-complexity,
@@ -45,6 +46,19 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   std::unique_lock lock{g_done_mtx};
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
+
+void IdleHook() {
+  WaitForSchedulerEnded();
+
+  if (counter.load() == kExpectedCounter) {
+    std::cout << "OK\n";
+  } else {
+    std::cout << "FAIL: counter=" << counter.load() << "\n";
+    std::exit(EXIT_FAILURE);
+  }
+
+  (void)paraos::jthread::end_scheduler();
+}
 }  // namespace
 
 auto main() -> int {
@@ -65,24 +79,34 @@ auto main() -> int {
       }
     });
 
-    const paraos::jthread stopper([](const paraos::stop_token& /*token*/) -> void {
-      while (counter.load() < kExpectedCounter) {
-        paraos::sleep_for(std::chrono::milliseconds{10});
-      }
-      (void)paraos::jthread::end_scheduler();
-      NotifySchedulerEnded();
-    });
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (counter.load() < kExpectedCounter) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
 
     paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
     WaitForSchedulerEnded();
   }
 
-  if (counter.load() == kExpectedCounter) {
-    std::cout << "OK\n";
-  } else {
-    std::cout << "FAIL: counter=" << counter.load() << "\n";
-    return EXIT_FAILURE;
-  }
+  // В методе ниже проверяется результат и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
   return 0;
 }
