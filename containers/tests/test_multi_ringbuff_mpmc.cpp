@@ -110,8 +110,8 @@ struct Producer {
       : name_{name}, str_idx_{str_idx} {}
 
   /// @brief Producer thread
-  void operator()(const paraos::stop_token& /*token*/) {
-    while (true) {
+  void operator()(const paraos::stop_token& token) {
+    while (!token.stop_requested()) {
       const std::size_t buff_idx = str_idx_ % multi_ring_buff.GetBuffNumb();
       if (str_idx_ < str_array.size()) {
       } else {
@@ -160,14 +160,14 @@ struct Consumer {
   explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumer thread.
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     // Small delay for yeld recourses if no data available in buff.
     constexpr std::size_t delay_ms{2000};
     constexpr std::size_t read_mem_size{2048};
     std::size_t idx;
     auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
 
-    while (true) {
+    while (!token.stop_requested()) {
       auto read_size = multi_ring_buff.Read(
           idx, read_mem->data(), read_mem->size(), delay_ms);
 
