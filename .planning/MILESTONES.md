@@ -1,5 +1,37 @@
 # Project Milestones: PARAOS
 
+## v1.3 std::mutex-style Mutex API (Shipped: 2026-06-22)
+
+**Delivered:** Добавлен кроссплатформенный API `paraos::mutex` рядом со старым `paraos::Mutex`; реализованы PC- и FreeRTOS-порты; добавлен базовый тест.
+
+**Phases completed:** 13–15 (3 plans total)
+
+**Key accomplishments:**
+
+- Реализован `paraos::mutex` для PC (`port_pc/` → `port_unix/`, `port_win/`) как тонкая обёртка над `std::mutex`.
+- Реализован `paraos::mutex` для FreeRTOS (`port_freertos/`) поверх FreeRTOS mutex API.
+- Добавлены forwarding-заголовки `port_unix/paraos_mutex_std.hpp` и `port_win/paraos_mutex_std.hpp`.
+- Обеспечена совместимость со `std::lock_guard<paraos::mutex>` и `std::unique_lock<paraos::mutex>`.
+- Добавлен тест `port_tests/test_mutex_basic.cpp` и зарегистрирован в CTest.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`) собираются и проходят `ctest` (54/54).
+- `freertos_debug_clang` и `freertos_debug_gcc` собираются; `test_mutex_basic` проходит с учётом ограничений POSIX-порта macOS.
+- `*_clang_tidy` пресеты не получили новых предупреждений от кода мьютекса.
+
+**Stats:**
+
+- 9 файлов изменено (за вычетом planning-артефактов)
+- +2 новых заголовка PC, +1 заголовок FreeRTOS, +1 тест
+- 3 phases, 3 plans
+- 1 день на выполнение вехи
+
+**Git range:** `20c2f15` → `HEAD`
+
+**Known deferred items at close:** FreeRTOS runtime-тесты с созданием задач на macOS зависят от POSIX-порта (pre-existing issue). Windows runtime не проверялся на macOS-хосте.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.2 std::jthread-style Thread API (Shipped: 2026-06-20)
 
 **Delivered:** Добавлен кроссплатформенный API `paraos::jthread` рядом со старым `paraos::Thread`; минимальная версия C++ повышена до 20; PC- и FreeRTOS-порты реализованы; базовый тест добавлен и проходит на PC.

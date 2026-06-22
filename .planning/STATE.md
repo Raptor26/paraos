@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: "std::jthread-style Thread API"
+milestone: v1.3
+milestone_name: "std::mutex-style Mutex API"
 status: complete
-last_updated: "2026-06-20T20:30:00.000Z"
-last_activity: 2026-06-20
+last_updated: "2026-06-22T06:38:17.240Z"
+last_activity: 2026-06-22
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
@@ -20,14 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-20)
 
 **Core value:** All `*_clang_tidy` CMake presets configure, build, and pass `ctest` on the current macOS hardware without regressing any other platform's build or behavior.
-**Current focus:** Milestone v1.2 complete — planning next milestone with `/gsd-new-milestone`.
+**Current focus:** Milestone v1.3 — std::mutex-style Mutex API; Phase 13 pending.
 
 ## Current Position
 
-Phase: 12
-Plan: 12-01
-Status: Complete
-Last activity: 2026-06-20 — Milestone v1.2 completed and archived
+Milestone: v1.3 — Complete ✅
+Phase: —
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-22 — Milestone v1.3 archived and committed
 
 ## Accumulated Context
 
@@ -48,7 +49,7 @@ Last activity: 2026-06-20 — Milestone v1.2 completed and archived
 
 ### Pending Todos
 
-None — milestone v1.2 complete.
+None — milestone v1.3 complete.
 
 ### Blockers/Concerns
 

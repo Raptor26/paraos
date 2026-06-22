@@ -69,6 +69,25 @@ if(CLANG_TIDY_ENABLE)
   endif()
 endif()
 
+# mutex basic ------------------------------------------------------------------
+add_executable(test_mutex_basic test_mutex_basic.cpp)
+target_link_libraries(test_mutex_basic PRIVATE paraos::paraos)
+
+target_compile_features(test_mutex_basic PRIVATE cxx_std_20 c_std_11)
+target_compile_options(test_mutex_basic PRIVATE -Wall -Wextra -Wpedantic
+                                                -Werror)
+
+add_test(NAME test_mutex_basic COMMAND test_mutex_basic)
+
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(test_mutex_basic PROPERTIES CXX_CLANG_TIDY
+                                                      "${DO_CLANG_TIDY}")
+  endif()
+endif()
+
 # test_thread_create_then_delete_many_threads ---------------------------
 
 add_executable(test_thread_create_then_delete_many_threads
