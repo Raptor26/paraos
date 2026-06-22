@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: "std::mutex-style Mutex API"
+milestone: v1.4
+milestone_name: "std::semaphore-style Semaphore API"
 status: complete
-last_updated: "2026-06-22T06:38:17.240Z"
+last_updated: "2026-06-22"
 last_activity: 2026-06-22
 progress:
   total_phases: 3
@@ -17,18 +17,16 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-20)
+See: .planning/PROJECT.md (updated 2026-06-22)
 
-**Core value:** All `*_clang_tidy` CMake presets configure, build, and pass `ctest` on the current macOS hardware without regressing any other platform's build or behavior.
-**Current focus:** Milestone v1.3 — std::mutex-style Mutex API; Phase 13 pending.
+**Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
+**Current focus:** Milestone v1.4 — std::semaphore-style Semaphore API; complete. Start the next milestone with `/gsd-new-milestone`.
 
 ## Current Position
 
-Milestone: v1.3 — Complete ✅
-Phase: —
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-22 — Milestone v1.3 archived and committed
+Milestone: v1.4 — Complete ✅
+Status: All phases verified and committed
+Last activity: 2026-06-22 — Milestone v1.4 completed
 
 ## Accumulated Context
 
@@ -45,11 +43,14 @@ Last activity: 2026-06-22 — Milestone v1.3 archived and committed
 - `ThreadAttr` в конструкторе `jthread`.
 - Минимальная версия C++ — 20.
 - Use `requires` clauses instead of `std::enable_if_t` in C++20 jthread constructors.
-- Suppress C++20-only `modernize-use-designated-initializers`, `modernize-use-ranges`, and `readability-redundant-typename` checks that fire on existing codebase.
+- Suppress C++20-only `modernize-use-designated-initializations`, `modernize-use-ranges`, and `readability-redundant-typename` checks that fire on existing codebase.
+- `paraos::counting_semaphore` и `paraos::binary_semaphore` добавлены рядом с legacy `paraos::SemaphoreCounting` / `paraos::SemaphoreBinary`.
+- PC/Unix/Windows используют `std::counting_semaphore` через `port_pc/paraos_semaphore_std.hpp`.
+- FreeRTOS использует `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive` с `std::chrono` таймаутами.
 
 ### Pending Todos
 
-None — milestone v1.3 complete.
+None — milestone v1.4 complete.
 
 ### Blockers/Concerns
 
@@ -66,22 +67,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-20T20:30:00.000Z
-Stopped at: Milestone v1.2 complete
+Last session: 2026-06-22T00:00:00.000Z
+Stopped at: Milestone v1.4 complete
 Resume file: None
-
-## Performance Metrics
-
-| Phase | Plan | Duration | Notes |
-|-------|------|----------|-------|
-| Phase phase-05 P05-01 | 7min | 7 tasks | 7 files |
-| Phase phase-06 P06-01 | - | library/header fixes | 6 files |
-| Phase phase-07 P07-01 | - | test/example fixes | 13 files |
-| Phase phase-08 P08-01 | - | regression guard | diff audit + builds |
-| Phase phase-09 P09-01 | - | PC jthread implementation | 3 headers |
-| Phase phase-10 P10-01 | - | FreeRTOS jthread implementation | 1 header |
-| Phase phase-11 P11-01 | - | ThreadAttr integration | 2 headers |
-| Phase phase-12 P12-01 | - | Build, tests, static analysis | CMake + test + tidy |
 
 ## Operator Next Steps
 

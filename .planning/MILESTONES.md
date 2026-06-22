@@ -1,5 +1,11 @@
 # Project Milestones: PARAOS
 
+## v1.4 : std::semaphore-style Semaphore API (Backfilled: 2026-06-22)
+
+**Note:** Synthesized from archive snapshot by `/gsd-health --backfill`. Original completion date unknown.
+
+---
+
 ## v1.3 std::mutex-style Mutex API (Shipped: 2026-06-22)
 
 **Delivered:** Добавлен кроссплатформенный API `paraos::mutex` рядом со старым `paraos::Mutex`; реализованы PC- и FreeRTOS-порты; добавлен базовый тест.
