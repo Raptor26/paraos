@@ -5,6 +5,7 @@
 - ✅ **v1.0 macOS Support** — Phases 1-4 (shipped earlier)
 - ✅ **v1.1 Static Analysis Cleanup** — Phases 5-8 (shipped 2026-06-20) — see `.planning/milestones/v1.1-ROADMAP.md`
 - ✅ **v1.2 std::jthread-style Thread API** — Phases 9-12 (shipped 2026-06-20) — see `.planning/milestones/v1.2-ROADMAP.md`
+- ✅ **v1.3 std::mutex-style Mutex API** — Phases 13-15 (shipped 2026-06-22) — see `.planning/milestones/v1.3-ROADMAP.md`
 
 ## Phases
 
@@ -38,6 +39,19 @@
 
 </details>
 
+<details>
+<summary>✅ v1.3 std::mutex-style Mutex API (Phases 13-15) — SHIPPED 2026-06-22</summary>
+
+- [x] Phase 13: PC mutex implementation (1/1 plan) — completed 2026-06-22
+- [x] Phase 14: FreeRTOS mutex implementation (1/1 plan) — completed 2026-06-22
+- [x] Phase 15: Build, tests and static analysis (1/1 plan) — completed 2026-06-22
+
+</details>
+
+## Phase Details
+
+_No active phases — start the next milestone with `/gsd-new-milestone`._
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -51,4 +65,6 @@
 | 10. FreeRTOS jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
 | 11. Thread attributes integration | v1.2 | 1/1 | Complete | 2026-06-20 |
 | 12. Build, tests and static analysis | v1.2 | 1/1 | Complete | 2026-06-20 |
-
+| 13. PC mutex implementation | v1.3 | 1/1 | Complete | 2026-06-22 |
+| 14. FreeRTOS mutex implementation | v1.3 | 1/1 | Complete | 2026-06-22 |
+| 15. Build, tests and static analysis | v1.3 | 1/1 | Complete | 2026-06-22 |

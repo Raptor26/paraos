@@ -7,14 +7,31 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Веха v1.0 добавила поддержку macOS.
 - Веха v1.1 обеспечила прохождение `*_clang_tidy` CMake-пресетов на macOS без регрессий на других платформах.
 - Веха v1.2 добавила новый публичный API `paraos::jthread` в стиле `std::jthread`, единый для Windows, Unix и FreeRTOS, рядом с существующим `paraos::Thread`.
+- Веха v1.3 добавила новый публичный API `paraos::mutex` в стиле `std::mutex` для PC и FreeRTOS, рядом с существующим `paraos::Mutex`.
 
 ## Core Value
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
+## Current Milestone: TBD
+
+**Goal:** Определяется через `/gsd-new-milestone`.
+
 ## Current State
 
-**Shipped:** v1.2 std::jthread-style Thread API (2026-06-20)
+**Shipped:** v1.3 std::mutex-style Mutex API (2026-06-22)
+
+- Добавлен `paraos::mutex` с `lock()`, `try_lock()`, `unlock()` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
+- PC-порт реализован как тонкая обёртка над `std::mutex`.
+- FreeRTOS-порт реализован поверх FreeRTOS mutex API.
+- Обеспечена совместимость со `std::lock_guard<paraos::mutex>` и `std::unique_lock<paraos::mutex>`.
+- Добавлен тест `port_tests/test_mutex_basic.cpp` и зарегистрирован в CTest.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`) собираются и проходят `ctest` (54/54).
+- `freertos_debug_clang` и `freertos_debug_gcc` собираются; `test_mutex_basic` проходит с учётом ограничений POSIX-порта macOS.
+- `*_clang_tidy` пресеты не получили новых предупреждений от кода мьютекса.
+
+<details>
+<summary>Previous: v1.2 std::jthread-style Thread API (2026-06-20)</summary>
 
 - Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
 - PC-порт реализован как тонкая обёртка над `std::jthread`.
@@ -26,9 +43,19 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
 - FreeRTOS runtime-тесты с созданием задач на macOS зависят от POSIX-порта и не выполняются на этом хосте (известное ограничение среды).
 
-## Next Milestone Goals
+</details>
 
-Финальный выбор следующей вехи определяется через `/gsd-new-milestone`.
+**Previously shipped:** v1.2 std::jthread-style Thread API (2026-06-20)
+
+- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
+- PC-порт реализован как тонкая обёртка над `std::jthread`.
+- FreeRTOS-порт реализован поверх FreeRTOS API с поддержкой capturing lambdas через heap-allocated invoker.
+- Поддержан `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
+- Минимальная версия C++ повышена до 20.
+- Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
+- `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
+- FreeRTOS runtime-тесты с созданием задач на macOS зависят от POSIX-порта и не выполняются на этом хосте (известное ограничение среды).
 
 ## Requirements
 
@@ -55,18 +82,26 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - ✓ JT-08: добавить тест `port_tests/test_jthread_basic.cpp` — v1.2 Phase 12.
 - ✓ JT-09: пройти сборку и тесты на PC; FreeRTOS runtime ограничен POSIX-портом macOS — v1.2 Phase 12.
 - ✓ JT-10: обеспечить прохождение `*_clang_tidy` пресетов без регрессий — v1.2 Phase 12.
+- ✓ MUTEX-01..03: `paraos::mutex` предоставляет `lock()`, `try_lock()`, `unlock()` — v1.3 Phase 13.
+- ✓ MUTEX-04: `paraos::mutex` не копируется и не перемещается — v1.3 Phase 13.
+- ✓ MUTEX-05..06: совместимость со `std::lock_guard` и `std::unique_lock` — v1.3 Phase 15.
+- ✓ MUTEX-07..09: PC-реализация и forwarding-заголовки — v1.3 Phase 13.
+- ✓ MUTEX-10: FreeRTOS-реализация — v1.3 Phase 14.
+- ✓ MUTEX-11: пользовательский API без платформенных `#ifdef` — v1.3 Phase 13.
+- ✓ BUILD-01: `paraos_mutex_std.hpp` доступен из всех портов — v1.3 Phase 13.
+- ✓ TEST-01..04: `test_mutex_basic.cpp` компилируется и проходит на PC/FreeRTOS — v1.3 Phase 15.
+- ✓ TEST-05: `*_clang_tidy` пресеты без новых предупреждений от кода мьютекса — v1.3 Phase 15.
 
 ### Active
 
-None — milestone v1.2 complete. Use `/gsd-new-milestone` to define the next milestone.
+_None — start the next milestone with `/gsd-new-milestone`._
 
 ### Out of Scope
 
-- Полная замена `paraos::Thread` на `paraos::jthread` — веха v1.2 добавила новый API рядом со старым.
-- Миграция `extra/` и `containers/` на `jthread` — откладывается на будущие вехи.
-- Добавление новых портов (macOS, Zephyr и т.д.) — веха v1.2 поддерживает Windows, Unix, FreeRTOS.
-- `std::stop_callback`-совместимый API — в минимальной версии не требуется.
-- Полная бинарная совместимость с `std::jthread` (например, `get_id`, `detach`, `hardware_concurrency`) — только базовый API.
+- Полная замена существующего `paraos::Mutex` на `paraos::mutex` — веха v1.3 добавляет новый API рядом со старым.
+- Миграция `extra/` и `containers/` на `paraos::mutex` — откладывается на будущие вехи.
+- Добавление `std::recursive_mutex`-подобного API или таймаутов (`try_lock_for` / `try_lock_until`) — только базовый `std::mutex`-подобный интерфейс.
+- Изменение семантики существующих примитивов синхронизации PARAOS.
 - Тестирование на физических целевых устройствах — только host-сборки.
 - Глобальное переписывание CI/CD вне явно выделенных CI-задач следующей вехи.
 
@@ -98,6 +133,9 @@ None — milestone v1.2 complete. Use `/gsd-new-milestone` to define the next mi
 | Capturing lambdas для FreeRTOS через heap-allocated invoker | `etl::delegate` не поддерживает capturing lambdas и variadic args; `std::function` требует динамического выделения | ✓ Good |
 | `ThreadAttr` в конструкторе `jthread` | Необходимость задавать приоритет/стек/имя FreeRTOS-потока при создании | ✓ Good |
 | Минимальная версия C++ — 20 | Использование `std::jthread`, `std::stop_token`, `std::apply`, `std::invoke` | ✓ Good |
+| `paraos::mutex` API в стиле `std::mutex` | Единый кроссплатформенный API рядом с legacy `paraos::Mutex` | ✓ Good |
+| Header name `paraos_mutex_std.hpp` | Avoids include-guard collision with legacy `PARAOS_MUTEX_HPP` | ✓ Good |
+| FreeRTOS `paraos::mutex` поверх `xSemaphoreCreateMutex` / `xSemaphoreTake` / `xSemaphoreGive` | Минимальная реализация, совпадающая с семантикой `std::mutex` | ✓ Good |
 
 ## Evolution
 
@@ -117,4 +155,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-20 after v1.2 milestone completion*
+*Last updated: 2026-06-22 after v1.3 milestone started*
