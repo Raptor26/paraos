@@ -215,6 +215,12 @@ void AssertsForTestComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namesp
       "written bytes not equal with expected");
 }
 
+void IdleHook() {
+  WaitForSchedulerEnded();
+  AssertsForTestComplete();
+  (void)paraos::jthread::end_scheduler();
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -325,19 +331,34 @@ auto main() -> int {
       threads.emplace_back(attr, Consumer{"--Cons 7"});
     }
 
-    const paraos::jthread stopper([](const paraos::stop_token& /*token*/) -> void {
-      while (consumer_total_read_bytes.load() < container_bytes_numb) {
-        paraos::sleep_for(std::chrono::milliseconds{10});
-      }
-      (void)paraos::jthread::end_scheduler();
-      NotifySchedulerEnded();
-    });
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (consumer_total_read_bytes.load() < container_bytes_numb) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
 
     paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
     WaitForSchedulerEnded();
   }
 
-  AssertsForTestComplete();
+  // В методе ниже проверяется что все данные считаны и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
   return 0;
 }
