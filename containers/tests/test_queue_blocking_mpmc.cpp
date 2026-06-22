@@ -71,12 +71,12 @@ struct Producer {
   explicit Producer(std::string_view name) : name_{name} {}
 
   /// @brief Producer thread.
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     const char symb{'a'};
 
     paraos::OsProfiler runtime_profiler;
 
-    while (true) {
+    while (!token.stop_requested()) {
       PrintDebug(" call queue.TryPush()", name_);
 
       runtime_profiler.Start();
@@ -112,13 +112,13 @@ struct Consumer {
   explicit Consumer(std::string_view name) : name_{name} {}
 
   /// @brief Consumer thread.
-  void operator()(const paraos::stop_token& /*token*/) {
+  void operator()(const paraos::stop_token& token) {
     // Small delay for yeld resources for other threads.
     constexpr std::size_t timeout_ms{2000};
 
     paraos::OsProfiler runtime_profiler;
 
-    while (true) {
+    while (!token.stop_requested()) {
       PrintDebug(
           " call queue.Pop() with " << timeout_ms << " ms timeout",
           name_);
