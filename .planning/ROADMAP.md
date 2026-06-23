@@ -30,7 +30,9 @@
 **Plans**: 0/1 complete
 
 Plans:
-- [ ] 28-01: Переписать четыре `test_thread_only_*.cpp` на `paraos::jthread` с единым паттерном завершения
+- [x] 28-01: Переписать четыре `test_thread_only_*.cpp` на `paraos::jthread` с единым паттерном завершения
+
+#### Phase 28: Migrate `test_thread_only_*` sources to `paraos::jthread` | v1.7 | 1/1 | Complete | 2026-06-23
 
 #### Phase 29: Update `port_tests/CMakeLists.txt` for new tests
 **Goal**: Сборочная система приведена в соответствие с мигрированными тестами: C++20, clang-tidy, таймаут 20 секунд.
@@ -44,7 +46,9 @@ Plans:
 **Plans**: 0/1 complete
 
 Plans:
-- [ ] 29-01: Обновить `port_tests/CMakeLists.txt`: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`
+- [x] 29-01: Обновить `port_tests/CMakeLists.txt`: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`
+
+#### Phase 29: Update `port_tests/CMakeLists.txt` for new tests | v1.7 | 1/1 | Complete | 2026-06-23
 
 #### Phase 30: Runtime verification on macOS
 **Goal**: Все тесты проходят на macOS с таймаутом 20 секунд, включая FreeRTOS-пресеты.
@@ -57,7 +61,9 @@ Plans:
 **Plans**: 0/1 complete
 
 Plans:
-- [ ] 30-01: Запустить `ctest --timeout 20` для PC-пресетов и FreeRTOS-пресетов на macOS
+- [x] 30-01: Запустить `ctest --timeout 20` для PC-пресетов и FreeRTOS-пресетов на macOS
+
+#### Phase 30: Runtime verification on macOS | v1.7 | 1/1 | Complete | 2026-06-23
 
 ## Progress
 
@@ -87,6 +93,6 @@ Plans:
 | 25. PC scheduler state and gating | v1.6 | 3/3 | Complete | 2026-06-22 |
 | 26. Test unification | v1.6 | 7/7 | Complete | 2026-06-22 |
 | 27. Build and static analysis verification | v1.6 | 6/6 | Complete | 2026-06-22 |
-| 28. Migrate `test_thread_only_*` sources to `paraos::jthread` | v1.7 | 0/1 | Not started | — |
-| 29. Update `port_tests/CMakeLists.txt` for new tests | v1.7 | 0/1 | Not started | — |
-| 30. Runtime verification on macOS | v1.7 | 0/1 | Not started | — |
+| 28. Migrate `test_thread_only_*` sources to `paraos::jthread` | v1.7 | 1/1 | Complete | 2026-06-23 |
+| 29. Update `port_tests/CMakeLists.txt` for new tests | v1.7 | 1/1 | Complete | 2026-06-23 |
+| 30. Runtime verification on macOS | v1.7 | 1/1 | Complete | 2026-06-23 |
