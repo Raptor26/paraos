@@ -18,7 +18,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE paraos::paraos GTest::gtest_main)
 target_include_directories(${PROJECT_NAME}
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17 c_std_11)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20 c_std_11)
 # '-Wno-cpp' added to suppress warnings after gcc update to 15.1.0:
 #[=[
 warning "<ciso646> is deprecated in C++17, use <version> to detect implementation-specific macros" [-Werror=cpp]
@@ -32,6 +32,7 @@ gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS EXTRA]:")
 if(THREAD_ENABLE)
   add_executable(test_paraos_thread_sequence test_paraos_thread_sequence.cpp)
   target_link_libraries(test_paraos_thread_sequence PRIVATE paraos::paraos)
+  target_compile_features(test_paraos_thread_sequence PRIVATE cxx_std_20)
   add_test(NAME test_paraos_thread_sequence COMMAND test_paraos_thread_sequence)
 
   # ----------------------------------------------------------------------------
@@ -39,11 +40,14 @@ if(THREAD_ENABLE)
                  test_paraos_cooperative_scheduling_thread.cpp)
   target_link_libraries(test_paraos_cooperative_scheduling_thread
                         PRIVATE paraos::paraos)
+  target_compile_features(test_paraos_cooperative_scheduling_thread
+                          PRIVATE cxx_std_20)
   add_test(NAME test_paraos_cooperative_scheduling_thread
            COMMAND test_paraos_cooperative_scheduling_thread)
   # ----------------------------------------------------------------------------
   add_executable(test_paraos_oneshot_executor test_oneshot_executor_thread.cpp)
   target_link_libraries(test_paraos_oneshot_executor PRIVATE paraos::paraos)
+  target_compile_features(test_paraos_oneshot_executor PRIVATE cxx_std_20)
   add_test(NAME test_paraos_oneshot_executor
            COMMAND test_paraos_oneshot_executor)
 
@@ -61,6 +65,9 @@ if(CLANG_TIDY_ENABLE)
                             PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 
       set_target_properties(test_paraos_cooperative_scheduling_thread
+                            PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+
+      set_target_properties(test_paraos_oneshot_executor
                             PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
     endif()
   else()
