@@ -213,12 +213,15 @@ class jthread {
     if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
       return false;
     }
-// В UNIX vTaskEndScheduler() не завершает корректно потоки, поэтому нужно
-// принудительно выйти из программы.
-#ifdef __APPLE__ || __UNIX__
+#define PARAOS_FORCE_EXIT_FROM_SCHEDULER
+#ifdef PARAOS_FORCE_EXIT_FROM_SCHEDULER
+    // В UNIX/Windows vTaskEndScheduler() не завершает корректно потоки, поэтому
+    // нужно принудительно выйти из программы.
     std::exit(0);
-#endif
+#else
     vTaskEndScheduler();
+#endif
+#undef PARAOS_FORCE_EXIT_FROM_SCHEDULER
     return true;
   }
 
