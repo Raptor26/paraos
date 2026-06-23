@@ -2,9 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
-status: complete
-last_updated: "2026-06-23T23:50:00.000Z"
+current_phase: 8
+status: Awaiting next milestone
+stopped_at: Roadmap created; awaiting approval
+last_updated: "2026-06-23T19:01:54.412Z"
 last_activity: 2026-06-23
+last_activity_desc: Milestone v1.8 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
@@ -24,11 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-23)
 
 ## Current Position
 
-Phase: 35 — Build, static analysis and runtime verification
+Phase: Milestone v1.8 complete
 Plan: —
-Status: Complete
-Last activity: 2026-06-23 — Phase 35 completed and verified
-Last activity: 2026-06-23 — All phases complete; ready for milestone audit
+Status: Awaiting next milestone
+Last activity: 2026-06-23 — Milestone v1.8 completed and archived
 
 ## Accumulated Context
 
@@ -74,3 +76,7 @@ None.
 
 Last session: 2026-06-23T17:45:00.000Z
 Stopped at: Roadmap created; awaiting approval
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

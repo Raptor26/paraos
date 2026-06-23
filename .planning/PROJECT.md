@@ -12,28 +12,22 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Веха v1.5 перевела многопоточные тесты контейнеров на std-like примитивы и добавила кроссплатформенный `paraos::sleep_for`.
 - Веха v1.6 добавила кроссплатформенное управление планировщиком в `paraos::jthread`.
 - Веха v1.7 перевела четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`.
+- Веха v1.8 перевела внутренние потоки библиотек `extra/` (`OneShotExecutor`, `ThreadSequence`, `CooperativeScheduling`) и их standalone-тесты на `paraos::jthread`, сохранив публичный API.
 
 ## Core Value
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
-## Current Milestone
-
-### v1.8 Migrate `extra/` libraries to `paraos::jthread`
-
-**Goal:** Перевести внутреннюю реализацию библиотек `extra/` с legacy `paraos::Thread` на `paraos::jthread`, сохранив публичный API и совместимость с FreeRTOS/PC.
-
-**Target features:**
-- Перевод `extra/paraos_oneshot_executor.hpp` на внутреннее использование `paraos::jthread`.
-- Перевод `extra/paraos_thread_sequence.hpp` на внутреннее использование `paraos::jthread`.
-- Перевод `extra/paraos_thread_cooperative_scheduling.hpp` на внутреннее использование `paraos::jthread`.
-- Миграция standalone-тестов `extra/tests/test_*_thread.cpp` на `paraos::jthread`, `start_scheduler()` и `end_scheduler()`.
-- Обновление `extra/tests/CMakeLists.txt` до C++20 и добавление `CXX_CLANG_TIDY` для standalone-целей.
-- Сборка и прохождение всех PC/FreeRTOS пресетов без регрессий.
-
 ## Current State
 
-**In progress:** майлстоун v1.8 в стадии определения требований.
+**Shipped:** v1.8 Migrate `extra/` libraries to `paraos::jthread` (2026-06-23)
+
+- Внутренние потоки `extra/paraos_oneshot_executor.hpp`, `extra/paraos_thread_sequence.hpp` и `extra/paraos_thread_cooperative_scheduling.hpp` переведены на `paraos::jthread`.
+- `OneShotExecutor` использует `std::optional<paraos::jthread>`: поток создаётся только при `thread_start_flag=true`.
+- Standalone-тесты `extra/tests/test_*_thread.cpp` мигрированы на `paraos::jthread`, `start_scheduler()` и `end_scheduler()`.
+- `extra/tests/CMakeLists.txt` требует `cxx_std_20` и прикрепляет `CXX_CLANG_TIDY` к standalone-целям.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) проходят `ctest` 58/58; FreeRTOS-пресеты компилируются.
+- Публичный API `extra/` остался неизменным.
 
 **Shipped:** v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (2026-06-23)
 
@@ -156,16 +150,19 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - ✓ IDIO-01: RAII-контейнеры и `paraos::stop_token` в standalone-тестах — v1.7 Phase 28.
 - ✓ BUILD-01..04: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`, чистая сборка пресетов — v1.7 Phase 29.
 - ✓ TEST-01..03: PC и FreeRTOS пресеты проходят `ctest` без регрессий — v1.7 Phase 30.
+- ✓ MIG-01: внутренний поток `extra/paraos_oneshot_executor.hpp` использует `paraos::jthread` — v1.8 Phase 31.
+- ✓ MIG-02: внутренний поток `extra/paraos_thread_sequence.hpp` использует `paraos::jthread` — v1.8 Phase 32.
+- ✓ MIG-03: внутренний поток `extra/paraos_thread_cooperative_scheduling.hpp` использует `paraos::jthread` — v1.8 Phase 33.
+- ✓ MIG-04: standalone-тесты `extra/tests/test_*_thread.cpp` мигрированы на `paraos::jthread` — v1.8 Phase 34.
+- ✓ BUILD-01: `extra/tests/CMakeLists.txt` требует `cxx_std_20` для всех целей — v1.8 Phase 34.
+- ✓ BUILD-02: standalone-цели `extra/tests/` прикреплены к `CXX_CLANG_TIDY` — v1.8 Phase 34.
+- ✓ BUILD-03: изменённые заголовки и тесты проходят `*_clang_tidy` пресеты без новых предупреждений — v1.8 Phase 35.
+- ✓ TEST-01: PC-пресеты проходят `ctest` без регрессий — v1.8 Phase 35.
+- ✓ TEST-02: FreeRTOS-пресеты компилируются — v1.8 Phase 35.
 
 ### Active
 
-- MIG-01: перевести внутреннюю реализацию `extra/paraos_oneshot_executor.hpp` на `paraos::jthread`.
-- MIG-02: перевести внутреннюю реализацию `extra/paraos_thread_sequence.hpp` на `paraos::jthread`.
-- MIG-03: перевести внутреннюю реализацию `extra/paraos_thread_cooperative_scheduling.hpp` на `paraos::jthread`.
-- MIG-04: обновить standalone-тесты `extra/tests/test_*_thread.cpp` на `paraos::jthread`.
-- BUILD-01: обновить `extra/tests/CMakeLists.txt` до `cxx_std_20` и добавить `CXX_CLANG_TIDY` для standalone-целей.
-- TEST-01: обеспечить прохождение всех PC-пресетов (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`).
-- TEST-02: обеспечить компиляцию и прохождение FreeRTOS-пресетов (`freertos_debug_clang`, `freertos_debug_gcc`).
+(none — awaiting next milestone definition)
 
 ### Out of Scope
 
@@ -177,6 +174,8 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Тестирование на физических целевых устройствах — только host-сборки.
 - Глобальное переписывание CI/CD вне явно выделенных CI-задач следующей вехи.
 - Runtime-запуск FreeRTOS-тестов на macOS POSIX-симуляторе — environment limitation.
+- Полная замена `paraos::Thread` на `paraos::jthread` в production-коде вне `extra/` — следующие вехи.
+- Депрекация legacy `paraos::Thread` — следующие вехи.
 
 ## Context
 
@@ -217,6 +216,10 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 | Self-deleting thread object заменён на RAII-группу + explicit `groups.clear()` в stopper | `paraos::jthread` не предоставляет deferred self-deletion; ранняя очистка контейнера имитирует оригинальное поведение без UB | ✓ Good |
 | `paraos::binary_semaphore` для синхронизации потоков внутри `MyThreadGroup` | Идиоматичная замена legacy `paraos::SemaphoreBinary` в многопоточном тесте | ✓ Good |
 | `const static paraos::jthread` в `test_thread_only_static.cpp` | Сохраняет семантику статических потоков с автоматическим join в деструкторе | ✓ Good |
+| `std::optional<paraos::jthread>` в `OneShotExecutor` | Позволяет избежать создания ОС-потока, когда `thread_start_flag=false` | ✓ Good |
+| Тип возврата `auto (...) -> void` у лямбд внутри jthread-конструкторов `extra/` | Устраняет предупреждения clang-tidy о неявных типах возврата | ✓ Good |
+| `NOLINT(llvm-prefer-static-over-anonymous-namespace)` в standalone-тестах `extra/` и контейнерных/port-тестах | Документирование pre-existing предупреждений clang-tidy без изменения семантики | ✓ Good |
+| Robust `end_scheduler()` в `CooperativeScheduling` | Предотвращает double-join при повторном вызове или после автоматического join деструктора jthread | ✓ Good |
 
 ## Evolution
 
@@ -236,4 +239,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-23 after completing milestone v1.7*
+*Last updated: 2026-06-23 after completing milestone v1.8*

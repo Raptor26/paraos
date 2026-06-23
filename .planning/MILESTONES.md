@@ -1,5 +1,36 @@
 # Project Milestones: PARAOS
 
+## v1.8 Migrate extra/ libraries to paraos::jthread (Shipped: 2026-06-23)
+
+**Delivered:** Внутренние потоки библиотек `extra/` (`OneShotExecutor`, `ThreadSequence`, `CooperativeScheduling`) и их standalone-тесты переведены с legacy `paraos::Thread` на `paraos::jthread`; публичный API сохранён; все PC- и FreeRTOS-пресеты проходят верификацию.
+
+**Phases completed:** 31-35 (5 plans total)
+
+**Key accomplishments:**
+
+- Мигрирован `extra/paraos_oneshot_executor.hpp` на `std::optional<paraos::jthread>`; поток создаётся только при `thread_start_flag=true`, делегат-цикл работает внутри jthread-callable.
+- Мигрирован `extra/paraos_thread_sequence.hpp` на `paraos::jthread`; таймерный цикл `Run()` наблюдает `stop_token`.
+- Мигрирован `extra/paraos_thread_cooperative_scheduling.hpp` на `paraos::jthread`; `end_scheduler()` устойчив к повторному join.
+- Переписаны standalone-тесты `test_oneshot_executor_thread.cpp`, `test_paraos_thread_sequence.cpp`, `test_paraos_cooperative_scheduling_thread.cpp` на `paraos::jthread` и `start_scheduler()` / `end_scheduler()`.
+- Обновлён `extra/tests/CMakeLists.txt`: `cxx_std_20` для всех целей, `CXX_CLANG_TIDY` для standalone-целей в режимах `CLANG_TIDY_ENABLE`.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) проходят `ctest` 58/58 с таймаутом 20 секунд.
+- `pc_debug_gcc_clang_tidy` собирается без новых предупреждений clang-tidy в изменённых файлах `extra/`; pre-existing предупреждения в контейнерных/port-тестах задокументированы `NOLINT`.
+- FreeRTOS-пресеты (`freertos_debug_clang`, `freertos_debug_gcc`) успешно компилируются.
+
+**Stats:**
+
+- 16 файлов изменено (код)
+- 5 phases, 5 plans
+- ~1 день на выполнение вехи
+
+**Git range:** `0f7b3f3` → `HEAD`
+
+**Known deferred items at close:** полный переход production-кода вне `extra/` на `paraos::jthread` / `paraos::mutex`; депрекация legacy `paraos::Thread`; Windows runtime verification на macOS-хосте; FreeRTOS runtime tests на macOS POSIX simulator.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (Shipped: 2026-06-23)
 
 **Delivered:** Четыре standalone-теста `port_tests/test_thread_only_*.cpp` мигрированы с legacy `paraos::Thread` на `paraos::jthread`; применён единый кроссплатформенный паттерн завершения; `port_tests/CMakeLists.txt` обновлён до C++20 с clang-tidy и таймаутом 20 секунд; все PC- и FreeRTOS-пресеты на macOS проходят верификацию.
