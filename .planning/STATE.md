@@ -1,37 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: "paraos::jthread scheduler control"
-current_phase: null
-current_phase_name: null
+milestone: v1.7
+milestone_name: "Migrate `test_thread_only_*` to `paraos::jthread`"
+current_phase_name: defining requirements
 status: complete
-stopped_at: Milestone v1.6 archived; awaiting next milestone
-last_updated: "2026-06-22T20:00:00.000Z"
-last_activity: 2026-06-22
-last_activity_desc: Milestone v1.6 completed and archived
+stopped_at: Phase 30 complete; milestone v1.7 ready for lifecycle
+last_updated: "2026-06-23T20:30:00.000Z"
+last_activity: 2026-06-23
+last_activity_desc: Phase 30 runtime verification passed on macOS
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-22)
+See: .planning/PROJECT.md (updated 2026-06-23)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.6 complete — ready for audit
+**Current focus:** Milestone v1.7 завершён; следующая веха не определена.
 
 ## Current Position
 
-Phase: 27 — Build and static analysis verification
+Phase: —
 Plan: —
-Status: Complete
-Last activity: 2026-06-22 — Phase 27 completed, milestone v1.6 ready for audit
+Status: Milestone v1.7 complete
+Last activity: 2026-06-23 — Milestone v1.7 archived
 
 ## Accumulated Context
 
@@ -74,10 +73,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-22T19:00:00.000Z
-Stopped at: Milestone v1.6 complete
-Resume file: .planning/phases/27-build-and-static-analysis-verification/27-VERIFICATION.md
+Last session: 2026-06-23T16:19:03.003Z
+Stopped at: Phase 28 context gathered
+Resume file: .planning/phases/28-migrate-test-thread-only-sources-to-paraos-jthread/28-CONTEXT.md
 
 ## Operator Next Steps
 
-- Run milestone audit, complete milestone, and cleanup planning artifacts
+- Start Phase 28: `/gsd-discuss-phase 28` или `/gsd-plan-phase 28`

@@ -10,31 +10,34 @@ project(test_paraos_osal VERSION 0.1.0)
 add_executable(test_thread_only_static test_thread_only_static.cpp)
 target_link_libraries(test_thread_only_static PRIVATE paraos::paraos)
 
-target_compile_features(test_thread_only_static PRIVATE cxx_std_17 c_std_11)
+target_compile_features(test_thread_only_static PRIVATE cxx_std_20 c_std_11)
 target_compile_options(test_thread_only_static PRIVATE -Wall -Wextra -Wpedantic
                                                        -Werror)
 
-add_test(NAME test_thread_only_static COMMAND test_thread_only_static)
+add_test(NAME test_thread_only_static COMMAND test_thread_only_static
+         TIMEOUT 20)
 
 # Thread only global -----------------------------------------------------------
 add_executable(test_thread_only_global test_thread_only_global.cpp)
 target_link_libraries(test_thread_only_global PRIVATE paraos::paraos)
 
-target_compile_features(test_thread_only_global PRIVATE cxx_std_17 c_std_11)
+target_compile_features(test_thread_only_global PRIVATE cxx_std_20 c_std_11)
 target_compile_options(test_thread_only_global PRIVATE -Wall -Wextra -Wpedantic
                                                        -Werror)
 
-add_test(NAME test_thread_only_global COMMAND test_thread_only_global)
+add_test(NAME test_thread_only_global COMMAND test_thread_only_global
+         TIMEOUT 20)
 
 # Thread only stack ------------------------------------------------------------
 add_executable(test_thread_only_stack test_thread_only_stack.cpp)
 target_link_libraries(test_thread_only_stack PRIVATE paraos::paraos)
 
-target_compile_features(test_thread_only_stack PRIVATE cxx_std_17 c_std_11)
+target_compile_features(test_thread_only_stack PRIVATE cxx_std_20 c_std_11)
 target_compile_options(test_thread_only_stack PRIVATE -Wall -Wextra -Wpedantic
                                                       -Werror)
 
-add_test(NAME test_thread_only_stack COMMAND test_thread_only_stack)
+add_test(NAME test_thread_only_stack COMMAND test_thread_only_stack
+         TIMEOUT 20)
 
 # Thread only stack with multiple threads in one object ------------------------
 add_executable(test_thread_only_stack_with_multiple_threads
@@ -43,12 +46,13 @@ target_link_libraries(test_thread_only_stack_with_multiple_threads
                       PRIVATE paraos::paraos)
 
 target_compile_features(test_thread_only_stack_with_multiple_threads
-                        PRIVATE cxx_std_17 c_std_11)
+                        PRIVATE cxx_std_20 c_std_11)
 target_compile_options(test_thread_only_stack_with_multiple_threads
                        PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_test(NAME test_thread_only_stack_with_multiple_threads
-         COMMAND test_thread_only_stack_with_multiple_threads)
+         COMMAND test_thread_only_stack_with_multiple_threads
+         TIMEOUT 20)
 
 # jthread basic ----------------------------------------------------------------
 add_executable(test_jthread_basic test_jthread_basic.cpp)

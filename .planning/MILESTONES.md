@@ -1,5 +1,38 @@
 # Project Milestones: PARAOS
 
+## v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (Shipped: 2026-06-23)
+
+**Delivered:** Четыре standalone-теста `port_tests/test_thread_only_*.cpp` мигрированы с legacy `paraos::Thread` на `paraos::jthread`; применён единый кроссплатформенный паттерн завершения; `port_tests/CMakeLists.txt` обновлён до C++20 с clang-tidy и таймаутом 20 секунд; все PC- и FreeRTOS-пресеты на macOS проходят верификацию.
+
+**Phases completed:** 28–30 (3 plans total)
+
+**Key accomplishments:**
+
+- Переписаны `test_thread_only_global.cpp`, `test_thread_only_static.cpp`, `test_thread_only_stack.cpp` и `test_thread_only_stack_with_multiple_threads.cpp` на `paraos::jthread` и `paraos::stop_token`.
+- Применён единый паттерн жизненного цикла: `start_scheduler()` → worker threads → `stopper` → `NotifySchedulerEnded()` → `IdleHook()` → `end_scheduler()`.
+- Для FreeRTOS-пути установлен `paraos::freertos_idle_fnc_ptr = IdleHook` под `#if PARAOS_LIKE_FREERTOS`.
+- Удалены `paraos::Thread::StartScheduler()`, `Exit()`, `DeleteAll()` и платформенные ветви `std::_Exit()`.
+- Использованы RAII-контейнеры (`std::vector<paraos::jthread>`, `std::vector<std::unique_ptr<MyThreadGroup>>`); ручное `new`/`delete` потоков устранено.
+- Обновлён `port_tests/CMakeLists.txt`: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20` для четырёх целей.
+- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`) проходят `ctest` 58/58 с таймаутом 20 секунд.
+- `pc_debug_gcc_clang_tidy` собирается без новых предупреждений clang-tidy.
+- FreeRTOS-пресеты (`freertos_debug_clang`, `freertos_debug_gcc`) проходят 4/4 `test_thread_only_*` теста в пределах 20 секунд.
+- Изменения ограничены `port_tests/`; кроссплатформенные пути Windows/Linux не затронуты.
+
+**Stats:**
+
+- 5 файлов изменено (код)
+- 3 phases, 3 plans
+- ~1 день на выполнение вехи
+
+**Git range:** `4d4d7ae` → `HEAD`
+
+**Known deferred items at close:** миграция оставшихся standalone-тестов/примеров `port_tests/` (например, `example_thread_check_timeout.cpp`) и полный переход `extra/` / production-кода на `paraos::jthread` / `paraos::mutex` остаётся на будущее. Ранее отложенные: macOS GitLab CI runner, macOS-specific build instructions, FreeRTOS runtime tests on macOS POSIX simulator, Windows jthread runtime verification.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.6 paraos::jthread scheduler control (Shipped: 2026-06-22)
 
 **Delivered:** Добавлено кроссплатформенное управление планировщиком в `paraos::jthread`; FreeRTOS-порт делегирует вызовы в `vTaskStartScheduler()` / `vTaskEndScheduler()`; PC-порт эмулирует семантику FreeRTOS через гейтинг запуска и реестр активных потоков; multithread-тесты унифицированы и проходят на PC.
