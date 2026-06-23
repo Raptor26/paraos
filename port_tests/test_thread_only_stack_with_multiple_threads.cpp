@@ -63,18 +63,20 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
 
-void IdleHook() {
-  WaitForSchedulerEnded();
-
+void CheckIfTestSuccessfullyComplete() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   constexpr auto k_expected_deleted_objects{EXPECTED_THREADS * 2};
-  if (deleted_objects_cnt.load() == k_expected_deleted_objects) {
-    std::cout << "OK\n";
-  } else {
+  if (deleted_objects_cnt.load() != k_expected_deleted_objects) {
     std::cout << "FAIL: deleted_objects_cnt=" << deleted_objects_cnt.load()
               << "\n";
     std::exit(EXIT_FAILURE);
   }
 
+  std::cout << "OK\n";
+}
+
+void IdleHook() {
+  WaitForSchedulerEnded();
+  CheckIfTestSuccessfullyComplete();
   (void)paraos::jthread::end_scheduler();
 }
 
