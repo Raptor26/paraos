@@ -3,25 +3,34 @@
 ///
 /// SPDX-License-Identifier: MIT.
 /// See LICENSE file in the project root for full license information.
-#define PrintDebug(__message__, __object_name__)                             \
-  {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
-  }
-
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <vector>
 
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_jthread.hpp"
+#include "paraos_sleep.hpp"
+#include "paraos_thread_common.hpp"
+#include "paraos_thread_exceptions.hpp"
 #include "paraos_utils.hpp"
 
 // NOLINTBEGIN(*-magic-numbers, google-build-using-namespace,
 // readability-function-cognitive-,
 // cppcoreguidelines-avoid-non-const-global-variables,
 // *-readability-identifier-naming)
+
+#define PrintDebug(__message__, __object_name__)                             \
+  {                                                                          \
+    const paraos::CriticalSection macro_critical;                            \
+    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
+  }
 
 namespace {
 std::atomic<std::size_t> cnt{0};
@@ -31,109 +40,103 @@ constexpr std::size_t EXPECTED_THREADS{3};
 std::atomic<std::size_t> deleted_objects_cnt;
 
 void DeletedObjectsCnt() {
-  const paraos::CriticalSection critical;
   ++deleted_objects_cnt;
 
   PrintDebug(
       "Deleted objects cnt is " << deleted_objects_cnt, "DeletedObjectsCnt");
 }
 
-inline void DefaultDelegate() { paraos::Thread::DelayMs(100); }
-constexpr paraos::thread_delegate_type thread_default_delegate =
-    etl::delegate<void()>::create<DefaultDelegate>();
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
 
-paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
-    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
-    thread_default_delegate}};
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  {
+    const std::scoped_lock lock{g_done_mtx};
+    g_scheduler_ended = true;
+  }
+  g_done_cv.notify_one();
+}
 
-void ExitFromTest() {
-  if (deleted_objects_cnt >= EXPECTED_THREADS) {
-    check_test_complete_and_exit.Finished();
-    constexpr paraos::delay_type delay_ms{0};
-    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::Thread::DelayMs(delay_ms);
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
 
-    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-
-#if defined(PARAOS_LIKE_FREERTOS)
-    // Forces program exit to reduce execution time. Needed to terminate tests
-    // early, especially when running multiple tests. In other case, program
-    // will exit in 1 second later.
-    std::_Exit(EXIT_SUCCESS);
-#else
-    paraos::Thread::Exit();
-#endif
+void CheckIfTestSuccessfullyComplete() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  if (cnt.load() != EXPECTED_THREADS) {
+    std::cout << "FAIL: cnt=" << cnt.load() << "\n";
+    std::exit(EXIT_FAILURE);
   }
 
-  PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::Thread::DelayMs(10);
+  if (deleted_objects_cnt.load() != EXPECTED_THREADS) {
+    std::cout << "FAIL: deleted_objects_cnt=" << deleted_objects_cnt.load()
+              << "\n";
+    std::exit(EXIT_FAILURE);
+  }
+
+  std::cout << "OK\n";
+}
+
+void IdleHook() {
+  WaitForSchedulerEnded();
+  CheckIfTestSuccessfullyComplete();
+  (void)paraos::jthread::end_scheduler();
 }
 }  // namespace
 
-class MyThreadDynamic : public paraos::Base {
- public:
-  explicit MyThreadDynamic(const paraos::ThreadAttr &attr) : thread_{attr} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<
-            MyThreadDynamic, &MyThreadDynamic::Processing>(*this));
-
-    // Check priority API. For test only. In real application, ctor of
-    // paraos::Thread set priority from attr.
-    thread_.SetPriority(attr.priority);
-    auto priority = thread_.GetPriority();
-
-#if !defined(PARAOS_LIKE_UNIX)
-    // Can't change priority without root privileges on UNIX.
-    PARAOS_CHECK_ASSERT(attr.priority == priority);
-#endif
-    PARAOS_ATTR_UNUSED_VAR(priority);
-  }
-
-  ~MyThreadDynamic() override {
-    PrintDebug("~MyThreadDynamic", thread_.GiveName());
-  };
-
- private:
-  void Processing() {
-    PrintDebug("Calls Processing()", thread_.GiveName());
-
-    ++cnt;
-
-    // Break while cycle.
-    thread_.Finished(this);
-  }
-
-  paraos::Thread thread_;
-};
-
 auto main() -> int {
   {
-    auto delegate = etl::delegate<void()>::create<ExitFromTest>();
-    check_test_complete_and_exit.RegisterDelegate(delegate);
-  }
+    std::vector<paraos::jthread> threads;
 
-  try {
-    // no safe pointer because MyThreadDynamic{} delete self after all
-    // computing will be complete.
-    for (std::size_t i = 0; i < EXPECTED_THREADS; ++i) {
-      std::string name{"My thread dynamic " + std::to_string(i)};
-      paraos::ThreadAttr attr;
-      attr.thread_name = name;
-      attr.dtor_callback = DeletedObjectsCnt;
+    try {
+      for (std::size_t i = 0; i < EXPECTED_THREADS; ++i) {
+        const std::string name{"My thread dynamic " + std::to_string(i)};
+        const paraos::ThreadAttr attr{
+            name, paraos::GetStackMinimumSizeInBytes(),
+            paraos::ThreadPriority::kNormal};
 
-      // No need put address in the pointer because MyThreadDynamic instance
-      // delete self when the computing will be complete.
-      new MyThreadDynamic(attr);
+        threads.emplace_back(attr, [i](const paraos::stop_token& /*token*/) {
+          PrintDebug(
+              "Calls Processing()", "My thread dynamic " + std::to_string(i));
+          ++cnt;
+          DeletedObjectsCnt();
+        });
+      }
+    } catch (const paraos::thread_exception& e) {
+      PrintDebug(e.what(), "main()");
+    } catch (const std::exception& e) {
+      PrintDebug(e.what(), "main()");
     }
-  } catch (const paraos::thread_exception &e) {
-    PrintDebug(e.what(), "main()");
-  } catch (const std::exception &e) {
-    PrintDebug(e.what(), "main()");
+
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (deleted_objects_cnt.load() < EXPECTED_THREADS) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
+    paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  // В методе ниже проверяется результат и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
   return 0;
 }
