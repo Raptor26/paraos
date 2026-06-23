@@ -130,7 +130,7 @@ class IOneShotExecutor {
     if (thread_start_flag) {
       thread_.emplace(
           static_cast<const paraos::ThreadAttr&>(attrs),
-          [this](const paraos::stop_token& token) { ExecuteDelegates(token); });
+          [this](const paraos::stop_token& token) -> void { ExecuteDelegates(token); });
     }
   }
 

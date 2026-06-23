@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
-status: in_progress
-last_updated: "2026-06-23T23:30:00.000Z"
+status: complete
+last_updated: "2026-06-23T23:50:00.000Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-23)
 
 Phase: 35 — Build, static analysis and runtime verification
 Plan: —
-Status: In progress
-Last activity: 2026-06-23 — Phase 34 completed and verified
-Last activity: 2026-06-23 — Roadmap created for milestone v1.8
+Status: Complete
+Last activity: 2026-06-23 — Phase 35 completed and verified
+Last activity: 2026-06-23 — All phases complete; ready for milestone audit
 
 ## Accumulated Context
 

@@ -66,7 +66,7 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
 
-struct Producer {
+struct Producer {  // NOLINT(hicpp-special-member-functions)
   explicit Producer(std::string_view name) : name_{name} {}
 
   ~Producer() { PrintDebug("~Dtor:", name_); }
@@ -110,7 +110,7 @@ struct Producer {
   std::string_view name_;
 };
 
-struct Consumer {
+struct Consumer {  // NOLINT(hicpp-special-member-functions)
   explicit Consumer(std::string_view name) : name_{name} {}
 
   ~Consumer() { PrintDebug("~Dtor:", name_); }
@@ -157,7 +157,7 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
 }
 
-void IdleHook() {
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   WaitForSchedulerEnded();
   CheckIfTestSuccessfullyComplete();
   (void)paraos::jthread::end_scheduler();

@@ -17,10 +17,10 @@
 #include "paraos_config.hpp"
 #include "paraos_exceptions.hpp"
 #include "paraos_isr.hpp"
+#include "paraos_jthread.hpp"
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_jthread.hpp"
 
 namespace paraos {
 
@@ -95,7 +95,7 @@ class IThreadSequence : public paraos::Base {
     if (thread_start_flag) {
       thread_.emplace(
           static_cast<const paraos::ThreadAttr &>(attr),
-          [this](const paraos::stop_token &token) { Run(token); });
+          [this](const paraos::stop_token &token) -> void { Run(token); });
     }
   }
   // NOLINTEND(performance-unnecessary-value-param)

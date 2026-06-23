@@ -95,7 +95,7 @@ class ICooperativeScheduling : public paraos::Base {
     if (thread_start_flag) {
       thread_.emplace(
           static_cast<const paraos::ThreadAttr &>(attr),
-          [this](const paraos::stop_token &token) { Run(token); });
+          [this](const paraos::stop_token &token) -> void { Run(token); });
     }
   }
   // NOLINTEND(performance-unnecessary-value-param)

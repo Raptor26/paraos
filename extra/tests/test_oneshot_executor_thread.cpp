@@ -61,7 +61,7 @@ class Worker {
   ~Worker() = default;
 };
 
-void NotifySchedulerEnded() {
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   {
     const std::scoped_lock lock{g_done_mtx};
     g_scheduler_ended = true;
@@ -69,7 +69,7 @@ void NotifySchedulerEnded() {
   g_done_cv.notify_one();
 }
 
-void WaitForSchedulerEnded() {
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   std::unique_lock lock{g_done_mtx};
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }

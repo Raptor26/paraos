@@ -20,7 +20,7 @@
 - [x] **Phase 32: Migrate `ThreadSequence` to `paraos::jthread`** — Internal thread wrapper replaced; timer tick loop runs inside jthread callable.
 - [x] **Phase 33: Migrate `CooperativeScheduling` to `paraos::jthread`** — Internal thread wrapper replaced; scheduler loop runs inside jthread callable.
 - [x] **Phase 34: Migrate `extra/tests` standalone executables and CMake** — Standalone thread tests use `paraos::jthread`, `start_scheduler()`/`end_scheduler()`; CMakeLists updated to C++20 and clang-tidy.
-- [ ] **Phase 35: Build, static analysis and runtime verification** — All PC/FreeRTOS presets pass ctest; clang-tidy presets clean; no regressions.
+- [x] **Phase 35: Build, static analysis and runtime verification** — All PC/FreeRTOS presets pass ctest; clang-tidy presets clean; no regressions.
 
 ## Phase Details
 
