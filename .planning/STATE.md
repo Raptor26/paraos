@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
 status: in_progress
-last_updated: "2026-06-23T22:30:00.000Z"
+last_updated: "2026-06-23T23:00:00.000Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 5
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-23)
 
 ## Current Position
 
-Phase: 33 — Migrate `CooperativeScheduling` to `paraos::jthread`
+Phase: 34 — Migrate `extra/tests` standalone executables and CMake
 Plan: —
 Status: In progress
-Last activity: 2026-06-23 — Phase 32 completed and verified
+Last activity: 2026-06-23 — Phase 33 completed and verified
 Last activity: 2026-06-23 — Roadmap created for milestone v1.8
 
 ## Accumulated Context

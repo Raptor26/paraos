@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <optional>
 
 #include "etl/callback_timer.h"
 #include "etl/delegate.h"
@@ -90,10 +91,12 @@ class IThreadSequence : public paraos::Base {
       const IThreadSequenceAttr &attr, etl::icallback_timer &timer_controller,
       bool thread_start_flag = true)
       : period_in_us_{attr.period_in_us},
-        timer_controller_{timer_controller},
-        thread_{static_cast<const paraos::ThreadAttr &>(attr),
-                [this](const paraos::stop_token &token) { Run(token); }} {
-    (void)thread_start_flag;
+        timer_controller_{timer_controller} {
+    if (thread_start_flag) {
+      thread_.emplace(
+          static_cast<const paraos::ThreadAttr &>(attr),
+          [this](const paraos::stop_token &token) { Run(token); });
+    }
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
@@ -239,7 +242,9 @@ class IThreadSequence : public paraos::Base {
     (void)is_dynamic;
 
     // Request the sequence thread to stop.
-    (void)thread_.request_stop();
+    if (thread_.has_value()) {
+      (void)thread_->request_stop();
+    }
 
     // Notify the thread to complete the final iteration of all registered
     // methods. This ensures that `Run()` exits blocking mode and completes one
@@ -247,7 +252,9 @@ class IThreadSequence : public paraos::Base {
     NotifyGive(false);
 
     // Wait for the sequence thread to finish gracefully.
-    thread_.join();
+    if (thread_.has_value() && thread_->joinable()) {
+      thread_->join();
+    }
   }
 
  private:
@@ -280,7 +287,7 @@ class IThreadSequence : public paraos::Base {
   SemaphoreBinary new_cycle_ready_sem_;
 
   /// Thread instance.
-  paraos::jthread thread_;
+  std::optional<paraos::jthread> thread_;
 
   /// Number of ticks since last notification.
   uint32_t nticks_{period_in_us_};

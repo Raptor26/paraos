@@ -248,7 +248,9 @@ class jthread {
       if (ctx->thread.get_id() == self_id) {
         continue;
       }
-      ctx->thread.join();
+      if (ctx->thread.joinable()) {
+        ctx->thread.join();
+      }
     }
     return true;
   }

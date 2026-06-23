@@ -3,19 +3,21 @@
 ///
 /// SPDX-License-Identifier: MIT.
 /// See LICENSE file in the project root for full license information.
+#include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <mutex>
 
 // Useless check here because static analyzer cant see usage of some headers,
 // but they're actually used in tis file.
 // NOLINTBEGIN(misc-include-cleaner, readability-magic-numbers)
-#include "etl/atomic.h"
 #include "etl/function.h"
 #include "etl/scheduler.h"
 #include "etl/task.h"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_sleep.hpp"
 #include "paraos_thread_cooperative_scheduling.hpp"
 #include "paraos_utils.hpp"
 
@@ -26,11 +28,7 @@
   }
 
 namespace {
-etl::atomic_bool is_test_complete{false};
-
-paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
-    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, nullptr}};
+std::atomic<bool> is_test_complete{false};
 
 // Task 1 set highest priority in set. It will run first.
 constexpr etl::task_priority_t task1_priority{10};
@@ -38,6 +36,10 @@ constexpr etl::task_priority_t task2_priority{9};
 constexpr etl::task_priority_t task3_priority{8};
 
 constexpr size_t max_tasks_number{10};
+
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
 
 class Task1 : public etl::task {
  public:
@@ -113,8 +115,7 @@ class Idle {
 
     // Call exit(EXIT_SUCCESS) in ExitAfterTestComplete() for force break system
     // process (in freertos port only).
-    is_test_complete = true;
-
+    is_test_complete.store(true, std::memory_order_release);
     scheduler.exit_scheduler();
   }
 
@@ -142,40 +143,22 @@ Task1 task1;
 Task2 task2;
 Task3 task3;
 
-void ExitFromTest(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
-) {
-  if (is_test_complete) {
-    check_test_complete_and_exit.Finished();
-
-    // Exit from cooperative scheduler.
-    cooperative_scheduler.Finish(false);
-
-    constexpr std::size_t delay_ms{0};
-    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::Thread::DelayMs(delay_ms);
-
-    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-#ifdef PARAOS_LIKE_FREERTOS
-    // Forces program exit to reduce execution time. Needed to terminate tests
-    // early, especially when running multiple tests. In other case, program
-    // will exit in 1 second later.
-    std::_Exit(EXIT_SUCCESS);
-#else
-    paraos::Thread::Exit();
-#endif
+void NotifySchedulerEnded() {
+  {
+    const std::scoped_lock lock{g_done_mtx};
+    g_scheduler_ended = true;
   }
-
-  PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::Thread::DelayMs(10);
+  g_done_cv.notify_one();
 }
+
+void WaitForSchedulerEnded() {
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
+
 }  // namespace
 
 auto main() -> int {
-  {
-    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
-    check_test_complete_and_exit.RegisterDelegate(delegate);
-  }
-
   // When calling AddTask(), scheduler compare priority each task and sorted
   // tasks references in private vector with tasks priority respect.
   cooperative_scheduler.AddTask(task3);
@@ -185,9 +168,22 @@ auto main() -> int {
   // Set custom idle callback to complete test.
   cooperative_scheduler.SetIdleCallback(idle_callback);
 
-  paraos::Thread::StartScheduler();
+  const paraos::jthread stopper(
+      [](const paraos::stop_token& /*token*/) -> void {
+        while (!is_test_complete.load(std::memory_order_acquire)) {
+          paraos::sleep_for(std::chrono::milliseconds{10});
+        }
 
-  paraos::Thread::DeleteAll();
+        cooperative_scheduler.Finish(false);
+        NotifySchedulerEnded();
+      });
+  (void)stopper;
+
+  paraos::jthread::start_scheduler();
+
+  WaitForSchedulerEnded();
+
+  (void)paraos::jthread::end_scheduler();
 
   return EXIT_SUCCESS;
 }
