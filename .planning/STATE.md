@@ -20,17 +20,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-22)
+See: .planning/PROJECT.md (updated 2026-06-23)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.7 — migrate test_thread_only_* tests to paraos::jthread
+**Current focus:** Milestone v1.7 завершён; следующая веха не определена.
 
 ## Current Position
 
-Phase: 30 — Runtime verification on macOS
-Plan: 30-01
-Status: Complete
-Last activity: 2026-06-23 — Phase 30 runtime verification passed on macOS
+Phase: —
+Plan: —
+Status: Milestone v1.7 complete
+Last activity: 2026-06-23 — Milestone v1.7 archived
 
 ## Accumulated Context
 

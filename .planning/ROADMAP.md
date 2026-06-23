@@ -9,61 +9,15 @@
 - ✅ **v1.4 std::semaphore-style Semaphore API** — Phases 16-18 (shipped 2026-06-22) — see `.planning/milestones/v1.4-ROADMAP.md`
 - ✅ **v1.5 Modernize container tests on std-like primitives** — Phases 19-23 (shipped 2026-06-22) — see `.planning/milestones/v1.5-ROADMAP.md`
 - ✅ **v1.6 paraos::jthread scheduler control** — Phases 24-27 (shipped 2026-06-22) — see `.planning/milestones/v1.6-ROADMAP.md`
-- 🚧 **v1.7 Migrate `test_thread_only_*` to `paraos::jthread`** — Phases 28-30 (in planning)
+- ✅ **v1.7 Migrate `test_thread_only_*` to `paraos::jthread`** — Phases 28-30 (shipped 2026-06-23) — see `.planning/milestones/v1.7-ROADMAP.md`
 
 ## Phases
 
-### 🚧 v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (In Planning)
+### ✅ v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (SHIPPED 2026-06-23)
 
-**Milestone Goal:** Перевести четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`, сохранив функциональность, обеспечив идиоматичное C++ управление жизненным циклом потоков и прохождение сборки и тестов.
-
-#### Phase 28: Migrate `test_thread_only_*` sources to `paraos::jthread`
-**Goal**: Четыре standalone-теста `port_tests/test_thread_only_*.cpp` переписаны с использованием `paraos::jthread` и единого кроссплатформенного паттерна завершения.
-**Depends on**: Phase 27
-**Requirements**: MIG-01..MIG-04, LIFE-01..LIFE-03, IDIO-01
-**Success Criteria** (what must be TRUE):
-  1. `test_thread_only_stack.cpp`, `test_thread_only_stack_with_multiple_threads.cpp`, `test_thread_only_static.cpp` и `test_thread_only_global.cpp` используют `paraos::jthread` и `paraos::stop_token`.
-  2. Удалены `paraos::Thread`, `Thread::StartScheduler()`, `Thread::Exit()`, `Thread::DeleteAll()` и `std::_Exit()`.
-  3. Потоки управляются RAII-контейнерами (`std::vector<paraos::jthread>`); ручное `new`/`delete` минимизировано.
-  4. Единый паттерн завершения работает для PC и FreeRTOS (через `IdleHook` + `paraos::freertos_idle_fnc_ptr`).
-  5. Код компилируется без новых предупреждений clang-tidy.
-**Plans**: 0/1 complete
-
-Plans:
-- [x] 28-01: Переписать четыре `test_thread_only_*.cpp` на `paraos::jthread` с единым паттерном завершения
-
-#### Phase 28: Migrate `test_thread_only_*` sources to `paraos::jthread` | v1.7 | 1/1 | Complete | 2026-06-23
-
-#### Phase 29: Update `port_tests/CMakeLists.txt` for new tests
-**Goal**: Сборочная система приведена в соответствие с мигрированными тестами: C++20, clang-tidy, таймаут 20 секунд.
-**Depends on**: Phase 28
-**Requirements**: BUILD-01..BUILD-04
-**Success Criteria** (what must be TRUE):
-  1. Четыре цели `test_thread_only_*` переключены на `cxx_std_20`.
-  2. Четыре цели включены в `CXX_CLANG_TIDY` при `CLANG_TIDY_ENABLE`.
-  3. Каждый тест зарегистрирован в CTest с таймаутом 20 секунд.
-  4. Все CMake-пресеты на macOS конфигурируются и собираются без новых предупреждений.
-**Plans**: 0/1 complete
-
-Plans:
-- [x] 29-01: Обновить `port_tests/CMakeLists.txt`: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`
-
-#### Phase 29: Update `port_tests/CMakeLists.txt` for new tests | v1.7 | 1/1 | Complete | 2026-06-23
-
-#### Phase 30: Runtime verification on macOS
-**Goal**: Все тесты проходят на macOS с таймаутом 20 секунд, включая FreeRTOS-пресеты.
-**Depends on**: Phase 29
-**Requirements**: TEST-01..TEST-03
-**Success Criteria** (what must be TRUE):
-  1. `ctest` для PC-пресетов (`pc_debug_clang`, `pc_debug_gcc`) на macOS проходит полностью в пределах таймаута 20 секунд.
-  2. FreeRTOS-пресеты (`freertos_debug_clang`, `freertos_debug_gcc`) на macOS не только собираются, но и успешно выполняются и завершаются в пределах 20 секунд.
-  3. Код остаётся кроссплатформенным для Windows и Linux; регрессии в платформенных путях отсутствуют.
-**Plans**: 0/1 complete
-
-Plans:
-- [x] 30-01: Запустить `ctest --timeout 20` для PC-пресетов и FreeRTOS-пресетов на macOS
-
-#### Phase 30: Runtime verification on macOS | v1.7 | 1/1 | Complete | 2026-06-23
+- [x] Phase 28: Migrate `test_thread_only_*` sources to `paraos::jthread` (1/1 plans) — completed 2026-06-23
+- [x] Phase 29: Update `port_tests/CMakeLists.txt` for new tests (1/1 plans) — completed 2026-06-23
+- [x] Phase 30: Runtime verification on macOS (1/1 plans) — completed 2026-06-23
 
 ## Progress
 

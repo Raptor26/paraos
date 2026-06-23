@@ -10,26 +10,28 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Веха v1.3 добавила новый публичный API `paraos::mutex` в стиле `std::mutex` для PC и FreeRTOS, рядом с существующим `paraos::Mutex`.
 - Веха v1.4 добавила `paraos::counting_semaphore` / `paraos::binary_semaphore` в стиле `std::counting_semaphore`.
 - Веха v1.5 перевела многопоточные тесты контейнеров на std-like примитивы и добавила кроссплатформенный `paraos::sleep_for`.
+- Веха v1.6 добавила кроссплатформенное управление планировщиком в `paraos::jthread`.
+- Веха v1.7 перевела четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`.
 
 ## Core Value
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
-## Current Milestone: v1.7 Migrate `test_thread_only_*` to `paraos::jthread`
+## Current Milestone
 
-**Goal:** Перевести четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`, сохранив функциональность, обеспечив идиоматичное C++ управление жизненным циклом потоков и прохождение сборки и тестов на macOS.
-
-**Target features:**
-- Миграция `test_thread_only_stack.cpp`, `test_thread_only_stack_with_multiple_threads.cpp`, `test_thread_only_static.cpp`, `test_thread_only_global.cpp` на `paraos::jthread`.
-- Использование единого кроссплатформенного паттерна запуска/завершения через `start_scheduler()` / `end_scheduler()` и `IdleHook()` с `paraos::freertos_idle_fnc_ptr` для FreeRTOS.
-- RAII-управление потоками (`std::vector<paraos::jthread>`), минимизация ручного `new`/`delete`.
-- Обновление `port_tests/CMakeLists.txt`: `cxx_std_20`, `CXX_CLANG_TIDY`, таймаут 20 секунд на тест.
-- Верификация на macOS: конфигурация, сборка, `ctest` с таймаутом 20 секунд для PC-пресетов; сборка и выполнение для FreeRTOS-пресетов.
-- Сохранение кроссплатформенной совместимости кода для Windows и Linux.
+_None — последняя веха v1.7 закрыта. Следующая веха определяется через `/gsd-new-milestone`._
 
 ## Current State
 
-**In progress:** планирование вехи v1.7 завершено, роадмап создан.
+**In progress:** веха v1.7 закрыта и заархивирована; следующая веха не определена.
+
+**Shipped:** v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (2026-06-23)
+
+- Четыре standalone-теста `port_tests/test_thread_only_*.cpp` мигрированы на `paraos::jthread`.
+- Применён единый кроссплатформенный паттерн завершения со `stopper`-потоком и `IdleHook()`.
+- `port_tests/CMakeLists.txt` обновлён: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`.
+- PC-пресеты проходят `ctest` 58/58; FreeRTOS-пресеты проходят 4/4 `test_thread_only_*` теста.
+- Изменения ограничены `port_tests/`; кроссплатформенные пути Windows/Linux не затронуты.
 
 **Shipped:** v1.6 paraos::jthread scheduler control (2026-06-22)
 
@@ -139,6 +141,11 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - ✓ SCHED-07: `paraos::Thread` не изменён; `paraos::jthread` не зависит от `paraos::Thread` — v1.6 Phase 24.
 - ✓ TEST-01..04: `test_jthread_basic` и контейнерные multithread-тесты унифицированы без `std::_Exit()` — v1.6 Phase 26.
 - ✓ BLD-01..03: PC/FreeRTOS сборка, `ctest`, `*_clang_tidy` без новых предупреждений — v1.6 Phase 27.
+- ✓ MIG-01..04: четыре `test_thread_only_*` переведены с `paraos::Thread` на `paraos::jthread` — v1.7 Phase 28.
+- ✓ LIFE-01..03: единый паттерн запуска/завершения, `freertos_idle_fnc_ptr`, удаление legacy API — v1.7 Phase 28.
+- ✓ IDIO-01: RAII-контейнеры и `paraos::stop_token` в standalone-тестах — v1.7 Phase 28.
+- ✓ BUILD-01..04: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`, чистая сборка пресетов — v1.7 Phase 29.
+- ✓ TEST-01..03: PC и FreeRTOS пресеты проходят `ctest` без регрессий — v1.7 Phase 30.
 
 ### Active
 
@@ -190,6 +197,9 @@ _None — start the next milestone with `/gsd-new-milestone`._
 | `paraos::sleep_for` как корневой заголовок | Реализация тривиальна; `#ifdef PARAOS_LIKE_FREERTOS` достаточно | ✓ Good |
 | Локальный `write.Free()` после неуспешного `TryPush()` | Устраняет гонку в `test_message_multithread_many_producer_many_consumers`, при которой деструктор пушил сообщение после выхода потребителей | ✓ Good |
 | `[[nodiscard]]` на read-only методах `RingBuff` и `MultiRingBuff` | Удовлетворяет clang-tidy без изменения семантики | ✓ Good |
+| Self-deleting thread object заменён на RAII-группу + explicit `groups.clear()` в stopper | `paraos::jthread` не предоставляет deferred self-deletion; ранняя очистка контейнера имитирует оригинальное поведение без UB | ✓ Good |
+| `paraos::binary_semaphore` для синхронизации потоков внутри `MyThreadGroup` | Идиоматичная замена legacy `paraos::SemaphoreBinary` в многопоточном тесте | ✓ Good |
+| `const static paraos::jthread` в `test_thread_only_static.cpp` | Сохраняет семантику статических потоков с автоматическим join в деструкторе | ✓ Good |
 
 ## Evolution
 
@@ -209,4 +219,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-22 after starting milestone v1.6*
+*Last updated: 2026-06-23 after completing milestone v1.7*
