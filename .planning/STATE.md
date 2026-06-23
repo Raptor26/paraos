@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: "Migrate test_thread_only_* to paraos::jthread"
 status: planning
-last_updated: "2026-06-23T15:50:32.469Z"
+last_updated: "2026-06-23T15:53:46.684Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 0
@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-22)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.6 complete — ready for audit
+**Current focus:** Milestone v1.7 — migrate test_thread_only_* tests to paraos::jthread
 
 ## Current Position
 
@@ -76,4 +76,4 @@ Resume file: .planning/phases/27-build-and-static-analysis-verification/27-VERIF
 
 ## Operator Next Steps
 
-- Run milestone audit, complete milestone, and cleanup planning artifacts
+- Start Phase 28: `/gsd-discuss-phase 28` или `/gsd-plan-phase 28`
