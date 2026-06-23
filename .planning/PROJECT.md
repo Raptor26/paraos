@@ -29,7 +29,7 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 ## Current State
 
-**In progress:** планирование вехи v1.7.
+**In progress:** планирование вехи v1.7 завершено, роадмап создан.
 
 **Shipped:** v1.6 paraos::jthread scheduler control (2026-06-22)
 
@@ -38,7 +38,7 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - PC-порт эмулирует семантику FreeRTOS: потоки ждут `start_scheduler()` и останавливаются по `end_scheduler()`.
 - `port_tests/test_jthread_basic.cpp` переписан без `std::_Exit()` и платформенных ветвей; контейнерные multithread-тесты используют единый кроссплатформенный паттерн.
 - `paraos::Thread` остался неизменным.
-- PC-пресеты проходят `ctest` 58/58; `*_clang_tidy` пресеты без новых предупреждений; FreeRTOS-пресеты компилируются.
+- PC-пресеты проходят `ctest` 58/58; `*_clang_tidy` пресеты без новых предупреждений; FreeRTOS-пресеты компилируются и выполняются на macOS POSIX-симуляторе.
 
 **Shipped:** v1.5 Modernize container tests on std-like primitives (2026-06-22)
 
