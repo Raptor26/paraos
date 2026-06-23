@@ -72,6 +72,8 @@ struct ThreadAttr {
 
   /// @brief The user can set a callback to be called when the destructor
   /// of a paraos::Base object is invoked.
+  ///
+  /// @note После перехода на jthread данное поле необходимо удалить.
   base_callback dtor_callback{nullptr};
 
   // NOLINTBEGIN(readability-redundant-member-init)
@@ -79,6 +81,8 @@ struct ThreadAttr {
   /// delegate later with paraos::Thread::RegisterDelegate().
   ///
   /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
+  ///
+  /// @note После перехода на jthread данное поле необходимо удалить.
   thread_delegate_type run_{};
   // NOLINTEND(readability-redundant-member-init)
 };
