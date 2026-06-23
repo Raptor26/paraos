@@ -9,6 +9,7 @@
 - ✅ **v1.4 std::semaphore-style Semaphore API** — Phases 16-18 (shipped 2026-06-22) — see `.planning/milestones/v1.4-ROADMAP.md`
 - ✅ **v1.5 Modernize container tests on std-like primitives** — Phases 19-23 (shipped 2026-06-22) — see `.planning/milestones/v1.5-ROADMAP.md`
 - ✅ **v1.6 paraos::jthread scheduler control** — Phases 24-27 (shipped 2026-06-22) — see `.planning/milestones/v1.6-ROADMAP.md`
+- 🔄 **v1.7 Migrate `test_thread_only_*` to `paraos::jthread`** — Phases 28-30 (in progress)
 
 ## Phases
 
@@ -81,6 +82,33 @@
 
 </details>
 
+<details open>
+<summary>🔄 v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (Phases 28-30) — IN PROGRESS</summary>
+
+- [ ] Phase 28: Migrate `test_thread_only_*` sources to `paraos::jthread` (1/1 plan) — not started
+  - Requirements: MIG-01..MIG-04, LIFE-01..LIFE-03, IDIO-01
+  - Success criteria:
+    1. Четыре теста используют `paraos::jthread` и `paraos::stop_token`.
+    2. Удалены `paraos::Thread`, `Thread::StartScheduler()`, `Thread::Exit()`, `Thread::DeleteAll()` и `std::_Exit()`.
+    3. Потоки управляются RAII-контейнерами, ручное `new`/`delete` минимизировано.
+    4. Единый паттерн завершения работает для PC и FreeRTOS (через `IdleHook` + `freertos_idle_fnc_ptr`).
+    5. Код компилируется без новых предупреждений clang-tidy.
+- [ ] Phase 29: Update `port_tests/CMakeLists.txt` for new tests (1/1 plan) — not started
+  - Requirements: BUILD-01..BUILD-03
+  - Success criteria:
+    1. Четыре цели `test_thread_only_*` переключены на `cxx_std_20`.
+    2. Четыре цели включены в `CXX_CLANG_TIDY` при `CLANG_TIDY_ENABLE`.
+    3. Все CMake-пресеты на macOS конфигурируются и собираются без новых предупреждений.
+- [ ] Phase 30: Runtime verification on macOS (1/1 plan) — not started
+  - Requirements: TEST-01..TEST-04
+  - Success criteria:
+    1. Каждый тест зарегистрирован в CTest с таймаутом 20 секунд.
+    2. PC-пресеты проходят `ctest` полностью в пределах таймаута.
+    3. FreeRTOS-пресеты на macOS собираются, выполняются и завершаются в пределах 20 секунд.
+    4. Нет регрессий в платформенных путях Windows/Linux.
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -100,7 +128,7 @@
 | 16. PC counting_semaphore implementation | v1.4 | 1/1 | Complete | 2026-06-22 |
 | 17. FreeRTOS counting_semaphore implementation | v1.4 | 1/1 | Complete | 2026-06-22 |
 | 18. Build, tests and static analysis | v1.4 | 1/1 | Complete | 2026-06-22 |
-| 19. Inventory & gap analysis | v1.5 | 1/1 | Complete | 2026-06-22 |
+| 19. Inventory & gap analysis | v1.5 | 1/1 | Complete | 2026-06-20 |
 | 20. Migrate thread primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
 | 21. Migrate synchronization primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
 | 22. FreeRTOS std-like primitives hardening | v1.5 | 1/1 | Complete | 2026-06-22 |
@@ -109,3 +137,6 @@
 | 25. PC scheduler state and gating | v1.6 | 3/3 | Complete | 2026-06-22 |
 | 26. Test unification | v1.6 | 7/7 | Complete | 2026-06-22 |
 | 27. Build and static analysis verification | v1.6 | 6/6 | Complete | 2026-06-22 |
+| 28. Migrate `test_thread_only_*` sources to `paraos::jthread` | v1.7 | 0/1 | Not started | — |
+| 29. Update `port_tests/CMakeLists.txt` for new tests | v1.7 | 0/1 | Not started | — |
+| 30. Runtime verification on macOS | v1.7 | 0/1 | Not started | — |

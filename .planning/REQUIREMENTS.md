@@ -26,14 +26,18 @@
 
 - [ ] **BUILD-01**: `port_tests/CMakeLists.txt` переключил четыре цели `test_thread_only_*` на `cxx_std_20`.
 - [ ] **BUILD-02**: Четыре цели `test_thread_only_*` включены в `CXX_CLANG_TIDY` при `CLANG_TIDY_ENABLE`.
-- [ ] **BUILD-03**: Все доступные CMake-пресеты на macOS конфигурируются и собираются без новых предупреждений clang-tidy.
+- [ ] **BUILD-03**: Каждый тест зарегистрирован в CTest с таймаутом 20 секунд.
+- [ ] **BUILD-04**: Все доступные CMake-пресеты на macOS конфигурируются и собираются без новых предупреждений clang-tidy.
+
+### Build Verification
+
+- [ ] **BUILD-04**: Все доступные CMake-пресеты на macOS конфигурируются и собираются без новых предупреждений clang-tidy.
 
 ### Test Execution
 
-- [ ] **TEST-01**: Каждый из четырёх тестов в CTest зарегистрирован с таймаутом 20 секунд.
-- [ ] **TEST-02**: `ctest` для PC-пресетов (`pc_debug_clang`, `pc_debug_gcc`) на macOS проходит полностью в пределах таймаута.
-- [ ] **TEST-03**: FreeRTOS-пресеты (`freertos_debug_clang`, `freertos_debug_gcc`) на macOS не только собираются, но и успешно выполняются и завершаются в пределах таймаута 20 секунд.
-- [ ] **TEST-04**: Код остаётся кроссплатформенным для Windows и Linux; прямой runtime-запуск на этих платформах не проверяется на текущем macOS-хосте, но регрессии в платформенных путях отсутствуют.
+- [ ] **TEST-01**: `ctest` для PC-пресетов (`pc_debug_clang`, `pc_debug_gcc`) на macOS проходит полностью в пределах таймаута 20 секунд.
+- [ ] **TEST-02**: FreeRTOS-пресеты (`freertos_debug_clang`, `freertos_debug_gcc`) на macOS не только собираются, но и успешно выполняются и завершаются в пределах таймаута 20 секунд.
+- [ ] **TEST-03**: Код остаётся кроссплатформенным для Windows и Linux; прямой runtime-запуск на этих платформах не проверяется на текущем macOS-хосте, но регрессии в платформенных путях отсутствуют.
 
 ## v2 Requirements
 
@@ -66,14 +70,15 @@
 | BUILD-01 | Phase 29 | Pending |
 | BUILD-02 | Phase 29 | Pending |
 | BUILD-03 | Phase 29 | Pending |
+| BUILD-04 | Phase 29 | Pending |
 | TEST-01 | Phase 30 | Pending |
 | TEST-02 | Phase 30 | Pending |
 | TEST-03 | Phase 30 | Pending |
 | TEST-04 | Phase 30 | Pending |
 
 **Coverage:**
-- v1.7 requirements: 15 total
-- Mapped to phases: 15
+- v1.7 requirements: 16 total
+- Mapped to phases: 16
 - Unmapped: 0 ✓
 
 ---
