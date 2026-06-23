@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.8
-milestone_name: "Migrate extra/ libraries to paraos::jthread"
+milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
 status: planning
-last_updated: "2026-06-23T17:29:33.472Z"
+last_updated: "2026-06-23T17:45:00.000Z"
 last_activity: 2026-06-23
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 5
   completed_plans: 0
   percent: 0
 ---
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-23)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.7 завершён; следующая веха не определена.
+**Current focus:** Milestone v1.8 — migrate `extra/` libraries to `paraos::jthread`.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 31 — Migrate `OneShotExecutor` to `paraos::jthread`
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-23 — Milestone v1.8 started
+Status: Roadmap created; awaiting approval
+Last activity: 2026-06-23 — Roadmap created for milestone v1.8
 
 ## Accumulated Context
 
@@ -53,7 +53,7 @@ Last activity: 2026-06-23 — Milestone v1.8 started
 
 ### Pending Todos
 
-None — milestone v1.5 complete.
+None.
 
 ### Blockers/Concerns
 
@@ -70,10 +70,5 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-23T16:19:03.003Z
-Stopped at: Phase 28 context gathered
-Resume file: .planning/phases/28-migrate-test-thread-only-sources-to-paraos-jthread/28-CONTEXT.md
-
-## Operator Next Steps
-
-- Start Phase 28: `/gsd-discuss-phase 28` или `/gsd-plan-phase 28`
+Last session: 2026-06-23T17:45:00.000Z
+Stopped at: Roadmap created; awaiting approval

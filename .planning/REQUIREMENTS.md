@@ -42,12 +42,12 @@
 
 | Req-ID | Phase | Status |
 |--------|-------|--------|
-| MIG-01 | TBD | Open |
-| MIG-02 | TBD | Open |
-| MIG-03 | TBD | Open |
-| MIG-04 | TBD | Open |
-| BUILD-01 | TBD | Open |
-| BUILD-02 | TBD | Open |
-| BUILD-03 | TBD | Open |
-| TEST-01 | TBD | Open |
-| TEST-02 | TBD | Open |
+| MIG-01 | Phase 31 | Open |
+| MIG-02 | Phase 32 | Open |
+| MIG-03 | Phase 33 | Open |
+| MIG-04 | Phase 34 | Open |
+| BUILD-01 | Phase 34 | Open |
+| BUILD-02 | Phase 34 | Open |
+| BUILD-03 | Phase 35 | Open |
+| TEST-01 | Phase 35 | Open |
+| TEST-02 | Phase 35 | Open |
