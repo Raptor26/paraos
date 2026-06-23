@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: "Migrate `test_thread_only_*` to `paraos::jthread`"
-current_phase_name: defining requirements
-status: complete
-stopped_at: Phase 30 complete; milestone v1.7 ready for lifecycle
-last_updated: "2026-06-23T20:30:00.000Z"
+milestone: v1.8
+milestone_name: "Migrate extra/ libraries to paraos::jthread"
+status: planning
+last_updated: "2026-06-23T17:29:33.472Z"
 last_activity: 2026-06-23
-last_activity_desc: Phase 30 runtime verification passed on macOS
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-23)
 
 ## Current Position
 
-Phase: —
+Phase: Not started (defining requirements)
 Plan: —
-Status: Milestone v1.7 complete
-Last activity: 2026-06-23 — Milestone v1.7 archived
+Status: Defining requirements
+Last activity: 2026-06-23 — Milestone v1.8 started
 
 ## Accumulated Context
 

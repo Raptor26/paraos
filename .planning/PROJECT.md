@@ -19,11 +19,21 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 ## Current Milestone
 
-_None — последняя веха v1.7 закрыта. Следующая веха определяется через `/gsd-new-milestone`._
+### v1.8 Migrate `extra/` libraries to `paraos::jthread`
+
+**Goal:** Перевести внутреннюю реализацию библиотек `extra/` с legacy `paraos::Thread` на `paraos::jthread`, сохранив публичный API и совместимость с FreeRTOS/PC.
+
+**Target features:**
+- Перевод `extra/paraos_oneshot_executor.hpp` на внутреннее использование `paraos::jthread`.
+- Перевод `extra/paraos_thread_sequence.hpp` на внутреннее использование `paraos::jthread`.
+- Перевод `extra/paraos_thread_cooperative_scheduling.hpp` на внутреннее использование `paraos::jthread`.
+- Миграция standalone-тестов `extra/tests/test_*_thread.cpp` на `paraos::jthread`, `start_scheduler()` и `end_scheduler()`.
+- Обновление `extra/tests/CMakeLists.txt` до C++20 и добавление `CXX_CLANG_TIDY` для standalone-целей.
+- Сборка и прохождение всех PC/FreeRTOS пресетов без регрессий.
 
 ## Current State
 
-**In progress:** веха v1.7 закрыта и заархивирована; следующая веха не определена.
+**In progress:** майлстоун v1.8 в стадии определения требований.
 
 **Shipped:** v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (2026-06-23)
 
@@ -149,12 +159,19 @@ _None — последняя веха v1.7 закрыта. Следующая в
 
 ### Active
 
-_None — start the next milestone with `/gsd-new-milestone`._
+- MIG-01: перевести внутреннюю реализацию `extra/paraos_oneshot_executor.hpp` на `paraos::jthread`.
+- MIG-02: перевести внутреннюю реализацию `extra/paraos_thread_sequence.hpp` на `paraos::jthread`.
+- MIG-03: перевести внутреннюю реализацию `extra/paraos_thread_cooperative_scheduling.hpp` на `paraos::jthread`.
+- MIG-04: обновить standalone-тесты `extra/tests/test_*_thread.cpp` на `paraos::jthread`.
+- BUILD-01: обновить `extra/tests/CMakeLists.txt` до `cxx_std_20` и добавить `CXX_CLANG_TIDY` для standalone-целей.
+- TEST-01: обеспечить прохождение всех PC-пресетов (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`).
+- TEST-02: обеспечить компиляцию и прохождение FreeRTOS-пресетов (`freertos_debug_clang`, `freertos_debug_gcc`).
 
 ### Out of Scope
 
 - Полная замена существующего `paraos::Mutex` на `paraos::mutex` — веха v1.3 добавляет новый API рядом со старым.
-- Миграция `extra/` и `containers/` на `paraos::mutex` — частично выполнена для тестов контейнеров в v1.5; миграция `extra/` и production-кода остаётся на будущее.
+- Миграция `containers/` и production-кода вне `extra/` на `paraos::jthread` — выполняется отдельными вехами.
+- Изменение публичных сигнатур библиотек `extra/` (например, имен классов, API `EnqueueDelegate`, `Register`, `AddTask`).
 - Добавление `std::recursive_mutex`-подобного API или таймаутов (`try_lock_for` / `try_lock_until`) — только базовый `std::mutex`-подобный интерфейс.
 - Изменение семантики существующих примитивов синхронизации PARAOS.
 - Тестирование на физических целевых устройствах — только host-сборки.
