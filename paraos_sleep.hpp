@@ -29,6 +29,7 @@
 #define PARAOS_SLEEP_HPP
 
 #include <chrono>
+#include <thread>
 
 #include "paraos_utils.hpp"
 

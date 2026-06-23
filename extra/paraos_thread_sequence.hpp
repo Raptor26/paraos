@@ -19,7 +19,7 @@
 #include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_jthread.hpp"
 
 namespace paraos {
 
@@ -89,12 +89,11 @@ class IThreadSequence : public paraos::Base {
   IThreadSequence(
       const IThreadSequenceAttr &attr, etl::icallback_timer &timer_controller,
       bool thread_start_flag = true)
-      : thread_{attr, thread_start_flag},
-        period_in_us_{attr.period_in_us},
-        timer_controller_{timer_controller} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<
-            IThreadSequence, &IThreadSequence::Run>(*this));
+      : period_in_us_{attr.period_in_us},
+        timer_controller_{timer_controller},
+        thread_{static_cast<const paraos::ThreadAttr &>(attr),
+                [this](const paraos::stop_token &token) { Run(token); }} {
+    (void)thread_start_flag;
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
@@ -234,56 +233,54 @@ class IThreadSequence : public paraos::Base {
 
   /// @brief Completes thread execution.
   ///
-  /// @param[in] is_dynamic: Set to `true` if the ThreadSequence was created
-  /// on the heap and is not managed by user code or smart pointers.
-  /// In this case, `CooperativeScheduling()` will be removed from the heap
-  /// after the thread completes all work. Otherwise, set to `false`.
+  /// @param[in] is_dynamic: Kept for API compatibility; ignored. The jthread
+  /// destructor handles cleanup.
   PARAOS_POLYMORPHIC_EXTRA void Finish(bool is_dynamic) {
-    const paraos::CriticalSection critical;
-    paraos::Base *deferred_destroy{nullptr};
+    (void)is_dynamic;
 
-    if (is_dynamic) {
-      deferred_destroy = this;
-    }
-
-    thread_.Finished(deferred_destroy);
+    // Request the sequence thread to stop.
+    (void)thread_.request_stop();
 
     // Notify the thread to complete the final iteration of all registered
     // methods. This ensures that `Run()` exits blocking mode and completes one
     // more cycle.
-    //
-    // After `Run()` completes, the thread wrapper can safely delete the thread
-    // (since `Thread::SetNeedWhile(false)` was called earlier),
-    // and the thread object can be safely deleted in the thread destructor.
     NotifyGive(false);
+
+    // Wait for the sequence thread to finish gracefully.
+    thread_.join();
   }
 
  private:
   /// @brief Main loop function executed by the thread.
-  /// Runs until `Break()` is called.
-  PARAOS_POLYMORPHIC_EXTRA void Run() {
-    // Wait for the semaphore before processing all registered delegates.
-    // This allows delegates to be called with a user-defined period.
-    new_cycle_ready_sem_.Take(paraos::max_delay);
-    if (timer_controller_.tick(nticks_)) {
-      nticks_ = period_in_us_;
-    } else {
-      nticks_ += period_in_us_;
+  /// Runs until a stop is requested.
+  PARAOS_POLYMORPHIC_EXTRA void Run(const paraos::stop_token &token) {
+    while (!token.stop_requested()) {
+      // Wait for the semaphore before processing all registered delegates.
+      // This allows delegates to be called with a user-defined period.
+      new_cycle_ready_sem_.Take(paraos::max_delay);
+      if (token.stop_requested()) {
+        break;
+      }
+      if (timer_controller_.tick(nticks_)) {
+        nticks_ = period_in_us_;
+      } else {
+        nticks_ += period_in_us_;
+      }
     }
   }
 
  private:
-  /// Binary semaphore for synchronization.
-  SemaphoreBinary new_cycle_ready_sem_;
-
-  /// Thread instance.
-  paraos::Thread thread_;
-
   /// Period in microseconds between `NotifyGive()` calls.
   const uint32_t period_in_us_;
 
   /// Callback timer controller.
   etl::icallback_timer &timer_controller_;
+
+  /// Binary semaphore for synchronization.
+  SemaphoreBinary new_cycle_ready_sem_;
+
+  /// Thread instance.
+  paraos::jthread thread_;
 
   /// Number of ticks since last notification.
   uint32_t nticks_{period_in_us_};
