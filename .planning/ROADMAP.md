@@ -16,7 +16,7 @@
 
 ### v1.8 Migrate `extra/` libraries to `paraos::jthread`
 
-- [ ] **Phase 31: Migrate `OneShotExecutor` to `paraos::jthread`** — Internal thread wrapper replaced; queue delegate loop runs inside jthread callable.
+- [x] **Phase 31: Migrate `OneShotExecutor` to `paraos::jthread`** — Internal thread wrapper replaced; queue delegate loop runs inside jthread callable.
 - [ ] **Phase 32: Migrate `ThreadSequence` to `paraos::jthread`** — Internal thread wrapper replaced; timer tick loop runs inside jthread callable.
 - [ ] **Phase 33: Migrate `CooperativeScheduling` to `paraos::jthread`** — Internal thread wrapper replaced; scheduler loop runs inside jthread callable.
 - [ ] **Phase 34: Migrate `extra/tests` standalone executables and CMake** — Standalone thread tests use `paraos::jthread`, `start_scheduler()`/`end_scheduler()`; CMakeLists updated to C++20 and clang-tidy.

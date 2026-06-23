@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
-status: planning
-last_updated: "2026-06-23T17:45:00.000Z"
+status: in_progress
+last_updated: "2026-06-23T21:30:00.000Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -24,15 +24,17 @@ See: .planning/PROJECT.md (updated 2026-06-23)
 
 ## Current Position
 
-Phase: 31 — Migrate `OneShotExecutor` to `paraos::jthread`
+Phase: 32 — Migrate `ThreadSequence` to `paraos::jthread`
 Plan: —
-Status: Roadmap created; awaiting approval
+Status: In progress
+Last activity: 2026-06-23 — Phase 31 completed and verified
 Last activity: 2026-06-23 — Roadmap created for milestone v1.8
 
 ## Accumulated Context
 
 ### Decisions
 
+- Migrate `extra/` helpers to `paraos::jthread` while preserving public APIs.
 - Keep changes inside `port_unix` with macro isolation (`__APPLE__` / `__linux__`).
 - Use macOS-native substitutes for missing POSIX timers.
 - Map public `ThreadPriority` enum values 1..7 to the macOS `SCHED_RR` range internally.

@@ -8,8 +8,8 @@
 
 #include "etl/delegate.h"
 #include "paraos_critical.hpp"
+#include "paraos_jthread.hpp"
 #include "paraos_queue_blocking.hpp"
-#include "paraos_thread.hpp"
 
 namespace paraos {
 
@@ -86,29 +86,26 @@ class IOneShotExecutor {
     return queue_.TryPush(delegate, is_isr);
   }
 
-  /// @brief Processes one delegate from the queue in a single iteration.
-  ///
-  /// @note This method is intended for internal use by the executor thread.
-  void ExecuteDelegates() {
-    auto delegate_opt = queue_.Pop(paraos::max_delay);
-
-    if (delegate_opt) {
-      delegate_opt->call_if();
-    }
-  }
-
   /// @brief Terminates the executor thread gracefully.
   ///
   /// @param[in] is_isr Flag indicating if called from an ISR context.
   ///
-  /// @note Sends an empty delegate to unblock the thread and signal
-  /// termination.
+  /// @note Requests the jthread to stop, unblocks the queue with an empty
+  /// delegate, and joins the thread.
+  /// @brief Terminates the executor thread gracefully.
+  ///
+  /// @param[in] is_isr Flag indicating if called from an ISR context.
+  ///
+  /// @note Requests the jthread to stop, unblocks the queue with an empty
+  /// delegate, and joins the thread.
   void Finish(bool is_isr = false) {
-    thread_.Finished();
+    (void)thread_.request_stop();
 
     // Enqueue empty delegate to unblock executor thread.
     const executor_delegate_type empty_delegate;
     EnqueueDelegate(empty_delegate, is_isr);
+
+    thread_.join();
   }
 
   virtual ~IOneShotExecutor() = default;
@@ -124,20 +121,37 @@ class IOneShotExecutor {
   /// @param[in] attrs Configuration attributes for the executor.
   /// @param[in] queue Reference to the blocking queue implementation.
   /// @param[in] thread_start_flag Whether to start the thread immediately
-  /// (useful for testing).
+  /// (useful for testing). Kept for API compatibility; the underlying jthread
+  /// blocks on the scheduler gate until the scheduler is started.
   IOneShotExecutor(
       const IOneShotExecutorAttributes& attrs,
       paraos::IQueueBlocking<executor_delegate_type>& queue,
       bool thread_start_flag = true)
-      : thread_{attrs, thread_start_flag}, queue_{queue} {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<
-            IOneShotExecutor, &IOneShotExecutor::ExecuteDelegates>(*this));
+      : queue_{queue},
+        thread_{static_cast<const paraos::ThreadAttr&>(attrs),
+                [this](const paraos::stop_token& token) { ExecuteDelegates(token); }} {
+    (void)thread_start_flag;
   }
 
  private:
-  paraos::Thread thread_;
+  /// @brief Processes delegates from the queue until a stop is requested.
+  ///
+  /// @note This method is intended for internal use by the executor thread.
+  /// @brief Processes delegates from the queue until a stop is requested.
+  ///
+  /// @note This method is intended for internal use by the executor thread.
+  void ExecuteDelegates(const paraos::stop_token& token) {
+    while (!token.stop_requested()) {
+      auto delegate_opt = queue_.Pop(paraos::max_delay);
+
+      if (delegate_opt) {
+        delegate_opt->call_if();
+      }
+    }
+  }
+
   paraos::IQueueBlocking<executor_delegate_type>& queue_;
+  paraos::jthread thread_;
 };
 
 /// @brief Attributes structure for OneShotExecutor initialization.
