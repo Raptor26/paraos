@@ -3,11 +3,17 @@
 ///
 /// SPDX-License-Identifier: MIT.
 /// See LICENSE file in the project root for full license information.
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <iostream>
+#include <mutex>
 
 #include "paraos_critical.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_jthread.hpp"
+#include "paraos_sleep.hpp"
+#include "paraos_thread_common.hpp"
 
 // NOLINTBEGIN(*-magic-numbers, google-build-using-namespace,
 // readability-function-cognitive-,
@@ -33,98 +39,97 @@ void DeletedObjectsCnt() {
 std::atomic<std::size_t> cnt{0};
 constexpr std::size_t EXPECTED_THREADS{3};
 
-inline void DefaultDelegate() { paraos::Thread::DelayMs(100); }
-constexpr paraos::thread_delegate_type thread_default_delegate =
-    etl::delegate<void()>::create<DefaultDelegate>();
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
 
-paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
-    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
-    thread_default_delegate}};
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  {
+    const std::scoped_lock lock{g_done_mtx};
+    g_scheduler_ended = true;
+  }
+  g_done_cv.notify_one();
+}
 
-paraos::Thread my_thread_global_one{paraos::ThreadAttr{
-    "Global thread one", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kLowest, DeletedObjectsCnt,
-    thread_default_delegate}};
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
 
-paraos::Thread my_thread_global_two{paraos::ThreadAttr{
-    "Global thread two", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kNormal, DeletedObjectsCnt,
-    thread_default_delegate}};
+void IdleHook() {
+  WaitForSchedulerEnded();
 
-paraos::Thread my_thread_global_three{paraos::ThreadAttr{
-    "Global thread three", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, DeletedObjectsCnt,
-    thread_default_delegate}};
-
-void ExitFromTest() {
-  if (cnt >= EXPECTED_THREADS) {
-    check_test_complete_and_exit.Finished();
-    constexpr std::size_t delay_ms{0};
-    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::Thread::DelayMs(delay_ms);
-
-    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-#if defined(PARAOS_LIKE_FREERTOS)
-    // Forces program exit to reduce execution time. Needed to terminate tests
-    // early, especially when running multiple tests. In other case, program
-    // will exit in 1 second later.
-    std::_Exit(EXIT_SUCCESS);
-#else
-    paraos::Thread::Exit();
-#endif
+  if (cnt.load() == EXPECTED_THREADS) {
+    std::cout << "OK\n";
+  } else {
+    std::cout << "FAIL: cnt=" << cnt.load() << "\n";
+    std::exit(EXIT_FAILURE);
   }
 
-  PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::Thread::DelayMs(10);
+  (void)paraos::jthread::end_scheduler();
 }
 
-void ProcessingOne() {
-  PrintDebug(
-      "ProcessingOne() calling Finished()", my_thread_global_one.GiveName());
-  my_thread_global_one.Finished();
-  ++cnt;
-}
+paraos::jthread my_thread_global_one{
+    paraos::ThreadAttr{
+        "Global thread one", paraos::GetStackMinimumSizeInBytes(),
+        paraos::ThreadPriority::kLowest},
+    [](const paraos::stop_token& /*token*/) {
+      PrintDebug("ProcessingOne() calling Finished()", "Global thread one");
+      ++cnt;
+      DeletedObjectsCnt();
+    }};
 
-void ProcessingTwo() {
-  PrintDebug(
-      "ProcessingTwo calling Finished()", my_thread_global_two.GiveName());
-  my_thread_global_two.Finished();
-  ++cnt;
-}
+paraos::jthread my_thread_global_two{
+    paraos::ThreadAttr{
+        "Global thread two", paraos::GetStackMinimumSizeInBytes(),
+        paraos::ThreadPriority::kNormal},
+    [](const paraos::stop_token& /*token*/) {
+      PrintDebug("ProcessingTwo calling Finished()", "Global thread two");
+      ++cnt;
+      DeletedObjectsCnt();
+    }};
 
-void ProcessingThree() {
-  PrintDebug(
-      "ProcessingThree() calling Finished()",
-      my_thread_global_three.GiveName());
-  my_thread_global_three.Finished();
-  ++cnt;
-}
+paraos::jthread my_thread_global_three{
+    paraos::ThreadAttr{
+        "Global thread three", paraos::GetStackMinimumSizeInBytes(),
+        paraos::ThreadPriority::kRealTime},
+    [](const paraos::stop_token& /*token*/) {
+      PrintDebug("ProcessingThree() calling Finished()", "Global thread three");
+      ++cnt;
+      DeletedObjectsCnt();
+    }};
 }  // namespace
 
 auto main() -> int {
   {
-    auto delegate = etl::delegate<void()>::create<ExitFromTest>();
-    check_test_complete_and_exit.RegisterDelegate(delegate);
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (cnt.load() < EXPECTED_THREADS) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+          NotifySchedulerEnded();
+        });
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
+    paraos::jthread::start_scheduler();
+
+    // При использовании freeRTOS, мы никогда не попадем в строку ниже т.к. все
+    // управление блокируется в paraos::jthread::start_scheduler();
+    WaitForSchedulerEnded();
   }
 
-  {
-    auto delegate = etl::delegate<void()>::create<ProcessingOne>();
-    my_thread_global_one.RegisterDelegate(delegate);
-  }
-
-  {
-    auto delegate = etl::delegate<void()>::create<ProcessingTwo>();
-    my_thread_global_two.RegisterDelegate(delegate);
-  }
-
-  {
-    auto delegate = etl::delegate<void()>::create<ProcessingThree>();
-    my_thread_global_three.RegisterDelegate(delegate);
-  }
-
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
+  // В методе ниже проверяется результат и вызывается
+  // (void)paraos::jthread::end_scheduler(); Весь функционал завершения работы
+  // потоков инкапсулирован в одном методе чтобы его можно было использовать в
+  // paraos::freertos_idle_fnc_ptr при тестах freeRTOS. Это связано с тем, что
+  // метод ниже никогда не будет вызван при использовании freeRTOS (из-за
+  // перехвата управления при вызове paraos::jthread::start_scheduler(), поэтому
+  // передается указатель на IdleHook, который периодически вызывается на
+  // freERTOS)
+  IdleHook();
 
   return 0;
 }
