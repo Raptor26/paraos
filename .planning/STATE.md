@@ -1,14 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: "paraos::jthread scheduler control"
-current_phase: null
-current_phase_name: null
-status: complete
-stopped_at: Milestone v1.6 archived; awaiting next milestone
-last_updated: "2026-06-22T20:00:00.000Z"
-last_activity: 2026-06-22
-last_activity_desc: Milestone v1.6 completed and archived
+milestone: v1.7
+milestone_name: "Migrate test_thread_only_* to paraos::jthread"
+status: planning
+last_updated: "2026-06-23T15:50:32.469Z"
+last_activity: 2026-06-23
 progress:
   total_phases: 0
   completed_phases: 0
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-22)
 
 ## Current Position
 
-Phase: 27 — Build and static analysis verification
+Phase: Not started (defining requirements)
 Plan: —
-Status: Complete
-Last activity: 2026-06-22 — Phase 27 completed, milestone v1.6 ready for audit
+Status: Defining requirements
+Last activity: 2026-06-23 — Milestone v1.7 started
 
 ## Accumulated Context
 

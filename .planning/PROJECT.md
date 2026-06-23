@@ -15,9 +15,21 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
+## Current Milestone: v1.7 Migrate `test_thread_only_*` to `paraos::jthread`
+
+**Goal:** Перевести четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`, сохранив функциональность, обеспечив идиоматичное C++ управление жизненным циклом потоков и прохождение сборки и тестов на macOS.
+
+**Target features:**
+- Миграция `test_thread_only_stack.cpp`, `test_thread_only_stack_with_multiple_threads.cpp`, `test_thread_only_static.cpp`, `test_thread_only_global.cpp` на `paraos::jthread`.
+- Использование единого кроссплатформенного паттерна запуска/завершения через `start_scheduler()` / `end_scheduler()` и `IdleHook()` с `paraos::freertos_idle_fnc_ptr` для FreeRTOS.
+- RAII-управление потоками (`std::vector<paraos::jthread>`), минимизация ручного `new`/`delete`.
+- Обновление `port_tests/CMakeLists.txt`: `cxx_std_20`, `CXX_CLANG_TIDY`, таймаут 20 секунд на тест.
+- Верификация на macOS: конфигурация, сборка, `ctest` с таймаутом 20 секунд для PC-пресетов; сборка и выполнение для FreeRTOS-пресетов.
+- Сохранение кроссплатформенной совместимости кода для Windows и Linux.
+
 ## Current State
 
-**In progress:** планирование следующей вехи после `/gsd-new-milestone`.
+**In progress:** планирование вехи v1.7.
 
 **Shipped:** v1.6 paraos::jthread scheduler control (2026-06-22)
 
