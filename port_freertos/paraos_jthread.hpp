@@ -7,7 +7,6 @@
 #define PARAOS_JTHREAD_HPP
 
 #include <cstddef>
-#include <cstdlib>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -217,15 +216,7 @@ class jthread {
     if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
       return false;
     }
-#define PARAOS_FORCE_EXIT_FROM_SCHEDULER
-#ifdef PARAOS_FORCE_EXIT_FROM_SCHEDULER
-    // В UNIX/Windows vTaskEndScheduler() не завершает корректно потоки, поэтому
-    // нужно принудительно выйти из программы.
-    std::exit(0);
-#else
     vTaskEndScheduler();
-#endif
-#undef PARAOS_FORCE_EXIT_FROM_SCHEDULER
     return true;
   }
 
