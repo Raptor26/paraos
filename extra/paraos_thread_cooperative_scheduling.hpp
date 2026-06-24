@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <optional>
 
+#include "etl/atomic.h"
 #include "etl/delegate.h"
 #include "etl/function.h"
 #include "etl/scheduler.h"
@@ -129,6 +130,11 @@ class ICooperativeScheduling : public paraos::Base {
   void Finish(bool is_dynamic = false) {
     (void)is_dynamic;
 
+    // Prevent double finish from destructor after explicit Finish() call.
+    if (is_finished_.exchange(true)) {
+      return;
+    }
+
     // Request the scheduler thread to stop.
     if (thread_.has_value()) {
       (void)thread_->request_stop();
@@ -241,6 +247,9 @@ class ICooperativeScheduling : public paraos::Base {
 
   /// Thread instance.
   std::optional<paraos::jthread> thread_;
+
+  /// @brief Flag to ensure Finish() is executed only once.
+  etl::atomic_bool is_finished_{false};
 
   struct {
     TimerProfiler period_;   ///< Profiler for measuring the period.

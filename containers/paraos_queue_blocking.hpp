@@ -167,8 +167,7 @@ class QueueBlocking final : public IQueueBlocking<T, SIZE> {
 
  public:
   QueueBlocking() noexcept
-      : IQueueBlocking<T, SIZE>{queue_, pop_sem_, mutex_},
-        pop_sem_{static_cast<std::ptrdiff_t>(SIZE)} {}
+      : IQueueBlocking<T, SIZE>{queue_, pop_sem_, mutex_} {}
 
   ~QueueBlocking() override = default;
 
@@ -190,7 +189,7 @@ class QueueBlocking final : public IQueueBlocking<T, SIZE> {
 
  private:
   etl::queue<T, SIZE> queue_;
-  paraos::counting_semaphore<static_cast<std::ptrdiff_t>(SIZE)> pop_sem_;
+  paraos::counting_semaphore<static_cast<std::ptrdiff_t>(SIZE)> pop_sem_{0};
   paraos::mutex mutex_;
 };
 }  // namespace paraos
