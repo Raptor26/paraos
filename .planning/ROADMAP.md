@@ -11,6 +11,7 @@
 - ✅ **v1.6 paraos::jthread scheduler control** — Phases 24-27 (shipped 2026-06-22) — see `.planning/milestones/v1.6-ROADMAP.md`
 - ✅ **v1.7 Migrate `test_thread_only_*` to `paraos::jthread`** — Phases 28-30 (shipped 2026-06-23) — see `.planning/milestones/v1.7-ROADMAP.md`
 - ✅ **v1.8 Migrate `extra/` libraries to `paraos::jthread`** — Phases 31-35 (shipped 2026-06-23) — see `.planning/milestones/v1.8-ROADMAP.md`
+- 🔄 **v1.9 Remove legacy Thread/Mutex/Semaphore implementations** — Phases 36-39
 
 ## Phases
 
@@ -22,6 +23,16 @@
 - [x] **Phase 33: Migrate `CooperativeScheduling` to `paraos::jthread`** — Internal thread wrapper replaced; scheduler loop runs inside jthread callable.
 - [x] **Phase 34: Migrate `extra/tests` standalone executables and CMake** — Standalone thread tests use `paraos::jthread`, `start_scheduler()`/`end_scheduler()`; CMakeLists updated to C++20 and clang-tidy.
 - [x] **Phase 35: Build, static analysis and runtime verification** — All PC/FreeRTOS presets pass ctest; clang-tidy presets clean; no regressions.
+
+</details>
+
+<details>
+<summary>🔄 v1.9 Remove legacy Thread/Mutex/Semaphore implementations (Phases 36-39)</summary>
+
+- [ ] **Phase 36: Remove legacy implementation headers** — Delete `port_*/paraos_thread.hpp`, `port_*/paraos_mutex.hpp`, `port_*/paraos_semaphore.hpp`; clean `paraos_thread_common.hpp`; remove `paraos_mutex_raii.hpp`.
+- [ ] **Phase 37: Migrate internal consumers to std-like primitives** — Update `containers/`, `port_unix/paraos_critical.hpp`, socket UDP headers, and any remaining internal references.
+- [ ] **Phase 38: Migrate or remove legacy tests and examples** — Rewrite/delete `test_thread_create_then_delete_many_threads.cpp`, `test_mutex.cpp`, `test_mutex_raii.cpp`, `test_semaphore.cpp`, and the five `example_*.cpp` files that use `paraos::Thread`/`paraos::SemaphoreBinary`.
+- [ ] **Phase 39: Build, static analysis and regression verification** — All PC/FreeRTOS presets configure and build; `ctest` passes on PC; `*_clang_tidy` presets remain clean.
 
 </details>
 
@@ -82,6 +93,50 @@
   4. `ctest` count on PC matches or exceeds the pre-milestone baseline (58 tests).
 **Plans**: TBD
 
+### Phase 36: Remove legacy implementation headers
+**Goal:** Delete legacy `paraos::Thread`, `paraos::Mutex`, and `paraos::Semaphore*` implementation headers while preserving common attributes needed by `paraos::jthread`.
+**Depends on:** Nothing (first phase of v1.9)
+**Requirements:** REM-01, REM-02, REM-03, REM-04, REM-05
+**Success Criteria** (what must be TRUE):
+  1. `port_unix/paraos_thread.hpp`, `port_unix/paraos_mutex.hpp`, `port_unix/paraos_semaphore.hpp` are removed.
+  2. `port_win/paraos_thread.hpp`, `port_win/paraos_mutex.hpp`, `port_win/paraos_semaphore.hpp` are removed.
+  3. `port_freertos/paraos_thread.hpp`, `port_freertos/paraos_mutex.hpp`, `port_freertos/paraos_semaphore.hpp` are removed.
+  4. `paraos_thread_common.hpp` still provides `ThreadAttr`, `ThreadPriority`, and other shared definitions used by `paraos::jthread`.
+  5. `paraos_mutex_raii.hpp` is removed or rewritten in terms of `std::lock_guard<paraos::mutex>` / `std::unique_lock<paraos::mutex>`.
+**Plans**: TBD
+
+### Phase 37: Migrate internal consumers to std-like primitives
+**Goal:** Update remaining internal code that depends on legacy `paraos::Thread`, `paraos::Mutex`, or `paraos::Semaphore*` to use the std-like replacements.
+**Depends on:** Phase 36
+**Requirements:** MIG-01, MIG-02, MIG-03, MIG-04
+**Success Criteria** (what must be TRUE):
+  1. `containers/paraos_message_buffer.hpp` and `containers/paraos_queue_blocking.hpp` use `paraos::mutex` and `paraos::*_semaphore`.
+  2. `port_unix/paraos_critical.hpp` uses `paraos::mutex` and no longer references `MutexBase`.
+  3. `port_unix/paraos_thread.hpp` and `port_win/paraos_thread.hpp` either are forwarding headers to `paraos_jthread.hpp` or are removed entirely.
+  4. `port_unix/paraos_socket_udp.hpp` and `port_win/paraos_socket_udp.hpp` use `paraos::jthread` / `paraos::sleep_for` instead of `paraos::Thread`.
+**Plans**: TBD
+
+### Phase 38: Migrate or remove legacy tests and examples
+**Goal:** Eliminate remaining test/example code that uses legacy `paraos::Thread`, `paraos::Mutex`, or `paraos::Semaphore*`.
+**Depends on:** Phase 37
+**Requirements:** TEST-01, TEST-02, TEST-03
+**Success Criteria** (what must be TRUE):
+  1. `port_tests/test_thread_create_then_delete_many_threads.cpp`, `test_mutex.cpp`, `test_mutex_raii.cpp`, and `test_semaphore.cpp` are deleted or rewritten to use std-like primitives.
+  2. `port_tests/example_thread_check_timeout.cpp`, `example_timer.cpp`, `example_paraos_timer.cpp`, `example_socket_udp.cpp`, and `example_paraos_socket_udp.cpp` no longer reference `paraos::Thread` or `paraos::SemaphoreBinary`.
+  3. `port_tests/CMakeLists.txt` is updated to remove deleted targets and keep/register the remaining std-like tests/examples.
+**Plans**: TBD
+
+### Phase 39: Build, static analysis and regression verification
+**Goal:** All PC and FreeRTOS presets remain green after legacy removal.
+**Depends on:** Phase 38
+**Requirements:** BUILD-01, BUILD-02, BUILD-03, BUILD-04
+**Success Criteria** (what must be TRUE):
+  1. `pc_debug_clang`, `pc_debug_gcc`, and `pc_debug_gcc_clang_tidy` presets configure, build, and pass `ctest`.
+  2. `freertos_debug_clang` and `freertos_debug_gcc` presets compile.
+  3. `*_clang_tidy` presets produce no new warnings from changed or deleted code.
+  4. PC `ctest` count is at least the pre-milestone baseline (58 tests) unless a test is intentionally removed with documented rationale.
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -118,3 +173,7 @@
 | 33. Migrate `CooperativeScheduling` to `paraos::jthread` | v1.8 | 1/1 | Complete | 2026-06-23 |
 | 34. Migrate `extra/tests` standalone executables and CMake | v1.8 | 1/1 | Complete | 2026-06-23 |
 | 35. Build, static analysis and runtime verification | v1.8 | 1/1 | Complete | 2026-06-23 |
+| 36. Remove legacy implementation headers | v1.9 | 0/1 | Not started | — |
+| 37. Migrate internal consumers to std-like primitives | v1.9 | 0/1 | Not started | — |
+| 38. Migrate or remove legacy tests and examples | v1.9 | 0/1 | Not started | — |
+| 39. Build, static analysis and regression verification | v1.9 | 0/1 | Not started | — |
