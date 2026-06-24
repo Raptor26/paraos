@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -126,9 +127,7 @@ class jthread {
   auto operator=(const jthread& other) -> jthread& = delete;
 
   /// @brief Move construction transfers context ownership.
-  jthread(jthread&& other) noexcept : context_(other.context_) {
-    other.context_ = nullptr;
-  }
+  jthread(jthread&& other) noexcept : context_(std::move(other.context_)) {}
 
   /// @brief Move assignment transfers context ownership.
   auto operator=(jthread&& other) noexcept -> jthread& {
@@ -137,9 +136,7 @@ class jthread {
         request_stop();
         join();
       }
-      delete context_;
-      context_ = other.context_;
-      other.context_ = nullptr;
+      context_ = std::move(other.context_);
     }
     return *this;
   }
@@ -150,7 +147,6 @@ class jthread {
       request_stop();
       join();
     }
-    delete context_;
   }
 
   /// @brief Request the running thread to stop.
@@ -227,22 +223,24 @@ class jthread {
     using decayed_function = std::decay_t<Function>;
     using decayed_args = std::tuple<std::decay_t<Args>...>;
 
-    auto* invoker = new Invoker<decayed_function, decayed_args>(
+    auto invoker = std::make_unique<Invoker<decayed_function, decayed_args>>(
         std::forward<Function>(func), std::forward<Args>(args)...);
 
-    context_ = new Context{false, invoker, paraos::binary_semaphore{0}, nullptr, attr};
+    auto context = std::make_unique<Context>();
+    context->invoker = std::move(invoker);
+    context->attr = attr;
 
     xTaskCreate(
         RunTask, attr.thread_name.data(),
-        paraos::ConvertStackSizeInWords(attr.stack_depth), context_,
-        static_cast<UBaseType_t>(attr.priority), &context_->handle);
+        paraos::ConvertStackSizeInWords(attr.stack_depth), context.get(),
+        static_cast<UBaseType_t>(attr.priority), &context->handle);
 
-    if (context_->handle == nullptr) {
-      delete invoker;
-      delete context_;
-      context_ = nullptr;
+    if (context->handle == nullptr) {
       ETL_ASSERT(false, ETL_ERROR(paraos::thread_not_created_exception));
+      return;
     }
+
+    context_ = std::move(context);
   }
 
   /// @brief Abstract invoker base.
@@ -281,7 +279,7 @@ class jthread {
   /// @brief Context shared between the jthread object and the FreeRTOS task.
   struct Context {
     etl::atomic_bool stop_flag{false};
-    InvokerBase* invoker{nullptr};
+    std::unique_ptr<InvokerBase> invoker;
     paraos::binary_semaphore join_sem{0};
     TaskHandle_t handle{nullptr};
     ThreadAttr attr{};
@@ -298,7 +296,7 @@ class jthread {
     vTaskDelete(nullptr);
   }
 
-  Context* context_{nullptr};
+  std::unique_ptr<Context> context_;
 };
 
 }  // namespace paraos
