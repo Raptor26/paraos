@@ -20,7 +20,16 @@
 #include <pthread.h>
 #include <unistd.h>
 #elif defined(PARAOS_LIKE_WINAPI)
+// NOLINTBEGIN(llvm-include-order)
+// clang-format off
+// winsock2.h must be included before windows.h.
+#include <winsock2.h>
 #include <windows.h>
+#ifdef __MINGW32__
+#include <pthread.h>
+#endif
+// clang-format on
+// NOLINTEND(llvm-include-order)
 #endif
 
 #include "paraos_attr.h"
@@ -108,8 +117,9 @@ class jthread {
   template <typename Function, typename... Args>
     requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
   explicit jthread(Function&& func, Args&&... args) {
-    MakeThread(ThreadAttr{}, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(
+        ThreadAttr{}, std::forward<Function>(func),
+        std::forward<Args>(args)...);
   }
 
   /// @brief Construct a thread with the specified attributes.
@@ -124,8 +134,7 @@ class jthread {
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
   explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
-    MakeThread(attr, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -256,11 +265,7 @@ class jthread {
   }
 
  private:
-  enum class SchedulerState : std::uint8_t {
-    kNotStarted,
-    kRunning,
-    kStopped
-  };
+  enum class SchedulerState : std::uint8_t { kNotStarted, kRunning, kStopped };
 
   struct Context {
     std::jthread thread;
@@ -302,14 +307,15 @@ class jthread {
     auto* ctx = context_.get();
     context_->thread = std::jthread(
         [func = std::forward<Function>(func),
-         ...captured_args = std::forward<Args>(args),
+         ... captured_args = std::forward<Args>(args),
          ctx](std::stop_token std_token) mutable -> void {
           WaitForGate(ctx);
           if (!ctx->should_run) {
             return;
           }
-          std::invoke(std::move(func), std::move(captured_args)...,
-                      stop_token{std::move(std_token)});
+          std::invoke(
+              std::move(func), std::move(captured_args)...,
+              stop_token{std::move(std_token)});
         });
     ApplyAttr();
   }
@@ -326,13 +332,26 @@ class jthread {
 #endif
       // Ignore return value: changing priority requires privileges; failing
       // here must not break user code.
-      (void)pthread_setschedparam(context_->thread.native_handle(), SCHED_RR,
-                                  &param);
+      (void)pthread_setschedparam(
+          context_->thread.native_handle(), SCHED_RR, &param);
     }
 #elif defined(PARAOS_LIKE_WINAPI)
     if (context_->thread.joinable()) {
-      (void)SetThreadPriority(context_->thread.native_handle(),
-                              static_cast<int>(context_->attr.priority));
+#ifdef __MINGW32__
+      // MinGW's libstdc++ uses pthread_t as native_handle_type.
+      // Convert it to the underlying Win32 handle before calling
+      // SetThreadPriority().
+      HANDLE handle = pthread_gethandle(
+          static_cast<pthread_t>(context_->thread.native_handle()));
+      if (handle != nullptr) {
+        (void)SetThreadPriority(
+            handle, static_cast<int>(context_->attr.priority));
+      }
+#else
+      (void)SetThreadPriority(
+          context_->thread.native_handle(),
+          static_cast<int>(context_->attr.priority));
+#endif
     }
 #endif
   }
@@ -348,8 +367,7 @@ class jthread {
     const auto min = sched_get_priority_min(SCHED_RR);
     const auto max = sched_get_priority_max(SCHED_RR);
 
-    constexpr auto k_min_enum =
-        static_cast<int>(paraos::ThreadPriority::kIdle);
+    constexpr auto k_min_enum = static_cast<int>(paraos::ThreadPriority::kIdle);
     constexpr auto k_max_enum =
         static_cast<int>(paraos::ThreadPriority::kRealTime);
     const auto prior = static_cast<int>(priority);
@@ -359,8 +377,8 @@ class jthread {
     }
 
     const auto mapped =
-        (min + (((prior - k_min_enum) * (max - min)) /
-                (k_max_enum - k_min_enum)));
+        (min +
+         (((prior - k_min_enum) * (max - min)) / (k_max_enum - k_min_enum)));
     return mapped;
   }
 #endif

@@ -90,9 +90,18 @@ class IQueueBlocking {
       -> std::optional<T> {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     auto start_time = paraos::GetCurrentTime();
-    const std::scoped_lock<paraos::mutex> lock(mutex_);
+    std::unique_lock<paraos::mutex> lock(mutex_);
 
+    // Always acquire the semaphore before popping. This keeps the semaphore
+    // counter in sync with the number of items in the queue even when multiple
+    // producers have woken the queue before a consumer finishes popping.
+    //
+    // The mutex is released while waiting so that producers can still push
+    // items; holding it during the whole wait would let the semaphore count
+    // grow past the queue size while a consumer has taken a notification but
+    // has not popped yet.
     if (IsEmpty()) {
+      lock.unlock();
       while (true) {
         if (pop_sem_.try_acquire_for(std::chrono::milliseconds(timeout_ms))) {
           paraosTRACE_MESSAGE("Sem taken");
@@ -104,6 +113,23 @@ class IQueueBlocking {
           return std::nullopt;
         }
       }
+      lock.lock();
+    } else if (!pop_sem_.try_acquire()) {
+      // Another consumer took the notification while we were locking; wait
+      // for the next one without holding the mutex.
+      lock.unlock();
+      while (true) {
+        if (pop_sem_.try_acquire_for(std::chrono::milliseconds(timeout_ms))) {
+          paraosTRACE_MESSAGE("Sem taken");
+          break;
+        }
+
+        if (paraos::CheckTimeout(start_time, timeout_ms)) {
+          paraosTRACE_MESSAGE("Timeout expired");
+          return std::nullopt;
+        }
+      }
+      lock.lock();
     }
 
     const paraos::CriticalSection critical;
@@ -150,9 +176,10 @@ class IQueueBlocking {
   IQueueBlocking(const IQueueBlocking& other) = delete;
 
  protected:
-  IQueueBlocking(etl::iqueue<T>& queue,
-                 paraos::counting_semaphore<static_cast<std::ptrdiff_t>(SIZE)>& pop_sem,
-                 paraos::mutex& mutex)
+  IQueueBlocking(
+      etl::iqueue<T>& queue,
+      paraos::counting_semaphore<static_cast<std::ptrdiff_t>(SIZE)>& pop_sem,
+      paraos::mutex& mutex)
       : queue_{queue}, pop_sem_{pop_sem}, mutex_{mutex} {}
 
  private:
