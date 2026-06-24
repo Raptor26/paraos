@@ -23,7 +23,7 @@ namespace paraos {
 using thread_delegate_type = etl::delegate<void()>;
 
 #ifdef PARAOS_LIKE_WINAPI
-enum ThreadPriority : int8_t {
+enum class ThreadPriority : int8_t {
   kIdle = THREAD_PRIORITY_IDLE,
   kLowest = THREAD_PRIORITY_LOWEST,
   kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
