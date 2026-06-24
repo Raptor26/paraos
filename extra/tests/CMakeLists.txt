@@ -26,7 +26,8 @@ warning "<ciso646> is deprecated in C++17, use <version> to detect implementatio
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror
                                                -Wno-cpp)
 
-gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS EXTRA]:")
+gtest_discover_tests(${PROJECT_NAME} TEST_PREFIX "[PARAOS EXTRA]:" PROPERTIES
+                                                  TIMEOUT 20)
 
 # Multithread ------------------------------------------------------------------
 if(THREAD_ENABLE)
@@ -34,6 +35,7 @@ if(THREAD_ENABLE)
   target_link_libraries(test_paraos_thread_sequence PRIVATE paraos::paraos)
   target_compile_features(test_paraos_thread_sequence PRIVATE cxx_std_20)
   add_test(NAME test_paraos_thread_sequence COMMAND test_paraos_thread_sequence)
+  set_tests_properties(test_paraos_thread_sequence PROPERTIES TIMEOUT 20)
 
   # ----------------------------------------------------------------------------
   add_executable(test_paraos_cooperative_scheduling_thread
@@ -44,12 +46,15 @@ if(THREAD_ENABLE)
                           PRIVATE cxx_std_20)
   add_test(NAME test_paraos_cooperative_scheduling_thread
            COMMAND test_paraos_cooperative_scheduling_thread)
+  set_tests_properties(test_paraos_cooperative_scheduling_thread PROPERTIES TIMEOUT
+                                                                           20)
   # ----------------------------------------------------------------------------
   add_executable(test_paraos_oneshot_executor test_oneshot_executor_thread.cpp)
   target_link_libraries(test_paraos_oneshot_executor PRIVATE paraos::paraos)
   target_compile_features(test_paraos_oneshot_executor PRIVATE cxx_std_20)
   add_test(NAME test_paraos_oneshot_executor
            COMMAND test_paraos_oneshot_executor)
+  set_tests_properties(test_paraos_oneshot_executor PROPERTIES TIMEOUT 20)
 
 endif()
 

@@ -156,6 +156,11 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
 
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  WaitForSchedulerEnded();
+  (void)paraos::jthread::end_scheduler();
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -167,6 +172,10 @@ auto main() -> int {
 
   // Set custom idle callback to complete test.
   cooperative_scheduler.SetIdleCallback(idle_callback);
+
+#if PARAOS_LIKE_FREERTOS
+  paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
 
   const paraos::jthread stopper(
       [](const paraos::stop_token& /*token*/) -> void {
@@ -183,7 +192,7 @@ auto main() -> int {
 
   WaitForSchedulerEnded();
 
-  (void)paraos::jthread::end_scheduler();
+  IdleHook();
 
   return EXIT_SUCCESS;
 }

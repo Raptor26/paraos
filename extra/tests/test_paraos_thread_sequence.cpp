@@ -142,6 +142,18 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
 
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  WaitForSchedulerEnded();
+
+  PARAOS_CHECK_ASSERT(gyracc_call_cnt.load() == gyr_acc_max_call_cnt);
+  // Frequency of the call mag is two times less than gyr_acc.
+  PARAOS_CHECK_ASSERT(mag_call_cnt.load() == gyr_acc_max_call_cnt / 2);
+  // Frequency of the call mag is four times less than gyr_acc.
+  PARAOS_CHECK_ASSERT(baro_call_cnt.load() == gyr_acc_max_call_cnt / 4);
+
+  (void)paraos::jthread::end_scheduler();
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -239,6 +251,10 @@ auto main() -> int {
         });
     (void)stopper;
 
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
     paraos::jthread::start_scheduler();
 
     WaitForSchedulerEnded();
@@ -246,15 +262,7 @@ auto main() -> int {
     thread_seq_ptr = nullptr;
   }
 
-  PARAOS_CHECK_ASSERT(gyracc_call_cnt.load() == gyr_acc_max_call_cnt);
-
-  // Frequency of the call mag is two times less than gyr_acc.
-  PARAOS_CHECK_ASSERT(mag_call_cnt.load() == gyr_acc_max_call_cnt / 2);
-
-  // Frequency of the call mag is four times less than gyr_acc.
-  PARAOS_CHECK_ASSERT(baro_call_cnt.load() == gyr_acc_max_call_cnt / 4);
-
-  (void)paraos::jthread::end_scheduler();
+  IdleHook();
 
   return 0;
 }

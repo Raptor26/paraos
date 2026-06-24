@@ -23,6 +23,8 @@ namespace {
 constexpr uint_least8_t max_delegates_in_queue{4};
 using OneShotExecutorTest = paraos::OneShotExecutor<max_delegates_in_queue>;
 
+OneShotExecutorTest* g_executor_ptr{nullptr};
+
 std::atomic<std::size_t> producer_call_cnt{0};
 std::atomic<std::size_t> worker_call_cnt{0};
 std::atomic<bool> is_test_complete{false};
@@ -74,6 +76,19 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
 
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  WaitForSchedulerEnded();
+
+  PARAOS_CHECK_ASSERT(producer_call_cnt == 3);
+  PARAOS_CHECK_ASSERT(worker_call_cnt == 1);
+
+  constexpr bool is_isr{false};
+  PARAOS_CHECK_ASSERT(g_executor_ptr);
+  g_executor_ptr->Finish(is_isr);
+
+  (void)paraos::jthread::end_scheduler();
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -83,6 +98,7 @@ auto main() -> int {
           paraos::ThreadPriority::kRealTime, nullptr}}};
 
     OneShotExecutorTest oneshot_executor{attr};
+    g_executor_ptr = &oneshot_executor;
 
     static Producer producer{};
     static Worker worker{};
@@ -109,18 +125,16 @@ auto main() -> int {
         });
     (void)stopper;
 
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
     paraos::jthread::start_scheduler();
 
     WaitForSchedulerEnded();
 
-    constexpr bool is_isr{false};
-    oneshot_executor.Finish(is_isr);
+    IdleHook();
   }
-
-  PARAOS_CHECK_ASSERT(producer_call_cnt == 3);
-  PARAOS_CHECK_ASSERT(worker_call_cnt == 1);
-
-  (void)paraos::jthread::end_scheduler();
 
   return 0;
 }
