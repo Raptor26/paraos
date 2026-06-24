@@ -24,4 +24,4 @@ paraos_version.hpp
 # Расширение clangd для VsCode сгенерирует данный файл с актуальными для вышей ОС путями
 compile_commands.json
 
-.pi-subagent-sessions
+.pi-subagent-sessions.worktrees/
