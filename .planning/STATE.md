@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: "Remove legacy Thread/Mutex/Semaphore implementations"
-current_phase: 38
+current_phase: 39
 status: executing
-stopped_at: Phase 37 complete; executing Phase 38
-last_updated: "2026-06-24T12:30:00.000Z"
+stopped_at: Phase 38 complete; executing Phase 39
+last_updated: "2026-06-24T13:00:00.000Z"
 last_activity: 2026-06-24
-last_activity_desc: Phase 37 complete — internal consumers migrated
+last_activity_desc: Phase 38 complete — legacy tests/examples removed
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 4
-  completed_plans: 2
-  percent: 50
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 
 ## Current Position
 
-Phase: 38 — Migrate or remove legacy tests and examples
-Plan: 38-01
+Phase: 39 — Build, static analysis and regression verification
+Plan: 39-01
 Status: Executing
-Last activity: 2026-06-24 — Phase 37 complete; internal consumers migrated
+Last activity: 2026-06-24 — Phase 38 complete; legacy tests/examples removed
 
 ## Accumulated Context
 
@@ -56,12 +56,14 @@ Last activity: 2026-06-24 — Phase 37 complete; internal consumers migrated
 - Гонка в `test_message_multithread_many_producer_many_consumers` устранена вызовом `write.Free()` после неуспешного `TryPush()`.
 - Phase 36: legacy Thread/Mutex/Semaphore implementation headers deleted; `ThreadAttr` cleaned; `MutexGuard` rewritten as `std::lock_guard<paraos::mutex>`.
 - Phase 37: `paraos::recursive_mutex` introduced; containers, critical section, socket UDP, FreeRTOS jthread, and extra helpers migrated to std-like primitives.
+- Phase 38: legacy `port_tests/test_*.cpp` and `example_*.cpp` files removed; `port_tests/CMakeLists.txt` updated; PC `ctest` passes 58/58.
 
 ### Pending Todos
 
-- Remove or rewrite legacy `port_tests/test_*.cpp` files.
-- Update legacy `port_tests/example_*.cpp` files.
-- Update `port_tests/CMakeLists.txt`.
+- Verify `pc_debug_gcc` preset.
+- Verify `pc_debug_gcc_clang_tidy` preset.
+- Verify `freertos_debug_gcc` preset.
+- Document any deviations from 58-test baseline.
 
 ### Blockers/Concerns
 
@@ -78,9 +80,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-24T12:30:00.000Z
-Stopped at: Phase 37 complete; executing Phase 38
+Last session: 2026-06-24T13:00:00.000Z
+Stopped at: Phase 38 complete; executing Phase 39
 
 ## Operator Next Steps
 
-- Execute Phase 38 plan 38-01.
+- Execute Phase 39 plan 39-01.
