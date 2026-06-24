@@ -165,7 +165,7 @@ class jthread {
     if (context_ == nullptr) {
       return;
     }
-    if (joinable()) {
+    if (joinable() && std::this_thread::get_id() != context_->owner_id) {
       (void)request_stop();
       {
         const std::scoped_lock lock{context_->gate_mtx};
@@ -189,7 +189,13 @@ class jthread {
 
   /// @brief Block until the thread finishes execution.
   void join() {
-    if (context_ != nullptr) {
+    if (context_ == nullptr) {
+      return;
+    }
+    if (std::this_thread::get_id() == context_->owner_id) {
+      return;
+    }
+    if (context_->thread.joinable()) {
       context_->thread.join();
     }
   }
@@ -274,6 +280,7 @@ class jthread {
     std::condition_variable gate_cv;
     bool gate_open{false};
     bool should_run{false};
+    std::thread::id owner_id{};
   };
 
   static void OpenGate(Context* ctx, bool should_run) {
@@ -317,6 +324,7 @@ class jthread {
               std::move(func), std::move(captured_args)...,
               stop_token{std::move(std_token)});
         });
+    context_->owner_id = context_->thread.get_id();
     ApplyAttr();
   }
 

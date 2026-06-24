@@ -143,7 +143,7 @@ class jthread {
 
   /// @brief Destructor requests stop and joins if the thread is joinable.
   ~jthread() {
-    if (joinable()) {
+    if (joinable() && xTaskGetCurrentTaskHandle() != context_->owner_handle) {
       request_stop();
       join();
     }
@@ -160,13 +160,17 @@ class jthread {
 
   /// @brief Block until the thread finishes execution.
   void join() {
-    if (context_ != nullptr) {
-      context_->join_sem.acquire();
-      // Mark the task as joined so that subsequent join()/joinable() calls
-      // behave idempotently. This matches std::jthread semantics and prevents
-      // deadlocks when Finish()/~jthread() are invoked more than once.
-      context_->handle = nullptr;
+    if (context_ == nullptr || context_->handle == nullptr) {
+      return;
     }
+    if (xTaskGetCurrentTaskHandle() == context_->owner_handle) {
+      return;
+    }
+    context_->join_sem.acquire();
+    // Mark the task as joined so that subsequent join()/joinable() calls
+    // behave idempotently. This matches std::jthread semantics and prevents
+    // deadlocks when Finish()/~jthread() are invoked more than once.
+    context_->handle = nullptr;
   }
 
   /// @brief Check whether the thread is joinable.
@@ -239,6 +243,7 @@ class jthread {
       ETL_ASSERT(false, ETL_ERROR(paraos::thread_not_created_exception));
       return;
     }
+    context->owner_handle = context->handle;
 
     context_ = std::move(context);
   }
@@ -282,6 +287,7 @@ class jthread {
     std::unique_ptr<InvokerBase> invoker;
     paraos::binary_semaphore join_sem{0};
     TaskHandle_t handle{nullptr};
+    TaskHandle_t owner_handle{nullptr};
     ThreadAttr attr{};
   };
 
