@@ -74,7 +74,7 @@ void CheckIfTestSuccessfullyComplete() {  // NOLINT(llvm-prefer-static-over-anon
   std::cout << "OK\n";
 }
 
-void IdleHook() {
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   WaitForSchedulerEnded();
   CheckIfTestSuccessfullyComplete();
   (void)paraos::jthread::end_scheduler();

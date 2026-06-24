@@ -215,7 +215,7 @@ void AssertsForTestComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namesp
       "written bytes not equal with expected");
 }
 
-void IdleHook() {
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   WaitForSchedulerEnded();
   AssertsForTestComplete();
   (void)paraos::jthread::end_scheduler();

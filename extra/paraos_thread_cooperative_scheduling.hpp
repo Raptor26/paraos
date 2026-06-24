@@ -7,6 +7,7 @@
 #define PARAOS_THREAD_COOPERATIVE_SCHEDULING_HPP
 
 #include <cstdlib>
+#include <optional>
 
 #include "etl/delegate.h"
 #include "etl/function.h"
@@ -14,9 +15,10 @@
 #include "etl/task.h"
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_jthread.hpp"
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_sleep.hpp"
 #include "paraos_trace.hpp"
 
 namespace paraos {
@@ -78,12 +80,8 @@ class ICooperativeScheduling : public paraos::Base {
   ICooperativeScheduling(
       const ICooperativeSchedulingAttr &attr, etl::ischeduler &scheduler,
       bool thread_start_flag = true)
-      : thread_{attr, thread_start_flag},
-        scheduler_{scheduler},
+      : scheduler_{scheduler},
         idle_callback(*this, &ICooperativeScheduling::Idle) {
-    thread_.RegisterDelegate(
-        paraos::thread_delegate_type::create<
-            ICooperativeScheduling, &ICooperativeScheduling::Run>(*this));
     // `scheduler_` will call all registered tasks while they have work.
     // Only when all registered tasks complete their work, `scheduler_` will
     // call the idle function. Here, the registered idle function takes a
@@ -93,6 +91,12 @@ class ICooperativeScheduling : public paraos::Base {
     // `ICooperativeScheduling`.
     profiler_.period_.SetEmbeddedTimer(*attr.embedded_timer_ptr);
     profiler_.runtime_.SetEmbeddedTimer(*attr.embedded_timer_ptr);
+
+    if (thread_start_flag) {
+      thread_.emplace(
+          static_cast<const paraos::ThreadAttr &>(attr),
+          [this](const paraos::stop_token &token) -> void { Run(token); });
+    }
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
@@ -118,25 +122,27 @@ class ICooperativeScheduling : public paraos::Base {
   /// @note Useful in unit tests when an exit from the cooperative scheduler is
   /// needed.
   ///
-  /// @param[in] is_dynamic: Set to `true` if the cooperative scheduler was
-  /// created on the heap and is not managed by user code or smart pointers.
-  /// In this case, `CooperativeScheduling()` will be removed from the heap
-  /// after the thread completes all work. Otherwise, set to `false`.
+  /// @param[in] is_dynamic: Kept for API compatibility; ignored. The jthread
+  /// destructor handles cleanup.
   void Finish(bool is_dynamic = false) {
-    paraos::Base *deferred_destroy{nullptr};
-    const paraos::CriticalSection critical;
+    (void)is_dynamic;
 
-    if (is_dynamic) {
-      deferred_destroy = this;
+    // Request the scheduler thread to stop.
+    if (thread_.has_value()) {
+      (void)thread_->request_stop();
     }
 
-    thread_.Finished(deferred_destroy);
+    // Cause `scheduler_.start()` to return.
     scheduler_.exit_scheduler();
 
-    // Force give notify to exit the while loop inside the cooperative
-    // scheduler. Needed because if `Exit()` is called, the cooperative
-    // scheduler may wait indefinitely in `Idle()`.
+    // Force give notify to unblock `Idle()` in case the scheduler thread is
+    // waiting for a new cycle.
     NotifyGive();
+
+    // Wait for the scheduler thread to finish gracefully.
+    if (thread_.has_value() && thread_->joinable()) {
+      thread_->join();
+    }
   }
 
   /// @brief Adds a task to the execution list, which runs when `Run()` is
@@ -172,8 +178,12 @@ class ICooperativeScheduling : public paraos::Base {
   }
 
   /// @brief Main loop function executed by the thread.
-  /// Runs until `Break()` is called.
-  void Run() {
+  /// Runs until a stop is requested or the scheduler is exited.
+  void Run(const paraos::stop_token &token) {
+    if (token.stop_requested()) {
+      return;
+    }
+
     try {
       scheduler_.start();
     } catch (etl::scheduler_no_tasks_exception &e) {
@@ -185,17 +195,10 @@ class ICooperativeScheduling : public paraos::Base {
           e.file_name() << "; --line: " << e.line_number()
                         << "; --what: " << e.what());
     }
-    // The `Run()` method is called in a loop. When there are no tasks to
-    // execute, `scheduler_.start()` throws an exception. After `Run()` catches
-    // the exception, `scheduler_.start()` is immediately called again in an
-    // infinite loop (since `Run()` executes in an external infinite loop). In
-    // this case, all processor time would be wasted. Therefore, `DelayMs()`
-    // yields processor time to other threads.
-    //
-    // Once a task is registered (when the user code calls `AddTask()`),
-    // `scheduler_.start()` begins execution in an internal loop, which blocks
+    // Yield processor time when there are no tasks to execute. Once a task is
+    // registered, `scheduler_.start()` runs in its internal loop and blocks
     // the `Idle()` method by taking a semaphore.
-    paraos::Thread::DelayMs(coop_scheduler_delay_ms);
+    paraos::sleep_for(std::chrono::milliseconds(coop_scheduler_delay_ms));
   }
 
   /// @brief Returns a reference to the scheduler.
@@ -224,17 +227,19 @@ class ICooperativeScheduling : public paraos::Base {
   }
 
  private:
-  //// Thread instance.
-  paraos::Thread thread_;
   /// Scheduler reference.
   etl::ischeduler &scheduler_;
-  /// Binary semaphore for synchronization.
 
+  /// Binary semaphore for synchronization.
   SemaphoreBinary new_cycle_ready_sem_;
 
   /// @brief Member function object, needed to register the `Idle()` method in
   /// the scheduler.
   etl::function<ICooperativeScheduling, void> idle_callback;
+
+  /// Thread instance.
+  std::optional<paraos::jthread> thread_;
+
   struct {
     TimerProfiler period_;   ///< Profiler for measuring the period.
     TimerProfiler runtime_;  ///< Profiler for measuring runtime.

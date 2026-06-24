@@ -47,7 +47,7 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
   g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
 }
 
-void IdleHook() {
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   WaitForSchedulerEnded();
 
   if (counter.load() == kExpectedCounter) {

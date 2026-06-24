@@ -3,50 +3,51 @@
 ///
 /// SPDX-License-Identifier: MIT.
 /// See LICENSE file in the project root for full license information.
+#include <atomic>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdlib>
 #include <iostream>
+#include <mutex>
 
-#include "etl/atomic.h"
+#include "etl/delegate.h"
 #include "paraos_oneshot_executor.hpp"
+#include "paraos_sleep.hpp"
 
 // clang-format off
 // NOLINTBEGIN (*-err58-cpp, *-macro-parentheses, *-global-variables, *-exception-escape, *-member-functions, *-identifier-naming)
 // clang-format on
 
-#define PrintDebug(__message__, __object_name__)                             \
-  {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
-    std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
-  }
-
 namespace {
-
-paraos::Thread check_test_complete_and_exit{paraos::ThreadAttr{
-    "Check test complete", paraos::GetStackMinimumSizeInBytes(),
-    paraos::ThreadPriority::kRealTime, nullptr}};
-
-etl::atomic_bool is_test_complete{false};
 
 constexpr uint_least8_t max_delegates_in_queue{4};
 using OneShotExecutorTest = paraos::OneShotExecutor<max_delegates_in_queue>;
-OneShotExecutorTest *oneshot_executor_ptr;
+
+OneShotExecutorTest* g_executor_ptr{nullptr};
+
+std::atomic<std::size_t> producer_call_cnt{0};
+std::atomic<std::size_t> worker_call_cnt{0};
+std::atomic<bool> is_test_complete{false};
+
+std::mutex g_done_mtx;
+std::condition_variable g_done_cv;
+bool g_scheduler_ended{false};
 
 class Producer {
  public:
   Producer() = default;
 
   void Produce() {
-    cnt_++;
-    std::cout << "Producer called " << cnt_ << " times." << "\n";
+    ++producer_call_cnt;
+    std::cout << "Producer called " << producer_call_cnt.load() << " times."
+              << std::endl;
 
-    if (cnt_ == 2) {
-      is_test_complete = true;
+    if (producer_call_cnt.load() == 2) {
+      is_test_complete.store(true, std::memory_order_release);
     }
   }
 
   ~Producer() = default;
-
- private:
-  size_t cnt_{0};
 };
 
 class Worker {
@@ -54,78 +55,86 @@ class Worker {
   Worker() = default;
 
   void Work() {
-    cnt_++;
-    std::cout << "Worker called " << cnt_ << " times." << "\n";
+    ++worker_call_cnt;
+    std::cout << "Worker called " << worker_call_cnt.load() << " times."
+              << std::endl;
   }
 
   ~Worker() = default;
-
- private:
-  size_t cnt_{0};
 };
 
-void ExitFromTest() {
-  if (is_test_complete) {
-    check_test_complete_and_exit.Finished();
-
-    PARAOS_CHECK_ASSERT(oneshot_executor_ptr);
-    oneshot_executor_ptr->Finish();
-
-    constexpr std::size_t delay_ms{0};
-    PrintDebug("Ready to exit, delay ms " << delay_ms, "ExitFromTest");
-    paraos::Thread::DelayMs(delay_ms);
-
-    PrintDebug("Call paraos::Thread::Exit();", "ExitFromTest");
-#if defined(PARAOS_LIKE_FREERTOS)
-    std::_Exit(EXIT_SUCCESS);
-#else
-    paraos::Thread::Exit();
-#endif
+void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  {
+    const std::scoped_lock lock{g_done_mtx};
+    g_scheduler_ended = true;
   }
+  g_done_cv.notify_one();
+}
 
-  PrintDebug("Yeld resources", "ExitFromTest");
-  paraos::Thread::DelayMs(10);
+void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  std::unique_lock lock{g_done_mtx};
+  g_done_cv.wait(lock, []() -> bool { return g_scheduler_ended; });
+}
+
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
+  WaitForSchedulerEnded();
+
+  PARAOS_CHECK_ASSERT(producer_call_cnt == 3);
+  PARAOS_CHECK_ASSERT(worker_call_cnt == 1);
+
+  constexpr bool is_isr{false};
+  PARAOS_CHECK_ASSERT(g_executor_ptr);
+  g_executor_ptr->Finish(is_isr);
+
+  (void)paraos::jthread::end_scheduler();
 }
 
 }  // namespace
 
 auto main() -> int {
   {
-    static auto delegate = etl::delegate<void()>::create<ExitFromTest>();
-    check_test_complete_and_exit.RegisterDelegate(delegate);
-  }
-
-  {
-    const paraos::OneShotExecutorAttributes attr{
+    paraos::OneShotExecutorAttributes attr{
         {{"OneShotExecutor thread", paraos::GetStackMinimumSizeInBytes(),
           paraos::ThreadPriority::kRealTime, nullptr}}};
 
-    static OneShotExecutorTest oneshot_executor{attr};
-    oneshot_executor_ptr = &oneshot_executor;
+    OneShotExecutorTest oneshot_executor{attr};
+    g_executor_ptr = &oneshot_executor;
+
+    static Producer producer{};
+    static Worker worker{};
+
+    static auto producer_delegate =
+        paraos::executor_delegate_type::create<Producer, &Producer::Produce>(
+            producer);
+
+    static auto worker_delegate =
+        paraos::executor_delegate_type::create<Worker, &Worker::Work>(worker);
+
+    oneshot_executor.EnqueueDelegate(producer_delegate);
+    oneshot_executor.EnqueueDelegate<Producer, &Producer::Produce>(producer);
+    oneshot_executor.EnqueueDelegate(worker_delegate);
+    oneshot_executor.EnqueueDelegate(producer_delegate);
+
+    const paraos::jthread stopper(
+        [](const paraos::stop_token& /*token*/) -> void {
+          while (!is_test_complete.load(std::memory_order_acquire)) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+
+          NotifySchedulerEnded();
+        });
+    (void)stopper;
+
+#if PARAOS_LIKE_FREERTOS
+    paraos::freertos_idle_fnc_ptr = IdleHook;
+#endif
+
+    paraos::jthread::start_scheduler();
+
+    WaitForSchedulerEnded();
+
+    IdleHook();
   }
-
-  static Producer producer{};
-
-  static auto producer_delegate =
-      paraos::executor_delegate_type::create<Producer, &Producer::Produce>(
-          producer);
-
-  static Worker worker{};
-
-  static auto worker_delegate =
-      paraos::executor_delegate_type::create<Worker, &Worker::Work>(worker);
-
-  oneshot_executor_ptr->EnqueueDelegate(producer_delegate);
-  oneshot_executor_ptr->EnqueueDelegate<Producer, &Producer::Produce>(producer);
-
-  oneshot_executor_ptr->EnqueueDelegate(worker_delegate);
-
-  oneshot_executor_ptr->EnqueueDelegate(producer_delegate);
-
-  paraos::Thread::StartScheduler();
-  paraos::Thread::DeleteAll();
-
-  oneshot_executor_ptr = nullptr;
 
   return 0;
 }

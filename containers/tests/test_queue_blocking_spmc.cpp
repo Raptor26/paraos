@@ -153,7 +153,7 @@ void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymo
       push_item_cnt == pop_item_cnt && "Pushed items cnt not equal read");
 }
 
-void IdleHook() {
+void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   WaitForSchedulerEnded();
   CheckIfTestSuccessfullyComplete();
   (void)paraos::jthread::end_scheduler();
