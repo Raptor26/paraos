@@ -6,33 +6,19 @@
 #ifndef PARAOS_MUTEX_RAII_HPP
 #define PARAOS_MUTEX_RAII_HPP
 
-#include "paraos_mutex.hpp"
-#include "paraos_trace.hpp"
+#include <mutex>
 
-#ifdef paraosTRACE_ENABLE
-#include <iostream>
-#endif
+#include "paraos_mutex_std.hpp"
 
 namespace paraos {
-class MutexGuard {
- public:
-  explicit MutexGuard(MutexBase& mutex, std::size_t timeout_ms = max_delay)
-      : mutex_{mutex}, is_locked{mutex_.Lock(timeout_ms)} {}
 
-  ~MutexGuard() { mutex_.Unlock(); }
+/// @brief RAII guard for paraos::mutex.
+///
+/// Provided for backward compatibility with code that previously used
+/// MutexGuard with the legacy paraos::Mutex API. New code should prefer
+/// std::lock_guard<paraos::mutex> or std::unique_lock<paraos::mutex> directly.
+using MutexGuard = std::lock_guard<paraos::mutex>;
 
-  MutexGuard(const MutexGuard& other) = delete;
-  MutexGuard(MutexGuard&& other) = delete;
-
-  auto operator=(const MutexGuard& other) -> MutexGuard& = delete;
-  auto operator=(MutexGuard&& other) -> MutexGuard& = delete;
-
-  [[nodiscard]] auto IsLocked() const { return is_locked; }
-
- private:
-  MutexBase& mutex_;
-  const bool is_locked{};
-};
 }  // namespace paraos
 
 #endif /* PARAOS_MUTEX_RAII_HPP */
