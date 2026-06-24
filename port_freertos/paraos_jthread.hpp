@@ -167,6 +167,10 @@ class jthread {
   void join() {
     if (context_ != nullptr) {
       context_->join_sem.Take();
+      // Mark the task as joined so that subsequent join()/joinable() calls
+      // behave idempotently. This matches std::jthread semantics and prevents
+      // deadlocks when Finish()/~jthread() are invoked more than once.
+      context_->handle = nullptr;
     }
   }
 
