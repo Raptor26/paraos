@@ -46,8 +46,8 @@ class scheduler {
  public:
   /// @brief Access the process-wide scheduler instance.
   [[nodiscard]] static auto instance() noexcept -> scheduler& {
-    static scheduler s;
-    return s;
+    static scheduler instance;
+    return instance;
   }
 
   /// @brief Start the scheduler and release all waiting threads.

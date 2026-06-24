@@ -246,9 +246,8 @@ class jthread {
 
     scheduler::instance().register_context(context_.get());
 
-    const auto state = scheduler::instance().is_running() ? 1 : 0;
-    if (state != 0) {
-      scheduler::instance().open_gate(context_.get(), state == 1);
+    if (scheduler::instance().is_running()) {
+      scheduler::open_gate(context_.get(), true);
     }
 
     auto* ctx = context_.get();

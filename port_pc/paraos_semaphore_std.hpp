@@ -89,11 +89,13 @@ class counting_semaphore {
     // std::counting_semaphore does not expose its current count.  This helper
     // takes a best-effort snapshot by draining and re-filling the semaphore.
     // It is inherently racy under contention and is used only for validation.
-    if (!sem_.try_acquire()) {
-      return 0;
+    std::ptrdiff_t count{0};
+    while (sem_.try_acquire()) {
+      ++count;
     }
-    const auto count = 1 + GetCurrentCount();
-    sem_.release();
+    if (count > 0) {
+      sem_.release(count);
+    }
     return count;
   }
 
