@@ -71,15 +71,12 @@ class counting_semaphore {
   /// @brief Increment the counter by @p update.
   void release(std::ptrdiff_t update = 1) {
     ETL_ASSERT(handle_ != nullptr, std::runtime_error("semaphore not valid"));
+    ETL_ASSERT(update >= 0,
+               std::runtime_error("semaphore release update must be non-negative"));
 
-    // Suspend the scheduler to perform a multi-step release atomically and
-    // to detect overflow before any Give reaches the kernel.
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-do-while)
-    do {
-      if (GetCurrentCount() + update > max()) {
-        ETL_ASSERT_FAIL(std::runtime_error("semaphore release overflow"));
-      }
-    } while (false);
+    const auto current = GetCurrentCount();
+    ETL_ASSERT(update <= max() - current,
+               std::runtime_error("semaphore release overflow"));
 
     vTaskSuspendAll();
     for (std::ptrdiff_t i = 0; i < update; ++i) {

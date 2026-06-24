@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
+#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -18,7 +19,7 @@
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_exceptions.hpp"
-#include "paraos_semaphore.hpp"
+#include "paraos_semaphore_std.hpp"
 #include "paraos_thread_common.hpp"
 #include "paraos_thread_exceptions.hpp"
 #include "paraos_utils.hpp"
@@ -127,9 +128,7 @@ class jthread {
   auto operator=(const jthread& other) -> jthread& = delete;
 
   /// @brief Move construction transfers context ownership.
-  jthread(jthread&& other) noexcept : context_(other.context_) {
-    other.context_ = nullptr;
-  }
+  jthread(jthread&& other) noexcept : context_(std::move(other.context_)) {}
 
   /// @brief Move assignment transfers context ownership.
   auto operator=(jthread&& other) noexcept -> jthread& {
@@ -138,20 +137,17 @@ class jthread {
         request_stop();
         join();
       }
-      delete context_;
-      context_ = other.context_;
-      other.context_ = nullptr;
+      context_ = std::move(other.context_);
     }
     return *this;
   }
 
   /// @brief Destructor requests stop and joins if the thread is joinable.
   ~jthread() {
-    if (joinable()) {
+    if (joinable() && xTaskGetCurrentTaskHandle() != context_->owner_handle) {
       request_stop();
       join();
     }
-    delete context_;
   }
 
   /// @brief Request the running thread to stop.
@@ -165,13 +161,17 @@ class jthread {
 
   /// @brief Block until the thread finishes execution.
   void join() {
-    if (context_ != nullptr) {
-      context_->join_sem.Take();
-      // Mark the task as joined so that subsequent join()/joinable() calls
-      // behave idempotently. This matches std::jthread semantics and prevents
-      // deadlocks when Finish()/~jthread() are invoked more than once.
-      context_->handle = nullptr;
+    if (context_ == nullptr || context_->handle == nullptr) {
+      return;
     }
+    if (xTaskGetCurrentTaskHandle() == context_->owner_handle) {
+      return;
+    }
+    context_->join_sem.acquire();
+    // Mark the task as joined so that subsequent join()/joinable() calls
+    // behave idempotently. This matches std::jthread semantics and prevents
+    // deadlocks when Finish()/~jthread() are invoked more than once.
+    context_->handle = nullptr;
   }
 
   /// @brief Check whether the thread is joinable.
@@ -236,22 +236,25 @@ class jthread {
     using decayed_function = std::decay_t<Function>;
     using decayed_args = std::tuple<std::decay_t<Args>...>;
 
-    auto* invoker = new Invoker<decayed_function, decayed_args>(
+    auto invoker = std::make_unique<Invoker<decayed_function, decayed_args>>(
         std::forward<Function>(func), std::forward<Args>(args)...);
 
-    context_ = new Context{false, invoker, {}, nullptr, attr};
+    auto context = std::make_unique<Context>();
+    context->invoker = std::move(invoker);
+    context->attr = attr;
 
     xTaskCreate(
         RunTask, attr.thread_name.data(),
-        paraos::ConvertStackSizeInWords(attr.stack_depth), context_,
-        static_cast<UBaseType_t>(attr.priority), &context_->handle);
+        paraos::ConvertStackSizeInWords(attr.stack_depth), context.get(),
+        static_cast<UBaseType_t>(attr.priority), &context->handle);
 
-    if (context_->handle == nullptr) {
-      delete invoker;
-      delete context_;
-      context_ = nullptr;
+    if (context->handle == nullptr) {
       ETL_ASSERT(false, ETL_ERROR(paraos::thread_not_created_exception));
+      return;
     }
+    context->owner_handle = context->handle;
+
+    context_ = std::move(context);
   }
 
   /// @brief Abstract invoker base.
@@ -290,9 +293,10 @@ class jthread {
   /// @brief Context shared between the jthread object and the FreeRTOS task.
   struct Context {
     etl::atomic_bool stop_flag{false};
-    InvokerBase* invoker{nullptr};
-    SemaphoreBinary join_sem;
+    std::unique_ptr<InvokerBase> invoker;
+    paraos::binary_semaphore join_sem{0};
     TaskHandle_t handle{nullptr};
+    TaskHandle_t owner_handle{nullptr};
     ThreadAttr attr{};
   };
 
@@ -302,12 +306,12 @@ class jthread {
       ctx->invoker->Invoke(stop_token{&ctx->stop_flag});
     }
     if (ctx != nullptr) {
-      ctx->join_sem.Give();
+      ctx->join_sem.release();
     }
     vTaskDelete(nullptr);
   }
 
-  Context* context_{nullptr};
+  std::unique_ptr<Context> context_;
 };
 
 }  // namespace paraos

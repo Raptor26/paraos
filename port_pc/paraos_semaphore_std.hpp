@@ -6,6 +6,7 @@
 #ifndef PARAOS_SEMAPHORE_STD_HPP
 #define PARAOS_SEMAPHORE_STD_HPP
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <semaphore>
@@ -25,7 +26,8 @@ class counting_semaphore {
                 "counting_semaphore: LeastMaxValue must be positive");
 
   /// @brief Construct the semaphore with the given initial counter value.
-  explicit counting_semaphore(std::ptrdiff_t desired) : sem_(desired) {}
+  explicit counting_semaphore(std::ptrdiff_t desired)
+      : sem_(desired), count_(desired) {}
 
   /// @brief Destroy the semaphore.
   ~counting_semaphore() = default;
@@ -50,33 +52,64 @@ class counting_semaphore {
   }
 
   /// @brief Decrement the counter, blocking until a resource is available.
-  void acquire() { sem_.acquire(); }
+  void acquire() {
+    sem_.acquire();
+    count_.fetch_sub(1, std::memory_order_relaxed);
+  }
 
   /// @brief Increment the counter by @p update.
-  void release(std::ptrdiff_t update = 1) { sem_.release(update); }
+  void release(std::ptrdiff_t update = 1) {
+    if (update < 0) {
+      throw std::runtime_error(
+          "semaphore release update must be non-negative");
+    }
+    const auto current = count_.load(std::memory_order_relaxed);
+    if (update > max() - current) {
+      throw std::runtime_error("semaphore release overflow");
+    }
+    sem_.release(update);
+    count_.fetch_add(update, std::memory_order_relaxed);
+  }
 
   /// @brief Try to decrement the counter without blocking.
   /// @return true if the counter was decremented, false otherwise.
   [[nodiscard]] auto try_acquire() noexcept -> bool {
-    return sem_.try_acquire();
+    if (!sem_.try_acquire()) {
+      return false;
+    }
+    count_.fetch_sub(1, std::memory_order_relaxed);
+    return true;
   }
 
   /// @brief Try to decrement the counter, blocking up to @p rel_time.
   template <class Rep, class Period>
   [[nodiscard]] auto try_acquire_for(
       const std::chrono::duration<Rep, Period>& rel_time) -> bool {
-    return sem_.try_acquire_for(rel_time);
+    if (!sem_.try_acquire_for(rel_time)) {
+      return false;
+    }
+    count_.fetch_sub(1, std::memory_order_relaxed);
+    return true;
   }
 
   /// @brief Try to decrement the counter, blocking until @p abs_time.
   template <class Clock, class Duration>
   [[nodiscard]] auto try_acquire_until(
       const std::chrono::time_point<Clock, Duration>& abs_time) -> bool {
-    return sem_.try_acquire_until(abs_time);
+    if (!sem_.try_acquire_until(abs_time)) {
+      return false;
+    }
+    count_.fetch_sub(1, std::memory_order_relaxed);
+    return true;
   }
 
  private:
+  [[nodiscard]] auto GetCurrentCount() const noexcept -> std::ptrdiff_t {
+    return count_.load(std::memory_order_relaxed);
+  }
+
   std::counting_semaphore<LeastMaxValue> sem_;
+  std::atomic<std::ptrdiff_t> count_{0};
 };
 
 /// @brief std::binary_semaphore-style alias.

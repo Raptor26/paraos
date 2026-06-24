@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
-current_phase: 8
+milestone: v1.9
+milestone_name: Remove legacy Thread/Mutex/Semaphore implementations
+current_phase: 9
 status: Awaiting next milestone
-stopped_at: Roadmap created; awaiting approval
-last_updated: "2026-06-23T19:01:54.412Z"
-last_activity: 2026-06-23
-last_activity_desc: Milestone v1.8 completed and archived
+stopped_at: Phase 39 complete; milestone ready for audit
+last_updated: "2026-06-24T09:31:20.402Z"
+last_activity: 2026-06-24
+last_activity_desc: Milestone v1.9 completed and archived
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
   percent: 100
 ---
 
@@ -20,17 +20,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-23)
+See: .planning/PROJECT.md (updated 2026-06-24)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.8 — migrate `extra/` libraries to `paraos::jthread`.
+**Current focus:** Milestone v1.9 — remove legacy Thread/Mutex/Semaphore implementations.
 
 ## Current Position
 
-Phase: Milestone v1.8 complete
+Phase: Milestone v1.9 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-06-23 — Milestone v1.8 completed and archived
+Last activity: 2026-06-24 — Milestone v1.9 completed and archived
 
 ## Accumulated Context
 
@@ -54,6 +54,10 @@ Last activity: 2026-06-23 — Milestone v1.8 completed and archived
 - FreeRTOS использует `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive` с `std::chrono` таймаутами.
 - Локальные `SleepMs()` в migrated тестах заменены на `paraos::sleep_for(std::chrono::milliseconds)`.
 - Гонка в `test_message_multithread_many_producer_many_consumers` устранена вызовом `write.Free()` после неуспешного `TryPush()`.
+- Phase 36: legacy Thread/Mutex/Semaphore implementation headers deleted; `ThreadAttr` cleaned; `MutexGuard` rewritten as `std::scoped_lock<paraos::mutex>`.
+- Phase 37: `paraos::recursive_mutex` introduced; containers, critical section, socket UDP, FreeRTOS jthread, and extra helpers migrated to std-like primitives.
+- Phase 38: legacy `port_tests/test_*.cpp` and `example_*.cpp` files removed; `port_tests/CMakeLists.txt` updated; PC `ctest` passes 58/58.
+- Phase 39: all PC/FreeRTOS presets verified; clang-tidy clean; PC test count at 58/58 baseline.
 
 ### Pending Todos
 
@@ -74,8 +78,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-23T17:45:00.000Z
-Stopped at: Roadmap created; awaiting approval
+Last session: 2026-06-24T13:30:00.000Z
+Stopped at: Phase 39 complete; milestone ready for audit
 
 ## Operator Next Steps
 

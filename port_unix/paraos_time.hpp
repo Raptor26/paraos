@@ -10,6 +10,7 @@
 
 #include "paraos_critical.hpp"
 #include "paraos_runtime_profiler.hpp"
+#include "paraos_utils.hpp"
 
 namespace paraos {
 

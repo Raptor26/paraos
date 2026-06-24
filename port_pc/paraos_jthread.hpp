@@ -8,22 +8,32 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <stop_token>
 #include <thread>
 #include <type_traits>
-#include <unordered_set>
 #include <utility>
 
 #ifdef PARAOS_LIKE_UNIX
 #include <pthread.h>
 #include <unistd.h>
 #elif defined(PARAOS_LIKE_WINAPI)
+// NOLINTBEGIN(llvm-include-order)
+// clang-format off
+// winsock2.h must be included before windows.h.
+#include <winsock2.h>
 #include <windows.h>
+#ifdef __MINGW32__
+#include <pthread.h>
+#endif
+// clang-format on
+// NOLINTEND(llvm-include-order)
 #endif
 
 #include "paraos_attr.h"
+#include "paraos_scheduler.hpp"
 #include "paraos_thread_common.hpp"
 
 namespace paraos {
@@ -108,8 +118,9 @@ class jthread {
   template <typename Function, typename... Args>
     requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
   explicit jthread(Function&& func, Args&&... args) {
-    MakeThread(ThreadAttr{}, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(
+        ThreadAttr{}, std::forward<Function>(func),
+        std::forward<Args>(args)...);
   }
 
   /// @brief Construct a thread with the specified attributes.
@@ -124,8 +135,7 @@ class jthread {
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
   explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
-    MakeThread(attr, std::forward<Function>(func),
-               std::forward<Args>(args)...);
+    MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
   /// @brief Copy operations are disabled.
@@ -143,8 +153,7 @@ class jthread {
         join();
       }
       if (context_ != nullptr) {
-        const std::scoped_lock lock{s_registry_mutex};
-        s_registry.erase(context_.get());
+        scheduler::instance().unregister_context(context_.get());
       }
       context_ = std::move(other.context_);
     }
@@ -156,7 +165,7 @@ class jthread {
     if (context_ == nullptr) {
       return;
     }
-    if (joinable()) {
+    if (joinable() && std::this_thread::get_id() != context_->owner_id) {
       (void)request_stop();
       {
         const std::scoped_lock lock{context_->gate_mtx};
@@ -166,8 +175,8 @@ class jthread {
       context_->gate_cv.notify_one();
       join();
     }
-    const std::scoped_lock lock{s_registry_mutex};
-    s_registry.erase(context_.get());
+    scheduler::instance().unregister_context(context_.get());
+    context_.reset();
   }
 
   /// @brief Request the running thread to stop.
@@ -180,7 +189,13 @@ class jthread {
 
   /// @brief Block until the thread finishes execution.
   void join() {
-    if (context_ != nullptr) {
+    if (context_ == nullptr) {
+      return;
+    }
+    if (std::this_thread::get_id() == context_->owner_id) {
+      return;
+    }
+    if (context_->thread.joinable()) {
       context_->thread.join();
     }
   }
@@ -195,24 +210,11 @@ class jthread {
   /// Threads created before this call begin executing user code. Subsequent
   /// calls are idempotent and have no effect once the scheduler has been
   /// started or stopped.
-  static void start_scheduler() {
-    if (s_scheduler_state.exchange(SchedulerState::kRunning) !=
-        SchedulerState::kNotStarted) {
-      return;
-    }
-    std::vector<Context*> contexts;
-    {
-      const std::scoped_lock lock{s_registry_mutex};
-      contexts.assign(s_registry.begin(), s_registry.end());
-    }
-    for (auto* ctx : contexts) {
-      OpenGate(ctx, true);
-    }
-  }
+  static void start_scheduler() { scheduler::instance().start(); }
 
   /// @brief Check whether the scheduler is running.
   [[nodiscard]] static auto is_scheduler_running() noexcept -> bool {
-    return s_scheduler_state.load() == SchedulerState::kRunning;
+    return scheduler::instance().is_running();
   }
 
   /// @brief Stop the scheduler and join all active threads.
@@ -225,58 +227,11 @@ class jthread {
   /// @return `true` if the scheduler was running and has been stopped,
   ///   `false` otherwise.
   [[nodiscard]] static auto end_scheduler() -> bool {
-    if (s_scheduler_state.exchange(SchedulerState::kStopped) !=
-        SchedulerState::kRunning) {
-      return false;
-    }
-    const auto self_id = std::this_thread::get_id();
-    std::vector<Context*> contexts;
-    {
-      const std::scoped_lock lock{s_registry_mutex};
-      contexts.assign(s_registry.begin(), s_registry.end());
-    }
-    for (auto* ctx : contexts) {
-      OpenGate(ctx, false);
-    }
-    for (auto* ctx : contexts) {
-      if (ctx->thread.get_id() == self_id) {
-        continue;
-      }
-      ctx->thread.request_stop();
-    }
-    for (auto* ctx : contexts) {
-      if (ctx->thread.get_id() == self_id) {
-        continue;
-      }
-      if (ctx->thread.joinable()) {
-        ctx->thread.join();
-      }
-    }
-    return true;
+    return scheduler::instance().end();
   }
 
  private:
-  enum class SchedulerState : std::uint8_t {
-    kNotStarted,
-    kRunning,
-    kStopped
-  };
-
-  struct Context {
-    std::jthread thread;
-    ThreadAttr attr{};
-    std::mutex gate_mtx;
-    std::condition_variable gate_cv;
-    bool gate_open{false};
-    bool should_run{false};
-  };
-
-  static void OpenGate(Context* ctx, bool should_run) {
-    const std::scoped_lock lock{ctx->gate_mtx};
-    ctx->should_run = should_run;
-    ctx->gate_open = true;
-    ctx->gate_cv.notify_one();
-  }
+  using Context = detail::jthread_context;
 
   static void WaitForGate(Context* ctx) {
     std::unique_lock lock{ctx->gate_mtx};
@@ -289,28 +244,26 @@ class jthread {
     context_ = std::make_unique<Context>();
     context_->attr = attr;
 
-    {
-      const std::scoped_lock lock{s_registry_mutex};
-      s_registry.insert(context_.get());
-    }
+    scheduler::instance().register_context(context_.get());
 
-    const auto state = s_scheduler_state.load();
-    if (state != SchedulerState::kNotStarted) {
-      OpenGate(context_.get(), state == SchedulerState::kRunning);
+    if (scheduler::instance().is_running()) {
+      scheduler::open_gate(context_.get(), true);
     }
 
     auto* ctx = context_.get();
     context_->thread = std::jthread(
         [func = std::forward<Function>(func),
-         ...captured_args = std::forward<Args>(args),
+         ... captured_args = std::forward<Args>(args),
          ctx](std::stop_token std_token) mutable -> void {
           WaitForGate(ctx);
           if (!ctx->should_run) {
             return;
           }
-          std::invoke(std::move(func), std::move(captured_args)...,
-                      stop_token{std::move(std_token)});
+          std::invoke(
+              std::move(func), std::move(captured_args)...,
+              stop_token{std::move(std_token)});
         });
+    context_->owner_id = context_->thread.get_id();
     ApplyAttr();
   }
 
@@ -326,13 +279,26 @@ class jthread {
 #endif
       // Ignore return value: changing priority requires privileges; failing
       // here must not break user code.
-      (void)pthread_setschedparam(context_->thread.native_handle(), SCHED_RR,
-                                  &param);
+      (void)pthread_setschedparam(
+          context_->thread.native_handle(), SCHED_RR, &param);
     }
 #elif defined(PARAOS_LIKE_WINAPI)
     if (context_->thread.joinable()) {
-      (void)SetThreadPriority(context_->thread.native_handle(),
-                              static_cast<int>(context_->attr.priority));
+#ifdef __MINGW32__
+      // MinGW's libstdc++ uses pthread_t as native_handle_type.
+      // Convert it to the underlying Win32 handle before calling
+      // SetThreadPriority().
+      HANDLE handle = pthread_gethandle(
+          static_cast<pthread_t>(context_->thread.native_handle()));
+      if (handle != nullptr) {
+        (void)SetThreadPriority(
+            handle, static_cast<int>(context_->attr.priority));
+      }
+#else
+      (void)SetThreadPriority(
+          context_->thread.native_handle(),
+          static_cast<int>(context_->attr.priority));
+#endif
     }
 #endif
   }
@@ -348,8 +314,7 @@ class jthread {
     const auto min = sched_get_priority_min(SCHED_RR);
     const auto max = sched_get_priority_max(SCHED_RR);
 
-    constexpr auto k_min_enum =
-        static_cast<int>(paraos::ThreadPriority::kIdle);
+    constexpr auto k_min_enum = static_cast<int>(paraos::ThreadPriority::kIdle);
     constexpr auto k_max_enum =
         static_cast<int>(paraos::ThreadPriority::kRealTime);
     const auto prior = static_cast<int>(priority);
@@ -359,16 +324,11 @@ class jthread {
     }
 
     const auto mapped =
-        (min + (((prior - k_min_enum) * (max - min)) /
-                (k_max_enum - k_min_enum)));
+        (min +
+         (((prior - k_min_enum) * (max - min)) / (k_max_enum - k_min_enum)));
     return mapped;
   }
 #endif
-
-  inline static std::atomic<SchedulerState> s_scheduler_state{
-      SchedulerState::kNotStarted};
-  inline static std::mutex s_registry_mutex;
-  inline static std::unordered_set<Context*> s_registry;
 
   std::unique_ptr<Context> context_;
 };

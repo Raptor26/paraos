@@ -160,7 +160,7 @@ auto main() -> int {
   {
     paraos::ThreadSequenceAttr attr{
         {{"Sequence thread", paraos::GetStackMinimumSizeInBytes(),
-          paraos::ThreadPriority::kRealTime, nullptr}}};
+          paraos::ThreadPriority::kRealTime}}};
 
     attr.period_in_us = thread_sequence_call_period_us;
 

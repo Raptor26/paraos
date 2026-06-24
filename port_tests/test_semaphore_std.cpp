@@ -71,6 +71,34 @@ auto RunTests() -> bool {
     return false;
   }
 
+  // release() must reject negative update
+  {
+    paraos::counting_semaphore<2> sem(0);
+    bool caught_negative = false;
+    try {
+      sem.release(-1);
+    } catch (const std::runtime_error&) {
+      caught_negative = true;
+    }
+    if (!caught_negative) {
+      return false;
+    }
+  }
+
+  // release() must reject overflow
+  {
+    paraos::counting_semaphore<2> sem(2);
+    bool caught_overflow = false;
+    try {
+      sem.release(1);
+    } catch (const std::runtime_error&) {
+      caught_overflow = true;
+    }
+    if (!caught_overflow) {
+      return false;
+    }
+  }
+
   return true;
 }
 }  // namespace

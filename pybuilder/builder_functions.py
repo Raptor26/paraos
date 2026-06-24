@@ -5,9 +5,18 @@ import subprocess
 
 try:
     from python_on_whales import docker, DockerException
-except (ImportError, DockerException) as exception:
+except ImportError as exception:
+    docker = None
+    DockerException = Exception
     print(
-        f'ImportError happened: {exception[0]}. '
+        f'ImportError happened: {exception}. '
+        'Try to install builder.py dependencies: '
+        '"python install_builder_dependencies.py"'
+    )
+except DockerException as exception:
+    docker = None
+    print(
+        f'DockerException happened: {exception}. '
         'Try to install builder.py dependencies: '
         '"python install_builder_dependencies.py"'
     )

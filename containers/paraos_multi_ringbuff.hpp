@@ -20,7 +20,7 @@
 
 namespace paraos {
 
-template <typename T>
+template <typename T, std::size_t QUEUE_SIZE>
 class IMultiRingBuff {
   using ringbuff_type = IRingBuff<T>;
   using ringbuff_pointer = ringbuff_type*;
@@ -167,12 +167,12 @@ class IMultiRingBuff {
 
  protected:
   IMultiRingBuff(
-      paraos::IQueueBlocking<std::size_t>& queue, ringbuff_pointer* ringbuff,
-      std::size_t ring_buff_numb)
+      paraos::IQueueBlocking<std::size_t, QUEUE_SIZE>& queue,
+      ringbuff_pointer* ringbuff, std::size_t ring_buff_numb)
       : queue_{queue}, ringbuff_{ringbuff}, ring_buff_numb_{ring_buff_numb} {}
 
  private:
-  paraos::IQueueBlocking<std::size_t>& queue_;
+  paraos::IQueueBlocking<std::size_t, QUEUE_SIZE>& queue_;
   ringbuff_pointer* ringbuff_;
   const std::size_t ring_buff_numb_;
   etl::atomic_bool is_need_force_read_{false};
@@ -188,7 +188,7 @@ class IMultiRingBuff {
 /// @tparam ...RINGBUFF: Parameter packs, each element contained one ring
 /// buffer.
 template <std::size_t QUEUE_SIZE, typename T, typename... RINGBUFF>
-class MultiRingBuff : public IMultiRingBuff<T> {
+class MultiRingBuff : public IMultiRingBuff<T, QUEUE_SIZE> {
   static constexpr std::size_t ring_buffs_numbs{sizeof...(RINGBUFF)};
 
   using iringbuff_type = IRingBuff<T>;
@@ -199,7 +199,7 @@ class MultiRingBuff : public IMultiRingBuff<T> {
 
  public:
   constexpr MultiRingBuff()
-      : IMultiRingBuff<T>{queue_, &ring_buff_ptr_[0], ring_buffs_numbs} {
+      : IMultiRingBuff<T, QUEUE_SIZE>{queue_, &ring_buff_ptr_[0], ring_buffs_numbs} {
     // Copy ring buff addresses from tuple in ring_buff_ptr_.
     SetPointersOnPolymorphicClasses(ringbuff_tuple_);
   }

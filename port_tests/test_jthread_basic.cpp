@@ -12,7 +12,6 @@
 
 #include "paraos_jthread.hpp"
 #include "paraos_sleep.hpp"
-#include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
 
 // NOLINTBEGIN(*-magic-numbers, google-build-using-namespace,
@@ -22,6 +21,7 @@
 
 namespace {
 std::atomic<std::size_t> counter{0};
+std::atomic<bool> g_self_destruct_ok{false};
 constexpr std::size_t kExpectedCounter{2};
 
 std::mutex g_done_mtx;
@@ -79,9 +79,22 @@ auto main() -> int {
       }
     });
 
+    paraos::jthread self_destruct_thread(
+        [&self_destruct_thread](const paraos::stop_token& token) {
+          // Calling join() from inside the owned thread must return
+          // immediately without blocking. With the self-join guard this
+          // must not deadlock.
+          self_destruct_thread.join();
+          g_self_destruct_ok.store(true);
+          while (!token.stop_requested()) {
+            paraos::sleep_for(std::chrono::milliseconds{10});
+          }
+        });
+
     const paraos::jthread stopper(
         [](const paraos::stop_token& /*token*/) -> void {
-          while (counter.load() < kExpectedCounter) {
+          while (counter.load() < kExpectedCounter ||
+                 !g_self_destruct_ok.load()) {
             paraos::sleep_for(std::chrono::milliseconds{10});
           }
           NotifySchedulerEnded();

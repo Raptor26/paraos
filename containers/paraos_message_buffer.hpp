@@ -13,8 +13,6 @@
 
 #include "paraos_config.hpp"
 #include "paraos_isr.hpp"
-#include "paraos_mutex.hpp"
-#include "paraos_mutex_raii.hpp"
 #include "paraos_queue_blocking.hpp"
 
 namespace paraos {
@@ -179,7 +177,9 @@ class Message {
 /// @brief Message object, returned by MessageBuffer when user code calls
 /// Alloc().
 /// @tparam ALLOCATOR
-template <typename ALLOCATOR = std::allocator<std::uint8_t>>
+/// @tparam QUEUE_SIZE
+template <typename ALLOCATOR = std::allocator<std::uint8_t>,
+          const std::size_t QUEUE_SIZE = 1U>
 class MessageWritable final {
   using message_type = Message<ALLOCATOR>;
 
@@ -198,7 +198,7 @@ class MessageWritable final {
 
   MessageWritable(
       const std::size_t size_in_bytes,
-      paraos::IQueueBlocking<Message<ALLOCATOR>> &queue)
+      paraos::IQueueBlocking<Message<ALLOCATOR>, QUEUE_SIZE> &queue)
       : message_{size_in_bytes}, queue_{queue} {}
 
   ~MessageWritable() { TryPush(); }
@@ -275,14 +275,18 @@ class MessageWritable final {
 
  private:
   message_type message_;
-  paraos::IQueueBlocking<message_type> &queue_;
+  paraos::IQueueBlocking<message_type, QUEUE_SIZE> &queue_;
 };
 
 /// @brief Message buffer base class. Contained API for buffer.
 ///
 /// @tparam BUFFER_ALLOCATOR: Memory allocator for request memory for each
 /// message.
-template <typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
+/// @tparam QUEUE_SIZE: Max message number for contained in buffer in same
+/// time.
+template <
+    typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>,
+    const std::size_t QUEUE_SIZE = 1U>
 class IMessageBuffer {
  public:
   virtual ~IMessageBuffer() = default;
@@ -301,9 +305,9 @@ class IMessageBuffer {
   /// validation (use operator bool).
   [[nodiscard]] PARAOS_INLINE_TRIVIAL auto Alloc(std::size_t size_in_bytes)
       const noexcept(std::is_nothrow_invocable_v<
-                     MessageWritable<BUFFER_ALLOCATOR>, decltype(size_in_bytes),
-                     decltype(queue_)>) {
-    return MessageWritable<BUFFER_ALLOCATOR>(size_in_bytes, queue_);
+                     MessageWritable<BUFFER_ALLOCATOR, QUEUE_SIZE>,
+                     decltype(size_in_bytes), decltype(queue_)>) {
+    return MessageWritable<BUFFER_ALLOCATOR, QUEUE_SIZE>(size_in_bytes, queue_);
   }
 
   /// @brief Return message container if any data available in buffer.
@@ -327,11 +331,11 @@ class IMessageBuffer {
 
  protected:
   explicit IMessageBuffer(
-      paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue)
+      paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> &queue)
       : queue_{queue} {}
 
  private:
-  paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>> &queue_;
+  paraos::IQueueBlocking<Message<BUFFER_ALLOCATOR>, QUEUE_SIZE> &queue_;
 };
 
 /// @brief Message buffer class.
@@ -342,12 +346,12 @@ class IMessageBuffer {
 template <
     const std::size_t QUEUE_SIZE,
     typename BUFFER_ALLOCATOR = std::allocator<std::uint8_t>>
-class MessageBuffer final : public IMessageBuffer<BUFFER_ALLOCATOR> {
+class MessageBuffer final : public IMessageBuffer<BUFFER_ALLOCATOR, QUEUE_SIZE> {
   static_assert(
       QUEUE_SIZE > 0, "Message contained counter must be greater then '0'");
 
  public:
-  MessageBuffer() : IMessageBuffer<BUFFER_ALLOCATOR>{queue_} {}
+  MessageBuffer() : IMessageBuffer<BUFFER_ALLOCATOR, QUEUE_SIZE>{queue_} {}
 
   ~MessageBuffer() override = default;
 

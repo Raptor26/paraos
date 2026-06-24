@@ -52,7 +52,9 @@ inline auto CheckTimeout(
     return static_cast<bool>(is_timeout);
   }
 
-  return false;
+  // Scheduler is not running: blocking is impossible, treat as expired.
+  delay_ms = 0;
+  return true;
 }
 
 }  // namespace paraos

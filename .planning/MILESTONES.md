@@ -1,5 +1,42 @@
 # Project Milestones: PARAOS
 
+## v1.9 Remove legacy Thread/Mutex/Semaphore implementations (Shipped: 2026-06-24)
+
+**Delivered:** Legacy `paraos::Thread`, `paraos::Mutex`, `paraos::MutexRecursive`, `paraos::SemaphoreBinary` и `paraos::SemaphoreCounting` полностью удалены; все внутренние потребители (`containers/`, `port_unix/paraos_critical.hpp`, socket UDP, FreeRTOS jthread, `extra/`) переведены на std-like примитивы; `port_tests/` очищен от legacy тестов/примеров; все PC/FreeRTOS пресеты собираются, PC `ctest` проходит 58/58, clang-tidy остаётся чистым.
+
+**Phases completed:** 36–39 (4 plans total)
+
+**Key accomplishments:**
+
+- Удалены legacy implementation headers из `port_unix/`, `port_win/` и `port_freertos/`.
+- Очищен `paraos_thread_common.hpp`: удалены поля `dtor_callback` и `run_`; сохранены `ThreadAttr`, `ThreadPriority` и `thread_delegate_type` для `paraos::jthread`.
+- Переписан `paraos_mutex_raii.hpp`: `MutexGuard` теперь alias на `std::scoped_lock<paraos::mutex>`.
+- Добавлен `paraos::recursive_mutex` для всех портов.
+- `containers/paraos_queue_blocking.hpp` и `paraos_message_buffer.hpp` переведены на `paraos::mutex` и `paraos::counting_semaphore`.
+- `port_unix/paraos_critical.hpp` переведён на `paraos::recursive_mutex`.
+- Socket UDP headers (`port_unix/`, `port_win/`) перешли с `paraos::Thread::DelayMs` на `paraos::sleep_for`.
+- FreeRTOS `paraos_jthread.hpp` перешёл с `SemaphoreBinary` на `paraos::binary_semaphore`.
+- `extra/paraos_thread_sequence.hpp` и `extra/paraos_thread_cooperative_scheduling.hpp` перешли на `paraos::binary_semaphore`.
+- Удалены legacy-only тесты (`test_mutex.cpp`, `test_mutex_raii.cpp`, `test_semaphore.cpp`) и legacy-bound примеры из `port_tests/`.
+- `port_tests/CMakeLists.txt` обновлён: удалены устаревшие цели, `test_paraos_core` собирается только из оставшихся тестов.
+- Все PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) проходят `ctest` 58/58.
+- `pc_debug_gcc_clang_tidy` собирается без новых предупреждений clang-tidy.
+- FreeRTOS-пресеты (`freertos_debug_clang`, `freertos_debug_gcc`) успешно компилируются.
+
+**Stats:**
+
+- 18 legacy файлов удалено
+- 4 phases, 4 plans
+- ~1 день на выполнение вехи
+
+**Git range:** `b51330e` → `HEAD`
+
+**Known deferred items at close:** macOS GitLab CI runner, macOS-specific build instructions, FreeRTOS runtime tests on macOS POSIX simulator, Windows jthread runtime verification.
+
+**What's next:** Определяется через `/gsd-new-milestone`.
+
+---
+
 ## v1.8 Migrate extra/ libraries to paraos::jthread (Shipped: 2026-06-23)
 
 **Delivered:** Внутренние потоки библиотек `extra/` (`OneShotExecutor`, `ThreadSequence`, `CooperativeScheduling`) и их standalone-тесты переведены с legacy `paraos::Thread` на `paraos::jthread`; публичный API сохранён; все PC- и FreeRTOS-пресеты проходят верификацию.

@@ -11,7 +11,6 @@
 
 #include "etl/delegate.h"
 #include "paraos_attr.h"
-#include "paraos_base.hpp"
 #include "paraos_utils.hpp"
 
 #ifdef PARAOS_LIKE_WINAPI
@@ -24,7 +23,7 @@ namespace paraos {
 using thread_delegate_type = etl::delegate<void()>;
 
 #ifdef PARAOS_LIKE_WINAPI
-enum ThreadPriority : int8_t {
+enum class ThreadPriority : int8_t {
   kIdle = THREAD_PRIORITY_IDLE,
   kLowest = THREAD_PRIORITY_LOWEST,
   kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
@@ -58,7 +57,7 @@ enum class ThreadPriority : uint8_t {
 };
 #endif
 
-/// @brief Parameters to initialize paraos::Thread.
+/// @brief Parameters to initialize paraos::jthread.
 struct ThreadAttr {
   /// @brief The name of the thread being created.
   std::string_view thread_name{"Thread"};
@@ -69,22 +68,6 @@ struct ThreadAttr {
 
   /// @brief The priority of the thread being created.
   paraos::ThreadPriority priority{paraos::ThreadPriority::kNormal};
-
-  /// @brief The user can set a callback to be called when the destructor
-  /// of a paraos::Base object is invoked.
-  ///
-  /// @note После перехода на jthread данное поле необходимо удалить.
-  base_callback dtor_callback{nullptr};
-
-  // NOLINTBEGIN(readability-redundant-member-init)
-  /// @brief Run this delegate in thread context. User code can register
-  /// delegate later with paraos::Thread::RegisterDelegate().
-  ///
-  /// @see https://www.etlcpp.com/delegate.html to delegate creation examples.
-  ///
-  /// @note После перехода на jthread данное поле необходимо удалить.
-  thread_delegate_type run_{};
-  // NOLINTEND(readability-redundant-member-init)
 };
 
 }  // namespace paraos

@@ -13,14 +13,14 @@
 #include "etl/callback_timer.h"
 #include "etl/delegate.h"
 #include "gsl/gsl"
+#include "paraos_base.hpp"
 #include "paraos_bool_atomic.hpp"
 #include "paraos_config.hpp"
 #include "paraos_exceptions.hpp"
 #include "paraos_isr.hpp"
 #include "paraos_jthread.hpp"
-#include "paraos_mutex.hpp"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_semaphore.hpp"
+#include "paraos_semaphore_std.hpp"
 
 namespace paraos {
 
@@ -221,7 +221,9 @@ class IThreadSequence : public paraos::Base {
   /// `false` if the operation failed (e.g., due to resource constraints or
   /// invalid state).
   PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr) -> paraos::ISRbool {
-    return new_cycle_ready_sem_.Give(is_isr);
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    new_cycle_ready_sem_.release();
+    return paraos::ISRbool{true};
   }
 
   /// @brief Returns the main frequency of the thread sequence in Hz.
@@ -264,7 +266,7 @@ class IThreadSequence : public paraos::Base {
     while (!token.stop_requested()) {
       // Wait for the semaphore before processing all registered delegates.
       // This allows delegates to be called with a user-defined period.
-      new_cycle_ready_sem_.Take(paraos::max_delay);
+      new_cycle_ready_sem_.acquire();
       if (token.stop_requested()) {
         break;
       }
@@ -284,7 +286,7 @@ class IThreadSequence : public paraos::Base {
   etl::icallback_timer &timer_controller_;
 
   /// Binary semaphore for synchronization.
-  SemaphoreBinary new_cycle_ready_sem_;
+  paraos::binary_semaphore new_cycle_ready_sem_{0};
 
   /// Thread instance.
   std::optional<paraos::jthread> thread_;
