@@ -16,7 +16,7 @@
 #include <string>
 
 #include "paraos_iserial.hpp"
-#include "paraos_thread.hpp"
+#include "paraos_sleep.hpp"
 #include "paraos_utils.hpp"
 
 namespace paraos {
@@ -119,7 +119,7 @@ class UDPSocket : public paraos::ISerial {
     // When socket not connected, recvfrom (see below) return control
     // immediately. We want wait some time before check connection again.
     if (!is_connected_) {
-      paraos::Thread::DelayMs(connection_waiting_delay_ms_);
+      paraos::sleep_for(std::chrono::milliseconds(connection_waiting_delay_ms_));
     }
 
     // If no incoming data is available at the socket, the recvfrom function

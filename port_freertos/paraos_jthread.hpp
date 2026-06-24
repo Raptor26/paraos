@@ -18,7 +18,7 @@
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_exceptions.hpp"
-#include "paraos_semaphore.hpp"
+#include "paraos_semaphore_std.hpp"
 #include "paraos_thread_common.hpp"
 #include "paraos_thread_exceptions.hpp"
 #include "paraos_utils.hpp"
@@ -166,7 +166,7 @@ class jthread {
   /// @brief Block until the thread finishes execution.
   void join() {
     if (context_ != nullptr) {
-      context_->join_sem.Take();
+      context_->join_sem.acquire();
       // Mark the task as joined so that subsequent join()/joinable() calls
       // behave idempotently. This matches std::jthread semantics and prevents
       // deadlocks when Finish()/~jthread() are invoked more than once.
@@ -291,7 +291,7 @@ class jthread {
   struct Context {
     etl::atomic_bool stop_flag{false};
     InvokerBase* invoker{nullptr};
-    SemaphoreBinary join_sem;
+    paraos::binary_semaphore join_sem{0};
     TaskHandle_t handle{nullptr};
     ThreadAttr attr{};
   };
@@ -302,7 +302,7 @@ class jthread {
       ctx->invoker->Invoke(stop_token{&ctx->stop_flag});
     }
     if (ctx != nullptr) {
-      ctx->join_sem.Give();
+      ctx->join_sem.release();
     }
     vTaskDelete(nullptr);
   }

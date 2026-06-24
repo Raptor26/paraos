@@ -31,6 +31,10 @@ struct IOneShotExecutorAttributes : public paraos::ThreadAttr {};
 ///
 /// This interface provides mechanisms to enqueue delegates for asynchronous
 /// execution and manage the executor thread lifecycle.
+///
+/// @tparam QUEUE_SIZE Maximum number of delegates that can be stored in the
+/// queue.
+template <size_t QUEUE_SIZE = DEFAULT_EXECUTOR_QUEUE_SIZE>
 class IOneShotExecutor {
  public:
   /// @brief Adds a delegate to the executor's queue for execution.
@@ -124,7 +128,7 @@ class IOneShotExecutor {
   /// (useful for testing). When `false`, no jthread is created.
   IOneShotExecutor(
       const IOneShotExecutorAttributes& attrs,
-      paraos::IQueueBlocking<executor_delegate_type>& queue,
+      paraos::IQueueBlocking<executor_delegate_type, QUEUE_SIZE>& queue,
       bool thread_start_flag = true)
       : queue_{queue} {
     if (thread_start_flag) {
@@ -148,7 +152,7 @@ class IOneShotExecutor {
     }
   }
 
-  paraos::IQueueBlocking<executor_delegate_type>& queue_;
+  paraos::IQueueBlocking<executor_delegate_type, QUEUE_SIZE>& queue_;
   std::optional<paraos::jthread> thread_;
 };
 
@@ -164,7 +168,7 @@ struct OneShotExecutorAttributes : public IOneShotExecutorAttributes {};
 /// @tparam QUEUE_SIZE Maximum number of delegates that can be stored in the
 /// queue.
 template <size_t QUEUE_SIZE = DEFAULT_EXECUTOR_QUEUE_SIZE>
-class OneShotExecutor : public IOneShotExecutor {
+class OneShotExecutor : public IOneShotExecutor<QUEUE_SIZE> {
  public:
   /// @brief Constructor for OneShotExecutor.
   ///
@@ -173,7 +177,7 @@ class OneShotExecutor : public IOneShotExecutor {
   /// (useful for testing).
   explicit OneShotExecutor(
       const OneShotExecutorAttributes& attrs, bool thread_start_flag = true)
-      : IOneShotExecutor{attrs, queue_, thread_start_flag} {}
+      : IOneShotExecutor<QUEUE_SIZE>{attrs, queue_, thread_start_flag} {}
 
   ~OneShotExecutor() override = default;
 
