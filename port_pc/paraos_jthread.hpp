@@ -8,12 +8,12 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <stop_token>
 #include <thread>
 #include <type_traits>
-#include <unordered_set>
 #include <utility>
 
 #ifdef PARAOS_LIKE_UNIX
@@ -33,6 +33,7 @@
 #endif
 
 #include "paraos_attr.h"
+#include "paraos_scheduler.hpp"
 #include "paraos_thread_common.hpp"
 
 namespace paraos {
@@ -152,8 +153,7 @@ class jthread {
         join();
       }
       if (context_ != nullptr) {
-        const std::scoped_lock lock{s_registry_mutex};
-        s_registry.erase(context_.get());
+        scheduler::instance().unregister_context(context_.get());
       }
       context_ = std::move(other.context_);
     }
@@ -175,8 +175,8 @@ class jthread {
       context_->gate_cv.notify_one();
       join();
     }
-    const std::scoped_lock lock{s_registry_mutex};
-    s_registry.erase(context_.get());
+    scheduler::instance().unregister_context(context_.get());
+    context_.reset();
   }
 
   /// @brief Request the running thread to stop.
@@ -210,24 +210,11 @@ class jthread {
   /// Threads created before this call begin executing user code. Subsequent
   /// calls are idempotent and have no effect once the scheduler has been
   /// started or stopped.
-  static void start_scheduler() {
-    if (s_scheduler_state.exchange(SchedulerState::kRunning) !=
-        SchedulerState::kNotStarted) {
-      return;
-    }
-    std::vector<Context*> contexts;
-    {
-      const std::scoped_lock lock{s_registry_mutex};
-      contexts.assign(s_registry.begin(), s_registry.end());
-    }
-    for (auto* ctx : contexts) {
-      OpenGate(ctx, true);
-    }
-  }
+  static void start_scheduler() { scheduler::instance().start(); }
 
   /// @brief Check whether the scheduler is running.
   [[nodiscard]] static auto is_scheduler_running() noexcept -> bool {
-    return s_scheduler_state.load() == SchedulerState::kRunning;
+    return scheduler::instance().is_running();
   }
 
   /// @brief Stop the scheduler and join all active threads.
@@ -240,55 +227,11 @@ class jthread {
   /// @return `true` if the scheduler was running and has been stopped,
   ///   `false` otherwise.
   [[nodiscard]] static auto end_scheduler() -> bool {
-    if (s_scheduler_state.exchange(SchedulerState::kStopped) !=
-        SchedulerState::kRunning) {
-      return false;
-    }
-    const auto self_id = std::this_thread::get_id();
-    std::vector<Context*> contexts;
-    {
-      const std::scoped_lock lock{s_registry_mutex};
-      contexts.assign(s_registry.begin(), s_registry.end());
-    }
-    for (auto* ctx : contexts) {
-      OpenGate(ctx, false);
-    }
-    for (auto* ctx : contexts) {
-      if (ctx->thread.get_id() == self_id) {
-        continue;
-      }
-      ctx->thread.request_stop();
-    }
-    for (auto* ctx : contexts) {
-      if (ctx->thread.get_id() == self_id) {
-        continue;
-      }
-      if (ctx->thread.joinable()) {
-        ctx->thread.join();
-      }
-    }
-    return true;
+    return scheduler::instance().end();
   }
 
  private:
-  enum class SchedulerState : std::uint8_t { kNotStarted, kRunning, kStopped };
-
-  struct Context {
-    std::jthread thread;
-    ThreadAttr attr{};
-    std::mutex gate_mtx;
-    std::condition_variable gate_cv;
-    bool gate_open{false};
-    bool should_run{false};
-    std::thread::id owner_id{};
-  };
-
-  static void OpenGate(Context* ctx, bool should_run) {
-    const std::scoped_lock lock{ctx->gate_mtx};
-    ctx->should_run = should_run;
-    ctx->gate_open = true;
-    ctx->gate_cv.notify_one();
-  }
+  using Context = detail::jthread_context;
 
   static void WaitForGate(Context* ctx) {
     std::unique_lock lock{ctx->gate_mtx};
@@ -301,14 +244,11 @@ class jthread {
     context_ = std::make_unique<Context>();
     context_->attr = attr;
 
-    {
-      const std::scoped_lock lock{s_registry_mutex};
-      s_registry.insert(context_.get());
-    }
+    scheduler::instance().register_context(context_.get());
 
-    const auto state = s_scheduler_state.load();
-    if (state != SchedulerState::kNotStarted) {
-      OpenGate(context_.get(), state == SchedulerState::kRunning);
+    const auto state = scheduler::instance().is_running() ? 1 : 0;
+    if (state != 0) {
+      scheduler::instance().open_gate(context_.get(), state == 1);
     }
 
     auto* ctx = context_.get();
@@ -390,11 +330,6 @@ class jthread {
     return mapped;
   }
 #endif
-
-  inline static std::atomic<SchedulerState> s_scheduler_state{
-      SchedulerState::kNotStarted};
-  inline static std::mutex s_registry_mutex;
-  inline static std::unordered_set<Context*> s_registry;
 
   std::unique_ptr<Context> context_;
 };
