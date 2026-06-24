@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: "Remove legacy Thread/Mutex/Semaphore implementations"
-current_phase: 0
-status: planning
-stopped_at: Milestone started; defining requirements
-last_updated: "2026-06-24T00:00:00.000Z"
+current_phase: 37
+status: executing
+stopped_at: Phase 36 complete; executing Phase 37
+last_updated: "2026-06-24T12:00:00.000Z"
 last_activity: 2026-06-24
-last_activity_desc: Milestone v1.9 started and PROJECT.md updated
+last_activity_desc: Phase 36 complete — legacy headers removed
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 4
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-24 — Milestone v1.9 started
+Phase: 37 — Migrate internal consumers to std-like primitives
+Plan: 37-01
+Status: Executing
+Last activity: 2026-06-24 — Phase 36 complete; legacy headers removed
 
 ## Accumulated Context
 
@@ -54,10 +54,14 @@ Last activity: 2026-06-24 — Milestone v1.9 started
 - FreeRTOS использует `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive` с `std::chrono` таймаутами.
 - Локальные `SleepMs()` в migrated тестах заменены на `paraos::sleep_for(std::chrono::milliseconds)`.
 - Гонка в `test_message_multithread_many_producer_many_consumers` устранена вызовом `write.Free()` после неуспешного `TryPush()`.
+- Phase 36: legacy Thread/Mutex/Semaphore implementation headers deleted; `ThreadAttr` cleaned; `MutexGuard` rewritten as `std::lock_guard<paraos::mutex>`.
+- Phase 37: introduce `paraos::recursive_mutex` for `CriticalSection` because `paraos::mutex` is non-recursive.
 
 ### Pending Todos
 
-None.
+- Migrate `containers/` to std-like mutex/semaphore.
+- Migrate `port_unix/paraos_critical.hpp` to `paraos::recursive_mutex`.
+- Migrate socket UDP headers from `paraos::Thread::DelayMs` to `paraos::sleep_for`.
 
 ### Blockers/Concerns
 
@@ -74,11 +78,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-24T00:00:00.000Z
-Stopped at: Milestone started; defining requirements
+Last session: 2026-06-24T12:00:00.000Z
+Stopped at: Phase 36 complete; executing Phase 37
 
 ## Operator Next Steps
 
-- Complete requirements definition for v1.9
-- Create ROADMAP.md with phase plan
-- Start Phase 36 with `/gsd-plan-phase 36`
+- Execute Phase 37 plan 37-01.
