@@ -31,7 +31,7 @@
 - [x] **Phase 36: Remove legacy implementation headers** — Delete `port_*/paraos_thread.hpp`, `port_*/paraos_mutex.hpp`, `port_*/paraos_semaphore.hpp`; clean `paraos_thread_common.hpp`; remove `paraos_mutex_raii.hpp`.
 - [x] **Phase 37: Migrate internal consumers to std-like primitives** — Update `containers/`, `port_unix/paraos_critical.hpp`, socket UDP headers, and any remaining internal references.
 - [x] **Phase 38: Migrate or remove legacy tests and examples** — Rewrite/delete `test_thread_create_then_delete_many_threads.cpp`, `test_mutex.cpp`, `test_mutex_raii.cpp`, `test_semaphore.cpp`, and the five `example_*.cpp` files that use `paraos::Thread`/`paraos::SemaphoreBinary`.
-- [ ] **Phase 39: Build, static analysis and regression verification** — All PC/FreeRTOS presets configure and build; `ctest` passes on PC; `*_clang_tidy` presets remain clean.
+- [x] **Phase 39: Build, static analysis and regression verification** — All PC/FreeRTOS presets configure and build; `ctest` passes on PC; `*_clang_tidy` presets remain clean.
 
 ## Phase Details
 
@@ -173,4 +173,4 @@
 | 36. Remove legacy implementation headers | v1.9 | 1/1 | Complete | 2026-06-24 |
 | 37. Migrate internal consumers to std-like primitives | v1.9 | 1/1 | Complete | 2026-06-24 |
 | 38. Migrate or remove legacy tests and examples | v1.9 | 1/1 | Complete | 2026-06-24 |
-| 39. Build, static analysis and regression verification | v1.9 | 0/1 | Not started | — |
+| 39. Build, static analysis and regression verification | v1.9 | 1/1 | Complete | 2026-06-24 |

@@ -90,7 +90,7 @@ class IQueueBlocking {
       -> std::optional<T> {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     auto start_time = paraos::GetCurrentTime();
-    const std::lock_guard<paraos::mutex> lock(mutex_);
+    const std::scoped_lock<paraos::mutex> lock(mutex_);
 
     if (IsEmpty()) {
       while (true) {

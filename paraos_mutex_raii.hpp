@@ -16,8 +16,8 @@ namespace paraos {
 ///
 /// Provided for backward compatibility with code that previously used
 /// MutexGuard with the legacy paraos::Mutex API. New code should prefer
-/// std::lock_guard<paraos::mutex> or std::unique_lock<paraos::mutex> directly.
-using MutexGuard = std::lock_guard<paraos::mutex>;
+/// std::scoped_lock<paraos::mutex> or std::unique_lock<paraos::mutex> directly.
+using MutexGuard = std::scoped_lock<paraos::mutex>;
 
 }  // namespace paraos
 

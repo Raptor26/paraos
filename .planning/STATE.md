@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: "Remove legacy Thread/Mutex/Semaphore implementations"
 current_phase: 39
-status: executing
-stopped_at: Phase 38 complete; executing Phase 39
-last_updated: "2026-06-24T13:00:00.000Z"
+status: verifying
+stopped_at: Phase 39 complete; milestone ready for audit
+last_updated: "2026-06-24T13:30:00.000Z"
 last_activity: 2026-06-24
-last_activity_desc: Phase 38 complete — legacy tests/examples removed
+last_activity_desc: Phase 39 complete — all presets verified
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 
 ## Current Position
 
-Phase: 39 — Build, static analysis and regression verification
+Phase: 39 — Complete
 Plan: 39-01
-Status: Executing
-Last activity: 2026-06-24 — Phase 38 complete; legacy tests/examples removed
+Status: Verifying / Ready for milestone audit
+Last activity: 2026-06-24 — Phase 39 complete; all presets verified
 
 ## Accumulated Context
 
@@ -54,16 +54,14 @@ Last activity: 2026-06-24 — Phase 38 complete; legacy tests/examples removed
 - FreeRTOS использует `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive` с `std::chrono` таймаутами.
 - Локальные `SleepMs()` в migrated тестах заменены на `paraos::sleep_for(std::chrono::milliseconds)`.
 - Гонка в `test_message_multithread_many_producer_many_consumers` устранена вызовом `write.Free()` после неуспешного `TryPush()`.
-- Phase 36: legacy Thread/Mutex/Semaphore implementation headers deleted; `ThreadAttr` cleaned; `MutexGuard` rewritten as `std::lock_guard<paraos::mutex>`.
+- Phase 36: legacy Thread/Mutex/Semaphore implementation headers deleted; `ThreadAttr` cleaned; `MutexGuard` rewritten as `std::scoped_lock<paraos::mutex>`.
 - Phase 37: `paraos::recursive_mutex` introduced; containers, critical section, socket UDP, FreeRTOS jthread, and extra helpers migrated to std-like primitives.
 - Phase 38: legacy `port_tests/test_*.cpp` and `example_*.cpp` files removed; `port_tests/CMakeLists.txt` updated; PC `ctest` passes 58/58.
+- Phase 39: all PC/FreeRTOS presets verified; clang-tidy clean; PC test count at 58/58 baseline.
 
 ### Pending Todos
 
-- Verify `pc_debug_gcc` preset.
-- Verify `pc_debug_gcc_clang_tidy` preset.
-- Verify `freertos_debug_gcc` preset.
-- Document any deviations from 58-test baseline.
+None.
 
 ### Blockers/Concerns
 
@@ -80,9 +78,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-24T13:00:00.000Z
-Stopped at: Phase 38 complete; executing Phase 39
+Last session: 2026-06-24T13:30:00.000Z
+Stopped at: Phase 39 complete; milestone ready for audit
 
 ## Operator Next Steps
 
-- Execute Phase 39 plan 39-01.
+- Run milestone audit (`gsd-audit-milestone`).
+- Complete milestone (`gsd-complete-milestone`).
+- Cleanup (`gsd-cleanup`).

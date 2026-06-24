@@ -24,7 +24,7 @@ auto RunTests() -> bool {
   paraos::mutex test_mutex;
 
   {
-    std::lock_guard<paraos::mutex> lock(test_mutex);
+    std::scoped_lock<paraos::mutex> lock(test_mutex);
   }
 
   {
