@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: "Remove legacy Thread/Mutex/Semaphore implementations"
-current_phase: 37
+current_phase: 38
 status: executing
-stopped_at: Phase 36 complete; executing Phase 37
-last_updated: "2026-06-24T12:00:00.000Z"
+stopped_at: Phase 37 complete; executing Phase 38
+last_updated: "2026-06-24T12:30:00.000Z"
 last_activity: 2026-06-24
-last_activity_desc: Phase 36 complete — legacy headers removed
+last_activity_desc: Phase 37 complete — internal consumers migrated
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 
 ## Current Position
 
-Phase: 37 — Migrate internal consumers to std-like primitives
-Plan: 37-01
+Phase: 38 — Migrate or remove legacy tests and examples
+Plan: 38-01
 Status: Executing
-Last activity: 2026-06-24 — Phase 36 complete; legacy headers removed
+Last activity: 2026-06-24 — Phase 37 complete; internal consumers migrated
 
 ## Accumulated Context
 
@@ -55,13 +55,13 @@ Last activity: 2026-06-24 — Phase 36 complete; legacy headers removed
 - Локальные `SleepMs()` в migrated тестах заменены на `paraos::sleep_for(std::chrono::milliseconds)`.
 - Гонка в `test_message_multithread_many_producer_many_consumers` устранена вызовом `write.Free()` после неуспешного `TryPush()`.
 - Phase 36: legacy Thread/Mutex/Semaphore implementation headers deleted; `ThreadAttr` cleaned; `MutexGuard` rewritten as `std::lock_guard<paraos::mutex>`.
-- Phase 37: introduce `paraos::recursive_mutex` for `CriticalSection` because `paraos::mutex` is non-recursive.
+- Phase 37: `paraos::recursive_mutex` introduced; containers, critical section, socket UDP, FreeRTOS jthread, and extra helpers migrated to std-like primitives.
 
 ### Pending Todos
 
-- Migrate `containers/` to std-like mutex/semaphore.
-- Migrate `port_unix/paraos_critical.hpp` to `paraos::recursive_mutex`.
-- Migrate socket UDP headers from `paraos::Thread::DelayMs` to `paraos::sleep_for`.
+- Remove or rewrite legacy `port_tests/test_*.cpp` files.
+- Update legacy `port_tests/example_*.cpp` files.
+- Update `port_tests/CMakeLists.txt`.
 
 ### Blockers/Concerns
 
@@ -78,9 +78,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-24T12:00:00.000Z
-Stopped at: Phase 36 complete; executing Phase 37
+Last session: 2026-06-24T12:30:00.000Z
+Stopped at: Phase 37 complete; executing Phase 38
 
 ## Operator Next Steps
 
-- Execute Phase 37 plan 37-01.
+- Execute Phase 38 plan 38-01.

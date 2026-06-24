@@ -239,7 +239,7 @@ class jthread {
     auto* invoker = new Invoker<decayed_function, decayed_args>(
         std::forward<Function>(func), std::forward<Args>(args)...);
 
-    context_ = new Context{false, invoker, {}, nullptr, attr};
+    context_ = new Context{false, invoker, paraos::binary_semaphore{0}, nullptr, attr};
 
     xTaskCreate(
         RunTask, attr.thread_name.data(),
