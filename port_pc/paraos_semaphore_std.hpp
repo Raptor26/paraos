@@ -53,7 +53,16 @@ class counting_semaphore {
   void acquire() { sem_.acquire(); }
 
   /// @brief Increment the counter by @p update.
-  void release(std::ptrdiff_t update = 1) { sem_.release(update); }
+  void release(std::ptrdiff_t update = 1) {
+    if (update < 0) {
+      throw std::runtime_error(
+          "semaphore release update must be non-negative");
+    }
+    if (update > max() - GetCurrentCount()) {
+      throw std::runtime_error("semaphore release overflow");
+    }
+    sem_.release(update);
+  }
 
   /// @brief Try to decrement the counter without blocking.
   /// @return true if the counter was decremented, false otherwise.
@@ -76,6 +85,18 @@ class counting_semaphore {
   }
 
  private:
+  [[nodiscard]] auto GetCurrentCount() -> std::ptrdiff_t {
+    // std::counting_semaphore does not expose its current count.  This helper
+    // takes a best-effort snapshot by draining and re-filling the semaphore.
+    // It is inherently racy under contention and is used only for validation.
+    if (!sem_.try_acquire()) {
+      return 0;
+    }
+    const auto count = 1 + GetCurrentCount();
+    sem_.release();
+    return count;
+  }
+
   std::counting_semaphore<LeastMaxValue> sem_;
 };
 
