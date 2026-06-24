@@ -12,7 +12,6 @@
 
 #include "paraos_jthread.hpp"
 #include "paraos_sleep.hpp"
-#include "paraos_thread.hpp"
 #include "paraos_utils.hpp"
 
 // NOLINTBEGIN(*-magic-numbers, google-build-using-namespace,
