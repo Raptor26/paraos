@@ -15,9 +15,10 @@
 #include "etl/task.h"
 #include "paraos_base.hpp"
 #include "paraos_critical.hpp"
+#include "paraos_isr.hpp"
 #include "paraos_jthread.hpp"
 #include "paraos_runtime_profiler.hpp"
-#include "paraos_semaphore.hpp"
+#include "paraos_semaphore_std.hpp"
 #include "paraos_sleep.hpp"
 #include "paraos_trace.hpp"
 
@@ -110,11 +111,12 @@ class ICooperativeScheduling : public paraos::Base {
   ///
   /// @return Returns `true` if the notification was successfully given.
   auto NotifyGive(const bool is_isr = false) {
-    auto is_notify_given = new_cycle_ready_sem_.Give(is_isr);
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+    new_cycle_ready_sem_.release();
     paraos::ProfilerPeriodRAII(profiler_.period_);
     // Start runtime profiling. Complete runtime when `Idle()` is called.
     profiler_.runtime_.Start();
-    return is_notify_given;
+    return paraos::ISRbool{true};
   }
 
   /// @brief Stops task execution in the cooperative scheduler.
@@ -223,7 +225,7 @@ class ICooperativeScheduling : public paraos::Base {
     // After all work is completed, `scheduler_` calls the idle implementation
     // (see `SetIdleCallback()`). Here, it takes a semaphore and waits for the
     // next program cycle.
-    new_cycle_ready_sem_.Take(paraos::max_delay);
+    new_cycle_ready_sem_.acquire();
   }
 
  private:
@@ -231,7 +233,7 @@ class ICooperativeScheduling : public paraos::Base {
   etl::ischeduler &scheduler_;
 
   /// Binary semaphore for synchronization.
-  SemaphoreBinary new_cycle_ready_sem_;
+  paraos::binary_semaphore new_cycle_ready_sem_{0};
 
   /// @brief Member function object, needed to register the `Idle()` method in
   /// the scheduler.

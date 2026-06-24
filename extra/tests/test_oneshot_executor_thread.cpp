@@ -95,7 +95,7 @@ auto main() -> int {
   {
     paraos::OneShotExecutorAttributes attr{
         {{"OneShotExecutor thread", paraos::GetStackMinimumSizeInBytes(),
-          paraos::ThreadPriority::kRealTime, nullptr}}};
+          paraos::ThreadPriority::kRealTime}}};
 
     OneShotExecutorTest oneshot_executor{attr};
     g_executor_ptr = &oneshot_executor;

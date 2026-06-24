@@ -21,11 +21,13 @@
 #include "paraos_runtime_profiler.hpp"
 #include "paraos_semaphore_std.hpp"
 #include "paraos_time.hpp"
+#include "paraos_trace.hpp"
 
 namespace paraos {
 
 template <typename T, const std::size_t SIZE>
-struct IQueueBlocking {
+class IQueueBlocking {
+ public:
   virtual ~IQueueBlocking() = default;
 
   /// @brief Construct object "in place" in queue storage.
@@ -86,6 +88,7 @@ struct IQueueBlocking {
   /// std::optional not contained any value.
   auto Pop(paraos::delay_type timeout_ms, bool is_isr = false)
       -> std::optional<T> {
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
     auto start_time = paraos::GetCurrentTime();
     const std::lock_guard<paraos::mutex> lock(mutex_);
 
