@@ -13,10 +13,23 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Веха v1.6 добавила кроссплатформенное управление планировщиком в `paraos::jthread`.
 - Веха v1.7 перевела четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`.
 - Веха v1.8 перевела внутренние потоки библиотек `extra/` (`OneShotExecutor`, `ThreadSequence`, `CooperativeScheduling`) и их standalone-тесты на `paraos::jthread`, сохранив публичный API.
+- Веха v1.9 удаляет устаревшие реализации `paraos::Thread`, `paraos::Mutex` и `paraos::Semaphore*`, окончательно переводя внутренний код и тесты на std-like примитивы.
 
 ## Core Value
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
+
+## Current Milestone: v1.9 Remove legacy Thread/Mutex/Semaphore implementations
+
+**Goal:** Удалить устаревшие реализации `paraos::Thread`, `paraos::Mutex` и `paraos::Semaphore*`, перенести оставшиеся внутренние использования на `paraos::jthread`, `paraos::mutex`/`paraos_mutex_std` и `paraos::*_semaphore`/`paraos_semaphore_std`, сохранив кроссплатформенность и прохождение всех пресетов.
+
+**Target features:**
+- Удалить `port_*/paraos_thread.hpp`, оставив `paraos_jthread.hpp` и общие `ThreadAttr`/`ThreadPriority`
+- Удалить `port_*/paraos_mutex.hpp`, оставив `paraos_mutex_std.hpp`
+- Удалить `port_*/paraos_semaphore.hpp`, оставив `paraos_semaphore_std.hpp`
+- Перенести внутренние использования в `containers/`, `port_unix/paraos_critical.hpp`, `paraos_mutex_raii.hpp`
+- Перенести или удалить legacy-тесты/примеры, использующие устаревшие примитивы
+- Обеспечить сборку и прохождение PC/FreeRTOS пресетов без регрессий
 
 ## Current State
 
@@ -77,11 +90,11 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 <details>
 <summary>Previous: v1.2 std::jthread-style Thread API (2026-06-20)</summary>
 
-- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
-- PC-порт реализован как тонкая обёртка над `std::jthread`.
-- FreeRTOS-порт реализован поверх FreeRTOS API с поддержкой capturing lambdas через heap-allocated invoker.
-- Поддержан `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
-- Минимальная версия C++ повышена до 20.
+- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/`) как обёртка над `std::jthread`.
+- Добавлены forwarding-заголовки `port_unix/paraos_jthread.hpp` и `port_win/paraos_jthread.hpp`.
+- Реализован собственный `paraos::jthread` для FreeRTOS (`port_freertos/`) с поддержкой capturing lambdas через heap-allocated invoker.
+- Добавлена поддержка `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
+- Минимальная версия C++ повышена до 20 в корневом `CMakeLists.txt`.
 - Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
 - PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
 - `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
@@ -91,11 +104,11 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 **Previously shipped:** v1.2 std::jthread-style Thread API (2026-06-20)
 
-- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
-- PC-порт реализован как тонкая обёртка над `std::jthread`.
-- FreeRTOS-порт реализован поверх FreeRTOS API с поддержкой capturing lambdas через heap-allocated invoker.
-- Поддержан `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
-- Минимальная версия C++ повышена до 20.
+- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/`) как обёртка над `std::jthread`.
+- Добавлены forwarding-заголовки `port_unix/paraos_jthread.hpp` и `port_win/paraos_jthread.hpp`.
+- Реализован собственный `paraos::jthread` для FreeRTOS (`port_freertos/`) с поддержкой capturing lambdas через heap-allocated invoker.
+- Добавлена поддержка `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
+- Минимальная версия C++ повышена до 20 в корневом `CMakeLists.txt`.
 - Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
 - PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
 - `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
@@ -239,4 +252,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-23 after completing milestone v1.8*
+*Last updated: 2026-06-24 after starting milestone v1.9*

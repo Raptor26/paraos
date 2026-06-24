@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: "Migrate `extra/` libraries to `paraos::jthread`"
-current_phase: 8
-status: Awaiting next milestone
-stopped_at: Roadmap created; awaiting approval
-last_updated: "2026-06-23T19:01:54.412Z"
-last_activity: 2026-06-23
-last_activity_desc: Milestone v1.8 completed and archived
+milestone: v1.9
+milestone_name: "Remove legacy Thread/Mutex/Semaphore implementations"
+current_phase: 0
+status: planning
+stopped_at: Milestone started; defining requirements
+last_updated: "2026-06-24T00:00:00.000Z"
+last_activity: 2026-06-24
+last_activity_desc: Milestone v1.9 started and PROJECT.md updated
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-23)
+See: .planning/PROJECT.md (updated 2026-06-24)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.8 — migrate `extra/` libraries to `paraos::jthread`.
+**Current focus:** Milestone v1.9 — remove legacy Thread/Mutex/Semaphore implementations.
 
 ## Current Position
 
-Phase: Milestone v1.8 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-23 — Milestone v1.8 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-24 — Milestone v1.9 started
 
 ## Accumulated Context
 
@@ -74,9 +74,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-23T17:45:00.000Z
-Stopped at: Roadmap created; awaiting approval
+Last session: 2026-06-24T00:00:00.000Z
+Stopped at: Milestone started; defining requirements
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Complete requirements definition for v1.9
+- Create ROADMAP.md with phase plan
+- Start Phase 36 with `/gsd-plan-phase 36`
