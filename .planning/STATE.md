@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.9
-milestone_name: "Remove legacy Thread/Mutex/Semaphore implementations"
-current_phase: 39
-status: verifying
+milestone_name: Remove legacy Thread/Mutex/Semaphore implementations
+current_phase: 9
+status: Awaiting next milestone
 stopped_at: Phase 39 complete; milestone ready for audit
-last_updated: "2026-06-24T13:30:00.000Z"
+last_updated: "2026-06-24T09:31:20.402Z"
 last_activity: 2026-06-24
-last_activity_desc: Phase 39 complete — all presets verified
+last_activity_desc: Milestone v1.9 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 
 ## Current Position
 
-Phase: 39 — Complete
-Plan: 39-01
-Status: Verifying / Ready for milestone audit
-Last activity: 2026-06-24 — Phase 39 complete; all presets verified
+Phase: Milestone v1.9 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-24 — Milestone v1.9 completed and archived
 
 ## Accumulated Context
 
@@ -83,6 +83,4 @@ Stopped at: Phase 39 complete; milestone ready for audit
 
 ## Operator Next Steps
 
-- Run milestone audit (`gsd-audit-milestone`).
-- Complete milestone (`gsd-complete-milestone`).
-- Cleanup (`gsd-cleanup`).
+- Start the next milestone with /gsd-new-milestone
