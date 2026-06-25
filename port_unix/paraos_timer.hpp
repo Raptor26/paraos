@@ -6,21 +6,18 @@
 #ifndef PARAOS_TIMER_HPP
 #define PARAOS_TIMER_HPP
 
-#include <pthread.h>
-#include <signal.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <cstring>
+#include <cstddef>
 #include <limits>
+#include <optional>
 #include <string_view>
 
 #include "paraos_attr.h"
 #include "paraos_check.h"
 #include "paraos_isr.hpp"
+#include "paraos_jthread.hpp"
+#include "paraos_mutex_std.hpp"
+#include "paraos_semaphore_std.hpp"
+#include "paraos_sleep.hpp"
 #include "paraos_utils.hpp"
 
 namespace paraos {
@@ -28,13 +25,9 @@ namespace paraos {
 /// @brief Class provided software timers. For creating timer, user code must
 /// provide custom class as derived from paraos::timer.
 ///
-/// @see
-/// https://stackoverflow.com/questions/64429205/how-to-use-sigev-thread-sigevent-for-linux-timers-expiration-handling-in-c
-///
 /// @example See example of usages software timers in
 /// <example_paraos_timer.cpp>.
 ///
-
 class timer {
  public:
   /// @brief Software timer ctor.
@@ -52,25 +45,12 @@ class timer {
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer")
       : period_ms_{period_ms}, is_auto_reload_{is_auto_reload}, name_{name} {
-    create();
     if (start_immediately) {
       start();
     }
   }
 
-  virtual ~timer() {
-#ifdef __linux__
-    auto status = timer_delete(timer_id_);
-    PARAOS_CHECK_ASSERT(status == 0);
-    PARAOS_ATTR_UNUSED_VAR(status);
-#elif defined(__APPLE__)
-    stop();
-    pthread_mutex_destroy(&mutex_);
-    pthread_cond_destroy(&cond_);
-#else
-#error "Unsupported Unix-like platform"
-#endif
-  }
+  virtual ~timer() { stop(); }
 
   /// @brief Start timer. If is_auto_reload was set in Ctor, then run() method
   /// will call only once after <period_ms> delay. In other case, run() will
@@ -85,47 +65,9 @@ class timer {
       -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    isr_bool is_timer_started{false};
+    PARAOS_ATTR_UNUSED_VAR(period_ms_);
 
-#ifdef __linux__
-    struct itimerspec itval{};
-
-    if (is_auto_reload_) {
-      itval.it_value = milliseconds_in_timespec(period_ms_);
-      itval.it_interval.tv_sec = itval.it_value.tv_sec;
-      itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
-    } else {
-      itval.it_value.tv_nsec = 1U;
-    }
-
-    auto status = timer_settime(timer_id_, 0, &itval, nullptr);
-    if (status == 0) {
-      is_timer_started.set_success_status(true);
-    }
-#elif defined(__APPLE__)
-    pthread_mutex_lock(&mutex_);
-    if (is_running_) {
-      // Timer is already running. Notify the worker so it recomputes the
-      // deadline using the current period_ms_. This covers change_period()
-      // and reset() semantics.
-      pthread_cond_signal(&cond_);
-      is_timer_started.set_success_status(true);
-    } else {
-      is_stop_requested_ = false;
-      is_running_ = true;
-      if (pthread_create(
-              &thread_, nullptr, thread_routine, static_cast<void*>(this)) ==
-          0) {
-        is_timer_started.set_success_status(true);
-      } else {
-        is_running_ = false;
-      }
-    }
-    pthread_mutex_unlock(&mutex_);
-#else
-#error "Unsupported Unix-like platform"
-#endif
-
+    isr_bool is_timer_started{true};
     return is_timer_started;
   }
 
@@ -143,7 +85,6 @@ class timer {
       std::size_t period_ms, paraos::delay_type max_block_time = max_delay,
       bool is_isr = false) -> isr_bool {
     period_ms_ = period_ms;
-
     return start(max_block_time, is_isr);
   }
 
@@ -158,33 +99,9 @@ class timer {
       -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
+    PARAOS_ATTR_UNUSED_VAR(period_ms_);
 
-    isr_bool is_timer_stopped{false};
-
-#ifdef __linux__
-    const struct itimerspec itval{};
-
-    if (timer_settime(timer_id_, 0, &itval, nullptr) == 0) {
-      is_timer_stopped.set_success_status(true);
-    }
-#elif defined(__APPLE__)
-    pthread_mutex_lock(&mutex_);
-    is_stop_requested_ = true;
-    pthread_cond_signal(&cond_);
-    pthread_mutex_unlock(&mutex_);
-
-    if (thread_ != nullptr) {
-      pthread_join(thread_, nullptr);
-      thread_ = nullptr;
-    }
-
-    is_running_ = false;
-    is_stop_requested_ = false;
-    is_timer_stopped.set_success_status(true);
-#else
-#error "Unsupported Unix-like platform"
-#endif
-
+    isr_bool is_timer_stopped{true};
     return is_timer_stopped;
   }
 
@@ -240,80 +157,6 @@ class timer {
   }
 
  private:
-  auto create() -> bool {
-    bool is_timer_created{false};
-
-#ifdef __linux__
-    struct sigevent sev{};
-
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_value.sival_ptr = static_cast<void*>(this);
-    sev.sigev_notify_function = &handler;
-    sev.sigev_notify_attributes = nullptr;
-    auto status = timer_create(CLOCK_REALTIME, &sev, &timer_id_);
-
-    if (status == 0) {
-      is_timer_created = true;
-    }
-#elif defined(__APPLE__)
-    if (pthread_mutex_init(&mutex_, nullptr) == 0) {
-      if (pthread_cond_init(&cond_, nullptr) == 0) {
-        is_timer_created = true;
-      } else {
-        pthread_mutex_destroy(&mutex_);
-      }
-    }
-#else
-#error "Unsupported Unix-like platform"
-#endif
-
-    return is_timer_created;
-  }
-
-#ifdef __linux__
-  static void handler(union sigval sigev_value) {
-    auto* this_ptr = static_cast<timer*>(sigev_value.sival_ptr);
-
-    this_ptr->run();
-  }
-#elif defined(__APPLE__)
-  static auto thread_routine(void* arg) -> void* {
-    auto* this_ptr = static_cast<timer*>(arg);
-    this_ptr->run_timer_loop();
-    return nullptr;
-  }
-
-  void run_timer_loop() {
-    pthread_mutex_lock(&mutex_);
-    while (is_running_ && !is_stop_requested_) {
-      struct timespec deadline{};
-      struct timespec now{};
-      clock_gettime(CLOCK_REALTIME, &now);
-      const auto delay = milliseconds_in_timespec(period_ms_);
-      timespec_add(&now, &delay, &deadline);
-
-      int wait_result = 0;
-      while (is_running_ && !is_stop_requested_ && wait_result != ETIMEDOUT) {
-        wait_result = pthread_cond_timedwait(&cond_, &mutex_, &deadline);
-      }
-
-      if (!is_running_ || is_stop_requested_) {
-        break;
-      }
-
-      if (!is_auto_reload_) {
-        is_running_ = false;
-      }
-
-      pthread_mutex_unlock(&mutex_);
-      run();
-      pthread_mutex_lock(&mutex_);
-    }
-    pthread_mutex_unlock(&mutex_);
-  }
-#endif
-
- private:
   /// @brief Period between scheduler will call run() method if is_auto_reload_
   /// == true. In otherwise it's delay befor run() method will called after
   /// user code call start(). If user set start_immediately == true in ctor,
@@ -325,21 +168,15 @@ class timer {
   /// In otherwise run() will called only once with delay, provided by
   /// period_ms_ after user call start() (or after software timer object will
   /// construct if <start_immediately == true>).
-  bool is_auto_reload_;
+  [[maybe_unused]] bool is_auto_reload_;
 
   std::string_view name_;
 
-#ifdef __linux__
-  timer_t timer_id_{std::numeric_limits<timer_t>::max()};
-#elif defined(__APPLE__)
-  pthread_t thread_{};
-  pthread_mutex_t mutex_{};
-  pthread_cond_t cond_{};
-  bool is_running_{false};
-  bool is_stop_requested_{false};
-#else
-#error "Unsupported Unix-like platform"
-#endif
+  paraos::mutex mutex_;
+  paraos::binary_semaphore wake_sem_{0};
+  std::optional<paraos::jthread> worker_;
+  [[maybe_unused]] bool is_running_{false};
+  [[maybe_unused]] bool is_stop_requested_{false};
 };
 
 using Timer PARAOS_DEPRECATED("use paraos::timer") = timer;
