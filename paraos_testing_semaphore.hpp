@@ -16,7 +16,7 @@
 namespace paraos {
 
 /// @brief Semaphore attributes for it's initialization.
-struct TestingSemaphoreAttr {
+struct testing_semaphore_attr {
   /// @brief Maximum number of threads that can execute the code protected by
   /// semaphore at a time.
   size_t max_count{1U};
@@ -24,15 +24,17 @@ struct TestingSemaphoreAttr {
   /// @brief Semaphore counter initial value.
   size_t initial_count{0U};
 };
+using TestingSemaphoreAttr PARAOS_DEPRECATED(
+    "use paraos::testing_semaphore_attr") = testing_semaphore_attr;
 
 /// @brief Testing semaphore class.
 ///
 /// @note This class methods are non-blocking.
-class TestingSemaphore {
+class testing_semaphore {
  public:
   /// @brief Testing semaphore constructor.
   /// @param[in] attrs: Attributes for class initialization.
-  explicit TestingSemaphore(const TestingSemaphoreAttr &attrs)
+  explicit testing_semaphore(const testing_semaphore_attr& attrs)
       : semaphore_counter_{attrs.initial_count}, max_count_{attrs.max_count} {
     if ((max_count_ > 0) && (semaphore_counter_ <= max_count_)) {
       is_init_succeeded_ = true;
@@ -40,7 +42,7 @@ class TestingSemaphore {
   }
 
   /// @brief Move ctor.
-  TestingSemaphore(TestingSemaphore &&other) noexcept {
+  testing_semaphore(testing_semaphore&& other) noexcept {
     if (this != &other) {
       this->is_init_succeeded_ = other.is_init_succeeded_;
       this->semaphore_counter_ = other.semaphore_counter_.load();
@@ -49,9 +51,9 @@ class TestingSemaphore {
   }
 
   /// @brief Move assignment.
-  auto operator=(TestingSemaphore &&other) noexcept -> TestingSemaphore & {
+  auto operator=(testing_semaphore&& other) noexcept -> testing_semaphore& {
     if (this != &other) {
-      this->~TestingSemaphore();
+      this->~testing_semaphore();
       this->is_init_succeeded_ = other.is_init_succeeded_;
       this->semaphore_counter_ = other.semaphore_counter_.load();
       this->max_count_ = other.max_count_.load();
@@ -61,20 +63,20 @@ class TestingSemaphore {
   }
 
   /// @brief Semaphore non-copyable
-  TestingSemaphore(const TestingSemaphore &other) = delete;
-  auto operator=(const TestingSemaphore &other) -> TestingSemaphore & = delete;
+  testing_semaphore(const testing_semaphore& other) = delete;
+  auto operator=(const testing_semaphore& other) -> testing_semaphore& = delete;
 
-  virtual ~TestingSemaphore() = default;
+  virtual ~testing_semaphore() = default;
 
-  /// @brief Take Semaphore.
+  /// @brief Take semaphore.
   ///
   /// @param[in] timeout_ms: Not used in current realization.
   ///
   /// @param[in] from_isr: Not used in current realization.
   ///
-  /// @return Return ISRbool with true state if semaphore counter was greater
+  /// @return Return isr_bool with true state if semaphore counter was greater
   /// than zero, false state in otherwise.
-  auto Take(std::size_t timeout_ms = 0, bool from_isr = false) -> ISRbool {
+  auto take(std::size_t timeout_ms = 0, bool from_isr = false) -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(timeout_ms);
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
@@ -85,16 +87,16 @@ class TestingSemaphore {
       take_result = true;
     }
 
-    return ISRbool{take_result};
+    return isr_bool{take_result};
   }
 
   /// @brief Release semaphore.
   ///
   /// @param[in] from_isr: Not used in current realization.
   ///
-  /// @return Return operation status. ISRbool with true state if semaphore
+  /// @return Return operation status. isr_bool with true state if semaphore
   /// counter was less than max count, otherwise - false.
-  auto Give(bool from_isr = false) -> ISRbool {
+  auto give(bool from_isr = false) -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
     bool give_result{true};
@@ -106,7 +108,18 @@ class TestingSemaphore {
       give_result = false;
     }
 
-    return ISRbool{give_result};
+    return isr_bool{give_result};
+  }
+
+  /// @brief Backward-compatible deprecated wrapper for take().
+  PARAOS_DEPRECATED("use take()")
+  auto Take(std::size_t timeout_ms = 0, bool from_isr = false) -> isr_bool {
+    return take(timeout_ms, from_isr);
+  }
+
+  /// @brief Backward-compatible deprecated wrapper for give().
+  PARAOS_DEPRECATED("use give()") auto Give(bool from_isr = false) -> isr_bool {
+    return give(from_isr);
   }
 
   explicit operator bool() const { return is_init_succeeded_; }
@@ -122,24 +135,27 @@ class TestingSemaphore {
   bool is_init_succeeded_{false};
   // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
+using TestingSemaphore PARAOS_DEPRECATED("use paraos::testing_semaphore") =
+    testing_semaphore;
 
 /// @brief Binary semaphore class.
 ///
 /// @note Only one thread can execute the code protected with binary semaphore.
-class BinaryTestingSemaphore final : public TestingSemaphore {
+class binary_testing_semaphore final : public testing_semaphore {
  public:
   /// @brief Binary semaphore constructor.
-  BinaryTestingSemaphore() : BinaryTestingSemaphore{TestingSemaphoreAttr{}} {}
+  binary_testing_semaphore()
+      : binary_testing_semaphore{testing_semaphore_attr{}} {}
 
   /// @brief Move ctor.
-  BinaryTestingSemaphore(BinaryTestingSemaphore &&other) noexcept
-      : TestingSemaphore{std::move(other)} {}
+  binary_testing_semaphore(binary_testing_semaphore&& other) noexcept
+      : testing_semaphore{std::move(other)} {}
 
   /// @brief Move assignment.
-  auto operator=(BinaryTestingSemaphore &&other) noexcept
-      -> BinaryTestingSemaphore & {
+  auto operator=(binary_testing_semaphore&& other) noexcept
+      -> binary_testing_semaphore& {
     if (this != &other) {
-      this->~BinaryTestingSemaphore();
+      this->~binary_testing_semaphore();
       this->is_init_succeeded_ = other.is_init_succeeded_;
       this->semaphore_counter_ = other.semaphore_counter_.load();
       this->max_count_ = other.max_count_.load();
@@ -149,36 +165,38 @@ class BinaryTestingSemaphore final : public TestingSemaphore {
   }
 
   /// @brief Semaphore non-copyable
-  BinaryTestingSemaphore(const BinaryTestingSemaphore &other) = delete;
-  auto operator=(const BinaryTestingSemaphore &other)
-      -> BinaryTestingSemaphore & = delete;
+  binary_testing_semaphore(const binary_testing_semaphore& other) = delete;
+  auto operator=(const binary_testing_semaphore& other)
+      -> binary_testing_semaphore& = delete;
 
-  ~BinaryTestingSemaphore() override = default;
+  ~binary_testing_semaphore() override = default;
 
  private:
-  explicit BinaryTestingSemaphore(const TestingSemaphoreAttr &attrs)
-      : TestingSemaphore{attrs} {}
+  explicit binary_testing_semaphore(const testing_semaphore_attr& attrs)
+      : testing_semaphore{attrs} {}
 };
+using BinaryTestingSemaphore PARAOS_DEPRECATED(
+    "use paraos::binary_testing_semaphore") = binary_testing_semaphore;
 
 /// @brief Testing semaphore class which always returns true inside it's
-/// "Take()" and "Give()" methods.
-class AlwaysTrueSemaphore final {
+/// "take()" and "give()" methods.
+class always_true_semaphore final {
  public:
-  AlwaysTrueSemaphore() = default;
+  always_true_semaphore() = default;
 
-  /// @brief Take Semaphore.
+  /// @brief Take semaphore.
   ///
   /// @param[in] timeout_ms: Not used in current realization.
   ///
   /// @param[in] from_isr: Not used in current realization.
   ///
   /// @return Returns true every time.
-  static auto Take(std::size_t timeout_ms = 0, bool from_isr = false)
-      -> ISRbool {
+  static auto take(std::size_t timeout_ms = 0, bool from_isr = false)
+      -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(timeout_ms);
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
-    return ISRbool{true};
+    return isr_bool{true};
   }
 
   /// @brief Release semaphore.
@@ -186,24 +204,37 @@ class AlwaysTrueSemaphore final {
   /// @param[in] from_isr: Not used in current realization.
   ///
   /// @return Returns true every time.
-  static auto Give(bool from_isr = false) -> ISRbool {
+  static auto give(bool from_isr = false) -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(from_isr);
 
-    return ISRbool{true};
+    return isr_bool{true};
+  }
+
+  /// @brief Backward-compatible deprecated wrapper for take().
+  PARAOS_DEPRECATED("use take()")
+  static auto Take(std::size_t timeout_ms = 0, bool from_isr = false)
+      -> isr_bool {
+    return take(timeout_ms, from_isr);
+  }
+
+  /// @brief Backward-compatible deprecated wrapper for give().
+  PARAOS_DEPRECATED("use give()")
+  static auto Give(bool from_isr = false) -> isr_bool {
+    return give(from_isr);
   }
 
   /// @brief Move ctor.
-  AlwaysTrueSemaphore(AlwaysTrueSemaphore &&other) noexcept {
+  always_true_semaphore(always_true_semaphore&& other) noexcept {
     if (this != &other) {
       this->is_init_succeeded_ = other.is_init_succeeded_;
     }
   }
 
   /// @brief Move assignment.
-  auto operator=(AlwaysTrueSemaphore &&other) noexcept
-      -> AlwaysTrueSemaphore & {
+  auto operator=(always_true_semaphore&& other) noexcept
+      -> always_true_semaphore& {
     if (this != &other) {
-      this->~AlwaysTrueSemaphore();
+      this->~always_true_semaphore();
       this->is_init_succeeded_ = other.is_init_succeeded_;
     }
 
@@ -211,17 +242,19 @@ class AlwaysTrueSemaphore final {
   }
 
   /// @brief Semaphore non-copyable
-  AlwaysTrueSemaphore(const AlwaysTrueSemaphore &other) = delete;
-  auto operator=(const AlwaysTrueSemaphore &other)
-      -> AlwaysTrueSemaphore & = delete;
+  always_true_semaphore(const always_true_semaphore& other) = delete;
+  auto operator=(const always_true_semaphore& other)
+      -> always_true_semaphore& = delete;
 
-  ~AlwaysTrueSemaphore() = default;
+  ~always_true_semaphore() = default;
 
   explicit operator bool() const { return is_init_succeeded_; }
 
  private:
   bool is_init_succeeded_{true};
 };
+using AlwaysTrueSemaphore PARAOS_DEPRECATED(
+    "use paraos::always_true_semaphore") = always_true_semaphore;
 
 }  // namespace paraos
 

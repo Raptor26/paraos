@@ -34,7 +34,7 @@ inline constexpr decltype(paraos::max_delay) default_recv_timeout_ms =
 inline constexpr size_t default_connection_waiting_delay_ms = 0;
 
 /// @brief Атрибуты класса UDP сокета, передаваемые ему при инициализации.
-struct UDPSocketAttrs {
+struct udp_socket_attrs {
   /// @brief IP адрес UDP соединения (сервера).
   std::string ip_address = "127.0.0.1";
 
@@ -51,13 +51,16 @@ struct UDPSocketAttrs {
   size_t connection_waiting_delay_ms{default_connection_waiting_delay_ms};
 };
 
+using UDPSocketAttrs PARAOS_DEPRECATED("use paraos::udp_socket_attrs") =
+    udp_socket_attrs;
+
 /// @brief Класс UDP сокета, реализующего интерфейс, описывающий методы
 /// коммуникации.
-class UDPSocket : public paraos::ISerial {
+class udp_socket : public paraos::serial_base {
  public:
-  /// @brief Конструктор UDPSocket.
+  /// @brief Конструктор udp_socket.
   /// @param[in] attrs: Атрибуты UDP сокета.
-  explicit UDPSocket(UDPSocketAttrs &attrs)
+  explicit udp_socket(udp_socket_attrs &attrs)
       : connection_waiting_delay_ms_{attrs.connection_waiting_delay_ms} {
     client_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (client_socket_ == -1) {
@@ -112,7 +115,7 @@ class UDPSocket : public paraos::ISerial {
   /// @param[in] dst_size: Количество байтов, которое необходимо считать и
   /// записать.
   /// @return Возвращает количество полученных байтов.
-  auto Receive(void *dst, size_t dst_size) -> size_t override {
+  auto receive(void *dst, size_t dst_size) -> size_t override {
     int read_bytes_num{0};
     unsigned int slen = sizeof(sockaddr_in);
 
@@ -147,7 +150,7 @@ class UDPSocket : public paraos::ISerial {
   /// отправить.
   /// @param[in] msg_size: Количество байтов, которое необходимо передать.
   /// @return Возвращает количество переданных байтов.
-  auto Transmit(const void *src, size_t msg_size) -> size_t override {
+  auto transmit(const void *src, size_t msg_size) -> size_t override {
     size_t transmitted_bytes_num{0};
     transmitted_bytes_num = sendto(
         client_socket_, reinterpret_cast<const char *>(src),
@@ -160,13 +163,13 @@ class UDPSocket : public paraos::ISerial {
   /// @brief Перегрузка оператора bool.
   explicit operator bool() const { return is_init_succeeded_; }
 
-  ~UDPSocket() override { close(client_socket_); }
+  ~udp_socket() override { close(client_socket_); }
 
   /// @brief Five rule.
-  UDPSocket(UDPSocket &&other) = delete;
-  auto operator=(UDPSocket &&other) -> UDPSocket & = delete;
-  auto operator=(const UDPSocket &other) -> UDPSocket & = delete;
-  UDPSocket(const UDPSocket &other) = delete;
+  udp_socket(udp_socket &&other) = delete;
+  auto operator=(udp_socket &&other) -> udp_socket & = delete;
+  auto operator=(const udp_socket &other) -> udp_socket & = delete;
+  udp_socket(const udp_socket &other) = delete;
 
  private:
   int client_socket_{0};
@@ -178,6 +181,8 @@ class UDPSocket : public paraos::ISerial {
 
   size_t connection_waiting_delay_ms_{0};
 };
+
+using UDPSocket PARAOS_DEPRECATED("use paraos::udp_socket") = udp_socket;
 
 }  // namespace paraos
 

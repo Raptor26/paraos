@@ -28,7 +28,7 @@
 
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
-    const paraos::CriticalSection macro_critical;              \
+    const paraos::critical_section macro_critical;              \
                                                                \
     const std::time_t result = std::time(nullptr);             \
                                                                \
@@ -53,7 +53,7 @@ std::mutex g_done_mtx;
 std::condition_variable g_done_cv;
 bool g_scheduler_ended{false};
 
-paraos::QueueBlocking<char, max_queue_size> queue;
+paraos::queue_blocking<char, max_queue_size> queue;
 
 void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   const std::scoped_lock lock{g_done_mtx};
@@ -72,19 +72,19 @@ struct Producer {
   void operator()(const paraos::stop_token& token) {
     char symb{'a'};
 
-    paraos::OsProfiler runtime_profiler;
+    paraos::os_profiler runtime_profiler;
 
     while (!token.stop_requested()) {
-      PrintDebug(" call queue.TryPush()", name_);
+      PrintDebug(" call queue.try_push()", name_);
 
-      runtime_profiler.Start();
-      if (queue.TryPush(symb)) {
+      runtime_profiler.start();
+      if (queue.try_push(symb)) {
         ++push_item_cnt;
-        runtime_profiler.Stop();
-        PrintDebug(" queue.TryPush() success and put "
+        runtime_profiler.stop();
+        PrintDebug(" queue.try_push() success and put "
                        << "'" << symb << "'"
                        << "" << ". Real delay is "
-                       << runtime_profiler.LastDurationMs(),
+                       << runtime_profiler.last_duration_ms(),
                    name_);
         ++symb;
         if (push_item_cnt >= total_items_to_be_pushed) {
@@ -93,8 +93,8 @@ struct Producer {
           return;
         }
       } else {
-        PrintDebug(" WARN: queue.TryPush() no space, try again "
-                       << runtime_profiler.LastDurationMs(),
+        PrintDebug(" WARN: queue.try_push() no space, try again "
+                       << runtime_profiler.last_duration_ms(),
                    name_);
       }
       // Yield processor time for consumers read data from queue.
@@ -113,15 +113,15 @@ struct Consumer {
   void operator()(const paraos::stop_token& token) {
     constexpr std::size_t timeout_ms{2000};
 
-    paraos::OsProfiler runtime_profiler;
+    paraos::os_profiler runtime_profiler;
 
     while (!token.stop_requested()) {
-      PrintDebug(" call queue.Pop() with " << timeout_ms << " ms timeout",
+      PrintDebug(" call queue.pop() with " << timeout_ms << " ms timeout",
                  name_);
 
-      runtime_profiler.Start();
-      auto read_item = queue.Pop(timeout_ms);
-      runtime_profiler.Stop();
+      runtime_profiler.start();
+      auto read_item = queue.pop(timeout_ms);
+      runtime_profiler.stop();
 
       if (read_item) {
         ++pop_item_cnt;
@@ -143,7 +143,7 @@ struct Consumer {
 
 void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
 ) {
-  const paraos::CriticalSection critical;
+  const paraos::critical_section critical;
 
   PARAOS_CHECK_ASSERT(
       push_item_cnt == total_items_to_be_pushed &&
@@ -170,42 +170,42 @@ auto main() -> int {
     std::vector<paraos::jthread> threads;
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 0";
       threads.emplace_back(attr, Producer{"Prod 0"});
       producer_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 0";
       threads.emplace_back(attr, Consumer{"--Cons 0"});
       consumer_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 1";
       threads.emplace_back(attr, Consumer{"--Cons 1"});
       consumer_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 2";
       threads.emplace_back(attr, Consumer{"--Cons 2"});
       consumer_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 3";
       threads.emplace_back(attr, Consumer{"--Cons 3"});
       consumer_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 4";
       threads.emplace_back(attr, Consumer{"--Cons 4"});
       consumer_thread_numb += 1;

@@ -116,10 +116,10 @@ class jthread {
   /// @param[in] func Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-    requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
+    requires(!std::is_same_v<std::decay_t<Function>, thread_attr>)
   explicit jthread(Function&& func, Args&&... args) {
     MakeThread(
-        ThreadAttr{}, std::forward<Function>(func),
+        thread_attr{}, std::forward<Function>(func),
         std::forward<Args>(args)...);
   }
 
@@ -134,7 +134,7 @@ class jthread {
   /// @param[in] func Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-  explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
+  explicit jthread(const thread_attr& attr, Function&& func, Args&&... args) {
     MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
@@ -240,7 +240,7 @@ class jthread {
 
   /// @brief Common implementation for both constructors.
   template <typename Function, typename... Args>
-  void MakeThread(const ThreadAttr& attr, Function&& func, Args&&... args) {
+  void MakeThread(const thread_attr& attr, Function&& func, Args&&... args) {
     context_ = std::make_unique<Context>();
     context_->attr = attr;
 
@@ -304,19 +304,19 @@ class jthread {
   }
 
 #ifdef PARAOS_LIKE_UNIX
-  /// @brief Map public ThreadPriority enum values to the valid macOS SCHED_RR
+  /// @brief Map public thread_priority enum values to the valid macOS SCHED_RR
   /// range. macOS SCHED_RR priorities start at 15 (not 1), so the raw enum
   /// value would be rejected by pthread_setschedparam(). This mapping keeps the
   /// public enum unchanged while producing a valid priority for the underlying
   /// POSIX scheduler.
   [[nodiscard]] static auto MapPriorityToSchedRange(
-      paraos::ThreadPriority priority) -> int {
+      paraos::thread_priority priority) -> int {
     const auto min = sched_get_priority_min(SCHED_RR);
     const auto max = sched_get_priority_max(SCHED_RR);
 
-    constexpr auto k_min_enum = static_cast<int>(paraos::ThreadPriority::kIdle);
+    constexpr auto k_min_enum = static_cast<int>(paraos::thread_priority::idle);
     constexpr auto k_max_enum =
-        static_cast<int>(paraos::ThreadPriority::kRealTime);
+        static_cast<int>(paraos::thread_priority::realtime);
     const auto prior = static_cast<int>(priority);
 
     if (max <= min) {

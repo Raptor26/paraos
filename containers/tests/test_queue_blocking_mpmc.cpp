@@ -27,7 +27,7 @@
 
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
-    const paraos::CriticalSection macro_critical;              \
+    const paraos::critical_section macro_critical;              \
                                                                \
     const std::time_t result = std::time(nullptr);             \
                                                                \
@@ -53,7 +53,7 @@ std::mutex g_done_mtx;
 std::condition_variable g_done_cv;
 bool g_scheduler_ended{false};
 
-paraos::QueueBlocking<char, max_queue_size> queue;
+paraos::queue_blocking<char, max_queue_size> queue;
 
 void NotifySchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
   const std::scoped_lock lock{g_done_mtx};
@@ -75,21 +75,21 @@ struct Producer {  // NOLINT(hicpp-special-member-functions)
   void operator()(const paraos::stop_token& token) {
     const char symb{'a'};
 
-    paraos::OsProfiler runtime_profiler;
+    paraos::os_profiler runtime_profiler;
 
     while (!token.stop_requested()) {
-      PrintDebug(" call queue.TryPush()", name_);
+      PrintDebug(" call queue.try_push()", name_);
 
-      runtime_profiler.Start();
-      if (queue.TryPush(symb)) {
+      runtime_profiler.start();
+      if (queue.try_push(symb)) {
         ++push_item_cnt;
-        runtime_profiler.Stop();
+        runtime_profiler.stop();
 
         PrintDebug(
-            " queue.TryPush() success and put "
+            " queue.try_push() success and put "
                 << "'" << symb << "'"
                 << "" << ". Real delay is "
-                << runtime_profiler.LastDurationMs(),
+                << runtime_profiler.last_duration_ms(),
             name_);
 
         PrintDebug(" exiting ... ", name_);
@@ -97,8 +97,8 @@ struct Producer {  // NOLINT(hicpp-special-member-functions)
         return;
       }
       PrintDebug(
-          " WARN: queue.TryPush() no space, try again "
-              << runtime_profiler.LastDurationMs(),
+          " WARN: queue.try_push() no space, try again "
+              << runtime_profiler.last_duration_ms(),
           name_);
 
       // Yield processor time for consumers read data from queue.
@@ -120,15 +120,15 @@ struct Consumer {  // NOLINT(hicpp-special-member-functions)
     // Small delay for yeld resources for other threads.
     constexpr std::size_t timeout_ms{2000};
 
-    paraos::OsProfiler runtime_profiler;
+    paraos::os_profiler runtime_profiler;
 
     while (!token.stop_requested()) {
       PrintDebug(
-          " call queue.Pop() with " << timeout_ms << " ms timeout", name_);
+          " call queue.pop() with " << timeout_ms << " ms timeout", name_);
 
-      runtime_profiler.Start();
-      auto read_item = queue.Pop(timeout_ms);
-      runtime_profiler.Stop();
+      runtime_profiler.start();
+      auto read_item = queue.pop(timeout_ms);
+      runtime_profiler.stop();
 
       if (read_item) {
         ++pop_item_cnt;
@@ -179,37 +179,37 @@ auto main() -> int {
     std::vector<paraos::jthread> threads;
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Consumer 0";
       threads.emplace_back(attr, Consumer{"--Consumer 0"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Consumer 1";
       threads.emplace_back(attr, Consumer{"--Consumer 1"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Consumer 2";
       threads.emplace_back(attr, Consumer{"--Consumer 2"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Prod 0";
       threads.emplace_back(attr, Producer{"--Prod 0"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Prod 1";
       threads.emplace_back(attr, Producer{"--Prod 1"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Prod 2";
       threads.emplace_back(attr, Producer{"--Prod 2"});
     }

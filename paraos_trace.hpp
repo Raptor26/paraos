@@ -13,13 +13,13 @@
 
 #define paraosTRACE_MESSAGE(__message__)          \
   {                                               \
-    const paraos::CriticalSection macro_critical; \
+    const paraos::critical_section macro_critical; \
     std::cout << __message__ << std::endl;        \
   }
 
 #define paraosTRACE_MESSAGE_WITH_ACTOR_NAME(__message__, __object_name__) \
   {                                                                       \
-    const paraos::CriticalSection macro_critical;                         \
+    const paraos::critical_section macro_critical;                         \
     std::cout << "DM: '" << __object_name__ << "': " << __message__       \
               << std::endl;                                               \
   }

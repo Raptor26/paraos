@@ -16,70 +16,91 @@
 namespace paraos {
 
 /// @brief Enumeration representing the operational modes of the status LED.
-enum class StatusLedMode : uint8_t {
-  kEnable = 0,  ///< LED is enabled continuously.
-  kDisable,     ///< LED is disabled.
-  kIdle,        ///< LED is blinking as idle mode.
-  kBlink,       ///< LED is blinking as default mode.
-  kError,       ///< LED indicates an error condition.
+enum class status_led_mode : uint8_t {
+  enable = 0,   ///< LED is enabled continuously.
+  disable = 1,  ///< LED is disabled.
+  idle = 2,     ///< LED is blinking as idle mode.
+  blink = 3,    ///< LED is blinking as default mode.
+  error = 4,    ///< LED indicates an error condition.
 
   /// Must be the last element in the enumeration.
-  kMaxNumb,
+  max_count = 5,
+
+  kEnable = enable,
+  kDisable = disable,
+  kIdle = idle,
+  kBlink = blink,
+  kError = error,
+  kMaxNumb = max_count,
 };
+using StatusLedMode PARAOS_DEPRECATED("use paraos::status_led_mode") =
+    status_led_mode;
 
 /// @brief Interface for controlling a status LED.
-struct IStatusLed {
+struct status_led_base {
   /// @brief Enables the LED.
-  virtual void Enable() = 0;
+  virtual void enable() = 0;
 
   /// @brief Disables the LED.
-  virtual void Disable() = 0;
+  virtual void disable() = 0;
+
+  status_led_base() = default;
+  status_led_base(const status_led_base&) = delete;
+  auto operator=(const status_led_base&) -> status_led_base& = delete;
+  status_led_base(status_led_base&&) = delete;
+  auto operator=(status_led_base&&) -> status_led_base& = delete;
+
+  /// @brief Destructor for the status_led_base interface.
+  virtual ~status_led_base() = default;
 };
+using IStatusLed PARAOS_DEPRECATED("use paraos::status_led_base") =
+    status_led_base;
 
 /// @brief Class representing a status LED with various operational modes.
-class StatusLed {
+class status_led {
   using delegate_type = etl::delegate<void(void)>;
 
   static constexpr int blink_mode_max_numb =
-      static_cast<int>(StatusLedMode::kMaxNumb);
+      static_cast<int>(status_led_mode::max_count);
 
   /// @brief Frequency used to calculate the period before disabling the LED
-  /// after enabling it. This value is used in the Blink() method.
+  /// after enabling it. This value is used in the blink() method.
   static constexpr float enable_freq{20.0};
 
   /// @brief Frequency used to calculate the period before enabling the LED
-  /// after disabling it. This value is used in the Blink() method.
+  /// after disabling it. This value is used in the blink() method.
   static constexpr float disable_freq{1.0};
 
   /// @brief Frequency of blinking in error mode.
   static constexpr float error_blink_freq{1.0};
 
  public:
-  /// @brief Constructs a StatusLed object.
+  /// @brief Constructs a status_led object.
   ///
-  /// @param io_addr Reference to the IStatusLed interface for hardware control.
+  /// @param io_addr Reference to the status_led_base interface for hardware
+  /// control.
   /// @param thread_sequence Reference to the thread sequence manager.
-  /// @param blink_mode Initial blinking mode of the LED (default: kIdle).
-  StatusLed(
-      IStatusLed &io_addr, IThreadSequence &thread_sequence,
-      StatusLedMode blink_mode = StatusLedMode::kIdle)
+  /// @param blink_mode Initial blinking mode of the LED (default: idle).
+  status_led(
+      status_led_base& io_addr, thread_sequence_base& thread_sequence,
+      status_led_mode blink_mode = status_led_mode::idle)
       : io_{io_addr}, thread_sequence_{thread_sequence} {
-    NewBlinkMode(blink_mode);
+    set_blink_mode(blink_mode);
   }
 
-  /// @brief Destructor for the StatusLed class.
-  virtual ~StatusLed() = default;
+  /// @brief Destructor for the status_led class.
+  virtual ~status_led() = default;
 
   /// @brief Sets a new blinking mode for the LED.
   ///
   /// @param new_blink_mode The new blinking mode to set.
   /// @return True if the mode was successfully changed, false otherwise.
-  auto NewBlinkMode(StatusLedMode new_blink_mode) -> bool {
+  auto set_blink_mode(status_led_mode new_blink_mode) -> bool {
     bool is_new_blink_mode_set{false};
-    thread_sequence_.Unregister(id_);
+    thread_sequence_.unregister_delegate(id_);
 
     auto blink_mode = static_cast<int>(new_blink_mode);
-    id_ = thread_sequence_.Register(
+    id_ = thread_sequence_.register_delegate(
         delegate_[blink_mode].delegate_, delegate_[blink_mode].freq_,
         delegate_[blink_mode].is_continuous_);
 
@@ -90,28 +111,27 @@ class StatusLed {
     return is_new_blink_mode_set;
   }
 
+  PARAOS_DEPRECATED("use set_blink_mode()")
+  auto NewBlinkMode(status_led_mode new_blink_mode) -> bool {
+    return set_blink_mode(new_blink_mode);
+  }
+
   // Deleted copy and move constructors and assignment operators to prevent
   // copying.
-  StatusLed(StatusLed &&other) = delete;
-  auto operator=(StatusLed &&other) -> StatusLed & = delete;
-  auto operator=(const StatusLed &other) -> StatusLed & = delete;
-  StatusLed(const StatusLed &other) = delete;
+  status_led(status_led&& other) = delete;
+  auto operator=(status_led&& other) -> status_led& = delete;
+  auto operator=(const status_led& other) -> status_led& = delete;
+  status_led(const status_led& other) = delete;
 
  private:
-  /// @brief Enables the LED.
-  PARAOS_INLINE_TRIVIAL void Enable() { io_.Enable(); }
-
-  /// @brief Disables the LED.
-  PARAOS_INLINE_TRIVIAL void Disable() { io_.Disable(); }
-
   /// @brief Toggles the LED between enabled and disabled states.
-  void Idle() {
+  void idle() {
     if (is_led_enable_) {
       is_led_enable_ = false;
-      Disable();
+      disable();
     } else {
       is_led_enable_ = true;
-      Enable();
+      enable();
     }
   }
 
@@ -119,19 +139,19 @@ class StatusLed {
   ///
   /// Alternates between enabling and disabling the LED based on the configured
   /// frequencies.
-  void Blink() {
+  void blink() {
     if (is_led_enable_) {
-      Disable();
-      thread_sequence_.SetFreq(id_, disable_freq);
+      disable();
+      thread_sequence_.set_frequency(id_, disable_freq);
 
-      // After a period of time, specified by the disable_freq, Blink() enables
+      // After a period of time, specified by the disable_freq, blink() enables
       // the LED again.
       is_led_enable_ = false;
     } else {
-      Enable();
-      thread_sequence_.SetFreq(id_, enable_freq);
+      enable();
+      thread_sequence_.set_frequency(id_, enable_freq);
 
-      // After a period of time, specified by the enable_freq, Blink() disables
+      // After a period of time, specified by the enable_freq, blink() disables
       // the LED.
       is_led_enable_ = true;
     }
@@ -139,15 +159,20 @@ class StatusLed {
 
   /// @brief Puts the LED into error mode.
   ///
-  /// In error mode, the LED behaves similarly to the Idle mode.
-  PARAOS_INLINE_TRIVIAL void Error() { Idle(); }
+  /// In error mode, the LED behaves similarly to the idle mode.
+  PARAOS_INLINE_TRIVIAL void error() { idle(); }
 
- private:
+  /// @brief Enables the LED.
+  PARAOS_INLINE_TRIVIAL void enable() { io_.enable(); }
+
+  /// @brief Disables the LED.
+  PARAOS_INLINE_TRIVIAL void disable() { io_.disable(); }
+
   /// Reference to the hardware interface.
-  IStatusLed &io_;
+  status_led_base& io_;
 
   /// Reference to the thread sequence manager.
-  IThreadSequence &thread_sequence_;
+  thread_sequence_base& thread_sequence_;
 
   /// Timer ID for the LED control.
   etl::timer::id::type id_{etl::timer::id::NO_TIMER};
@@ -156,7 +181,7 @@ class StatusLed {
   bool is_led_enable_{false};
 
   /// @brief Structure representing a delegate for LED operations.
-  struct StatusLedDelegate {
+  struct status_led_delegate {
     delegate_type delegate_;  ///< Delegate function for the operation.
     float freq_;  ///< Frequency of the operation. Set to 0.0 if need calls at
                   ///< once.
@@ -164,16 +189,19 @@ class StatusLed {
   };
 
   /// @brief Array of delegates for each LED mode.
-  std::array<StatusLedDelegate, blink_mode_max_numb> delegate_ = {
-      {{delegate_type::create<StatusLed, &StatusLed::Enable>(*this), 0.0F,
+  std::array<status_led_delegate, blink_mode_max_numb> delegate_ = {
+      {{delegate_type::create<status_led, &status_led::enable>(*this), 0.0F,
         false},
-       {delegate_type::create<StatusLed, &StatusLed::Disable>(*this), 0.0F,
+       {delegate_type::create<status_led, &status_led::disable>(*this), 0.0F,
         false},
-       {delegate_type::create<StatusLed, &StatusLed::Idle>(*this), 1.0F, true},
-       {delegate_type::create<StatusLed, &StatusLed::Blink>(*this), 0.0F, true},
-       {delegate_type::create<StatusLed, &StatusLed::Error>(*this),
+       {delegate_type::create<status_led, &status_led::idle>(*this), 1.0F,
+        true},
+       {delegate_type::create<status_led, &status_led::blink>(*this), 0.0F,
+        true},
+       {delegate_type::create<status_led, &status_led::error>(*this),
         error_blink_freq, true}}};
 };
+using StatusLed PARAOS_DEPRECATED("use paraos::status_led") = status_led;
 
 }  // namespace paraos
 

@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <limits>
 
+#include "paraos_config.hpp"
+
 namespace paraos {
 
 constexpr std::size_t max_delay{std::numeric_limits<std::size_t>::max()};
@@ -27,7 +29,7 @@ constexpr std::size_t stack_multiplier{1024};
 
 #define MICROSECONDS_PER_MILISECONDS (1000LL)
 
-inline auto TimespecAdd(
+inline auto timespec_add(
     const struct timespec* const first, const struct timespec* const second,
     struct timespec* const pxResult) -> int {
   std::int64_t llPartialSec = 0;
@@ -60,14 +62,14 @@ inline auto TimespecAdd(
   return iStatus;
 }
 
-constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
+constexpr auto get_stack_minimum_size_in_bytes() -> std::size_t {
   return stack_multiplier * sizeof(size_t);
 }
 
 /// @brief Calculate period in <timespec> class from time in milliseconds.
 /// @param[in] milliseconds: Time in milliseconds for convert in timespec class.
 /// @return struct timespec with filled fields.
-inline auto MillisecondsInTimeSpec(std::size_t milliseconds)
+inline auto milliseconds_in_timespec(std::size_t milliseconds)
     -> struct timespec {
   struct timespec tspec {};
   tspec.tv_sec = milliseconds / MILISECONDS_PER_SECOND;
@@ -77,6 +79,23 @@ inline auto MillisecondsInTimeSpec(std::size_t milliseconds)
 }
 
 using delay_type = std::size_t;
+
+PARAOS_DEPRECATED("use timespec_add()")
+inline auto TimespecAdd(
+    const struct timespec* const first, const struct timespec* const second,
+    struct timespec* const pxResult) -> int {
+  return timespec_add(first, second, pxResult);
+}
+
+PARAOS_DEPRECATED("use get_stack_minimum_size_in_bytes()")
+constexpr auto GetStackMinimumSizeInBytes() -> std::size_t {
+  return get_stack_minimum_size_in_bytes();
+}
+
+PARAOS_DEPRECATED("use milliseconds_in_timespec()")
+inline auto MillisecondsInTimeSpec(std::size_t milliseconds) -> struct timespec {
+  return milliseconds_in_timespec(milliseconds);
+}
 
 }  // namespace paraos
 

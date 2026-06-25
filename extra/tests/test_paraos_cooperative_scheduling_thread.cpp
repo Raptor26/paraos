@@ -23,7 +23,7 @@
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
+    const paraos::critical_section macro_critical;                            \
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
@@ -129,13 +129,13 @@ class Idle {
 // nothing calls). It's help to reduced memory check warnings.
 // -----------------------------------------------------------------------------
 
-paraos::CooperativeScheduling<
+paraos::cooperative_scheduling<
     max_tasks_number, etl::scheduler_policy_highest_priority>
-    cooperative_scheduler{paraos::CooperativeSchedulingAttr{
-        {{"Cooperative scheduler", paraos::GetStackMinimumSizeInBytes(),
-          paraos::ThreadPriority::kRealTime}}}};
+    cooperative_scheduler{paraos::cooperative_scheduling_attr{
+        {{"Cooperative scheduler", paraos::get_stack_minimum_size_in_bytes(),
+          paraos::thread_priority::realtime}}}};
 
-Idle idle_handle(cooperative_scheduler.GetScheduler());
+Idle idle_handle(cooperative_scheduler.scheduler());
 
 etl::function_mv<Idle, &Idle::IdleCallback> idle_callback(idle_handle);
 
@@ -164,14 +164,14 @@ void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
 }  // namespace
 
 auto main() -> int {
-  // When calling AddTask(), scheduler compare priority each task and sorted
+  // When calling add_task(), scheduler compare priority each task and sorted
   // tasks references in private vector with tasks priority respect.
-  cooperative_scheduler.AddTask(task3);
-  cooperative_scheduler.AddTask(task1);
-  cooperative_scheduler.AddTask(task2);
+  cooperative_scheduler.add_task(task3);
+  cooperative_scheduler.add_task(task1);
+  cooperative_scheduler.add_task(task2);
 
   // Set custom idle callback to complete test.
-  cooperative_scheduler.SetIdleCallback(idle_callback);
+  cooperative_scheduler.set_idle_callback(idle_callback);
 
 #if PARAOS_LIKE_FREERTOS
   paraos::freertos_idle_fnc_ptr = IdleHook;
@@ -183,7 +183,7 @@ auto main() -> int {
           paraos::sleep_for(std::chrono::milliseconds{10});
         }
 
-        cooperative_scheduler.Finish(false);
+        cooperative_scheduler.finish(false);
         NotifySchedulerEnded();
       });
   (void)stopper;

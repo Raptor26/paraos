@@ -18,8 +18,8 @@ namespace paraos {
 /// timeout in blocking operations with elapsed time correction.
 ///
 /// @return Return object with current time. Returned value used in
-/// CheckTimeout().
-inline auto GetCurrentTime() noexcept {
+/// check_timeout().
+inline auto get_current_time() noexcept {
   TimeOut_t xTimeOut;
   vTaskInternalSetTimeOutState(&xTimeOut);
   return xTimeOut;
@@ -35,13 +35,13 @@ inline auto GetCurrentTime() noexcept {
 /// taking into account occasional occurrences such as tick count overflows,
 /// which would otherwise make a manual adjustment prone to error.
 ///
-/// @param[in] pxTimeOut: Returned by GetCurrentTime() value.
+/// @param[in] pxTimeOut: Returned by get_current_time() value.
 /// GetCurrentTimeInTicks() using at once before need periodical checking
-/// timeout by CheckTimeout().
+/// timeout by check_timeout().
 /// @param[in,out] ticks_to_wait: Wait time in ticks.
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
-inline auto CheckTimeout(
+inline auto check_timeout(
     TimeOut_t &xTimeOut, paraos::delay_type &delay_ms) noexcept {
   // Conditions below useful in unit tests, because if scheduler not started,
   // xTaskCheckForTimeOut() catch segmentation fail.
@@ -56,6 +56,13 @@ inline auto CheckTimeout(
   delay_ms = 0;
   return true;
 }
+
+[[nodiscard]] PARAOS_DEPRECATED("use get_current_time()")
+inline auto GetCurrentTime() noexcept { return get_current_time(); }
+
+[[nodiscard]] PARAOS_DEPRECATED("use check_timeout()")
+inline auto CheckTimeout(TimeOut_t &xTimeOut, paraos::delay_type &delay_ms) noexcept
+    -> bool { return check_timeout(xTimeOut, delay_ms); }
 
 }  // namespace paraos
 

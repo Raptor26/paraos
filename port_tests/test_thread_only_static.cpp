@@ -22,7 +22,7 @@
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
+    const paraos::critical_section macro_critical;                            \
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
@@ -90,9 +90,9 @@ auto main() -> int {
 
     {
       const static paraos::jthread static_thread{
-          paraos::ThreadAttr{
-              "My thread static one", paraos::GetStackMinimumSizeInBytes(),
-              paraos::ThreadPriority::kNormal},
+          paraos::thread_attr{
+              "My thread static one", paraos::get_stack_minimum_size_in_bytes(),
+              paraos::thread_priority::normal},
           [](const paraos::stop_token& /*token*/) {
             PrintDebug("Calling Processing()", "My thread static one");
             ++cnt;
@@ -103,9 +103,9 @@ auto main() -> int {
 
     {
       const static paraos::jthread static_thread{
-          paraos::ThreadAttr{
-              "My thread static two", paraos::GetStackMinimumSizeInBytes(),
-              paraos::ThreadPriority::kNormal},
+          paraos::thread_attr{
+              "My thread static two", paraos::get_stack_minimum_size_in_bytes(),
+              paraos::thread_priority::normal},
           [](const paraos::stop_token& /*token*/) {
             PrintDebug("Calling Processing()", "My thread static two");
             ++cnt;
@@ -116,9 +116,9 @@ auto main() -> int {
 
     {
       const static paraos::jthread static_thread{
-          paraos::ThreadAttr{
-              "My thread static three", paraos::GetStackMinimumSizeInBytes(),
-              paraos::ThreadPriority::kNormal},
+          paraos::thread_attr{
+              "My thread static three", paraos::get_stack_minimum_size_in_bytes(),
+              paraos::thread_priority::normal},
           [](const paraos::stop_token& /*token*/) {
             PrintDebug("Calling Processing()", "My thread static three");
             ++cnt;

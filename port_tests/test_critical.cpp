@@ -9,14 +9,14 @@
 #include "paraos_trace.hpp"
 
 TEST(Critical, WithISR) {
-  const paraos::CriticalSection critical;
+  const paraos::critical_section critical;
 
   // To print message below use cmake presets with «*_trace».
   paraosOUT(sizeof(critical));
 }
 
 TEST(Critical, WithoutISR) {
-  const paraos::CriticalSection<false> critical;
+  const paraos::critical_section<false> critical;
 
   ASSERT_EQ(sizeof(critical), 1U);
 }

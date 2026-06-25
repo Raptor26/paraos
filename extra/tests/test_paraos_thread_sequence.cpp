@@ -23,7 +23,7 @@
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
+    const paraos::critical_section macro_critical;                           \
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
@@ -36,8 +36,8 @@ std::atomic<std::size_t> mag_call_cnt{0};
 std::atomic<std::size_t> baro_call_cnt{0};
 
 constexpr uint_least8_t max_task_in_sequence{3};
-using ThreadSequenceTest = paraos::ThreadSequence<max_task_in_sequence>;
-ThreadSequenceTest* thread_seq_ptr{nullptr};
+using thread_sequence_test = paraos::thread_sequence<max_task_in_sequence>;
+thread_sequence_test* thread_seq_ptr{nullptr};
 
 constexpr uint32_t gyr_acc_max_call_cnt{4};
 
@@ -65,10 +65,10 @@ struct GyrAcc {
 
     if (gyracc_call_cnt.load() < gyr_acc_max_call_cnt) {
       constexpr bool is_isr{false};
-      thread_seq_ptr->NotifyGive(is_isr);
+      thread_seq_ptr->notify_give(is_isr);
     } else {
       // Signal completion from the sequence thread; the stopper thread will
-      // call Finish() because jthread::join() cannot be called from the
+      // call finish() because jthread::join() cannot be called from the
       // thread being joined.
       is_test_complete.store(true, std::memory_order_release);
     }
@@ -158,28 +158,29 @@ void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
 
 auto main() -> int {
   {
-    paraos::ThreadSequenceAttr attr{
-        {{"Sequence thread", paraos::GetStackMinimumSizeInBytes(),
-          paraos::ThreadPriority::kRealTime}}};
+    paraos::thread_sequence_attr attr{
+        {{"Sequence thread", paraos::get_stack_minimum_size_in_bytes(),
+          paraos::thread_priority::realtime}}};
 
     attr.period_in_us = thread_sequence_call_period_us;
 
-    ThreadSequenceTest thread_sequence{attr};
+    thread_sequence_test thread_sequence{attr};
     thread_seq_ptr = &thread_sequence;
 
     // We need to import "etl/delegate.h" to use delegate, but static analyzer
     // can't see the delegate declaration there.
     // NOLINTBEGIN(misc-include-cleaner)
     //  Compile time delegate. Delegate lifetime can't be less then lifetime
-    // between Registered() and Unregistered() call methods.
+    // between register_delegate() and unregister_delegate() call methods.
     static auto gyr_acc_delegate = etl::delegate<void(
         void)>::create<GyrAccFloat, gyr_acc, &GyrAccFloat::Update>();
     // NOLINTEND(misc-include-cleaner)
 
     {
-      // gyr_acc_delegate will be run on each call NotifyGive(). In this case
+      // gyr_acc_delegate will be run on each call notify_give(). In this case
       // frequency set 0.0.
-      auto timer_id = thread_seq_ptr->Register(gyr_acc_delegate, 0.0, true);
+      auto timer_id =
+          thread_seq_ptr->register_delegate(gyr_acc_delegate, 0.0, true);
       assert(timer_id != etl::timer::id::NO_TIMER);
     }
 
@@ -191,15 +192,15 @@ auto main() -> int {
       // can't see the delegate declaration there.
       // NOLINTBEGIN(misc-include-cleaner)
       // runtime delegate. Delegate lifetime can't be less then lifetime between
-      // Registered() and Unregistered() call methods.
+      // register_delegate() and unregister_delegate() call methods.
       static etl::delegate<void(void)> mag_delegate =
           etl::delegate<void(void)>::create<Mag, &Mag::Update>(mag);
       // NOLINTEND(misc-include-cleaner)
 
       {
         // mag_delegate call period is two times less than gyr_acc_delegate
-        auto timer_id =
-            thread_seq_ptr->Register(mag_delegate, mag_delegate_freq_hz, true);
+        auto timer_id = thread_seq_ptr->register_delegate(
+            mag_delegate, mag_delegate_freq_hz, true);
         assert(timer_id != etl::timer::id::NO_TIMER);
       }
     }
@@ -212,14 +213,14 @@ auto main() -> int {
       // can't see the delegate declaration there.
       // NOLINTBEGIN(misc-include-cleaner)
       // runtime delegate. Delegate lifetime can't be less then lifetime between
-      // Registered() and Unregistered() call methods.
+      // register_delegate() and unregister_delegate() call methods.
       etl::delegate<void(void)> baro_delegate =
           etl::delegate<void(void)>::create<Baro, &Baro::Update>(baro);
       // NOLINTEND(misc-include-cleaner)
 
       {
         // mag_delegate call period is four times less than gyr_acc_delegate
-        auto timer_id = thread_seq_ptr->Register(
+        auto timer_id = thread_seq_ptr->register_delegate(
             baro_delegate, baro_delegate_freq_hz, true);
         assert(timer_id != etl::timer::id::NO_TIMER);
       }
@@ -229,13 +230,14 @@ auto main() -> int {
     }
 
     {
-      // No space for register second delegate.
-      auto timer_id = thread_seq_ptr->Register(gyr_acc_delegate, 0.0, true);
+      // No space to register a second delegate.
+      auto timer_id =
+          thread_seq_ptr->register_delegate(gyr_acc_delegate, 0.0, true);
       assert(timer_id == etl::timer::id::NO_TIMER);
     }
 
     constexpr bool is_isr{false};
-    thread_seq_ptr->NotifyGive(is_isr);
+    thread_seq_ptr->notify_give(is_isr);
 
     const paraos::jthread stopper(
         [](const paraos::stop_token& /*token*/) -> void {
@@ -245,7 +247,7 @@ auto main() -> int {
 
           PARAOS_CHECK_ASSERT(thread_seq_ptr);
           constexpr bool is_dynamic{false};
-          thread_seq_ptr->Finish(is_dynamic);
+          thread_seq_ptr->finish(is_dynamic);
 
           NotifySchedulerEnded();
         });
