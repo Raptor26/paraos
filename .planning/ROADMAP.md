@@ -1,179 +1,132 @@
-# Roadmap: PARAOS
+# Roadmap: PARAOS — Milestone v1.10
 
-## Milestones
+**Milestone:** v1.10 — Modernize Unix timer with paraos primitives  
+**Phases:** 40–44 (continuous numbering from v1.9 Phase 39)  
+**Defined:** 2026-06-25  
+**Core Value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
-- ✅ **v1.0 macOS Support** — Phases 1-4 (shipped earlier)
-- ✅ **v1.1 Static Analysis Cleanup** — Phases 5-8 (shipped 2026-06-20) — see `.planning/milestones/v1.1-ROADMAP.md`
-- ✅ **v1.2 std::jthread-style Thread API** — Phases 9-12 (shipped 2026-06-20) — see `.planning/milestones/v1.2-ROADMAP.md`
-- ✅ **v1.3 std::mutex-style Mutex API** — Phases 13-15 (shipped 2026-06-22) — see `.planning/milestones/v1.3-ROADMAP.md`
-- ✅ **v1.4 std::semaphore-style Semaphore API** — Phases 16-18 (shipped 2026-06-22) — see `.planning/milestones/v1.4-ROADMAP.md`
-- ✅ **v1.5 Modernize container tests on std-like primitives** — Phases 19-23 (shipped 2026-06-22) — see `.planning/milestones/v1.5-ROADMAP.md`
-- ✅ **v1.6 paraos::jthread scheduler control** — Phases 24-27 (shipped 2026-06-22) — see `.planning/milestones/v1.6-ROADMAP.md`
-- ✅ **v1.7 Migrate `test_thread_only_*` to `paraos::jthread`** — Phases 28-30 (shipped 2026-06-23) — see `.planning/milestones/v1.7-ROADMAP.md`
-- ✅ **v1.8 Migrate `extra/` libraries to `paraos::jthread`** — Phases 31-35 (shipped 2026-06-23) — see `.planning/milestones/v1.8-ROADMAP.md`
-- ✅ **v1.9 Remove legacy Thread/Mutex/Semaphore implementations** — Phases 36-39 (shipped 2026-06-24) — see `.planning/milestones/v1.9-ROADMAP.md`
+## Milestone Goal
 
-## Phases
+Заменить POSIX timer API (`timer_create`/`timer_settime`/`timer_delete`) и pthread API (`pthread_mutex_*`, `pthread_cond_*`, `pthread_create`/`pthread_join`) в `port_unix/paraos_timer.hpp` на единую кроссплатформенную реализацию поверх `paraos::jthread`, `paraos::mutex` и `paraos::*_semaphore`, сохранив публичный API `paraos::timer` и поведение на всех платформах.
 
-<details>
-<summary>✅ v1.8 Migrate `extra/` libraries to `paraos::jthread` (Phases 31-35) — SHIPPED 2026-06-23</summary>
+---
 
-- [x] **Phase 31: Migrate `OneShotExecutor` to `paraos::jthread`** — Internal thread wrapper replaced; queue delegate loop runs inside jthread callable.
-- [x] **Phase 32: Migrate `ThreadSequence` to `paraos::jthread`** — Internal thread wrapper replaced; timer tick loop runs inside jthread callable.
-- [x] **Phase 33: Migrate `CooperativeScheduling` to `paraos::jthread`** — Internal thread wrapper replaced; scheduler loop runs inside jthread callable.
-- [x] **Phase 34: Migrate `extra/tests` standalone executables and CMake** — Standalone thread tests use `paraos::jthread`, `start_scheduler()`/`end_scheduler()`; CMakeLists updated to C++20 and clang-tidy.
-- [x] **Phase 35: Build, static analysis and runtime verification** — All PC/FreeRTOS presets pass ctest; clang-tidy presets clean; no regressions.
+## Phase 40: Design and test scaffold
 
-</details>
+**Goal:** Подготовить скелет новой реализации и тестовую инфраструктуру до начала разработки цикла таймера.
 
-<details>
-<summary>✅ v1.9 Remove legacy Thread/Mutex/Semaphore implementations (Phases 36-39) — SHIPPED 2026-06-24</summary>
+**Requirements covered:** TMR-04, TEST-01
 
-- [x] **Phase 36: Remove legacy implementation headers** — Delete `port_*/paraos_thread.hpp`, `port_*/paraos_mutex.hpp`, `port_*/paraos_semaphore.hpp`; clean `paraos_thread_common.hpp`; remove `paraos_mutex_raii.hpp`.
-- [x] **Phase 37: Migrate internal consumers to std-like primitives** — Update `containers/`, `port_unix/paraos_critical.hpp`, socket UDP headers, and any remaining internal references.
-- [x] **Phase 38: Migrate or remove legacy tests and examples** — Rewrite/delete `test_thread_create_then_delete_many_threads.cpp`, `test_mutex.cpp`, `test_mutex_raii.cpp`, `test_semaphore.cpp`, and the five `example_*.cpp` files that use `paraos::Thread`/`paraos::SemaphoreBinary`.
-- [x] **Phase 39: Build, static analysis and regression verification** — All PC/FreeRTOS presets configure and build; `ctest` passes on PC; `*_clang_tidy` presets remain clean.
+**Deliverables:**
+- Обновлённый `port_unix/paraos_timer.hpp`: новые includes (`paraos_jthread.hpp`, `paraos_mutex_std.hpp`, `paraos_semaphore_std.hpp`, `paraos_sleep.hpp`), очищенные от POSIX/pthread private-члены, placeholder-методы.
+- Новый `port_tests/test_timer.cpp` с минимальным skeleton: класс-наследник `paraos::timer`, пустой `run()`, `main()`.
+- Обновлённый `port_tests/CMakeLists.txt`: standalone-цель `test_timer` зарегистрирована с `cxx_std_20`, `TIMEOUT 20` и прикреплена к `CXX_CLANG_TIDY`.
 
-</details>
+**Success Criteria:**
+1. `port_unix/paraos_timer.hpp` компилируется без `timer_create`, `timer_settime`, `timer_delete`, `pthread_mutex_*`, `pthread_cond_*`, `pthread_create`, `pthread_join` на пути компиляции Linux/macOS.
+2. `port_tests/test_timer.cpp` компилируется в пресетах `pc_debug_clang` и `pc_debug_gcc`.
+3. Новая цель `test_timer` видна в `ctest -N` в PC-сборках.
+4. Сигнатура публичного API `paraos::timer` (конструктор, `start()`, `stop()`, `reset()`, `change_period()`, виртуальный `run()`) идентична существующей.
 
-## Phase Details
+---
 
-### Phase 31: Migrate `OneShotExecutor` to `paraos::jthread`
-**Goal:** `extra/paraos_oneshot_executor.hpp` uses `paraos::jthread` internally while preserving its public API.
-**Depends on:** Nothing (first phase of milestone)
-**Requirements:** MIG-01
-**Success Criteria** (what must be TRUE):
-  1. `IOneShotExecutor` owns a `paraos::jthread` member instead of `paraos::Thread`.
-  2. The delegate-processing loop runs inside the jthread callable.
-  3. `Finish()` signals stop and joins the thread gracefully on both PC and FreeRTOS.
-  4. Public `EnqueueDelegate` overloads remain unchanged.
-**Plans**: TBD
+## Phase 41: Core jthread-based loop
 
-### Phase 32: Migrate `ThreadSequence` to `paraos::jthread`
-**Goal:** `extra/paraos_thread_sequence.hpp` uses `paraos::jthread` internally while preserving its public API.
-**Depends on:** Phase 31
-**Requirements:** MIG-02
-**Success Criteria** (what must be TRUE):
-  1. `IThreadSequence` owns a `paraos::jthread` member instead of `paraos::Thread`.
-  2. The timer tick loop (`Run()`) runs inside the jthread callable and observes `stop_token`.
-  3. `Finish()` requests stop and joins without relying on `Finished()`/`Base*` deferred deletion.
-  4. `NotifyGive()` continues to wake the sequence thread.
-**Plans**: TBD
+**Goal:** Реализовать рабочий поток таймера поверх PARAOS-примитивов, поддерживающий периодический и one-shot режимы без дрейфа.
 
-### Phase 33: Migrate `CooperativeScheduling` to `paraos::jthread`
-**Goal:** `extra/paraos_thread_cooperative_scheduling.hpp` uses `paraos::jthread` internally while preserving its public API.
-**Depends on:** Phase 32
-**Requirements:** MIG-03
-**Success Criteria** (what must be TRUE):
-  1. `ICooperativeScheduling` owns a `paraos::jthread` member instead of `paraos::Thread`.
-  2. The scheduler loop (`Run()`) runs inside the jthread callable and observes `stop_token`.
-  3. `Finish()` exits the scheduler, requests stop, and joins the thread.
-  4. `AddTask()` and `SetIdleCallback()` keep existing signatures.
-**Plans**: TBD
+**Requirements covered:** TMR-01, TMR-02, TMR-03, TMR-05, TMR-06, TMR-11, TMR-12
 
-### Phase 34: Migrate `extra/tests` standalone executables and CMake
-**Goal:** Standalone multithread tests in `extra/tests/` use the modern `paraos::jthread` lifecycle.
-**Depends on:** Phase 33
-**Requirements:** MIG-04, BUILD-01, BUILD-02
-**Success Criteria** (what must be TRUE):
-  1. `test_oneshot_executor_thread.cpp`, `test_paraos_thread_sequence.cpp`, and `test_paraos_cooperative_scheduling_thread.cpp` no longer reference `paraos::Thread`.
-  2. Tests use `paraos::jthread::start_scheduler()` / `end_scheduler()` and RAII cleanup.
-  3. `extra/tests/CMakeLists.txt` compiles standalone targets with `cxx_std_20`.
-  4. `CXX_CLANG_TIDY` is attached to standalone targets when `CLANG_TIDY_ENABLE` is on.
-**Plans**: TBD
+**Deliverables:**
+- `std::optional<paraos::jthread>` worker_, создаваемый в `start()` и уничтожаемый в `stop()`.
+- Цикл рабочего потока на `std::chrono::steady_clock` с дедлайном, `binary_semaphore::try_acquire_for()` для ожидания оставшегося времени.
+- Вызов виртуального `run()` без удержания `mutex_`.
+- Ветвление `is_auto_reload_` для периодического/one-shot режимов.
+- Защита mutable-состояния (`period_ms_`, флаги) через `paraos::mutex`.
 
-### Phase 35: Build, static analysis and runtime verification
-**Goal:** All PC and FreeRTOS presets remain green after the migration.
-**Depends on:** Phase 34
-**Requirements:** BUILD-03, TEST-01, TEST-02
-**Success Criteria** (what must be TRUE):
-  1. `pc_debug_clang`, `pc_debug_gcc`, and `pc_debug_gcc_clang_tidy` presets configure, build, and pass `ctest`.
-  2. `freertos_debug_clang` and `freertos_debug_gcc` presets compile.
-  3. No new clang-tidy warnings appear in modified `extra/` headers or tests.
-  4. `ctest` count on PC matches or exceeds the pre-milestone baseline (58 tests).
-**Plans**: TBD
+**Success Criteria:**
+1. Таймер с `is_auto_reload=true` вызывает `run()` несколько раз с интервалом, отклонение которого от заданного `period_ms` не превышает допустимого джиттера ОС (измеряется в `test_timer.cpp`).
+2. Таймер с `is_auto_reload=false` вызывает `run()` ровно один раз после `period_ms`.
+3. Сборка `pc_debug_clang` и `pc_debug_gcc` проходит без ошибок; таймер создаёт поток только после `start()`.
+4. Отсутствуют вызовы POSIX timer API и pthread API в `port_unix/paraos_timer.hpp` на обеих платформах; ветвления `__linux__` / `__APPLE__` удалены.
+5. Внутри цикла `mutex_` не удерживается при вызове `run()`.
 
-### Phase 36: Remove legacy implementation headers
-**Goal:** Delete legacy `paraos::Thread`, `paraos::Mutex`, and `paraos::Semaphore*` implementation headers while preserving common attributes needed by `paraos::jthread`.
-**Depends on:** Nothing (first phase of v1.9)
-**Requirements:** REM-01, REM-02, REM-03, REM-04, REM-05
-**Success Criteria** (what must be TRUE):
-  1. `port_unix/paraos_thread.hpp`, `port_unix/paraos_mutex.hpp`, `port_unix/paraos_semaphore.hpp` are removed.
-  2. `port_win/paraos_thread.hpp`, `port_win/paraos_mutex.hpp`, `port_win/paraos_semaphore.hpp` are removed.
-  3. `port_freertos/paraos_thread.hpp`, `port_freertos/paraos_mutex.hpp`, `port_freertos/paraos_semaphore.hpp` are removed.
-  4. `paraos_thread_common.hpp` still provides `ThreadAttr`, `ThreadPriority`, and other shared definitions used by `paraos::jthread`.
-  5. `paraos_mutex_raii.hpp` is removed or rewritten in terms of `std::lock_guard<paraos::mutex>` / `std::unique_lock<paraos::mutex>`.
-**Plans**: TBD
+---
 
-### Phase 37: Migrate internal consumers to std-like primitives
-**Goal:** Update remaining internal code that depends on legacy `paraos::Thread`, `paraos::Mutex`, or `paraos::Semaphore*` to use the std-like replacements.
-**Depends on:** Phase 36
-**Requirements:** MIG-01, MIG-02, MIG-03, MIG-04
-**Success Criteria** (what must be TRUE):
-  1. `containers/paraos_message_buffer.hpp` and `containers/paraos_queue_blocking.hpp` use `paraos::mutex` and `paraos::*_semaphore`.
-  2. `port_unix/paraos_critical.hpp` uses `paraos::mutex` and no longer references `MutexBase`.
-  3. `port_unix/paraos_thread.hpp` and `port_win/paraos_thread.hpp` either are forwarding headers to `paraos_jthread.hpp` or are removed entirely.
-  4. `port_unix/paraos_socket_udp.hpp` and `port_win/paraos_socket_udp.hpp` use `paraos::jthread` / `paraos::sleep_for` instead of `paraos::Thread`.
-**Plans**: TBD
+## Phase 42: Start/stop/reset/change_period synchronization
 
-### Phase 38: Migrate or remove legacy tests and examples
-**Goal:** Eliminate remaining test/example code that uses legacy `paraos::Thread`, `paraos::Mutex`, or `paraos::Semaphore*`.
-**Depends on:** Phase 37
-**Requirements:** TEST-01, TEST-02, TEST-03
-**Success Criteria** (what must be TRUE):
-  1. `port_tests/test_thread_create_then_delete_many_threads.cpp`, `test_mutex.cpp`, `test_mutex_raii.cpp`, and `test_semaphore.cpp` are deleted or rewritten to use std-like primitives.
-  2. `port_tests/example_thread_check_timeout.cpp`, `example_timer.cpp`, `example_paraos_timer.cpp`, `example_socket_udp.cpp`, and `example_paraos_socket_udp.cpp` no longer reference `paraos::Thread` or `paraos::SemaphoreBinary`.
-  3. `port_tests/CMakeLists.txt` is updated to remove deleted targets and keep/register the remaining std-like tests/examples.
-**Plans**: TBD
+**Goal:** Обеспечить корректную синхронизацию публичных методов с рабочим потоком, безопасный stop изнутри `run()` и безопасный деструктор.
 
-### Phase 39: Build, static analysis and regression verification
-**Goal:** All PC and FreeRTOS presets remain green after legacy removal.
-**Depends on:** Phase 38
-**Requirements:** BUILD-01, BUILD-02, BUILD-03, BUILD-04
-**Success Criteria** (what must be TRUE):
-  1. `pc_debug_clang`, `pc_debug_gcc`, and `pc_debug_gcc_clang_tidy` presets configure, build, and pass `ctest`.
-  2. `freertos_debug_clang` and `freertos_debug_gcc` presets compile.
-  3. `*_clang_tidy` presets produce no new warnings from changed or deleted code.
-  4. PC `ctest` count is at least the pre-milestone baseline (58 tests) unless a test is intentionally removed with documented rationale.
-**Plans**: TBD
+**Requirements covered:** TMR-07, TMR-08, TMR-09, TMR-10
 
-## Progress
+**Deliverables:**
+- `start()`: повторный запуск пересчитывает дедлайн от текущего момента; не создаёт второй поток, если таймер уже запущен.
+- `stop()`: устанавливает флаг остановки, будит семафор, join-ит worker; защищён от self-deadlock при вызове из `run()`.
+- `reset()`: пересчитывает дедлайн и будит спящий рабочий поток.
+- `change_period()`: атомарно обновляет `period_ms_` и будит рабочий поток для немедленного применения.
+- Деструктор: вызывает `stop()` до разрушения объекта.
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-| ----- | --------- | -------------- | ------ | --------- |
-| 1-4. macOS Support | v1.0 | 4/4 | Complete | earlier |
-| 5. Reproduce & Classify clang-tidy warnings | v1.1 | 1/1 | Complete | 2026-06-20 |
-| 6. Fix Core, Headers & port_unix | v1.1 | 1/1 | Complete | 2026-06-20 |
-| 7. Fix Tests, Examples & Document Suppressions | v1.1 | 1/1 | Complete | 2026-06-20 |
-| 8. Regression Guard | v1.1 | 1/1 | Complete | 2026-06-20 |
-| 9. PC jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
-| 10. FreeRTOS jthread implementation | v1.2 | 1/1 | Complete | 2026-06-20 |
-| 11. Thread attributes integration | v1.2 | 1/1 | Complete | 2026-06-20 |
-| 12. Build, tests and static analysis | v1.2 | 1/1 | Complete | 2026-06-20 |
-| 13. PC mutex implementation | v1.3 | 1/1 | Complete | 2026-06-22 |
-| 14. FreeRTOS mutex implementation | v1.3 | 1/1 | Complete | 2026-06-22 |
-| 15. Build, tests and static analysis | v1.3 | 1/1 | Complete | 2026-06-22 |
-| 16. PC counting_semaphore implementation | v1.4 | 1/1 | Complete | 2026-06-22 |
-| 17. FreeRTOS counting_semaphore implementation | v1.4 | 1/1 | Complete | 2026-06-22 |
-| 18. Build, tests and static analysis | v1.4 | 1/1 | Complete | 2026-06-22 |
-| 19. Inventory & gap analysis | v1.5 | 1/1 | Complete | 2026-06-20 |
-| 20. Migrate thread primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
-| 21. Migrate synchronization primitives in container tests | v1.5 | 1/1 | Complete | 2026-06-22 |
-| 22. FreeRTOS std-like primitives hardening | v1.5 | 1/1 | Complete | 2026-06-22 |
-| 23. Build, tests and static analysis | v1.5 | 1/1 | Complete | 2026-06-22 |
-| 24. FreeRTOS scheduler API | v1.6 | 2/2 | Complete | 2026-06-22 |
-| 25. PC scheduler state and gating | v1.6 | 3/3 | Complete | 2026-06-22 |
-| 26. Test unification | v1.6 | 7/7 | Complete | 2026-06-22 |
-| 27. Build and static analysis verification | v1.6 | 6/6 | Complete | 2026-06-22 |
-| 28. Migrate `test_thread_only_*` sources to `paraos::jthread` | v1.7 | 1/1 | Complete | 2026-06-23 |
-| 29. Update `port_tests/CMakeLists.txt` for new tests | v1.7 | 1/1 | Complete | 2026-06-23 |
-| 30. Runtime verification on macOS | v1.7 | 1/1 | Complete | 2026-06-23 |
-| 31. Migrate `OneShotExecutor` to `paraos::jthread` | v1.8 | 1/1 | Complete | 2026-06-23 |
-| 32. Migrate `ThreadSequence` to `paraos::jthread` | v1.8 | 1/1 | Complete | 2026-06-23 |
-| 33. Migrate `CooperativeScheduling` to `paraos::jthread` | v1.8 | 1/1 | Complete | 2026-06-23 |
-| 34. Migrate `extra/tests` standalone executables and CMake | v1.8 | 1/1 | Complete | 2026-06-23 |
-| 35. Build, static analysis and runtime verification | v1.8 | 1/1 | Complete | 2026-06-23 |
-| 36. Remove legacy implementation headers | v1.9 | 1/1 | Complete | 2026-06-24 |
-| 37. Migrate internal consumers to std-like primitives | v1.9 | 1/1 | Complete | 2026-06-24 |
-| 38. Migrate or remove legacy tests and examples | v1.9 | 1/1 | Complete | 2026-06-24 |
-| 39. Build, static analysis and regression verification | v1.9 | 1/1 | Complete | 2026-06-24 |
+**Success Criteria:**
+1. `start()` на уже запущенном таймере сбрасывает отсчёт; следующий `run()` происходит через полный `period_ms` от момента вызова.
+2. `change_period()` применяет новый период до следующего срабатывания, а не после текущего цикла.
+3. `stop()`, вызванный изнутри `run()`, не вызывает self-deadlock и корректно завершает рабочий поток.
+4. Деструктор останавливает и join-ит worker даже при активном таймере.
+5. Нет потерянных или повторяющихся wakeup: repeated `release()` на binary_semaphore не приводит к исключению или пропуску цикла.
+
+---
+
+## Phase 43: Standalone test and documentation
+
+**Goal:** Расширить standalone-тест до покрытия всех режимов и задокументировать требование планировщика.
+
+**Requirements covered:** TEST-02, TEST-03, TEST-04, TEST-05, TEST-06
+
+**Deliverables:**
+- `port_tests/test_timer.cpp` с тестами: периодический режим, one-shot, `change_period()`, `reset()`, `stop()` изнутри `run()`, безопасность деструктора.
+- Явный вызов `paraos::jthread::start_scheduler()` перед ожиданием callbacks и `paraos::jthread::end_scheduler()` в конце.
+- Doxygen-комментарии в `port_unix/paraos_timer.hpp`, объясняющие гейтинг планировщика и поведение `is_auto_reload`.
+
+**Success Criteria:**
+1. `test_timer` проходит в пресетах `pc_debug_clang` и `pc_debug_gcc`.
+2. Тест покрывает периодический режим (≥3 срабатывания) и one-shot (ровно 1 срабатывание).
+3. Тест проверяет `change_period()` и `reset()` через измерение фактических интервалов.
+4. Тест проверяет `stop()` и деструктор (таймер уничтожается без зависания).
+5. В `main()` явно вызываются `start_scheduler()` / `end_scheduler()`.
+
+---
+
+## Phase 44: Static analysis and cross-platform regression
+
+**Goal:** Подтвердить отсутствие регрессий в PC/FreeRTOS/Windows портах и чистоту clang-tidy.
+
+**Requirements covered:** BLD-01, BLD-02, BLD-03, BLD-04
+
+**Deliverables:**
+- Прохождение `ctest` для `pc_debug_clang`, `pc_debug_gcc`.
+- Прохождение `*_clang_tidy` пресетов без новых предупреждений от кода таймера и `test_timer.cpp`.
+- Успешная конфигурация/сборка FreeRTOS-пресетов (`freertos_debug_clang`, `freertos_debug_gcc`).
+- Подтверждение, что `port_win/paraos_timer.hpp` и `port_freertos/paraos_timer.hpp` не изменены.
+
+**Success Criteria:**
+1. `pc_debug_clang` проходит `ctest --output-on-failure --stop-on-failure` без регрессий (базовое число тестов 58/58 + новый `test_timer`).
+2. `pc_debug_gcc` проходит `ctest` без регрессий.
+3. `pc_debug_gcc_clang_tidy` (или доступный `*_clang_tidy` пресет) собирается без новых предупреждений от `port_unix/paraos_timer.hpp` и `port_tests/test_timer.cpp`.
+4. `freertos_debug_clang` и `freertos_debug_gcc` успешно компилируются.
+5. Git diff не содержит изменений в `port_win/paraos_timer.hpp` и `port_freertos/paraos_timer.hpp`.
+
+---
+
+## Coverage Summary
+
+| Phase | Name | Requirements Covered | Count |
+|-------|------|----------------------|-------|
+| 40 | Design and test scaffold | TMR-04, TEST-01 | 2 |
+| 41 | Core jthread-based loop | TMR-01, TMR-02, TMR-03, TMR-05, TMR-06, TMR-11, TMR-12 | 7 |
+| 42 | Start/stop/reset/change_period synchronization | TMR-07, TMR-08, TMR-09, TMR-10 | 4 |
+| 43 | Standalone test and documentation | TEST-02, TEST-03, TEST-04, TEST-05, TEST-06 | 5 |
+| 44 | Static analysis and cross-platform regression | BLD-01, BLD-02, BLD-03, BLD-04 | 4 |
+
+**Total v1 requirements mapped:** 22 / 22 (100%)  
+**Unmapped:** 0
+
+---
+*Roadmap created: 2026-06-25*

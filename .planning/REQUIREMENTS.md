@@ -60,28 +60,28 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TMR-01 | Phase 2 | Pending |
-| TMR-02 | Phase 2 | Pending |
-| TMR-03 | Phase 2 | Pending |
-| TMR-04 | Phase 1 | Pending |
-| TMR-05 | Phase 2 | Pending |
-| TMR-06 | Phase 2 | Pending |
-| TMR-07 | Phase 3 | Pending |
-| TMR-08 | Phase 3 | Pending |
-| TMR-09 | Phase 3 | Pending |
-| TMR-10 | Phase 3 | Pending |
-| TMR-11 | Phase 2 | Pending |
-| TMR-12 | Phase 2 | Pending |
-| TEST-01 | Phase 1 | Pending |
-| TEST-02 | Phase 4 | Pending |
-| TEST-03 | Phase 4 | Pending |
-| TEST-04 | Phase 4 | Pending |
-| TEST-05 | Phase 4 | Pending |
-| TEST-06 | Phase 4 | Pending |
-| BLD-01 | Phase 5 | Pending |
-| BLD-02 | Phase 5 | Pending |
-| BLD-03 | Phase 5 | Pending |
-| BLD-04 | Phase 5 | Pending |
+| TMR-01 | Phase 41 | Pending |
+| TMR-02 | Phase 41 | Pending |
+| TMR-03 | Phase 41 | Pending |
+| TMR-04 | Phase 40 | Pending |
+| TMR-05 | Phase 41 | Pending |
+| TMR-06 | Phase 41 | Pending |
+| TMR-07 | Phase 42 | Pending |
+| TMR-08 | Phase 42 | Pending |
+| TMR-09 | Phase 42 | Pending |
+| TMR-10 | Phase 42 | Pending |
+| TMR-11 | Phase 41 | Pending |
+| TMR-12 | Phase 41 | Pending |
+| TEST-01 | Phase 40 | Pending |
+| TEST-02 | Phase 43 | Pending |
+| TEST-03 | Phase 43 | Pending |
+| TEST-04 | Phase 43 | Pending |
+| TEST-05 | Phase 43 | Pending |
+| TEST-06 | Phase 43 | Pending |
+| BLD-01 | Phase 44 | Pending |
+| BLD-02 | Phase 44 | Pending |
+| BLD-03 | Phase 44 | Pending |
+| BLD-04 | Phase 44 | Pending |
 
 **Coverage:**
 - v1 requirements: 22 total
@@ -90,4 +90,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-06-25*
-*Last updated: 2026-06-25 after initial definition*
+*Last updated: 2026-06-25 after mapping requirements to roadmap phases 40–44*

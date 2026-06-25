@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Modernize Unix timer with paraos primitives
 status: planning
-last_updated: "2026-06-25T15:23:24.393Z"
+last_updated: "2026-06-25T15:55:12.453Z"
 last_activity: 2026-06-25
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-24)
+See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.9 — remove legacy Thread/Mutex/Semaphore implementations.
+**Current focus:** Milestone v1.10 — modernize Unix timer with paraos primitives.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-25 — Milestone v1.10 started
+Phase: 40
+Plan: Roadmap created; ready for Phase 40 planning (design and test scaffold)
+Status: Planning
+Last activity: 2026-06-25 — Roadmap for v1.10 phases 40–44 created
 
 ## Accumulated Context
 
@@ -55,10 +55,11 @@ Last activity: 2026-06-25 — Milestone v1.10 started
 - Phase 37: `paraos::recursive_mutex` introduced; containers, critical section, socket UDP, FreeRTOS jthread, and extra helpers migrated to std-like primitives.
 - Phase 38: legacy `port_tests/test_*.cpp` and `example_*.cpp` files removed; `port_tests/CMakeLists.txt` updated; PC `ctest` passes 58/58.
 - Phase 39: all PC/FreeRTOS presets verified; clang-tidy clean; PC test count at 58/58 baseline.
+- Milestone v1.10 started: goal is to replace POSIX/pthread timer implementation in `port_unix/paraos_timer.hpp` with `paraos::jthread`, `paraos::mutex`, `paraos::binary_semaphore`, and `paraos::sleep_for`.
 
 ### Pending Todos
 
-None.
+- Phase 40: create header skeleton, add `port_tests/test_timer.cpp`, wire CMake.
 
 ### Blockers/Concerns
 
@@ -75,9 +76,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-24T13:30:00.000Z
-Stopped at: Phase 39 complete; milestone ready for audit
+Last session: 2026-06-25T15:55:12.453Z
+Stopped at: Roadmap created for v1.10 phases 40–44; ready to plan Phase 40
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 40 (design and test scaffold) via `/gsd-plan-phase 40` or equivalent.
