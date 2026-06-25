@@ -12,6 +12,7 @@
 #include "etl/exception.h"
 #include "paraos_attr.h"
 #include "paraos_check.h"
+#include "paraos_config.hpp"
 
 namespace paraos {
 
@@ -29,7 +30,7 @@ using error_numeric_type = int;
 ///
 /// @return verbose_text if `PARAOS_VERBOSE_ERRORS` is defined, otherwise -
 /// terse_text.
-inline auto GetErrorText(
+inline auto get_error_text(
     error_string_type verbose_text, error_string_type terse_text)
     -> error_string_type {
 #ifdef PARAOS_VERBOSE_ERRORS
@@ -39,6 +40,13 @@ inline auto GetErrorText(
   PARAOS_ATTR_UNUSED_VAR(verbose_text);
   return terse_text;
 #endif
+}
+
+[[nodiscard]] PARAOS_DEPRECATED("use get_error_text()")
+inline auto GetErrorText(
+    error_string_type verbose_text, error_string_type terse_text)
+    -> error_string_type {
+  return get_error_text(verbose_text, terse_text);
 }
 
 /// @brief Base class for exceptions in paraos library.

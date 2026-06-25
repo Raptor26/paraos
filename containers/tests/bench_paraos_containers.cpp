@@ -20,29 +20,29 @@ namespace bm = benchmark;
 BENCHMARK_MAIN();
 
 namespace {
-static void QueueBlockingPushThenPop(bm::State &state) {
+static void QueueBlockingPushThenPop(bm::State& state) {
   std::string str{"Hello world"};
   constexpr std::size_t max_elem{10};
-  paraos::QueueBlocking<std::string, max_elem> queue;
+  paraos::queue_blocking<std::string, max_elem> queue;
   assert(queue);
   for (auto unused : state) {
-    benchmark::DoNotOptimize(queue.TryPush(str));
-    benchmark::DoNotOptimize(queue.Pop(0));
+    benchmark::DoNotOptimize(queue.try_push(str));
+    benchmark::DoNotOptimize(queue.pop(0));
   }
 }
 BENCHMARK(QueueBlockingPushThenPop);
 
-static void MessageBufferPushThenPop(bm::State &state) {
+static void MessageBufferPushThenPop(bm::State& state) {
   std::string str{"Hello world"};
-  paraos::MessageBuffer<10> buff;
+  paraos::message_buffer<10> buff;
   assert(buff);
   for (auto unused : state) {
-    auto write = buff.Alloc(str.size());
+    auto write = buff.alloc(str.size());
     assert(write);
-    memcpy(write.Data(), static_cast<const void *>(str.data()), str.size());
-    write.TryPush();
+    memcpy(write.data(), static_cast<const void*>(str.data()), str.size());
+    write.try_push();
 
-    auto read = buff.Pop(0);
+    auto read = buff.pop(0);
     assert(read);
   }
 }

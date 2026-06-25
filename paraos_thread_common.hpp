@@ -23,52 +23,84 @@ namespace paraos {
 using thread_delegate_type = etl::delegate<void()>;
 
 #ifdef PARAOS_LIKE_WINAPI
-enum class ThreadPriority : int8_t {
-  kIdle = THREAD_PRIORITY_IDLE,
-  kLowest = THREAD_PRIORITY_LOWEST,
-  kBelowNormal = THREAD_PRIORITY_BELOW_NORMAL,
-  kNormal = THREAD_PRIORITY_NORMAL,
-  kAboveNormal = THREAD_PRIORITY_ABOVE_NORMAL,
-  kHighest = THREAD_PRIORITY_HIGHEST,
-  kRealTime = THREAD_PRIORITY_TIME_CRITICAL,
+enum class thread_priority : int8_t {
+  idle = THREAD_PRIORITY_IDLE,
+  lowest = THREAD_PRIORITY_LOWEST,
+  below_normal = THREAD_PRIORITY_BELOW_NORMAL,
+  normal = THREAD_PRIORITY_NORMAL,
+  above_normal = THREAD_PRIORITY_ABOVE_NORMAL,
+  highest = THREAD_PRIORITY_HIGHEST,
+  realtime = THREAD_PRIORITY_TIME_CRITICAL,
+
+  // Backward-compatible aliases for old enum value names.
+  kIdle = idle,
+  kLowest = lowest,
+  kBelowNormal = below_normal,
+  kNormal = normal,
+  kAboveNormal = above_normal,
+  kHighest = highest,
+  kRealTime = realtime,
 };
 #elif defined(PARAOS_LIKE_FREERTOS)
-enum class ThreadPriority : uint8_t {
-  kIdle = 0,
-  kLowest,
-  kBelowNormal,
-  kNormal,
-  kAboveNormal,
-  kHighest,
-  kRealTime,
+enum class thread_priority : uint8_t {
+  idle = 0,
+  lowest = 1,
+  below_normal = 2,
+  normal = 3,
+  above_normal = 4,
+  highest = 5,
+  realtime = 6,
 
-  kMaxNum
+  // Backward-compatible aliases for old enum value names.
+  kIdle = idle,
+  kLowest = lowest,
+  kBelowNormal = below_normal,
+  kNormal = normal,
+  kAboveNormal = above_normal,
+  kHighest = highest,
+  kRealTime = realtime,
+
+  max_num = 7
 };
 
 #elif defined(PARAOS_LIKE_UNIX)
-enum class ThreadPriority : uint8_t {
-  kIdle = 1,
-  kLowest,
-  kBelowNormal,
-  kNormal,
-  kAboveNormal,
-  kHighest,
-  kRealTime,
+enum class thread_priority : uint8_t {
+  idle = 1,
+  lowest = 2,
+  below_normal = 3,
+  normal = 4,
+  above_normal = 5,
+  highest = 6,
+  realtime = 7,
+
+  // Backward-compatible aliases for old enum value names.
+  kIdle = idle,
+  kLowest = lowest,
+  kBelowNormal = below_normal,
+  kNormal = normal,
+  kAboveNormal = above_normal,
+  kHighest = highest,
+  kRealTime = realtime,
 };
 #endif
 
+using ThreadPriority PARAOS_DEPRECATED("use paraos::thread_priority") =
+    thread_priority;
+
 /// @brief Parameters to initialize paraos::jthread.
-struct ThreadAttr {
+struct thread_attr {
   /// @brief The name of the thread being created.
   std::string_view thread_name{"Thread"};
 
   /// @brief Stack depth in bytes.
-  /// Must be greater than or equal to paraos::GetStackMinimumSizeInBytes().
-  std::size_t stack_depth{paraos::GetStackMinimumSizeInBytes()};
+  /// Must be greater than or equal to paraos::get_stack_minimum_size_in_bytes().
+  std::size_t stack_depth{paraos::get_stack_minimum_size_in_bytes()};
 
   /// @brief The priority of the thread being created.
-  paraos::ThreadPriority priority{paraos::ThreadPriority::kNormal};
+  paraos::thread_priority priority{paraos::thread_priority::normal};
 };
+
+using ThreadAttr PARAOS_DEPRECATED("use paraos::thread_attr") = thread_attr;
 
 }  // namespace paraos
 

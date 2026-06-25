@@ -25,10 +25,9 @@
 #include "paraos_sleep.hpp"
 #include "paraos_thread_common.hpp"
 
-
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
-    const paraos::CriticalSection macro_critical;              \
+    const paraos::critical_section macro_critical;             \
                                                                \
     const std::time_t result = std::time(nullptr);             \
                                                                \
@@ -52,7 +51,7 @@ std::vector<std::string> consumers_str_container;
 /// @brief In this container producers write string each written in buffer.
 std::vector<std::string> producers_str_container;
 
-paraos::MessageBuffer<3> message_buff;
+paraos::message_buffer<3> message_buff;
 
 constexpr std::size_t producer_waiting_timeout_ms{10};
 constexpr std::size_t consumer_waiting_timeout_ms{5};
@@ -90,13 +89,12 @@ struct Producer {
 
     // Trying to write message in buffer will not work yet.
     while (!token.stop_requested()) {
-      auto write =
-          message_buff.Alloc(elems_vector.at(str_idx_).length() + 1U);
+      auto write = message_buff.alloc(elems_vector.at(str_idx_).length() + 1U);
 
       // If memory alloc successful.
       if (write) {
-        memcpy(write.Data(), elems_vector.at(str_idx_).data(), write.Size());
-        const auto is_push_success = write.TryPush();
+        memcpy(write.data(), elems_vector.at(str_idx_).data(), write.size());
+        const auto is_push_success = write.try_push();
 
         if (is_push_success) {
           PrintDebug(
@@ -104,7 +102,7 @@ struct Producer {
               name_);
 
           {
-            const paraos::CriticalSection critical;
+            const paraos::critical_section critical;
             producers_str_container.emplace_back(
                 elems_vector.at(str_idx_).c_str());
           }
@@ -113,11 +111,11 @@ struct Producer {
           return;
         }
 
-        // Explicit TryPush() failed and the MessageWritable destructor would
+        // Explicit try_push() failed and the message_writable destructor would
         // retry the push automatically. Prevent that so a producer does not
         // insert a duplicate message while it is spinning waiting for a free
         // queue slot.
-        write.Free();
+        write.free();
       }
       PrintDebug(
           " WARN: Nothin written, try again after delay. " << "String idx is "
@@ -148,17 +146,17 @@ struct Consumer {
       // Small delay for yeld resources.
       constexpr std::size_t delay_ms{2000};
 
-      auto read_message = message_buff.Pop(delay_ms);
+      auto read_message = message_buff.pop(delay_ms);
 
       if (read_message) {
         std::string read_str;
         {
-          const paraos::CriticalSection critical;
-          read_str = reinterpret_cast<char*>(read_message->Data());
+          const paraos::critical_section critical;
+          read_str = reinterpret_cast<char*>(read_message->data());
         }
 
         {
-          const paraos::CriticalSection critical;
+          const paraos::critical_section critical;
           consumers_str_container.emplace_back(read_str);
         }
 
@@ -184,7 +182,7 @@ struct Consumer {
 
 void CheckIfTestSuccessfullyComplete(  // NOLINT(llvm-prefer-static-over-anonymous-namespace): using static triggers misc-use-anonymous-namespace; keep internal linkage via anonymous namespace.
 ) {
-  const paraos::CriticalSection critical;
+  const paraos::critical_section critical;
 
   PrintDebug(
       "Expected written strings numb is " << elems_vector.size()
@@ -232,94 +230,94 @@ auto main() -> int {
     std::vector<paraos::jthread> threads;
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 0";
-      attr.priority = paraos::ThreadPriority::kLowest;
+      attr.priority = paraos::thread_priority::lowest;
       threads.emplace_back(attr, Consumer{"--Cons 0"});
       consumer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 1";
-      attr.priority = paraos::ThreadPriority::kBelowNormal;
+      attr.priority = paraos::thread_priority::below_normal;
       threads.emplace_back(attr, Consumer{"--Cons 1"});
       consumer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 2";
-      attr.priority = paraos::ThreadPriority::kNormal;
+      attr.priority = paraos::thread_priority::normal;
       threads.emplace_back(attr, Consumer{"--Cons 2"});
       consumer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 3";
-      attr.priority = paraos::ThreadPriority::kNormal;
+      attr.priority = paraos::thread_priority::normal;
       threads.emplace_back(attr, Consumer{"--Cons 3"});
       consumer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 4";
-      attr.priority = paraos::ThreadPriority::kNormal;
+      attr.priority = paraos::thread_priority::normal;
       threads.emplace_back(attr, Consumer{"--Cons 4"});
       consumer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 5";
-      attr.priority = paraos::ThreadPriority::kLowest;
+      attr.priority = paraos::thread_priority::lowest;
       threads.emplace_back(attr, Consumer{"--Cons 5"});
       consumer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 0";
-      attr.priority = paraos::ThreadPriority::kAboveNormal;
+      attr.priority = paraos::thread_priority::above_normal;
       threads.emplace_back(attr, Producer{"Prod 0", 0});
       producer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 1";
-      attr.priority = paraos::ThreadPriority::kHighest;
+      attr.priority = paraos::thread_priority::highest;
       threads.emplace_back(attr, Producer{"Prod 1", 1});
       producer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 2";
       threads.emplace_back(attr, Producer{"Prod 2", 2});
       producer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 3";
       threads.emplace_back(attr, Producer{"Prod 3", 3});
       producer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 4";
       threads.emplace_back(attr, Producer{"Prod 4", 4});
       producer_total_thread_numb += 1;
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 5";
-      attr.priority = paraos::ThreadPriority::kAboveNormal;
+      attr.priority = paraos::thread_priority::above_normal;
       threads.emplace_back(attr, Producer{"Prod 5", 5});
       producer_total_thread_numb += 1;
     }

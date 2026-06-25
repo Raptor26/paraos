@@ -28,7 +28,7 @@
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
+    const paraos::critical_section macro_critical;                            \
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
@@ -92,9 +92,9 @@ auto main() -> int {
     try {
       for (std::size_t i = 0; i < EXPECTED_THREADS; ++i) {
         const std::string name{"My thread dynamic " + std::to_string(i)};
-        const paraos::ThreadAttr attr{
-            name, paraos::GetStackMinimumSizeInBytes(),
-            paraos::ThreadPriority::kNormal};
+        const paraos::thread_attr attr{
+            name, paraos::get_stack_minimum_size_in_bytes(),
+            paraos::thread_priority::normal};
 
         threads.emplace_back(attr, [i](const paraos::stop_token& /*token*/) {
           PrintDebug(

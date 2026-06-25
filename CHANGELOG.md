@@ -1,3 +1,14 @@
+## [Unreleased]
+
+### Changed
+
+- All public PARAOS C++ APIs have been renamed to follow the STL convention:
+  - `snake_case` for types, classes, methods, and free functions.
+  - `_base` suffix for abstract interfaces (`IProfiler` → `profiler_base`).
+  - `enum class` values no longer use the `k` prefix (`kIdle` → `idle`).
+- Old names are kept as deprecated aliases using `PARAOS_DEPRECATED` for types and non-virtual methods.
+- Virtual methods were renamed without forwarders; user overrides must be updated.
+
 ## v0.12.0 (2025-05-13)
 
 ### Feat

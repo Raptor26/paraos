@@ -37,8 +37,8 @@ TEST(OneShotExecutor, Create) {
 
   constexpr size_t queue_size{20};
 
-  const paraos::OneShotExecutorAttributes attr;
-  const static paraos::OneShotExecutor<queue_size> oneshot_executor{
+  const paraos::one_shot_executor_attr attr;
+  const static paraos::one_shot_executor<queue_size> oneshot_executor{
       attr, thread_start_flag};
 }
 
@@ -50,18 +50,19 @@ TEST(OneShotExecutor, EnqueueCreatedDelegate) {
 
   auto mock_delegate = paraos::executor_delegate_type::create<MockDelegate>();
 
-  const paraos::OneShotExecutorAttributes attr;
-  paraos::OneShotExecutor<queue_size> oneshot_executor{attr, thread_start_flag};
+  const paraos::one_shot_executor_attr attr;
+  paraos::one_shot_executor<queue_size> oneshot_executor{
+      attr, thread_start_flag};
 
   // Enqueue the pre-created delegate.
-  ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
+  ASSERT_TRUE(oneshot_executor.enqueue_delegate(mock_delegate));
 
   static TestClassMock test_class{};
 
   auto class_method_delegate = paraos::executor_delegate_type::create<
       TestClassMock, &TestClassMock::DoSomething>(test_class);
 
-  ASSERT_TRUE(oneshot_executor.EnqueueDelegate(class_method_delegate));
+  ASSERT_TRUE(oneshot_executor.enqueue_delegate(class_method_delegate));
 }
 
 TEST(OneShotExecutor, AutoCreateAndEnqueueDelegate) {
@@ -70,18 +71,20 @@ TEST(OneShotExecutor, AutoCreateAndEnqueueDelegate) {
 
   constexpr size_t queue_size{2};
 
-  const paraos::OneShotExecutorAttributes attr;
-  paraos::OneShotExecutor<queue_size> oneshot_executor{attr, thread_start_flag};
+  const paraos::one_shot_executor_attr attr;
+  paraos::one_shot_executor<queue_size> oneshot_executor{
+      attr, thread_start_flag};
 
   static TestClassMock test_class{};
 
   // Enqueue an automatically created delegate from a public class method.
-  ASSERT_TRUE((oneshot_executor
-                   .EnqueueDelegate<TestClassMock, &TestClassMock::DoSomething>(
-                       test_class)));
+  ASSERT_TRUE(
+      (oneshot_executor
+           .enqueue_delegate<TestClassMock, &TestClassMock::DoSomething>(
+               test_class)));
 
   // Enqueue an automatically created delegate from a free function.
-  ASSERT_TRUE((oneshot_executor.EnqueueDelegate<MockDelegate>()));
+  ASSERT_TRUE((oneshot_executor.enqueue_delegate<MockDelegate>()));
 }
 
 TEST(OneShotExecutor, EnqueueTooManyDelegates) {
@@ -92,12 +95,13 @@ TEST(OneShotExecutor, EnqueueTooManyDelegates) {
 
   auto mock_delegate = paraos::executor_delegate_type::create<MockDelegate>();
 
-  const paraos::OneShotExecutorAttributes attr;
-  paraos::OneShotExecutor<queue_size> oneshot_executor{attr, thread_start_flag};
+  const paraos::one_shot_executor_attr attr;
+  paraos::one_shot_executor<queue_size> oneshot_executor{
+      attr, thread_start_flag};
 
-  ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
-  ASSERT_TRUE(oneshot_executor.EnqueueDelegate(mock_delegate));
+  ASSERT_TRUE(oneshot_executor.enqueue_delegate(mock_delegate));
+  ASSERT_TRUE(oneshot_executor.enqueue_delegate(mock_delegate));
 
   // Verify queue capacity limits are enforced.
-  ASSERT_FALSE(oneshot_executor.EnqueueDelegate(mock_delegate));
+  ASSERT_FALSE(oneshot_executor.enqueue_delegate(mock_delegate));
 }

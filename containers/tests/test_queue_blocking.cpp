@@ -16,78 +16,78 @@
 
 constexpr std::size_t block_time_ms{0};
 
-TEST(QueueBlocking, Create) { const paraos::QueueBlocking<int, 20> queue; }
+TEST(QueueBlocking, Create) { const paraos::queue_blocking<int, 20> queue; }
 
 TEST(QueueBlocking, EmplaceThenRead) {
   constexpr std::size_t max_elem{3};
-  paraos::QueueBlocking<int, max_elem> queue;
+  paraos::queue_blocking<int, max_elem> queue;
 
-  ASSERT_TRUE(queue.TryPush(1));
-  ASSERT_TRUE(queue.TryPush(2));
-  ASSERT_TRUE(queue.TryPush(3));
-  ASSERT_FALSE(queue.TryPush(4));
+  ASSERT_TRUE(queue.try_push(1));
+  ASSERT_TRUE(queue.try_push(2));
+  ASSERT_TRUE(queue.try_push(3));
+  ASSERT_FALSE(queue.try_push(4));
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_TRUE(result);
     ASSERT_EQ(1, *result);
   }
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_TRUE(result);
     ASSERT_EQ(2, *result);
   }
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_TRUE(result);
     ASSERT_EQ(3, *result);
   }
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_FALSE(result);
   }
 }
 
 TEST(QueueBlocking, TryPushThenRead) {
   constexpr std::size_t max_elem{2};
-  paraos::QueueBlocking<int, max_elem> queue;
+  paraos::queue_blocking<int, max_elem> queue;
 
   constexpr int val{1};
-  ASSERT_TRUE(queue.TryPush(val));     // TryPush lvalue
-  ASSERT_TRUE(queue.TryPush(int{2}));  // TryPush rvalue
-  ASSERT_FALSE(queue.TryPush(3));
+  ASSERT_TRUE(queue.try_push(val));     // TryPush lvalue
+  ASSERT_TRUE(queue.try_push(int{2}));  // TryPush rvalue
+  ASSERT_FALSE(queue.try_push(3));
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_TRUE(result);
     ASSERT_EQ(1, *result);
   }
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_TRUE(result);
     ASSERT_EQ(2, *result);
   }
 
   {
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_FALSE(result);
   }
 
-  ASSERT_TRUE(queue.TryPush(int{7}));
+  ASSERT_TRUE(queue.try_push(int{7}));
 }
 
 TEST(QueueBlocking, PopOnEmptyQueue) {
   constexpr std::size_t max_elem{2};
-  paraos::QueueBlocking<int, max_elem> queue;
+  paraos::queue_blocking<int, max_elem> queue;
 
   {
     // Метод Pop() не дождётся семафора TryPush_sem (не было выполнено вставок)
     // и вернёт значение по умолчанию для указанного типа данных.
-    auto result = queue.Pop(block_time_ms);
+    auto result = queue.pop(block_time_ms);
     ASSERT_FALSE(result);
   }
 }

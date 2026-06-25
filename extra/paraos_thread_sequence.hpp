@@ -26,49 +26,57 @@ namespace paraos {
 
 #define PARAOS_THREAD_SEQUENCE_UNKNOW_FILE_ID ("102")
 
-class InvalidThreadSequenceException final : public paraos::exception {
+class invalid_thread_sequence_exception final : public paraos::exception {
  public:
-  /// @brief Constructor for InvalidThreadSequenceException.
+  /// @brief Constructor for invalid_thread_sequence_exception.
   ///
   /// @param file_name_ the name of the file where the exception occurred
   /// @param line_number_ the line number where the exception occurred
-  InvalidThreadSequenceException(
+  invalid_thread_sequence_exception(
       paraos::error_string_type file_name_,
       paraos::error_numeric_type line_number_)
       : paraos::exception(
-            paraos::GetErrorText(
+            paraos::get_error_text(
                 "Telemetry: Incorrect thread sequence interface",
                 PARAOS_THREAD_SEQUENCE_UNKNOW_FILE_ID),
             file_name_, line_number_) {}
 
-  /// @brief Destructor for InvalidThreadSequenceException.
-  ~InvalidThreadSequenceException() override = default;
+  /// @brief Destructor for invalid_thread_sequence_exception.
+  ~invalid_thread_sequence_exception() override = default;
 
   /// @brief Copy constructor for StavlinkException.
-  InvalidThreadSequenceException(const InvalidThreadSequenceException &) =
+  invalid_thread_sequence_exception(const invalid_thread_sequence_exception&) =
       default;
 
   /// @brief Copy assignment operator for StavlinkException.
-  auto operator=(const InvalidThreadSequenceException &)
-      -> InvalidThreadSequenceException & = default;
+  auto operator=(const invalid_thread_sequence_exception&)
+      -> invalid_thread_sequence_exception& = default;
 
   /// @brief Move constructor for StavlinkException.
-  InvalidThreadSequenceException(InvalidThreadSequenceException &&) = default;
+  invalid_thread_sequence_exception(invalid_thread_sequence_exception&&) =
+      default;
 
   /// @brief Move assignment operator for StavlinkException.
-  auto operator=(InvalidThreadSequenceException &&)
-      -> InvalidThreadSequenceException & = default;
+  auto operator=(invalid_thread_sequence_exception&&)
+      -> invalid_thread_sequence_exception& = default;
 };
+
+using InvalidThreadSequenceException PARAOS_DEPRECATED(
+    "use paraos::invalid_thread_sequence_exception") =
+    invalid_thread_sequence_exception;
 
 /// @brief Attributes for configuring a thread sequence.
 ///
 /// This structure extends the base thread attributes and includes an additional
 /// field for specifying the period between notifications.
-struct IThreadSequenceAttr : public paraos::ThreadAttr {
-  /// @brief The period in microseconds between `NotifyGive()` calls.
-  /// The user code is responsible for calling `NotifyGive()` at this interval.
+struct thread_sequence_attr_base : public paraos::thread_attr {
+  /// @brief The period in microseconds between `notify_give()` calls.
+  /// The user code is responsible for calling `notify_give()` at this interval.
   uint32_t period_in_us{0};
 };
+
+using IThreadSequenceAttr PARAOS_DEPRECATED(
+    "use paraos::thread_sequence_attr_base") = thread_sequence_attr_base;
 
 /// @brief Provides a thread for executing delegates.
 ///
@@ -79,7 +87,7 @@ struct IThreadSequenceAttr : public paraos::ThreadAttr {
 ///        unavailable.
 ///
 /// All blocking API calls should return a status indicating success or failure.
-class IThreadSequence : public paraos::Base {
+class thread_sequence_base : public paraos::base {
  public:
   using callback_type = etl::icallback_timer::callback_type;
 
@@ -87,35 +95,36 @@ class IThreadSequence : public paraos::Base {
   // String copy is needed due to delayed thread initialization; the address of
   // its name could be invalid later.
   // NOLINTBEGIN(performance-unnecessary-value-param)
-  IThreadSequence(
-      const IThreadSequenceAttr &attr, etl::icallback_timer &timer_controller,
-      bool thread_start_flag = true)
-      : period_in_us_{attr.period_in_us},
-        timer_controller_{timer_controller} {
+  thread_sequence_base(
+      const thread_sequence_attr_base& attr,
+      etl::icallback_timer& timer_controller, bool thread_start_flag = true)
+      : period_in_us_{attr.period_in_us}, timer_controller_{timer_controller} {
     if (thread_start_flag) {
       thread_.emplace(
-          static_cast<const paraos::ThreadAttr &>(attr),
-          [this](const paraos::stop_token &token) -> void { Run(token); });
+          static_cast<const paraos::thread_attr&>(attr),
+          [this](const paraos::stop_token& token) -> void { run(token); });
     }
   }
   // NOLINTEND(performance-unnecessary-value-param)
 
  public:
-  ~IThreadSequence() override = default;
+  ~thread_sequence_base() override = default;
 
   /// @brief Deleted move constructor and assignment operators to enforce
   /// non-copyable and non-movable semantics.
-  IThreadSequence(IThreadSequence &&other) = delete;
-  auto operator=(IThreadSequence &&other) -> IThreadSequence & = delete;
-  auto operator=(const IThreadSequence &other) -> IThreadSequence & = delete;
-  IThreadSequence(const IThreadSequence &other) = delete;
+  thread_sequence_base(thread_sequence_base&& other) = delete;
+  auto operator=(thread_sequence_base&& other)
+      -> thread_sequence_base& = delete;
+  auto operator=(const thread_sequence_base& other)
+      -> thread_sequence_base& = delete;
+  thread_sequence_base(const thread_sequence_base& other) = delete;
 
   /// @brief Converts frequency in Hz to period in microseconds.
   ///
   /// @param[in] freq: Frequency in Hz.
   ///
   /// @return Period in microseconds.
-  [[nodiscard]] auto FreqToPeriod(float freq) const {
+  [[nodiscard]] auto frequency_to_period(float freq) const {
     // Calculate period in microseconds from frequency.
     uint32_t period_us{period_in_us_};
     if (freq != 0.0F) {
@@ -138,18 +147,18 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @param[in] callback: Delegate to be registered.
   /// @param[in] freq: Execution frequency in Hz. If set to `0.0`, the callback
-  /// will be called each time `NotifyGive()` is called.
+  /// will be called each time `notify_give()` is called.
   /// @param[in] repeating: Set to `true` for periodic execution, or `false` for
   /// a one-time call.
   ///
   /// @return Returns `etl::timer::id::NO_TIMER` if registration fails.
   ///         Otherwise, returns a valid timer ID in the range `[0 .. 254]`.
-  PARAOS_POLYMORPHIC_EXTRA auto Register(
-      callback_type &callback, float freq, bool repeating)
+  PARAOS_POLYMORPHIC_EXTRA auto register_delegate(
+      callback_type& callback, float freq, bool repeating)
       -> etl::timer::id::type {
-    const paraos::CriticalSection critical;
+    const paraos::critical_section critical;
     auto timer_id = timer_controller_.register_timer(
-        callback, FreqToPeriod(freq), repeating);
+        callback, frequency_to_period(freq), repeating);
 
     if (timer_id != etl::timer::id::NO_TIMER) {
       timer_controller_.start(timer_id);
@@ -167,9 +176,9 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `true` if the delegate was successfully removed, `false`
   /// otherwise.
-  PARAOS_POLYMORPHIC_EXTRA auto Unregister(etl::timer::id::type &timer_id)
-      -> bool {
-    const paraos::CriticalSection critical;
+  PARAOS_POLYMORPHIC_EXTRA auto unregister_delegate(
+      etl::timer::id::type& timer_id) -> bool {
+    const paraos::critical_section critical;
     auto is_unregistered = timer_controller_.unregister_timer(timer_id);
     if (is_unregistered) {
       --registered_delegates_numb_;
@@ -186,11 +195,11 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @return Returns `true` if the frequency was successfully updated, `false`
   /// otherwise.
-  PARAOS_POLYMORPHIC_EXTRA auto SetFreq(
+  PARAOS_POLYMORPHIC_EXTRA auto set_frequency(
       etl::timer::id::type timer_id, float freq) -> bool {
     bool is_period_updated{false};
-    const paraos::CriticalSection critical;
-    if (timer_controller_.set_period(timer_id, FreqToPeriod(freq))) {
+    const paraos::critical_section critical;
+    if (timer_controller_.set_period(timer_id, frequency_to_period(freq))) {
       // If the timer period is successfully updated, restart the timer.
       is_period_updated = timer_controller_.start(timer_id);
     }
@@ -198,9 +207,20 @@ class IThreadSequence : public paraos::Base {
   }
 
   /// @brief Returns the number of registered delegates.
-  [[nodiscard]] auto GiveRegisteredDelegatesNumb() const {
-    const paraos::CriticalSection critical;
+  [[nodiscard]] auto registered_delegate_count() const {
+    const paraos::critical_section critical;
     return registered_delegates_numb_;
+  }
+
+  // Backward-compatible deprecated forwarding methods.
+  [[nodiscard]] PARAOS_DEPRECATED("use frequency_to_period()")
+  auto FreqToPeriod(float freq) const {
+    return frequency_to_period(freq);
+  }
+
+  [[nodiscard]] PARAOS_DEPRECATED("use registered_delegate_count()")
+  auto GiveRegisteredDelegatesNumb() const {
+    return registered_delegate_count();
   }
 
   /// @brief Initiates a new scheduling cycle by notifying the thread sequence.
@@ -209,7 +229,7 @@ class IThreadSequence : public paraos::Base {
   /// a timer overflow interrupt or similar periodic event.
   ///
   /// @warning Avoid using default arguments in virtual methods. For example,
-  /// do not use `auto NotifyGive(bool is_isr = false)` because `NotifyGive()`
+  /// do not use `auto notify_give(bool is_isr = false)` because `notify_give()`
   /// may be declared as virtual if `PARAOS_USING_POLYMORPHIC_EXTRA` is defined.
   /// Always explicitly specify the `is_isr` parameter when calling this method.
   ///
@@ -220,17 +240,17 @@ class IThreadSequence : public paraos::Base {
   /// @return Returns `true` if the semaphore was successfully signaled, or
   /// `false` if the operation failed (e.g., due to resource constraints or
   /// invalid state).
-  PARAOS_POLYMORPHIC_EXTRA auto NotifyGive(bool is_isr) -> paraos::ISRbool {
+  PARAOS_POLYMORPHIC_EXTRA auto notify_give(bool is_isr) -> paraos::isr_bool {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     new_cycle_ready_sem_.release();
-    return paraos::ISRbool{true};
+    return paraos::isr_bool{true};
   }
 
   /// @brief Returns the main frequency of the thread sequence in Hz.
   /// The periods for calling delegates are calculated based on this frequency.
   ///
   /// @return The main frequency in Hz.
-  [[nodiscard]] PARAOS_POLYMORPHIC_EXTRA auto GetMainFreq() const -> float {
+  [[nodiscard]] PARAOS_POLYMORPHIC_EXTRA auto main_frequency() const -> float {
     // Convert microseconds to seconds.
     const float main_freq = static_cast<float>(period_in_us_) * 0.000001F;
     return 1.0F / main_freq;
@@ -240,7 +260,7 @@ class IThreadSequence : public paraos::Base {
   ///
   /// @param[in] is_dynamic: Kept for API compatibility; ignored. The jthread
   /// destructor handles cleanup.
-  PARAOS_POLYMORPHIC_EXTRA void Finish(bool is_dynamic) {
+  PARAOS_POLYMORPHIC_EXTRA void finish(bool is_dynamic) {
     (void)is_dynamic;
 
     // Request the sequence thread to stop.
@@ -249,9 +269,9 @@ class IThreadSequence : public paraos::Base {
     }
 
     // Notify the thread to complete the final iteration of all registered
-    // methods. This ensures that `Run()` exits blocking mode and completes one
+    // methods. This ensures that `run()` exits blocking mode and completes one
     // more cycle.
-    NotifyGive(false);
+    notify_give(false);
 
     // Wait for the sequence thread to finish gracefully.
     if (thread_.has_value() && thread_->joinable()) {
@@ -262,7 +282,7 @@ class IThreadSequence : public paraos::Base {
  private:
   /// @brief Main loop function executed by the thread.
   /// Runs until a stop is requested.
-  PARAOS_POLYMORPHIC_EXTRA void Run(const paraos::stop_token &token) {
+  PARAOS_POLYMORPHIC_EXTRA void run(const paraos::stop_token& token) {
     while (!token.stop_requested()) {
       // Wait for the semaphore before processing all registered delegates.
       // This allows delegates to be called with a user-defined period.
@@ -279,11 +299,11 @@ class IThreadSequence : public paraos::Base {
   }
 
  private:
-  /// Period in microseconds between `NotifyGive()` calls.
+  /// Period in microseconds between `notify_give()` calls.
   const uint32_t period_in_us_;
 
   /// Callback timer controller.
-  etl::icallback_timer &timer_controller_;
+  etl::icallback_timer& timer_controller_;
 
   /// Binary semaphore for synchronization.
   paraos::binary_semaphore new_cycle_ready_sem_{0};
@@ -298,94 +318,107 @@ class IThreadSequence : public paraos::Base {
   std::size_t registered_delegates_numb_{0};
 };
 
-struct ThreadSequenceAttr : public paraos::IThreadSequenceAttr {};
+using IThreadSequence PARAOS_DEPRECATED("use paraos::thread_sequence_base") =
+    thread_sequence_base;
 
-/// @brief Concrete implementation of `IThreadSequence`.
-template <uint_least8_t MAX_TASKS = 4>
-class ThreadSequence : public IThreadSequence {
+struct thread_sequence_attr : public paraos::thread_sequence_attr_base {};
+
+using ThreadSequenceAttr PARAOS_DEPRECATED("use paraos::thread_sequence_attr") =
+    thread_sequence_attr;
+
+/// @brief Concrete implementation of `thread_sequence_base`.
+template <uint_least8_t MaxTasks = 4>
+class thread_sequence : public thread_sequence_base {
  public:
   /// @brief Creates a separate thread for executing registered delegates.
   ///
   /// @param[in] attr: Thread sequence attributes.
   /// @param[in] thread_start_flag: Flag indicating whether to start the thread
   /// immediately. Useful in test environments without multithreading.
-  explicit ThreadSequence(
-      const ThreadSequenceAttr &attr, bool thread_start_flag = true)
-      : IThreadSequence{attr, timer_controller_, thread_start_flag} {
+  explicit thread_sequence(
+      const thread_sequence_attr& attr, bool thread_start_flag = true)
+      : thread_sequence_base{attr, timer_controller_, thread_start_flag} {
     // Enable all timers registered in the timer controller.
     timer_controller_.enable(true);
   }
 
-  ~ThreadSequence() override = default;
+  ~thread_sequence() override = default;
 
   /// @brief Deleted move constructor and assignment operators to enforce
   /// non-copyable and non-movable semantics.
-  ThreadSequence(ThreadSequence &&other) = delete;
-  auto operator=(ThreadSequence &&other) -> ThreadSequence & = delete;
-  auto operator=(const ThreadSequence &other) -> ThreadSequence & = delete;
-  ThreadSequence(const ThreadSequence &other) = delete;
+  thread_sequence(thread_sequence&& other) = delete;
+  auto operator=(thread_sequence&& other) -> thread_sequence& = delete;
+  auto operator=(const thread_sequence& other) -> thread_sequence& = delete;
+  thread_sequence(const thread_sequence& other) = delete;
 
  private:
   /// Callback timer with a fixed number of tasks.
-  etl::callback_timer<MAX_TASKS> timer_controller_;
+  etl::callback_timer<MaxTasks> timer_controller_;
 };
+
+template <uint_least8_t MaxTasks = 4>
+using ThreadSequence PARAOS_DEPRECATED("use paraos::thread_sequence") =
+    thread_sequence<MaxTasks>;
 
 /// @brief RAII wrapper for managing multiple delegates in a thread sequence.
 ///
 /// This class simplifies the management of periodic or one-time callbacks
-/// registered with a `paraos::IThreadSequence`. It ensures automatic
+/// registered with a `paraos::thread_sequence_base`. It ensures automatic
 /// unregistration of all delegates upon destruction, preventing resource leaks.
 ///
 /// Example usage:
 /// ```cpp
-/// RegisteredDelegates<4> delegates(thread_sequence_);
-/// delegates.Register(0, callback, 1.0f, true); // Register periodic delegate
+/// registered_delegates<4> delegates(thread_sequence_);
+/// delegates.register_delegate(0, callback, 1.0f, true); // Register periodic
+/// delegate
 /// ```
 ///
-/// @tparam SIZE Maximum number of delegates to manage.
-template <std::size_t SIZE = 4>
-class RegisteredDelegates final {
+/// @tparam Size Maximum number of delegates to manage.
+template <std::size_t Size = 4>
+class registered_delegates final {
  public:
-  /// @brief Construct a new RegisteredDelegates object.
+  using callback_type = thread_sequence_base::callback_type;
+
+  /// @brief Construct a new registered_delegates object.
   ///
   /// @param thread_sequence Reference to the thread sequence used for
   /// registering delegates.
   ///
-  /// @throws paraos::InvalidThreadSequenceException if `thread_sequence` is
+  /// @throws paraos::invalid_thread_sequence_exception if `thread_sequence` is
   /// null.
-  explicit RegisteredDelegates(paraos::IThreadSequence &thread_sequence)
+  explicit registered_delegates(paraos::thread_sequence_base& thread_sequence)
       : thread_sequence_{&thread_sequence} {
     ETL_ASSERT(
-        thread_sequence_, ETL_ERROR(paraos::InvalidThreadSequenceException));
+        thread_sequence_, ETL_ERROR(paraos::invalid_thread_sequence_exception));
 
     // Initialize all delegate IDs as 'no timer' before any registration.
     std::fill(id_.begin(), id_.end(), etl::timer::id::NO_TIMER);
   }
 
-  /// @brief Destroy the RegisteredDelegates object.
+  /// @brief Destroy the registered_delegates object.
   ///
   /// Automatically unregisters all currently active delegates from the thread
   /// sequence.
-  ~RegisteredDelegates() {
+  ~registered_delegates() {
     for (std::size_t i = 0U; i < id_.size(); ++i) {
-      Unregister(i);
+      unregister_delegate(i);
     }
   }
 
   // Disable copy and assignment
-  RegisteredDelegates(const RegisteredDelegates &) = delete;
-  auto operator=(const RegisteredDelegates &) -> RegisteredDelegates & = delete;
+  registered_delegates(const registered_delegates&) = delete;
+  auto operator=(const registered_delegates&) -> registered_delegates& = delete;
 
   // Disable move operations (optional, can be enabled later)
-  RegisteredDelegates(RegisteredDelegates &&) noexcept = delete;
-  auto operator=(RegisteredDelegates &&) -> RegisteredDelegates & = delete;
+  registered_delegates(registered_delegates&&) noexcept = delete;
+  auto operator=(registered_delegates&&) -> registered_delegates& = delete;
 
   /// @brief Register a delegate at a specific position.
   ///
   /// Registers a callback with the associated thread sequence. If already
   /// registered at this position, no action is taken.
   ///
-  /// @param pos Position index [0, SIZE-1) to store delegate ID.
+  /// @param pos Position index [0, Size-1) to store delegate ID.
   /// @param delegate Callback function to register.
   /// @param freq_hz Frequency (in Hz) at which the delegate should be called.
   ///                A value of zero means "run once".
@@ -393,14 +426,15 @@ class RegisteredDelegates final {
   ///
   /// @return The assigned delegate ID (can be used for manual unregistration).
   ///
-  /// @throws std::out_of_range if `pos >= SIZE`.
-  auto Register(
-      std::size_t pos, IThreadSequence::callback_type &delegate, float freq_hz,
-      bool repeating) {
-    auto &delegate_id = id_.at(pos);  // No need for extra cast if using size_t
+  /// @throws std::out_of_range if `pos >= Size`.
+  auto register_delegate(
+      std::size_t pos, thread_sequence_base::callback_type& delegate,
+      float freq_hz, bool repeating) {
+    auto& delegate_id = id_.at(pos);  // No need for extra cast if using size_t
     if ((freq_hz != 0.0F) && (std::isfinite(freq_hz))) {
       if ((delegate_id == etl::timer::id::NO_TIMER) && thread_sequence_) {
-        delegate_id = thread_sequence_->Register(delegate, freq_hz, repeating);
+        delegate_id =
+            thread_sequence_->register_delegate(delegate, freq_hz, repeating);
       }
     }
 
@@ -412,14 +446,14 @@ class RegisteredDelegates final {
   /// If a delegate is registered at the specified position, it will be
   /// unregistered from the thread sequence.
   ///
-  /// @param pos Position index [0, SIZE-1) to unregister.
+  /// @param pos Position index [0, Size-1) to unregister.
   /// @return true if successfully unregistered, false otherwise.
   ///
-  /// @throws std::out_of_range if `pos >= SIZE`.
-  auto Unregister(std::size_t pos) -> bool {
-    auto &delegate_id = id_.at(pos);  // Simplified without unnecessary cast
+  /// @throws std::out_of_range if `pos >= Size`.
+  auto unregister_delegate(std::size_t pos) -> bool {
+    auto& delegate_id = id_.at(pos);  // Simplified without unnecessary cast
     if (thread_sequence_) {
-      if (thread_sequence_->Unregister(delegate_id)) {
+      if (thread_sequence_->unregister_delegate(delegate_id)) {
         delegate_id = etl::timer::id::NO_TIMER;
         return true;
       }
@@ -431,7 +465,7 @@ class RegisteredDelegates final {
   /// @brief Unregister, then try register delegate. Useful if need change
   /// period 'freq_hz'
   ///
-  /// @param pos Position index [0, SIZE-1) to store delegate ID.
+  /// @param pos Position index [0, Size-1) to store delegate ID.
   /// @param delegate Callback function to register.
   /// @param freq_hz Frequency (in Hz) at which the delegate should be called.
   ///                A value of zero means "run once".
@@ -439,18 +473,40 @@ class RegisteredDelegates final {
   ///
   /// @return The assigned delegate ID (can be used for manual unregistration).
   ///
-  /// @throws std::out_of_range if `pos >= SIZE`.
+  /// @throws std::out_of_range if `pos >= Size`.
+  auto reregister_delegate(
+      std::size_t pos, thread_sequence_base::callback_type& delegate,
+      float freq_hz, bool repeating) {
+    unregister_delegate(pos);
+    return register_delegate(pos, delegate, freq_hz, repeating);
+  }
+
+  // Backward-compatible deprecated forwarding methods.
+  PARAOS_DEPRECATED("use register_delegate()")
+  auto Register(
+      std::size_t pos, callback_type& callback, float freq, bool repeating) {
+    return register_delegate(pos, callback, freq, repeating);
+  }
+
+  PARAOS_DEPRECATED("use unregister_delegate()")
+  auto Unregister(std::size_t pos) -> bool {
+    return unregister_delegate(pos);
+  }
+
+  PARAOS_DEPRECATED("use reregister_delegate()")
   auto UnregisterThenTryRegister(
-      std::size_t pos, IThreadSequence::callback_type &delegate, float freq_hz,
-      bool repeating) {
-    Unregister(pos);
-    return Register(pos, delegate, freq_hz, repeating);
+      std::size_t pos, callback_type& callback, float freq, bool repeating) {
+    return reregister_delegate(pos, callback, freq, repeating);
   }
 
  private:
-  paraos::IThreadSequence *thread_sequence_;
-  std::array<etl::timer::id::type, SIZE> id_;
+  paraos::thread_sequence_base* thread_sequence_;
+  std::array<etl::timer::id::type, Size> id_;
 };
+
+template <std::size_t Size = 4>
+using RegisteredDelegates PARAOS_DEPRECATED(
+    "use paraos::registered_delegates") = registered_delegates<Size>;
 
 }  // namespace paraos
 

@@ -6,30 +6,34 @@
 #ifndef PARAOS_DEFERRED_DELETE_HPP
 #define PARAOS_DEFERRED_DELETE_HPP
 
+#include "paraos_config.hpp"
+
 namespace paraos {
 
 using base_callback = void (*)();
 
-class Base {
+class base {
  public:
-  explicit Base(base_callback callback_ptr = nullptr)
+  explicit base(base_callback callback_ptr = nullptr)
       : callback_ptr_{callback_ptr} {}
 
-  virtual ~Base() noexcept {
+  virtual ~base() noexcept {
     if (callback_ptr_ != nullptr) {
       callback_ptr_();
     }
   }
 
   /// @brief Five rule.
-  Base(Base &&other) = delete;
-  auto operator=(Base &&other) -> Base & = delete;
-  auto operator=(const Base &other) -> Base & = delete;
-  Base(const Base &other) = delete;
+  base(base &&other) = delete;
+  auto operator=(base &&other) -> base & = delete;
+  auto operator=(const base &other) -> base & = delete;
+  base(const base &other) = delete;
 
  private:
   base_callback callback_ptr_;
 };
+
+using Base PARAOS_DEPRECATED("use paraos::base") = base;
 
 }  // namespace paraos
 

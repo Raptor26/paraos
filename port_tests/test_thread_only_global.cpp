@@ -22,7 +22,7 @@
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
+    const paraos::critical_section macro_critical;                            \
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
@@ -78,9 +78,9 @@ void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
 }
 
 paraos::jthread my_thread_global_one{
-    paraos::ThreadAttr{
-        "Global thread one", paraos::GetStackMinimumSizeInBytes(),
-        paraos::ThreadPriority::kLowest},
+    paraos::thread_attr{
+        "Global thread one", paraos::get_stack_minimum_size_in_bytes(),
+        paraos::thread_priority::lowest},
     [](const paraos::stop_token& /*token*/) {
       PrintDebug("ProcessingOne() calling Finished()", "Global thread one");
       ++cnt;
@@ -88,9 +88,9 @@ paraos::jthread my_thread_global_one{
     }};
 
 paraos::jthread my_thread_global_two{
-    paraos::ThreadAttr{
-        "Global thread two", paraos::GetStackMinimumSizeInBytes(),
-        paraos::ThreadPriority::kNormal},
+    paraos::thread_attr{
+        "Global thread two", paraos::get_stack_minimum_size_in_bytes(),
+        paraos::thread_priority::normal},
     [](const paraos::stop_token& /*token*/) {
       PrintDebug("ProcessingTwo calling Finished()", "Global thread two");
       ++cnt;
@@ -98,9 +98,9 @@ paraos::jthread my_thread_global_two{
     }};
 
 paraos::jthread my_thread_global_three{
-    paraos::ThreadAttr{
-        "Global thread three", paraos::GetStackMinimumSizeInBytes(),
-        paraos::ThreadPriority::kRealTime},
+    paraos::thread_attr{
+        "Global thread three", paraos::get_stack_minimum_size_in_bytes(),
+        paraos::thread_priority::realtime},
     [](const paraos::stop_token& /*token*/) {
       PrintDebug("ProcessingThree() calling Finished()", "Global thread three");
       ++cnt;

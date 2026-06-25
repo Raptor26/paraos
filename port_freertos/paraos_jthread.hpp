@@ -100,10 +100,10 @@ class jthread {
   /// @param[in] f Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-    requires(!std::is_same_v<std::decay_t<Function>, ThreadAttr>)
+    requires(!std::is_same_v<std::decay_t<Function>, thread_attr>)
   explicit jthread(Function&& func, Args&&... args) {
     MakeThread(
-        ThreadAttr{}, std::forward<Function>(func),
+        thread_attr{}, std::forward<Function>(func),
         std::forward<Args>(args)...);
   }
 
@@ -119,7 +119,7 @@ class jthread {
   /// @param[in] func Callable to run in the new thread.
   /// @param[in] args Arguments to forward to the callable.
   template <typename Function, typename... Args>
-  explicit jthread(const ThreadAttr& attr, Function&& func, Args&&... args) {
+  explicit jthread(const thread_attr& attr, Function&& func, Args&&... args) {
     MakeThread(attr, std::forward<Function>(func), std::forward<Args>(args)...);
   }
 
@@ -232,7 +232,7 @@ class jthread {
  private:
   /// @brief Common implementation for both constructors.
   template <typename Function, typename... Args>
-  void MakeThread(const ThreadAttr& attr, Function&& func, Args&&... args) {
+  void MakeThread(const thread_attr& attr, Function&& func, Args&&... args) {
     using decayed_function = std::decay_t<Function>;
     using decayed_args = std::tuple<std::decay_t<Args>...>;
 
@@ -245,7 +245,7 @@ class jthread {
 
     xTaskCreate(
         RunTask, attr.thread_name.data(),
-        paraos::ConvertStackSizeInWords(attr.stack_depth), context.get(),
+        paraos::convert_stack_size_in_words(attr.stack_depth), context.get(),
         static_cast<UBaseType_t>(attr.priority), &context->handle);
 
     if (context->handle == nullptr) {
@@ -297,7 +297,7 @@ class jthread {
     paraos::binary_semaphore join_sem{0};
     TaskHandle_t handle{nullptr};
     TaskHandle_t owner_handle{nullptr};
-    ThreadAttr attr{};
+    thread_attr attr{};
   };
 
   static void RunTask(void* param) {
