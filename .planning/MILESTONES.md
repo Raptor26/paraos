@@ -1,5 +1,15 @@
 # Project Milestones: PARAOS
 
+## v1.10 v1.10 (Shipped: 2026-06-25)
+
+**Phases completed:** 5 phases, 3 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v1.9 Remove legacy Thread/Mutex/Semaphore implementations (Shipped: 2026-06-24)
 
 **Delivered:** Legacy `paraos::Thread`, `paraos::Mutex`, `paraos::MutexRecursive`, `paraos::SemaphoreBinary` и `paraos::SemaphoreCounting` полностью удалены; все внутренние потребители (`containers/`, `port_unix/paraos_critical.hpp`, socket UDP, FreeRTOS jthread, `extra/`) переведены на std-like примитивы; `port_tests/` очищен от legacy тестов/примеров; все PC/FreeRTOS пресеты собираются, PC `ctest` проходит 58/58, clang-tidy остаётся чистым.
