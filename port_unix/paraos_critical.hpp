@@ -3,10 +3,11 @@
 ///
 /// SPDX-License-Identifier: MIT.
 /// See LICENSE file in the project root for full license information.
-#ifndef CRITICAL_HPP
-#define CRITICAL_HPP
+#ifndef PARAOS_CRITICAL_HPP
+#define PARAOS_CRITICAL_HPP
 
 #include "paraos_attr.h"
+#include "paraos_config.hpp"
 #include "paraos_recursive_mutex_std.hpp"
 
 namespace paraos {
@@ -16,19 +17,19 @@ namespace paraos {
 /// Uses a static paraos::recursive_mutex so nested critical sections are
 /// safe (for example, trace macros invoked inside atomic operations).
 template <bool CAN_ISR = true>
-class CriticalSection final {
+class critical_section final {
  public:
   /// @brief Constructor ensures automatic critical section entry.
   ///
   /// @param is_isr Unused on Unix-like platforms (kept for API compatibility
   /// with FreeRTOS).
-  explicit CriticalSection(bool is_isr = false) : is_isr_{is_isr} {
+  explicit critical_section(bool is_isr = false) : is_isr_{is_isr} {
     PARAOS_ATTR_UNUSED_VAR(is_isr_);
     mutex_.lock();
   }
 
   /// @brief Destructor ensures automatic leaving of the critical section.
-  ~CriticalSection() { mutex_.unlock(); }
+  ~critical_section() { mutex_.unlock(); }
 
   /// @brief Method is used for force disabling ISRs.
   ///
@@ -36,7 +37,7 @@ class CriticalSection final {
   /// compatibility).
   ///
   /// @note This method is used inside ETL library macros.
-  static void ForceEnter(bool is_isr = false) {
+  static void force_enter(bool is_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     mutex_.lock();
   }
@@ -47,25 +48,46 @@ class CriticalSection final {
   /// compatibility).
   ///
   /// @note This method is used inside ETL library macros.
-  static void ForceExit(bool is_isr = false) {
+  static void force_exit(bool is_isr = false) {
     PARAOS_ATTR_UNUSED_VAR(is_isr);
     mutex_.unlock();
   }
 
+  PARAOS_DEPRECATED("use force_enter()")
+  static void ForceEnter(bool is_isr = false) {
+    force_enter(is_isr);
+  }
+
+  PARAOS_DEPRECATED("use force_exit()")
+  static void ForceExit(bool is_isr = false) {
+    force_exit(is_isr);
+  }
+
   /// @brief Five rule.
-  CriticalSection(CriticalSection &&other) = delete;
-  auto operator=(CriticalSection &&other) -> CriticalSection & = delete;
-  auto operator=(const CriticalSection &other) -> CriticalSection & = delete;
-  CriticalSection(const CriticalSection &other) = delete;
+  critical_section(critical_section &&other) = delete;
+  auto operator=(critical_section &&other) -> critical_section & = delete;
+  auto operator=(const critical_section &other) -> critical_section & = delete;
+  critical_section(const critical_section &other) = delete;
 
  private:
   const bool is_isr_;
   static inline paraos::recursive_mutex mutex_;
 };
 
-inline void DisableIsr() { CriticalSection<false>::ForceEnter(); }
-inline void EnableIsr() { CriticalSection<false>::ForceExit(); }
+template <bool CAN_ISR = true>
+using CriticalSection PARAOS_DEPRECATED("use paraos::critical_section") =
+    critical_section<CAN_ISR>;
+
+inline void disable_isr() { critical_section<false>::force_enter(); }
+inline void enable_isr() { critical_section<false>::force_exit(); }
+
+PARAOS_DEPRECATED("use disable_isr()") inline void DisableIsr() {
+  disable_isr();
+}
+PARAOS_DEPRECATED("use enable_isr()") inline void EnableIsr() {
+  enable_isr();
+}
 
 }  // namespace paraos
 
-#endif /* CRITICAL_HPP */
+#endif /* PARAOS_CRITICAL_HPP */

@@ -12,14 +12,15 @@ namespace paraos {
 class thread_exception : public paraos::exception {
  public:
   thread_exception(
-      string_type reason_, string_type file_name_, numeric_type line_number_)
+      error_string_type reason_, error_string_type file_name_,
+      error_numeric_type line_number_)
       : paraos::exception(reason_, file_name_, line_number_) {}
 };
 
 class thread_not_created_exception : public paraos::thread_exception {
  public:
   thread_not_created_exception(
-      string_type file_name_, numeric_type line_number_)
+      error_string_type file_name_, error_numeric_type line_number_)
       : paraos::thread_exception(
             ETL_ERROR_TEXT("Thread: not created", "thread"), file_name_,
             line_number_) {}
@@ -29,7 +30,7 @@ class thread_no_event_loop_interface_exception
     : public paraos::thread_exception {
  public:
   thread_no_event_loop_interface_exception(
-      string_type file_name_, numeric_type line_number_)
+      error_string_type file_name_, error_numeric_type line_number_)
       : paraos::thread_exception(
             ETL_ERROR_TEXT("Thread: no event loop interface", "thread"),
             file_name_, line_number_) {}

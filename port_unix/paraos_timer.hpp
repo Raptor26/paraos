@@ -26,7 +26,7 @@
 namespace paraos {
 
 /// @brief Class provided software timers. For creating timer, user code must
-/// provide custom class as derived from paraos::Timer.
+/// provide custom class as derived from paraos::timer.
 ///
 /// @see
 /// https://stackoverflow.com/questions/64429205/how-to-use-sigev-thread-sigevent-for-linux-timers-expiration-handling-in-c
@@ -35,36 +35,36 @@ namespace paraos {
 /// <example_paraos_timer.cpp>.
 ///
 
-class Timer {
+class timer {
  public:
   /// @brief Software timer ctor.
   /// @param[in] period_ms: Period in microseconds between timer scheduler
-  /// calling overriden by user method Run().
+  /// calling overriden by user method run().
   /// @param[in] start_immediately: If set true, user code don't need call
-  /// Start() for start timer. In otherwise, user must call Start() for run
+  /// start() for start timer. In otherwise, user must call start() for run
   /// timer.
-  /// @param[in] is_auto_reload: If set true, overriden by user method Run()
-  /// will call periodical with period_ms respect. If set false, Run() will call
+  /// @param[in] is_auto_reload: If set true, overriden by user method run()
+  /// will call periodical with period_ms respect. If set false, run() will call
   /// at ones after period_ms delay. If is_auto_reload == false and user code
-  /// needs call Run() again, call Start().
+  /// needs call run() again, call start().
   /// @param[in] name: Human readable string. Useful for debug.
-  explicit Timer(
+  explicit timer(
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer")
       : period_ms_{period_ms}, is_auto_reload_{is_auto_reload}, name_{name} {
-    Create();
+    create();
     if (start_immediately) {
-      Start();
+      start();
     }
   }
 
-  virtual ~Timer() {
+  virtual ~timer() {
 #ifdef __linux__
     auto status = timer_delete(timer_id_);
     PARAOS_CHECK_ASSERT(status == 0);
     PARAOS_ATTR_UNUSED_VAR(status);
 #elif defined(__APPLE__)
-    Stop();
+    stop();
     pthread_mutex_destroy(&mutex_);
     pthread_cond_destroy(&cond_);
 #else
@@ -72,26 +72,26 @@ class Timer {
 #endif
   }
 
-  /// @brief Start timer. If is_auto_reload was set in Ctor, then Run() method
-  /// will call only once after <period_ms> delay. In other case, Run() will
+  /// @brief Start timer. If is_auto_reload was set in Ctor, then run() method
+  /// will call only once after <period_ms> delay. In other case, run() will
   /// called periodically with <period_ms> delay respect. For change period
-  /// use ChangePeriod().
+  /// use change_period().
   /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return Return true is timer successfully started, false in otherwise.
-  auto Start(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
-      -> ISRbool {
+  auto start(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
+      -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    ISRbool is_timer_started{false};
+    isr_bool is_timer_started{false};
 
 #ifdef __linux__
     struct itimerspec itval{};
 
     if (is_auto_reload_) {
-      itval.it_value = MillisecondsInTimeSpec(period_ms_);
+      itval.it_value = milliseconds_in_timespec(period_ms_);
       itval.it_interval.tv_sec = itval.it_value.tv_sec;
       itval.it_interval.tv_nsec = itval.it_value.tv_nsec;
     } else {
@@ -100,22 +100,23 @@ class Timer {
 
     auto status = timer_settime(timer_id_, 0, &itval, nullptr);
     if (status == 0) {
-      is_timer_started.SetSuccessStatus(true);
+      is_timer_started.set_success_status(true);
     }
 #elif defined(__APPLE__)
     pthread_mutex_lock(&mutex_);
     if (is_running_) {
       // Timer is already running. Notify the worker so it recomputes the
-      // deadline using the current period_ms_. This covers ChangePeriod()
-      // and Reset() semantics.
+      // deadline using the current period_ms_. This covers change_period()
+      // and reset() semantics.
       pthread_cond_signal(&cond_);
-      is_timer_started.SetSuccessStatus(true);
+      is_timer_started.set_success_status(true);
     } else {
       is_stop_requested_ = false;
       is_running_ = true;
-      if (pthread_create(&thread_, nullptr, ThreadRoutine,
-                         static_cast<void *>(this)) == 0) {
-        is_timer_started.SetSuccessStatus(true);
+      if (pthread_create(
+              &thread_, nullptr, thread_routine, static_cast<void*>(this)) ==
+          0) {
+        is_timer_started.set_success_status(true);
       } else {
         is_running_ = false;
       }
@@ -128,9 +129,9 @@ class Timer {
     return is_timer_started;
   }
 
-  /// @brief Change period between periodically call Run() if timer mode
+  /// @brief Change period between periodically call run() if timer mode
   /// periodical (is_auto_reload == true), or changed delay before scheduler
-  /// call Run() after user call Start() if one shot timer mode (is_auto_reload
+  /// call run() after user call start() if one shot timer mode (is_auto_reload
   /// == false).
   /// @param[in] period_ms: New value for period update.
   /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
@@ -138,33 +139,33 @@ class Timer {
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return Return true if period update successfully, false in otherwise.
-  auto ChangePeriod(
+  auto change_period(
       std::size_t period_ms, paraos::delay_type max_block_time = max_delay,
-      bool is_isr = false) -> ISRbool {
+      bool is_isr = false) -> isr_bool {
     period_ms_ = period_ms;
 
-    return Start(max_block_time, is_isr);
+    return start(max_block_time, is_isr);
   }
 
-  /// @brief Stop software timer. After user call Stop(), scheduler don't call
-  /// Run() until user calls Start().
+  /// @brief Stop software timer. After user call stop(), scheduler don't call
+  /// run() until user calls start().
   /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return True if timer successfully stopped, false in otherwise.
-  auto Stop(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
-      -> ISRbool {
+  auto stop(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
+      -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
 
-    ISRbool is_timer_stopped{false};
+    isr_bool is_timer_stopped{false};
 
 #ifdef __linux__
     const struct itimerspec itval{};
 
     if (timer_settime(timer_id_, 0, &itval, nullptr) == 0) {
-      is_timer_stopped.SetSuccessStatus(true);
+      is_timer_stopped.set_success_status(true);
     }
 #elif defined(__APPLE__)
     pthread_mutex_lock(&mutex_);
@@ -179,7 +180,7 @@ class Timer {
 
     is_running_ = false;
     is_stop_requested_ = false;
-    is_timer_stopped.SetSuccessStatus(true);
+    is_timer_stopped.set_success_status(true);
 #else
 #error "Unsupported Unix-like platform"
 #endif
@@ -187,43 +188,67 @@ class Timer {
     return is_timer_stopped;
   }
 
-  /// @brief Reset software timer. After Reset() called, delay befor next call
-  /// Run() method will recalculate relative current moment of the time. If
-  /// timer was stopped, calls Run() method will scheduling with <period_ms> and
+  /// @brief Reset software timer. After reset() called, delay befor next call
+  /// run() method will recalculate relative current moment of the time. If
+  /// timer was stopped, calls run() method will scheduling with <period_ms> and
   /// <is_auto_reload> respect.
   /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
   /// used in Unix.
   /// @return Return true if timer successfully reset, false in otherwise.
-  auto Reset(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
-      -> ISRbool {
-    return Start(max_block_time, is_isr);
+  auto reset(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
+      -> isr_bool {
+    return start(max_block_time, is_isr);
   }
 
   /// @brief Method called periodical in software timer context with respect
   /// timer creation parameters.
-  virtual void Run() {
+  virtual void run() {
     // User code must override this method in derivate class.
     PARAOS_CHECK_ASSERT(false);
   }
 
   /// @brief Five rule.
-  Timer(Timer &&other) = delete;
-  auto operator=(Timer &&other) -> Timer & = delete;
-  auto operator=(const Timer &other) -> Timer & = delete;
-  Timer(const Timer &other) = delete;
+  timer(timer&& other) = delete;
+  auto operator=(timer&& other) -> timer& = delete;
+  auto operator=(const timer& other) -> timer& = delete;
+  timer(const timer& other) = delete;
+
+  [[nodiscard]] PARAOS_DEPRECATED("use start()") auto Start(
+      paraos::delay_type max_block_time = max_delay, bool is_isr = false)
+      -> isr_bool {
+    return start(max_block_time, is_isr);
+  }
+
+  [[nodiscard]] PARAOS_DEPRECATED("use change_period()") auto ChangePeriod(
+      std::size_t period_ms, paraos::delay_type max_block_time = max_delay,
+      bool is_isr = false) -> isr_bool {
+    return change_period(period_ms, max_block_time, is_isr);
+  }
+
+  [[nodiscard]] PARAOS_DEPRECATED("use stop()") auto Stop(
+      paraos::delay_type max_block_time = max_delay, bool is_isr = false)
+      -> isr_bool {
+    return stop(max_block_time, is_isr);
+  }
+
+  [[nodiscard]] PARAOS_DEPRECATED("use reset()") auto Reset(
+      paraos::delay_type max_block_time = max_delay, bool is_isr = false)
+      -> isr_bool {
+    return reset(max_block_time, is_isr);
+  }
 
  private:
-  auto Create() -> bool {
+  auto create() -> bool {
     bool is_timer_created{false};
 
 #ifdef __linux__
     struct sigevent sev{};
 
     sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_value.sival_ptr = static_cast<void *>(this);
-    sev.sigev_notify_function = &Hndlr;
+    sev.sigev_value.sival_ptr = static_cast<void*>(this);
+    sev.sigev_notify_function = &handler;
     sev.sigev_notify_attributes = nullptr;
     auto status = timer_create(CLOCK_REALTIME, &sev, &timer_id_);
 
@@ -246,26 +271,26 @@ class Timer {
   }
 
 #ifdef __linux__
-  static void Hndlr(union sigval sigev_value) {
-    auto *this_ptr = static_cast<Timer *>(sigev_value.sival_ptr);
+  static void handler(union sigval sigev_value) {
+    auto* this_ptr = static_cast<timer*>(sigev_value.sival_ptr);
 
-    this_ptr->Run();
+    this_ptr->run();
   }
 #elif defined(__APPLE__)
-  static auto ThreadRoutine(void *arg) -> void * {
-    auto *this_ptr = static_cast<Timer *>(arg);
-    this_ptr->RunTimerLoop();
+  static auto thread_routine(void* arg) -> void* {
+    auto* this_ptr = static_cast<timer*>(arg);
+    this_ptr->run_timer_loop();
     return nullptr;
   }
 
-  void RunTimerLoop() {
+  void run_timer_loop() {
     pthread_mutex_lock(&mutex_);
     while (is_running_ && !is_stop_requested_) {
-      struct timespec deadline {};
-      struct timespec now {};
+      struct timespec deadline{};
+      struct timespec now{};
       clock_gettime(CLOCK_REALTIME, &now);
-      const auto delay = MillisecondsInTimeSpec(period_ms_);
-      TimespecAdd(&now, &delay, &deadline);
+      const auto delay = milliseconds_in_timespec(period_ms_);
+      timespec_add(&now, &delay, &deadline);
 
       int wait_result = 0;
       while (is_running_ && !is_stop_requested_ && wait_result != ETIMEDOUT) {
@@ -281,7 +306,7 @@ class Timer {
       }
 
       pthread_mutex_unlock(&mutex_);
-      Run();
+      run();
       pthread_mutex_lock(&mutex_);
     }
     pthread_mutex_unlock(&mutex_);
@@ -289,16 +314,16 @@ class Timer {
 #endif
 
  private:
-  /// @brief Period between scheduler will call Run() method if is_auto_reload_
-  /// == true. In otherwise it's delay befor Run() method will called after
-  /// user code call Start(). If user set start_immediately == true in ctor,
-  /// period_ms_ provide delay befor Run() method will called after software
+  /// @brief Period between scheduler will call run() method if is_auto_reload_
+  /// == true. In otherwise it's delay befor run() method will called after
+  /// user code call start(). If user set start_immediately == true in ctor,
+  /// period_ms_ provide delay befor run() method will called after software
   /// timer object will constructed.
   std::size_t period_ms_;
 
-  /// @brief If set true, Run() will periodically calls with period_ms_ respect.
-  /// In otherwise Run() will called only once with delay, provided by
-  /// period_ms_ after user call Start() (or after software timer object will
+  /// @brief If set true, run() will periodically calls with period_ms_ respect.
+  /// In otherwise run() will called only once with delay, provided by
+  /// period_ms_ after user call start() (or after software timer object will
   /// construct if <start_immediately == true>).
   bool is_auto_reload_;
 
@@ -316,6 +341,9 @@ class Timer {
 #error "Unsupported Unix-like platform"
 #endif
 };
+
+using Timer PARAOS_DEPRECATED("use paraos::timer") = timer;
+
 }  // namespace paraos
 
 #endif /* PARAOS_TIMER_HPP */

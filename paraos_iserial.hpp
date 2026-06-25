@@ -9,11 +9,13 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "paraos_config.hpp"
+
 namespace paraos {
 
-class ISerialTx {
+class serial_tx_base {
  public:
-  virtual ~ISerialTx() = default;
+  virtual ~serial_tx_base() = default;
 
   /// @brief Повторная инициализация порта ввода/вывода с заданной скоростью
   /// работы.
@@ -22,7 +24,7 @@ class ISerialTx {
   ///
   /// @return true в случае успешной инициализации, false в противном
   /// случае.
-  virtual auto Reinit() -> bool { return false; }
+  virtual auto reinit() -> bool { return false; }
 
   /// @brief Метод выполняет передачу заданного количества байтов из указанной
   /// области памяти.
@@ -32,42 +34,46 @@ class ISerialTx {
   /// @param[in] msg_size: Количество байтов, которое необходимо передать.
   ///
   /// @return Возвращает количество переданных байтов.
-  virtual auto Transmit(const void *src, std::size_t msg_size)
+  virtual auto transmit(const void *src, std::size_t msg_size)
       -> std::size_t = 0;
 
   /// @brief Five rule.
-  ISerialTx(ISerialTx &&other) = delete;
-  auto operator=(ISerialTx &&other) -> ISerialTx & = delete;
-  auto operator=(const ISerialTx &other) -> ISerialTx & = delete;
-  ISerialTx(const ISerialTx &other) = delete;
+  serial_tx_base(serial_tx_base &&other) = delete;
+  auto operator=(serial_tx_base &&other) -> serial_tx_base & = delete;
+  auto operator=(const serial_tx_base &other) -> serial_tx_base & = delete;
+  serial_tx_base(const serial_tx_base &other) = delete;
 
  protected:
   /// @brief Disable direct creation of interface class by declaring ctor as
   /// protected.
-  ISerialTx() = default;
+  serial_tx_base() = default;
 };
 
-class ISerialRx {
+using ISerialTx PARAOS_DEPRECATED("use paraos::serial_tx_base") = serial_tx_base;
+
+class serial_rx_base {
  public:
-  virtual ~ISerialRx() = default;
+  virtual ~serial_rx_base() = default;
 
   /// @brief Five rule.
-  ISerialRx(ISerialRx &&other) = delete;
-  auto operator=(ISerialRx &&other) -> ISerialRx & = delete;
-  auto operator=(const ISerialRx &other) -> ISerialRx & = delete;
-  ISerialRx(const ISerialRx &other) = delete;
+  serial_rx_base(serial_rx_base &&other) = delete;
+  auto operator=(serial_rx_base &&other) -> serial_rx_base & = delete;
+  auto operator=(const serial_rx_base &other) -> serial_rx_base & = delete;
+  serial_rx_base(const serial_rx_base &other) = delete;
 
  protected:
   /// @brief Disable direct creation of interface class by declaring ctor as
   /// protected.
-  ISerialRx() = default;
+  serial_rx_base() = default;
 };
+
+using ISerialRx PARAOS_DEPRECATED("use paraos::serial_rx_base") = serial_rx_base;
 
 /// @brief Интерфейс, описывающий механизм получения и
 /// передачи данных.
-class ISerial : public ISerialTx {
+class serial_base : public serial_tx_base {
  public:
-  ~ISerial() override = default;
+  ~serial_base() override = default;
 
   /// @brief Метод выполняет запись заданного количества полученных байтов в
   /// указанную область памяти.
@@ -78,19 +84,21 @@ class ISerial : public ISerialTx {
   /// записать.
   ///
   /// @return Возвращает количество полученных байтов.
-  virtual auto Receive(void *dst, std::size_t dst_size) -> std::size_t = 0;
+  virtual auto receive(void *dst, std::size_t dst_size) -> std::size_t = 0;
 
   /// @brief Five rule.
-  ISerial(ISerial &&other) = delete;
-  auto operator=(ISerial &&other) -> ISerial & = delete;
-  auto operator=(const ISerial &other) -> ISerial & = delete;
-  ISerial(const ISerial &other) = delete;
+  serial_base(serial_base &&other) = delete;
+  auto operator=(serial_base &&other) -> serial_base & = delete;
+  auto operator=(const serial_base &other) -> serial_base & = delete;
+  serial_base(const serial_base &other) = delete;
 
  protected:
   /// @brief Disable direct creation of interface class by declaring ctor as
   /// protected.
-  ISerial() = default;
+  serial_base() = default;
 };
+
+using ISerial PARAOS_DEPRECATED("use paraos::serial_base") = serial_base;
 
 }  // namespace paraos
 

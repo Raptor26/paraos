@@ -27,10 +27,9 @@
 #include "paraos_sleep.hpp"
 #include "paraos_thread_common.hpp"
 
-
 #define PrintDebug(__message__, __object_name__)               \
   {                                                            \
-    const paraos::CriticalSection macro_critical;              \
+    const paraos::critical_section macro_critical;             \
                                                                \
     const std::time_t result = std::time(nullptr);             \
                                                                \
@@ -97,12 +96,12 @@ void WaitForSchedulerEnded() {  // NOLINT(llvm-prefer-static-over-anonymous-name
 }
 /// ----------------------------------------------------------------------------
 
-paraos::MultiRingBuff<
-    queue_size, char, paraos::RingBuff<char, ring_buff_size>,
-    paraos::RingBuff<char, ring_buff_size>,
-    paraos::RingBuff<char, ring_buff_size>,
-    paraos::RingBuff<char, ring_buff_size>,
-    paraos::RingBuff<char, ring_buff_size>>
+paraos::multi_ring_buff<
+    queue_size, char, paraos::ring_buff<char, ring_buff_size>,
+    paraos::ring_buff<char, ring_buff_size>,
+    paraos::ring_buff<char, ring_buff_size>,
+    paraos::ring_buff<char, ring_buff_size>,
+    paraos::ring_buff<char, ring_buff_size>>
     multi_ring_buff{};
 
 struct Producer {
@@ -112,7 +111,7 @@ struct Producer {
   /// @brief Producer thread
   void operator()(const paraos::stop_token& token) {
     while (!token.stop_requested()) {
-      const std::size_t buff_idx = str_idx_ % multi_ring_buff.GetBuffNumb();
+      const std::size_t buff_idx = str_idx_ % multi_ring_buff.buffer_count();
       if (str_idx_ < str_array.size()) {
       } else {
         // All data already written, exit from thread.
@@ -122,7 +121,7 @@ struct Producer {
 
       // try write data in buffer periodical.
       auto how_many_bytes_need_write = str_array.at(str_idx_).length();
-      auto is_write_successful = multi_ring_buff.TryWrite(
+      auto is_write_successful = multi_ring_buff.try_write(
           buff_idx, str_array.at(str_idx_).c_str(), how_many_bytes_need_write);
 
       if (is_write_successful) {
@@ -168,7 +167,7 @@ struct Consumer {
     auto read_mem = std::make_unique<std::array<char, read_mem_size>>();
 
     while (!token.stop_requested()) {
-      auto read_size = multi_ring_buff.Read(
+      auto read_size = multi_ring_buff.read(
           idx, read_mem->data(), read_mem->size(), delay_ms);
 
       if (read_size > 0U) {
@@ -236,97 +235,97 @@ auto main() -> int {
     std::vector<paraos::jthread> threads;
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 0";
       threads.emplace_back(attr, Producer{"Prod 0", 0});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 1";
       threads.emplace_back(attr, Producer{"Prod 1", 1});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 2";
       threads.emplace_back(attr, Producer{"Prod 2", 2});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 3";
       threads.emplace_back(attr, Producer{"Prod 3", 3});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 4";
       threads.emplace_back(attr, Producer{"Prod 4", 4});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 5";
       threads.emplace_back(attr, Producer{"Prod 5", 5});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 6";
       threads.emplace_back(attr, Producer{"Prod 6", 6});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "Prod 7";
       threads.emplace_back(attr, Producer{"Prod 7", 7});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 0";
       threads.emplace_back(attr, Consumer{"--Cons 0"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 1";
       threads.emplace_back(attr, Consumer{"--Cons 1"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 2";
       threads.emplace_back(attr, Consumer{"--Cons 2"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 3";
       threads.emplace_back(attr, Consumer{"--Cons 3"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 4";
       threads.emplace_back(attr, Consumer{"--Cons 4"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 5";
       threads.emplace_back(attr, Consumer{"--Cons 5"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 6";
       threads.emplace_back(attr, Consumer{"--Cons 6"});
     }
 
     {
-      paraos::ThreadAttr attr{};
+      paraos::thread_attr attr{};
       attr.thread_name = "--Cons 7";
       threads.emplace_back(attr, Consumer{"--Cons 7"});
     }

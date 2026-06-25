@@ -17,8 +17,8 @@ TEST(Cooperative, Create) {
   // кооперативного планировщика.
   constexpr bool thread_start_flag{false};
 
-  const paraos::CooperativeSchedulingAttr attr;
-  const static paraos::CooperativeScheduling<max_task_numb> cooperative{
+  const paraos::cooperative_scheduling_attr attr;
+  const static paraos::cooperative_scheduling<max_task_numb> cooperative{
       attr, thread_start_flag};
 }
 
@@ -28,8 +28,8 @@ TEST(Cooperative, TryPutOverflowTasks) {
   // кооперативного планировщика.
   constexpr bool thread_start_flag{false};
 
-  const paraos::CooperativeSchedulingAttr attr;
-  static paraos::CooperativeScheduling<max_task_numb> cooperative{
+  const paraos::cooperative_scheduling_attr attr;
+  static paraos::cooperative_scheduling<max_task_numb> cooperative{
       attr, thread_start_flag};
 
   struct test_task_t : public etl::task {
@@ -42,13 +42,13 @@ TEST(Cooperative, TryPutOverflowTasks) {
 
   test_task_t test_task1;
 
-  ASSERT_TRUE(cooperative.AddTask(test_task1));
-  ASSERT_TRUE(cooperative.AddTask(test_task1));
+  ASSERT_TRUE(cooperative.add_task(test_task1));
+  ASSERT_TRUE(cooperative.add_task(test_task1));
 
-  // AddTask() throw exception, freeRTOS without start scheduler not support
+  // add_task() throw exception, freeRTOS without start scheduler not support
   // throw exceptions.
 #ifndef PARAOS_LIKE_FREERTOS
   // No more space in task list.
-  ASSERT_FALSE(cooperative.AddTask(test_task1));
+  ASSERT_FALSE(cooperative.add_task(test_task1));
 #endif
 }

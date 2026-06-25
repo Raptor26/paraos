@@ -6,6 +6,8 @@
 #ifndef PAROAS_ISR_HPP
 #define PAROAS_ISR_HPP
 
+#include "paraos_config.hpp"
+
 namespace paraos {
 
 /// @brief Contained bool value and additional bool, specified is need switch
@@ -19,13 +21,13 @@ namespace paraos {
 /// operator=. This overload is used in other constructors without initial
 /// initialization of the is_success_ field, which leads to warnings from the
 /// static analyzer.
-/// NOLINTBEGIN(*-member-init)
-struct ISRbool final {
-  explicit ISRbool(bool is_success = false, bool is_need_switch_context = false)
+// NOLINTBEGIN(*-member-init)
+struct isr_bool final {
+  explicit isr_bool(bool is_success = false, bool is_need_switch_context = false)
       : is_success_{is_success},
         is_need_switch_context_{is_need_switch_context} {}
 
-  ~ISRbool() = default;
+  ~isr_bool() = default;
 
   /// --------------------------------------------------------------------------
   /// Five rule
@@ -33,17 +35,17 @@ struct ISRbool final {
 
   /// @note Don't initialize is_success_ because the field initialize with
   /// operator=.
-  ISRbool(const ISRbool &other) noexcept : is_need_switch_context_{false} {
+  isr_bool(const isr_bool &other) noexcept : is_need_switch_context_{false} {
     *this = other;
   };
 
   /// @note Don't initialize is_success_ because the field initialize with
   /// operator=.
-  ISRbool(ISRbool &&other) noexcept : is_need_switch_context_{false} {
+  isr_bool(isr_bool &&other) noexcept : is_need_switch_context_{false} {
     *this = other;
   };
 
-  auto operator=(const ISRbool &other) noexcept -> ISRbool & {
+  auto operator=(const isr_bool &other) noexcept -> isr_bool & {
     if (&other != this) {
       is_success_ = other.is_success_;
 
@@ -55,7 +57,7 @@ struct ISRbool final {
     return *this;
   };
 
-  auto operator=(ISRbool &&other) noexcept -> ISRbool & {
+  auto operator=(isr_bool &&other) noexcept -> isr_bool & {
     *this = other;
 
     return *this;
@@ -64,13 +66,25 @@ struct ISRbool final {
   /// @brief  Behavior like as simple bool variable.
   explicit operator bool() const { return is_success_; }
 
-  [[nodiscard]] auto IsNeedSwitchContext() const -> bool {
+  [[nodiscard]] auto needs_context_switch() const -> bool {
     return is_need_switch_context_;
   }
 
-  void SetSuccessStatus(bool status) { is_success_ = status; }
+  void set_success_status(bool status) { is_success_ = status; }
 
-  void SetSwitchContextStatus(bool status) { is_need_switch_context_ = status; }
+  void set_switch_context_status(bool status) { is_need_switch_context_ = status; }
+
+  // Backward-compatible deprecated forwarding methods.
+  [[nodiscard]] PARAOS_DEPRECATED("use needs_context_switch()")
+  auto IsNeedSwitchContext() const -> bool {
+    return needs_context_switch();
+  }
+
+  PARAOS_DEPRECATED("use set_success_status()")
+  void SetSuccessStatus(bool status) { set_success_status(status); }
+
+  PARAOS_DEPRECATED("use set_switch_context_status()")
+  void SetSwitchContextStatus(bool status) { set_switch_context_status(status); }
 
  private:
   /// @brief Bool flag. This value returned 'operator bool()', just like simple
@@ -81,7 +95,10 @@ struct ISRbool final {
   /// semaphore/mutex api called from ISR.
   bool is_need_switch_context_;
 };
-/// NOLINTEND(*-member-init)
+// NOLINTEND(*-member-init)
+
+using ISRbool PARAOS_DEPRECATED("use paraos::isr_bool") = isr_bool;
+
 }  // namespace paraos
 
 #endif /* PAROAS_ISR_HPP */

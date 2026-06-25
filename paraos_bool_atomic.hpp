@@ -14,42 +14,42 @@
 namespace paraos {
 
 template <typename T>
-class VarAtomic final {
+class var_atomic final {
  public:
-  explicit VarAtomic(T var) {
-    const paraos::CriticalSection critical;  // RAII
+  explicit var_atomic(T var) {
+    const paraos::critical_section critical;  // RAII
     var_ = var;
   }
 
-  ~VarAtomic() = default;
+  ~var_atomic() = default;
 
   // ---------------------------------------------------------------------------
   // Five Rule
   // ---------------------------------------------------------------------------
 
-  PARAOS_INLINE_TRIVIAL VarAtomic(const VarAtomic& other) noexcept {
-    const paraos::CriticalSection critical;  // RAII
+  PARAOS_INLINE_TRIVIAL var_atomic(const var_atomic& other) noexcept {
+    const paraos::critical_section critical;  // RAII
     var_ = other.var_;
   }
 
-  PARAOS_INLINE_TRIVIAL VarAtomic(VarAtomic&& other) noexcept {
-    const paraos::CriticalSection critical;  // RAII
+  PARAOS_INLINE_TRIVIAL var_atomic(var_atomic&& other) noexcept {
+    const paraos::critical_section critical;  // RAII
     var_ = std::move(other.var_);
   }
 
-  PARAOS_INLINE_TRIVIAL auto operator=(const VarAtomic& other) noexcept
-      -> VarAtomic& {
+  PARAOS_INLINE_TRIVIAL auto operator=(const var_atomic& other) noexcept
+      -> var_atomic& {
     if (this != &other) {
-      const paraos::CriticalSection critical;  // RAII
+      const paraos::critical_section critical;  // RAII
       var_ = other.var_;
     }
 
     return *this;
   }
 
-  PARAOS_INLINE_TRIVIAL auto operator=(VarAtomic&& other) noexcept
-      -> VarAtomic& {
-    const paraos::CriticalSection critical;  // RAII
+  PARAOS_INLINE_TRIVIAL auto operator=(var_atomic&& other) noexcept
+      -> var_atomic& {
+    const paraos::critical_section critical;  // RAII
     var_ = std::move(other.var_);
 
     return *this;
@@ -68,12 +68,15 @@ class VarAtomic final {
 };
 
 template <>
-PARAOS_INLINE_TRIVIAL VarAtomic<bool>::operator bool() const {
-  const paraos::CriticalSection critical;  // RAII
+PARAOS_INLINE_TRIVIAL var_atomic<bool>::operator bool() const {
+  const paraos::critical_section critical;  // RAII
   return var_;
 }
 
-using BoolAtomic = VarAtomic<bool>;
+using bool_atomic = var_atomic<bool>;
+using BoolAtomic PARAOS_DEPRECATED("use paraos::bool_atomic") = bool_atomic;
+template <typename T>
+using VarAtomic PARAOS_DEPRECATED("use paraos::var_atomic") = var_atomic<T>;
 
 }  // namespace paraos
 

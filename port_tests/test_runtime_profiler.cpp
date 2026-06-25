@@ -33,81 +33,81 @@ class Profiler : public testing::Test {
 }  // namespace
 
 TEST_F(Profiler, TimerProfiler) {
-  using embedded_timer_t = paraos::EmbeddedTimer<LowCnt, HightCnt>;
+  using embedded_timer_t = paraos::embedded_timer<LowCnt, HightCnt>;
 
   const embedded_timer_t embedded_timer;
-  paraos::TimerProfiler profiler{embedded_timer};
-  EXPECT_EQ(0U, profiler.LastDuration());
+  paraos::timer_profiler profiler{embedded_timer};
+  EXPECT_EQ(0U, profiler.last_duration());
 }
 
 TEST_F(Profiler, LongCnt) {
   constexpr std::uint16_t increment{2};
-  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  paraos::embedded_profiler<LowCnt, HightCnt> profiler;
 
-  profiler.Start();
+  profiler.start();
   low += increment;
-  EXPECT_EQ(increment, profiler.Stop());
+  EXPECT_EQ(increment, profiler.stop());
 }
 
 TEST_F(Profiler, ShortCnt) {
   constexpr std::uint16_t increment{2};
-  paraos::EmbeddedProfiler<LowCnt, paraos::HightCntDefault> profiler;
-  paraos::EmbeddedProfiler<LowCnt> profiler_high_default;
+  paraos::embedded_profiler<LowCnt, paraos::high_count_default> profiler;
+  paraos::embedded_profiler<LowCnt> profiler_high_default;
 
-  profiler.Start();
-  profiler_high_default.Start();
+  profiler.start();
+  profiler_high_default.start();
   low += increment;
-  EXPECT_EQ(increment, profiler.Stop());
-  EXPECT_EQ(increment, profiler_high_default.Stop());
+  EXPECT_EQ(increment, profiler.stop());
+  EXPECT_EQ(increment, profiler_high_default.stop());
 }
 
 TEST_F(Profiler, ShortCntOneOverflow) {
   low = std::numeric_limits<std::uint16_t>::max();
   constexpr std::uint16_t increment{3};
-  paraos::EmbeddedProfiler<LowCnt> profiler;
+  paraos::embedded_profiler<LowCnt> profiler;
 
-  profiler.Start();
+  profiler.start();
   low += increment;
-  EXPECT_EQ(increment, profiler.Stop());
-  EXPECT_EQ(increment, profiler.LastDuration());
+  EXPECT_EQ(increment, profiler.stop());
+  EXPECT_EQ(increment, profiler.last_duration());
 }
 
 TEST_F(Profiler, ShortCntTwoOverflow) {
   low = std::numeric_limits<std::uint16_t>::max();
   constexpr std::uint16_t first_increment{3};
-  paraos::EmbeddedProfiler<LowCnt> profiler;
+  paraos::embedded_profiler<LowCnt> profiler;
 
-  profiler.Start();
+  profiler.start();
   low += first_increment;
   EXPECT_EQ(
-      static_cast<decltype(profiler.Stop())>(first_increment), profiler.Stop());
+      static_cast<decltype(profiler.stop())>(first_increment), profiler.stop());
 
   constexpr std::uint16_t second_increment{
       std::numeric_limits<std::uint16_t>::max()};
   low += second_increment;
   EXPECT_EQ(
-      static_cast<decltype(profiler.Stop())>(
+      static_cast<decltype(profiler.stop())>(
           first_increment + second_increment),
-      profiler.Stop());
+      profiler.stop());
 }
 
 TEST_F(Profiler, LongCntOneOverflow) {
   low = std::numeric_limits<std::uint16_t>::max();
   high = std::numeric_limits<std::uint16_t>::max();
   constexpr std::uint16_t increment{3};
-  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  paraos::embedded_profiler<LowCnt, HightCnt> profiler;
 
-  profiler.Start();
+  profiler.start();
   low += increment;
   high = 0U;
-  EXPECT_EQ(increment, profiler.Stop());
+  EXPECT_EQ(increment, profiler.stop());
 }
 
 TEST_F(Profiler, RAII) {
   constexpr std::uint16_t increment{3};
-  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  paraos::embedded_profiler<LowCnt, HightCnt> profiler;
   {
-    const paraos::ProfilerRAII profiler_raii(profiler);
+    const paraos::profiler_raii profiler_raii(profiler);
 
     low += increment;
 
@@ -116,15 +116,15 @@ TEST_F(Profiler, RAII) {
     // Dtor of profiler_raii stop the timer.
   }
 
-  EXPECT_EQ(increment, profiler.LastDuration());
+  EXPECT_EQ(increment, profiler.last_duration());
 }
 
 TEST_F(Profiler, RAIIPeriod) {
   constexpr std::uint16_t increment{3};
-  paraos::EmbeddedProfiler<LowCnt, HightCnt> profiler;
+  paraos::embedded_profiler<LowCnt, HightCnt> profiler;
   {
     /// now profiler will indicates period between calling code below.
-    const paraos::ProfilerPeriodRAII period_calling(profiler);
+    const paraos::profiler_period_raii period_calling(profiler);
 
     low += increment;
 

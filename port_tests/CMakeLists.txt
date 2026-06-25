@@ -6,6 +6,18 @@
 
 project(test_paraos_osal VERSION 0.1.0)
 
+# API alias compile smoke test -------------------------------------------------
+add_executable(test_api_aliases_compile test_api_aliases_compile.cpp)
+target_link_libraries(test_api_aliases_compile PRIVATE paraos::paraos)
+
+target_compile_features(test_api_aliases_compile PRIVATE cxx_std_17 c_std_11)
+target_compile_options(
+  test_api_aliases_compile PRIVATE -Wall -Wextra -Wpedantic -Werror
+  $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wno-deprecated-declarations>)
+
+add_test(NAME test_api_aliases_compile COMMAND test_api_aliases_compile
+         TIMEOUT 20)
+
 # Thread only static -----------------------------------------------------------
 add_executable(test_thread_only_static test_thread_only_static.cpp)
 target_link_libraries(test_thread_only_static PRIVATE paraos::paraos)

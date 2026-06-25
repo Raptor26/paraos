@@ -18,11 +18,11 @@ namespace paraos {
 /// timeout in blocking operations with elapsed time correction.
 ///
 /// @return Return object with current time. Returned value used in
-/// CheckTimeout().
-inline auto GetCurrentTime() -> OsProfiler {
+/// check_timeout().
+inline auto get_current_time() -> os_profiler {
   // Create profiler and capture current time.
-  OsProfiler profiler;
-  profiler.Start();
+  os_profiler profiler;
+  profiler.start();
   return profiler;
 }
 
@@ -36,21 +36,21 @@ inline auto GetCurrentTime() -> OsProfiler {
 /// taking into account occasional occurrences such as tick count overflows,
 /// which would otherwise make a manual adjustment prone to error.
 ///
-/// @param[in] timeout: Returned by GetCurrentTime() value.
+/// @param[in] timeout: Returned by get_current_time() value.
 /// GetCurrentTimeInTicks() using at once before need periodical checking
-/// timeout by CheckTimeout().
+/// timeout by check_timeout().
 /// @param[in,out] delay_ms: Wait time in [ms]. Note: In unix port delay_ms
 /// not modifed, by other ports (freeRTOS for example), delay_ms modify each
-/// CheckTimeout() call.
+/// check_timeout() call.
 ///
 /// @return Return true if need break waiting, false if no timeout elapsed.
-inline auto CheckTimeout(OsProfiler &timeout, paraos::delay_type &delay_ms)
+inline auto check_timeout(os_profiler &timeout, paraos::delay_type &delay_ms)
     -> bool {
-  const CriticalSection critical;
+  const critical_section critical;
   bool is_timeout{true};
-  timeout.Stop();
+  timeout.stop();
 
-  auto elapsed_time = timeout.LastDurationMs();
+  auto elapsed_time = timeout.last_duration_ms();
 
   if (delay_ms > elapsed_time) {
     is_timeout = false;
@@ -60,11 +60,19 @@ inline auto CheckTimeout(OsProfiler &timeout, paraos::delay_type &delay_ms)
     delay_ms -= elapsed_time;
 
     // Update start point because delay_ms was modified. It's necessary for
-    // correct update delay_ms if CheckTimeout() will call again.
-    timeout.Start();
+    // correct update delay_ms if check_timeout() will call again.
+    timeout.start();
   }
 
   return is_timeout;
 }
+
+[[nodiscard]] PARAOS_DEPRECATED("use get_current_time()")
+inline auto GetCurrentTime() -> OsProfiler { return get_current_time(); }
+
+[[nodiscard]] PARAOS_DEPRECATED("use check_timeout()")
+inline auto CheckTimeout(OsProfiler &timeout, paraos::delay_type &delay_ms)
+    -> bool { return check_timeout(timeout, delay_ms); }
+
 }  // namespace paraos
 #endif

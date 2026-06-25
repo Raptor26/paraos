@@ -16,6 +16,6 @@ TEST(SwitchContext, IfNothingChange) {
 
 TEST(SwitchContext, IfNoRequestToChangeContext) {
   paraos::SwitchContext switch_context;
-  const paraos::ISRbool primitive_state_default{};
+  const paraos::isr_bool primitive_state_default{};
   switch_context.WritePrimitiveState(primitive_state_default);
 }

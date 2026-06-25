@@ -27,7 +27,7 @@ namespace detail {
 /// registry of thread contexts without a friendship cycle.
 struct jthread_context {
   std::jthread thread;
-  ThreadAttr attr{};
+  thread_attr attr{};
   std::mutex gate_mtx;
   std::condition_variable gate_cv;
   bool gate_open{false};

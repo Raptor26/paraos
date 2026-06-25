@@ -120,6 +120,35 @@ Below is an example of how to integrate **PARAOS** into your CMake-based project
    target_link_libraries(my_app PUBLIC paraos::paraos)
    ```
 
+3. Use the library in your C++ code:
+
+   ```cpp
+   #include "paraos_jthread.hpp"
+   #include "paraos_runtime_profiler.hpp"
+   #include "paraos_mutex_raii.hpp"
+
+   int main() {
+       paraos::os_profiler profiler;
+       profiler.start();
+       // application code ...
+       auto elapsed_us = profiler.stop();
+       (void)elapsed_us;
+
+       paraos::mutex mtx;
+       {
+           std::scoped_lock<paraos::mutex> guard{mtx};
+           // protected access
+       }
+
+       return 0;
+   }
+   ```
+
+   > **Note:** Starting with the next release, public C++ API names follow the
+   > STL `snake_case` convention. Old `PascalCase` names are kept as
+   > `PARAOS_DEPRECATED` aliases for one release cycle. See the migration
+   > section in [CHANGELOG.md](CHANGELOG.md) for details.
+
 ### Running Tests
 
 In most cases, users do not need to run **PARAOS** tests in their projects. However, if you want to execute the tests, follow these steps:

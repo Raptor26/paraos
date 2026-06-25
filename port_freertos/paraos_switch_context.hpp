@@ -22,10 +22,10 @@ class SwitchContext final {
 
   /// @brief Update is need switch context state by primitive state.
   ///
-  /// @param[in] primitive_state: ISRbool return Take()/Give()  Semaphore/mutex
+  /// @param[in] primitive_state: isr_bool return Take()/Give()  Semaphore/mutex
   /// API.
-  void WritePrimitiveState(const ISRbool &primitive_state) noexcept {
-    if (primitive_state.IsNeedSwitchContext()) {
+  void WritePrimitiveState(const isr_bool &primitive_state) noexcept {
+    if (primitive_state.needs_context_switch()) {
       is_need_switch_context_ = true;
     }
   }

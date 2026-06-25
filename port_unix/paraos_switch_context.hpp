@@ -21,7 +21,7 @@ class SwitchContext final {
   SwitchContext() = default;
 
   /// NOLINTNEXTLINE(*-convert-member-functions-to-static)
-  void WritePrimitiveState(const ISRbool &primitive_state) {
+  void WritePrimitiveState(const isr_bool &primitive_state) {
     PARAOS_ATTR_UNUSED_VAR(primitive_state);
   }
 

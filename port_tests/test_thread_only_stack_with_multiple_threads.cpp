@@ -30,7 +30,7 @@
 
 #define PrintDebug(__message__, __object_name__)                             \
   {                                                                          \
-    const paraos::CriticalSection macro_critical;                            \
+    const paraos::critical_section macro_critical;                            \
     std::cout << "DM: '" << __object_name__ << "': " << __message__ << "\n"; \
   }
 
@@ -83,18 +83,18 @@ void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
 struct MyThreadGroup {
   explicit MyThreadGroup(std::string_view name)
       : thread_one_{
-            paraos::ThreadAttr{
-                std::string{name}, paraos::GetStackMinimumSizeInBytes(),
-                paraos::ThreadPriority::kNormal},
+            paraos::thread_attr{
+                std::string{name}, paraos::get_stack_minimum_size_in_bytes(),
+                paraos::thread_priority::normal},
             [this](const paraos::stop_token& /*token*/) {
               PrintDebug("ProcessingOne() calls", name_);
               is_thread_one_complete_work_.release();
             }},
         thread_two_{
-            paraos::ThreadAttr{
+            paraos::thread_attr{
                 std::string{name} + " two",
-                paraos::GetStackMinimumSizeInBytes(),
-                paraos::ThreadPriority::kNormal},
+                paraos::get_stack_minimum_size_in_bytes(),
+                paraos::thread_priority::normal},
             [this](const paraos::stop_token& /*token*/) {
               PrintDebug("ProcessingTwo() wait sems", name_);
               is_thread_one_complete_work_.acquire();
@@ -103,10 +103,10 @@ struct MyThreadGroup {
               DeletedObjectsCnt();
             }},
         thread_dynamic_{
-            paraos::ThreadAttr{
+            paraos::thread_attr{
                 std::string{name} + " Dynamic thread",
-                paraos::GetStackMinimumSizeInBytes(),
-                paraos::ThreadPriority::kNormal},
+                paraos::get_stack_minimum_size_in_bytes(),
+                paraos::thread_priority::normal},
             [this](const paraos::stop_token& /*token*/) {
               PrintDebug("ProcessingDynamic is finish", name_);
               is_dynamic_thread_complete_work_.release();

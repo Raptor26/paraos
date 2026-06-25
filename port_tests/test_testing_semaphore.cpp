@@ -11,114 +11,114 @@
 #include "paraos_testing_semaphore.hpp"
 
 TEST(TestingSemaphore, CreateWithIncorrectMaxCount) {
-  paraos::TestingSemaphoreAttr attrs{};
+  paraos::testing_semaphore_attr attrs{};
 
   attrs.max_count = 0;
   attrs.initial_count = 0;
 
-  const paraos::TestingSemaphore semaphore{attrs};
+  const paraos::testing_semaphore semaphore{attrs};
 
   ASSERT_FALSE(semaphore);
 }
 
 TEST(TestingSemaphore, CreateWithIncorrectInitialCount) {
   constexpr size_t init_count{5};
-  paraos::TestingSemaphoreAttr attrs{};
+  paraos::testing_semaphore_attr attrs{};
 
   attrs.max_count = 0;
   attrs.initial_count = init_count;
 
-  const paraos::TestingSemaphore semaphore{attrs};
+  const paraos::testing_semaphore semaphore{attrs};
 
   ASSERT_FALSE(semaphore);
 }
 
 TEST(TestingSemaphore, CreateDefault) {
-  const paraos::TestingSemaphoreAttr attrs{};
+  const paraos::testing_semaphore_attr attrs{};
 
-  const paraos::TestingSemaphore semaphore{attrs};
+  const paraos::testing_semaphore semaphore{attrs};
 
   ASSERT_TRUE(semaphore);
 }
 
 TEST(TestingSemaphore, TakeWithoutGive) {
-  paraos::TestingSemaphoreAttr attrs{};
+  paraos::testing_semaphore_attr attrs{};
 
   attrs.initial_count = 0;
 
-  paraos::TestingSemaphore semaphore{attrs};
+  paraos::testing_semaphore semaphore{attrs};
 
   ASSERT_TRUE(semaphore);
 
-  ASSERT_FALSE(semaphore.Take());
+  ASSERT_FALSE(semaphore.take());
 }
 
 TEST(TestingSemaphore, MultipleGiveAndTake) {
-  paraos::TestingSemaphoreAttr attrs{};
+  paraos::testing_semaphore_attr attrs{};
 
   attrs.max_count = 3;
   attrs.initial_count = 0;
 
-  paraos::TestingSemaphore semaphore{attrs};
+  paraos::testing_semaphore semaphore{attrs};
 
   ASSERT_TRUE(semaphore);
 
   // Поскольку максимальное значение счётчика семафора равно 3, отдать семафор
   // можно не более 3 раз.
-  ASSERT_TRUE(semaphore.Give());
+  ASSERT_TRUE(semaphore.give());
 
-  ASSERT_TRUE(semaphore.Give());
+  ASSERT_TRUE(semaphore.give());
 
-  ASSERT_TRUE(semaphore.Give());
+  ASSERT_TRUE(semaphore.give());
 
-  ASSERT_FALSE(semaphore.Give());
+  ASSERT_FALSE(semaphore.give());
 
   // После увеличения счётчика семафора до максимального значения взять семафор
   // можно только 3 раза.
-  ASSERT_TRUE(semaphore.Take());
+  ASSERT_TRUE(semaphore.take());
 
-  ASSERT_TRUE(semaphore.Take());
+  ASSERT_TRUE(semaphore.take());
 
-  ASSERT_TRUE(semaphore.Take());
+  ASSERT_TRUE(semaphore.take());
 
-  ASSERT_FALSE(semaphore.Take());
+  ASSERT_FALSE(semaphore.take());
 }
 
 TEST(BinaryTestingSemaphore, MultipleGiveAndTake) {
-  paraos::BinaryTestingSemaphore binary_semaphore{};
+  paraos::binary_testing_semaphore binary_semaphore{};
 
   ASSERT_TRUE(binary_semaphore);
 
-  ASSERT_FALSE(binary_semaphore.Take());
+  ASSERT_FALSE(binary_semaphore.take());
 
-  ASSERT_TRUE(binary_semaphore.Give());
+  ASSERT_TRUE(binary_semaphore.give());
 
-  ASSERT_FALSE(binary_semaphore.Give());
+  ASSERT_FALSE(binary_semaphore.give());
 
-  ASSERT_TRUE(binary_semaphore.Take());
+  ASSERT_TRUE(binary_semaphore.take());
 
-  ASSERT_FALSE(binary_semaphore.Take());
+  ASSERT_FALSE(binary_semaphore.take());
 }
 
 TEST(BinaryTestingSemaphore, BinarySemaphoreCreateNotGivenState) {
-  paraos::BinaryTestingSemaphore binary_semaphore{};
+  paraos::binary_testing_semaphore binary_semaphore{};
 
   ASSERT_TRUE(binary_semaphore);
 
-  ASSERT_FALSE(binary_semaphore.Take(0));
+  ASSERT_FALSE(binary_semaphore.take(0));
 }
 
 TEST(TestingSemaphore, MoveCtor) {
   constexpr size_t max_count{10};
-  paraos::TestingSemaphoreAttr attrs{};
+  paraos::testing_semaphore_attr attrs{};
   attrs.initial_count = 0;
   attrs.max_count = max_count;
 
-  paraos::TestingSemaphore semaphore_one{attrs};
+  paraos::testing_semaphore semaphore_one{attrs};
 
-  semaphore_one.Give();
+  semaphore_one.give();
 
-  const paraos::TestingSemaphore semaphore_two{std::move(semaphore_one)};
+  const paraos::testing_semaphore semaphore_two{std::move(semaphore_one)};
 }
 
 TEST(TestingSemaphore, MoveAssignment) {
@@ -127,80 +127,80 @@ TEST(TestingSemaphore, MoveAssignment) {
   constexpr size_t sem_two_init_count{2};
   constexpr size_t sem_two_max_count{7};
 
-  paraos::TestingSemaphoreAttr attrs{};
+  paraos::testing_semaphore_attr attrs{};
   attrs.initial_count = 0;
   attrs.max_count = sem_one_max_count;
 
-  paraos::TestingSemaphore semaphore_one{attrs};
+  paraos::testing_semaphore semaphore_one{attrs};
 
-  ASSERT_TRUE(semaphore_one.Give());
+  ASSERT_TRUE(semaphore_one.give());
 
-  paraos::TestingSemaphoreAttr sem_two_attrs{};
+  paraos::testing_semaphore_attr sem_two_attrs{};
   sem_two_attrs.initial_count = sem_two_init_count;
   sem_two_attrs.max_count = sem_two_max_count;
 
-  paraos::TestingSemaphore semaphore_two{sem_two_attrs};
+  paraos::testing_semaphore semaphore_two{sem_two_attrs};
 
   semaphore_two = std::move(semaphore_one);
 }
 
 TEST(BinaryTestingSemaphore, MoveCtor) {
-  paraos::BinaryTestingSemaphore binary_semaphore_one{};
+  paraos::binary_testing_semaphore binary_semaphore_one{};
 
-  ASSERT_TRUE(binary_semaphore_one.Give());
+  ASSERT_TRUE(binary_semaphore_one.give());
 
-  paraos::BinaryTestingSemaphore binary_semaphore_two{
+  paraos::binary_testing_semaphore binary_semaphore_two{
       std::move(binary_semaphore_one)};
 
-  ASSERT_TRUE(binary_semaphore_two.Take());
+  ASSERT_TRUE(binary_semaphore_two.take());
 }
 
 TEST(BinaryTestingSemaphore, MoveAssignment) {
-  paraos::BinaryTestingSemaphore binary_semaphore_one{};
+  paraos::binary_testing_semaphore binary_semaphore_one{};
 
-  ASSERT_TRUE(binary_semaphore_one.Give());
+  ASSERT_TRUE(binary_semaphore_one.give());
 
-  paraos::BinaryTestingSemaphore binary_semaphore_two{};
+  paraos::binary_testing_semaphore binary_semaphore_two{};
 
   binary_semaphore_two = std::move(binary_semaphore_one);
 
-  ASSERT_TRUE(binary_semaphore_two.Take());
+  ASSERT_TRUE(binary_semaphore_two.take());
 }
 
 TEST(AlwaysTrueSemaphore, Create) {
-  const paraos::AlwaysTrueSemaphore true_sem{};
+  const paraos::always_true_semaphore true_sem{};
 
   ASSERT_TRUE(true_sem);
 }
 
 TEST(AlwaysTrueSemaphore, TakeMultipleTimesWithoutGive) {
-  const paraos::AlwaysTrueSemaphore true_sem{};
+  const paraos::always_true_semaphore true_sem{};
 
-  ASSERT_TRUE(true_sem.Take());
+  ASSERT_TRUE(true_sem.take());
 
-  ASSERT_TRUE(true_sem.Take());
+  ASSERT_TRUE(true_sem.take());
 
-  ASSERT_TRUE(true_sem.Take());
+  ASSERT_TRUE(true_sem.take());
 
-  ASSERT_TRUE(true_sem.Give());
+  ASSERT_TRUE(true_sem.give());
 
-  ASSERT_TRUE(true_sem.Give());
+  ASSERT_TRUE(true_sem.give());
 }
 
 TEST(AlwaysTrueSemaphore, MoveCtor) {
-  paraos::AlwaysTrueSemaphore true_sem_one{};
+  paraos::always_true_semaphore true_sem_one{};
 
-  const paraos::AlwaysTrueSemaphore true_sem_two{std::move(true_sem_one)};
+  const paraos::always_true_semaphore true_sem_two{std::move(true_sem_one)};
 
-  ASSERT_TRUE(true_sem_two.Take());
+  ASSERT_TRUE(true_sem_two.take());
 }
 
 TEST(AlwaysTrueSemaphore, MoveAssignment) {
-  paraos::AlwaysTrueSemaphore true_sem_one{};
+  paraos::always_true_semaphore true_sem_one{};
 
-  paraos::AlwaysTrueSemaphore true_sem_two{};
+  paraos::always_true_semaphore true_sem_two{};
 
   true_sem_two = std::move(true_sem_one);
 
-  ASSERT_TRUE(true_sem_two.Take());
+  ASSERT_TRUE(true_sem_two.take());
 }

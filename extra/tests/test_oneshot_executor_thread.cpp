@@ -21,7 +21,7 @@
 namespace {
 
 constexpr uint_least8_t max_delegates_in_queue{4};
-using OneShotExecutorTest = paraos::OneShotExecutor<max_delegates_in_queue>;
+using OneShotExecutorTest = paraos::one_shot_executor<max_delegates_in_queue>;
 
 OneShotExecutorTest* g_executor_ptr{nullptr};
 
@@ -84,7 +84,7 @@ void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
 
   constexpr bool is_isr{false};
   PARAOS_CHECK_ASSERT(g_executor_ptr);
-  g_executor_ptr->Finish(is_isr);
+  g_executor_ptr->finish(is_isr);
 
   (void)paraos::jthread::end_scheduler();
 }
@@ -93,9 +93,9 @@ void IdleHook() {  // NOLINT(llvm-prefer-static-over-anonymous-namespace)
 
 auto main() -> int {
   {
-    paraos::OneShotExecutorAttributes attr{
-        {{"OneShotExecutor thread", paraos::GetStackMinimumSizeInBytes(),
-          paraos::ThreadPriority::kRealTime}}};
+    paraos::one_shot_executor_attr attr{
+        {{"OneShotExecutor thread", paraos::get_stack_minimum_size_in_bytes(),
+          paraos::thread_priority::realtime}}};
 
     OneShotExecutorTest oneshot_executor{attr};
     g_executor_ptr = &oneshot_executor;
@@ -110,10 +110,10 @@ auto main() -> int {
     static auto worker_delegate =
         paraos::executor_delegate_type::create<Worker, &Worker::Work>(worker);
 
-    oneshot_executor.EnqueueDelegate(producer_delegate);
-    oneshot_executor.EnqueueDelegate<Producer, &Producer::Produce>(producer);
-    oneshot_executor.EnqueueDelegate(worker_delegate);
-    oneshot_executor.EnqueueDelegate(producer_delegate);
+    oneshot_executor.enqueue_delegate(producer_delegate);
+    oneshot_executor.enqueue_delegate<Producer, &Producer::Produce>(producer);
+    oneshot_executor.enqueue_delegate(worker_delegate);
+    oneshot_executor.enqueue_delegate(producer_delegate);
 
     const paraos::jthread stopper(
         [](const paraos::stop_token& /*token*/) -> void {

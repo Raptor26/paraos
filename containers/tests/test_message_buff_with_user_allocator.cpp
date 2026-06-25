@@ -119,19 +119,19 @@ using buffer_allocator = MyAllocBuffer<std::uint8_t>;
 TEST(Buffer, UserAllocCreate) {
   constexpr size_t queue_size{10};
   // Create buffer with custom allocator.
-  paraos::MessageBuffer<queue_size, buffer_allocator> buff;
+  paraos::message_buffer<queue_size, buffer_allocator> buff;
 
   // For example, we want write next strings:
   std::string str1{"Hello"};
 
   {
     // Alloc memory with null terminate symbol.
-    auto message1 = buff.Alloc(str1.length() + 1U);
+    auto message1 = buff.alloc(str1.length() + 1U);
 
     // Before any action check container validation.
     if (message1) {
       // Copy data in container.
-      memcpy(message1.Data(), str1.data(), message1.Size());
+      memcpy(message1.data(), str1.data(), message1.size());
     }
 
     // when message1 leave scope, message1 calls dtor and data automatically
@@ -145,7 +145,7 @@ TEST(Buffer, UserAllocCreate) {
     // For example, set zero timeout above, but if set non zero value, thread
     // will wait time with timeout_ms respect when data in buffer will
     // available. Useful in multithread programming.
-    auto read = buff.Pop(timeout_ms);
+    auto read = buff.pop(timeout_ms);
 
     // Always check if message was read.
     if (read) {
