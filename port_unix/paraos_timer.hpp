@@ -6,6 +6,7 @@
 #ifndef PARAOS_TIMER_HPP
 #define PARAOS_TIMER_HPP
 
+#include <chrono>
 #include <cstddef>
 #include <limits>
 #include <optional>
@@ -65,10 +66,24 @@ class timer {
       -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    PARAOS_ATTR_UNUSED_VAR(period_ms_);
 
-    isr_bool is_timer_started{true};
-    return is_timer_started;
+    const std::scoped_lock lock{mutex_};
+
+    is_stop_requested_ = false;
+    next_deadline_ =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(period_ms_);
+
+    if (is_running_) {
+      wake_worker();
+      return isr_bool{true};
+    }
+
+    is_running_ = true;
+    worker_.emplace([this](const paraos::stop_token& token) -> void {
+      timer_loop(token);
+    });
+
+    return isr_bool{true};
   }
 
   /// @brief Change period between periodically call run() if timer mode
@@ -84,8 +99,19 @@ class timer {
   auto change_period(
       std::size_t period_ms, paraos::delay_type max_block_time = max_delay,
       bool is_isr = false) -> isr_bool {
+    PARAOS_ATTR_UNUSED_VAR(max_block_time);
+    PARAOS_ATTR_UNUSED_VAR(is_isr);
+
+    const std::scoped_lock lock{mutex_};
+
     period_ms_ = period_ms;
-    return start(max_block_time, is_isr);
+    if (is_running_) {
+      next_deadline_ = std::chrono::steady_clock::now() +
+                       std::chrono::milliseconds(period_ms_);
+      wake_worker();
+    }
+
+    return isr_bool{true};
   }
 
   /// @brief Stop software timer. After user call stop(), scheduler don't call
@@ -99,10 +125,17 @@ class timer {
       -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
     PARAOS_ATTR_UNUSED_VAR(is_isr);
-    PARAOS_ATTR_UNUSED_VAR(period_ms_);
 
-    isr_bool is_timer_stopped{true};
-    return is_timer_stopped;
+    {
+      const std::scoped_lock lock{mutex_};
+      is_stop_requested_ = true;
+      is_running_ = false;
+      wake_worker();
+    }
+
+    worker_ = std::nullopt;
+
+    return isr_bool{true};
   }
 
   /// @brief Reset software timer. After reset() called, delay befor next call
@@ -157,6 +190,77 @@ class timer {
   }
 
  private:
+  void timer_loop(const paraos::stop_token& token) {
+    while (!token.stop_requested() && !is_stop_requested()) {
+      std::size_t period_ms{};
+      bool is_auto_reload{false};
+      std::chrono::steady_clock::time_point deadline{};
+
+      {
+        const std::scoped_lock lock{mutex_};
+        period_ms = period_ms_;
+        is_auto_reload = is_auto_reload_;
+        deadline = next_deadline_;
+      }
+
+      const auto now = std::chrono::steady_clock::now();
+      if (deadline > now) {
+        const auto remaining = deadline - now;
+        (void)wake_sem_.try_acquire_for(remaining);
+      }
+
+      {
+        const std::scoped_lock lock{mutex_};
+        if (is_stop_requested_) {
+          break;
+        }
+        if (std::chrono::steady_clock::now() < next_deadline_) {
+          continue;
+        }
+      }
+
+      try {
+        run();
+      } catch (...) {
+        const std::scoped_lock lock{mutex_};
+        is_running_ = false;
+        is_stop_requested_ = true;
+        break;
+      }
+
+      const std::scoped_lock lock{mutex_};
+      if (is_stop_requested_) {
+        break;
+      }
+
+      if (!is_auto_reload) {
+        is_running_ = false;
+        break;
+      }
+
+      const auto after_run = std::chrono::steady_clock::now();
+      next_deadline_ += std::chrono::milliseconds(period_ms);
+      const auto max_deadline = after_run + std::chrono::milliseconds(period_ms);
+      if (next_deadline_ < after_run) {
+        next_deadline_ = after_run;
+      } else if (next_deadline_ > max_deadline) {
+        next_deadline_ = max_deadline;
+      }
+    }
+  }
+
+  [[nodiscard]] auto is_stop_requested() -> bool {
+    const std::scoped_lock lock{mutex_};
+    return is_stop_requested_;
+  }
+
+  void wake_worker() {
+    while (wake_sem_.try_acquire()) {
+    }
+    wake_sem_.release();
+  }
+
+ private:
   /// @brief Period between scheduler will call run() method if is_auto_reload_
   /// == true. In otherwise it's delay befor run() method will called after
   /// user code call start(). If user set start_immediately == true in ctor,
@@ -168,15 +272,16 @@ class timer {
   /// In otherwise run() will called only once with delay, provided by
   /// period_ms_ after user call start() (or after software timer object will
   /// construct if <start_immediately == true>).
-  [[maybe_unused]] bool is_auto_reload_;
+  bool is_auto_reload_;
 
   std::string_view name_;
 
   paraos::mutex mutex_;
   paraos::binary_semaphore wake_sem_{0};
   std::optional<paraos::jthread> worker_;
-  [[maybe_unused]] bool is_running_{false};
-  [[maybe_unused]] bool is_stop_requested_{false};
+  bool is_running_{false};
+  bool is_stop_requested_{false};
+  std::chrono::steady_clock::time_point next_deadline_;
 };
 
 using Timer PARAOS_DEPRECATED("use paraos::timer") = timer;

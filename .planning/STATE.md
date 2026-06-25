@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Modernize Unix timer with paraos primitives
-status: planning
-last_updated: "2026-06-25T15:55:12.453Z"
+current_phase: 41
+current_phase_name: core-jthread-based-loop
+status: executing
+stopped_at: Roadmap created for v1.10 phases 40–44; ready to plan Phase 40
+last_updated: "2026-06-25T16:22:52.455Z"
 last_activity: 2026-06-25
+last_activity_desc: Phase 41 execution started
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -20,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-25)
 
 **Core value:** Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
-**Current focus:** Milestone v1.10 — modernize Unix timer with paraos primitives.
+**Current focus:** Phase 41 — core-jthread-based-loop
 
 ## Current Position
 
-Phase: 40
-Plan: Roadmap created; ready for Phase 40 planning (design and test scaffold)
-Status: Planning
-Last activity: 2026-06-25 — Roadmap for v1.10 phases 40–44 created
+Phase: 41 (core-jthread-based-loop) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 41
+Last activity: 2026-06-25 — Phase 41 execution started
 
 ## Accumulated Context
 
