@@ -13,106 +13,48 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 - Веха v1.6 добавила кроссплатформенное управление планировщиком в `paraos::jthread`.
 - Веха v1.7 перевела четыре standalone-теста `port_tests/test_thread_only_*.cpp` с legacy `paraos::Thread` на `paraos::jthread`.
 - Веха v1.8 перевела внутренние потоки библиотек `extra/` (`OneShotExecutor`, `ThreadSequence`, `CooperativeScheduling`) и их standalone-тесты на `paraos::jthread`, сохранив публичный API.
-- Веха v1.9 удаляет устаревшие реализации `paraos::Thread`, `paraos::Mutex` и `paraos::Semaphore*`, окончательно переводя внутренний код и тесты на std-like примитивы.
+- Веха v1.9 удалила устаревшие реализации `paraos::Thread`, `paraos::Mutex` и `paraos::Semaphore*`, окончательно переведя внутренний код и тесты на std-like примитивы.
+- Веха v1.10 заменяет POSIX timer/pthread API в `port_unix/paraos_timer.hpp` на единую реализацию поверх `paraos::jthread`, `paraos::mutex` и `paraos::*_semaphore`.
 
 ## Core Value
 
 Кроссплатформенная переносимость PARAOS сохраняется: код, работающий на Linux/Windows/FreeRTOS, продолжает работать, а новая macOS-разработка ведётся на равных с остальными платформами, включая статический анализ clang-tidy.
 
-## Current Milestone: v1.9 Remove legacy Thread/Mutex/Semaphore implementations
+## Current Milestone: v1.10 Modernize Unix timer with paraos primitives
 
-**Goal:** Удалить устаревшие реализации `paraos::Thread`, `paraos::Mutex` и `paraos::Semaphore*`, перенести оставшиеся внутренние использования на `paraos::jthread`, `paraos::mutex`/`paraos_mutex_std` и `paraos::*_semaphore`/`paraos_semaphore_std`, сохранив кроссплатформенность и прохождение всех пресетов.
+**Goal:** Заменить POSIX timer API (`timer_create`/`timer_settime`/`timer_delete`) и pthread API (`pthread_mutex_*`, `pthread_cond_*`, `pthread_create`, `pthread_join`) в `port_unix/paraos_timer.hpp` на единую кроссплатформенную реализацию поверх `paraos::jthread`, `paraos::mutex` и `paraos::*_semaphore`, сохранив публичный API `paraos::timer` и поведение на всех платформах.
 
 **Target features:**
-- Удалить `port_*/paraos_thread.hpp`, оставив `paraos_jthread.hpp` и общие `ThreadAttr`/`ThreadPriority`
-- Удалить `port_*/paraos_mutex.hpp`, оставив `paraos_mutex_std.hpp`
-- Удалить `port_*/paraos_semaphore.hpp`, оставив `paraos_semaphore_std.hpp`
-- Перенести внутренние использования в `containers/`, `port_unix/paraos_critical.hpp`, `paraos_mutex_raii.hpp`
-- Перенести или удалить legacy-тесты/примеры, использующие устаревшие примитивы
-- Обеспечить сборку и прохождение PC/FreeRTOS пресетов без регрессий
+- Удалить Linux-специфичный путь `timer_create`/`timer_settime`/`timer_delete` из `port_unix/paraos_timer.hpp`
+- Удалить macOS-специфичный путь `pthread_mutex_*`/`pthread_cond_*`/`pthread_create`/`pthread_join` из `port_unix/paraos_timer.hpp`
+- Реализовать единый таймерный цикл на `paraos::jthread` + `paraos::*_semaphore`/`paraos::sleep_for` для Linux и macOS
+- Сохранить семантику `start()`, `stop()`, `reset()`, `change_period()` и режимы `is_auto_reload`
+- Добавить в `port_tests/` простой standalone-тест `test_timer.cpp`, демонстрирующий базовое использование `paraos::timer` в пользовательском приложении
+- Обеспечить прохождение PC-пресетов (`pc_debug_clang`, `pc_debug_gcc`, `*_clang_tidy`) без регрессий
+- Обеспечить компиляцию FreeRTOS-пресетов и сохранить независимость `port_freertos/paraos_timer.hpp`
 
 ## Current State
 
-**Shipped:** v1.8 Migrate `extra/` libraries to `paraos::jthread` (2026-06-23)
+**Shipped:** v1.9 Remove legacy Thread/Mutex/Semaphore implementations (2026-06-24)
 
-- Внутренние потоки `extra/paraos_oneshot_executor.hpp`, `extra/paraos_thread_sequence.hpp` и `extra/paraos_thread_cooperative_scheduling.hpp` переведены на `paraos::jthread`.
-- `OneShotExecutor` использует `std::optional<paraos::jthread>`: поток создаётся только при `thread_start_flag=true`.
-- Standalone-тесты `extra/tests/test_*_thread.cpp` мигрированы на `paraos::jthread`, `start_scheduler()` и `end_scheduler()`.
-- `extra/tests/CMakeLists.txt` требует `cxx_std_20` и прикрепляет `CXX_CLANG_TIDY` к standalone-целям.
-- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) проходят `ctest` 58/58; FreeRTOS-пресеты компилируются.
-- Публичный API `extra/` остался неизменным.
+- Удалены legacy `paraos::Thread`, `paraos::Mutex`, `paraos::MutexRecursive`, `paraos::SemaphoreBinary` и `paraos::SemaphoreCounting`.
+- Внутренние потребители (`containers/`, `port_unix/paraos_critical.hpp`, socket UDP, FreeRTOS jthread, `extra/`) переведены на std-like примитивы.
+- Добавлен `paraos::recursive_mutex`.
+- Очищен `port_tests/` от legacy тестов/примеров.
+- PC `ctest` проходит 58/58; FreeRTOS-пресеты компилируются; clang-tidy остаётся чистым.
 
-**Shipped:** v1.7 Migrate `test_thread_only_*` to `paraos::jthread` (2026-06-23)
+**Starting:** v1.10 Modernize Unix timer with paraos primitives
 
-- Четыре standalone-теста `port_tests/test_thread_only_*.cpp` мигрированы на `paraos::jthread`.
-- Применён единый кроссплатформенный паттерн завершения со `stopper`-потоком и `IdleHook()`.
-- `port_tests/CMakeLists.txt` обновлён: `cxx_std_20`, `CXX_CLANG_TIDY`, `TIMEOUT 20`.
-- PC-пресеты проходят `ctest` 58/58; FreeRTOS-пресеты проходят 4/4 `test_thread_only_*` теста.
-- Изменения ограничены `port_tests/`; кроссплатформенные пути Windows/Linux не затронуты.
-
-**Shipped:** v1.6 paraos::jthread scheduler control (2026-06-22)
-
-- Добавлены `paraos::jthread::start_scheduler()`, `end_scheduler()` и `is_scheduler_running()` для FreeRTOS и PC.
-- FreeRTOS-порт делегирует вызовы в `vTaskStartScheduler()` / `vTaskEndScheduler()`.
-- PC-порт эмулирует семантику FreeRTOS: потоки ждут `start_scheduler()` и останавливаются по `end_scheduler()`.
-- `port_tests/test_jthread_basic.cpp` переписан без `std::_Exit()` и платформенных ветвей; контейнерные multithread-тесты используют единый кроссплатформенный паттерн.
-- `paraos::Thread` остался неизменным.
-- PC-пресеты проходят `ctest` 58/58; `*_clang_tidy` пресеты без новых предупреждений; FreeRTOS-пресеты компилируются и выполняются на macOS POSIX-симуляторе.
-
-**Shipped:** v1.5 Modernize container tests on std-like primitives (2026-06-22)
-
-- Проведён аудит и миграция пяти multithread-тестов `containers/tests/` с `paraos::Thread` на `paraos::jthread`.
-- Добавлены smoke-тесты `paraos::mutex` / `paraos::*_semaphore` в `containers/tests/test_queue_blocking.cpp`.
-- Добавлен кроссплатформенный `paraos::sleep_for(std::chrono::milliseconds)` (`paraos_sleep.hpp`).
-- Исправлены предупреждения clang-tidy в заголовках `containers/paraos_ringbuff.hpp` и `containers/paraos_multi_ringbuff.hpp`.
-- PC-пресеты проходят `ctest` 58/58; FreeRTOS-пресеты компилируются; `*_clang_tidy` пресеты без новых предупреждений.
-
-**Shipped:** v1.4 std::semaphore-style Semaphore API (2026-06-22)
-
-- Добавлены `paraos::counting_semaphore<LeastMaxValue>` и `paraos::binary_semaphore`.
-- PC, Unix и Windows используют `std::counting_semaphore` через `port_pc/paraos_semaphore_std.hpp`.
-- FreeRTOS реализован поверх `xSemaphoreCreateCounting` / `xSemaphoreTake` / `xSemaphoreGive`.
-- Обеспечена совместимость с `std::chrono` таймаутами (`try_acquire_for`, `try_acquire_until`).
-- Добавлен тест `port_tests/test_semaphore_std.cpp` и зарегистрирован в CTest.
-- PC-пресеты собираются и проходят `ctest` (55/55); `*_clang_tidy` пресеты без новых предупреждений.
-
-**Shipped:** v1.3 std::mutex-style Mutex API (2026-06-22)
-
-- Добавлен `paraos::mutex` с `lock()`, `try_lock()`, `unlock()` для PC (`port_pc/` → `port_unix/`, `port_win/`) и FreeRTOS (`port_freertos/`).
-- PC-порт реализован как тонкая обёртка над `std::mutex`.
-- FreeRTOS-порт реализован поверх FreeRTOS mutex API.
-- Обеспечена совместимость со `std::lock_guard<paraos::mutex>` и `std::unique_lock<paraos::mutex>`.
-- Добавлен тест `port_tests/test_mutex_basic.cpp` и зарегистрирован в CTest.
-- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`) собираются и проходят `ctest` (54/54).
-- `freertos_debug_clang` и `freertos_debug_gcc` собираются; `test_mutex_basic` проходит с учётом ограничений POSIX-порта macOS.
-- `*_clang_tidy` пресеты не получили новых предупреждений от кода мьютекса.
+- Заменить POSIX timer/pthread API в `port_unix/paraos_timer.hpp` на `paraos::jthread`, `paraos::mutex` и `paraos::*_semaphore`.
+- Сохранить публичный API `paraos::timer`.
+- Добавить простой standalone-тест, показывающий использование таймера в приложении.
 
 <details>
-<summary>Previous: v1.2 std::jthread-style Thread API (2026-06-20)</summary>
+<summary>Previous milestones (v1.0–v1.8)</summary>
 
-- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/`) как обёртка над `std::jthread`.
-- Добавлены forwarding-заголовки `port_unix/paraos_jthread.hpp` и `port_win/paraos_jthread.hpp`.
-- Реализован собственный `paraos::jthread` для FreeRTOS (`port_freertos/`) с поддержкой capturing lambdas через heap-allocated invoker.
-- Добавлена поддержка `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
-- Минимальная версия C++ повышена до 20 в корневом `CMakeLists.txt`.
-- Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
-- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
-- `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
-- FreeRTOS runtime-тесты с созданием задач на macOS зависят от POSIX-порта и не выполняются на этом хосте (известное ограничение среды).
+See `.planning/MILESTONES.md` for full history.
 
 </details>
-
-**Previously shipped:** v1.2 std::jthread-style Thread API (2026-06-20)
-
-- Добавлен `paraos::jthread`, `paraos::stop_token`, `paraos::stop_source` для PC (`port_pc/`) как обёртка над `std::jthread`.
-- Добавлены forwarding-заголовки `port_unix/paraos_jthread.hpp` и `port_win/paraos_jthread.hpp`.
-- Реализован собственный `paraos::jthread` для FreeRTOS (`port_freertos/`) с поддержкой capturing lambdas через heap-allocated invoker.
-- Добавлена поддержка `ThreadAttr` (имя, стек, приоритет) в конструкторе `jthread` для всех портов.
-- Минимальная версия C++ повышена до 20 в корневом `CMakeLists.txt`.
-- Добавлен тест `port_tests/test_jthread_basic.cpp` и зарегистрирован в CTest.
-- PC-пресеты (`pc_debug_clang`, `pc_debug_gcc`, `pc_debug_gcc_clang_tidy`) собираются и проходят `ctest`.
-- `*_clang_tidy` пресеты продолжают собираться без новых предупреждений.
-- FreeRTOS runtime-тесты с созданием задач на macOS зависят от POSIX-порта и не выполняются на этом хосте (известное ограничение среды).
 
 ## Requirements
 
@@ -175,20 +117,18 @@ PARAOS — это C++ слой абстракции ОС (OSAL) для встр�
 
 ### Active
 
-(none — awaiting next milestone definition)
+- Заменить pthread/POSIX timer API в `port_unix/paraos_timer.hpp` на `paraos::jthread`, `paraos::mutex`, `paraos::*_semaphore` и `paraos::sleep_for`.
+- Сохранить публичный API и поведение `paraos::timer` (периодический/one-shot, start/stop/reset/change_period).
+- Добавить простой standalone-тест `port_tests/test_timer.cpp`, демонстрирующий базовое использование `paraos::timer`.
+- Обеспечить прохождение PC-пресетов и компиляцию FreeRTOS-пресетов без регрессий.
 
 ### Out of Scope
 
-- Полная замена существующего `paraos::Mutex` на `paraos::mutex` — веха v1.3 добавляет новый API рядом со старым.
-- Миграция `containers/` и production-кода вне `extra/` на `paraos::jthread` — выполняется отдельными вехами.
-- Изменение публичных сигнатур библиотек `extra/` (например, имен классов, API `EnqueueDelegate`, `Register`, `AddTask`).
-- Добавление `std::recursive_mutex`-подобного API или таймаутов (`try_lock_for` / `try_lock_until`) — только базовый `std::mutex`-подобный интерфейс.
-- Изменение семантики существующих примитивов синхронизации PARAOS.
-- Тестирование на физических целевых устройствах — только host-сборки.
-- Глобальное переписывание CI/CD вне явно выделенных CI-задач следующей вехи.
+- Изменение реализаций `port_win/paraos_timer.hpp` и `port_freertos/paraos_timer.hpp`.
+- Добавление новых публичных методов или изменение сигнатур `paraos::timer`.
 - Runtime-запуск FreeRTOS-тестов на macOS POSIX-симуляторе — environment limitation.
-- Полная замена `paraos::Thread` на `paraos::jthread` в production-коде вне `extra/` — следующие вехи.
-- Депрекация legacy `paraos::Thread` — следующие вехи.
+- Тестирование на физических целевых устройствах — только host-сборки.
+- Глобальное переписывание CI/CD вне явно выделенных CI-задач вехи.
 
 ## Context
 
@@ -252,4 +192,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-24 after starting milestone v1.9*
+*Last updated: 2026-06-25 after starting milestone v1.10*

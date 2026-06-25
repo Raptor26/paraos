@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9
-milestone_name: Remove legacy Thread/Mutex/Semaphore implementations
-current_phase: 9
-status: Awaiting next milestone
-stopped_at: Phase 39 complete; milestone ready for audit
-last_updated: "2026-06-24T09:31:20.402Z"
-last_activity: 2026-06-24
-last_activity_desc: Milestone v1.9 completed and archived
+milestone: v1.10
+milestone_name: Modernize Unix timer with paraos primitives
+status: planning
+last_updated: "2026-06-25T15:23:24.393Z"
+last_activity: 2026-06-25
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 
 ## Current Position
 
-Phase: Milestone v1.9 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-24 — Milestone v1.9 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-25 — Milestone v1.10 started
 
 ## Accumulated Context
 
