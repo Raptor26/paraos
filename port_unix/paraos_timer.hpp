@@ -6,6 +6,7 @@
 #ifndef PARAOS_TIMER_HPP
 #define PARAOS_TIMER_HPP
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <limits>
@@ -23,25 +24,22 @@
 
 namespace paraos {
 
-/// @brief Class provided software timers. For creating timer, user code must
-/// provide custom class as derived from paraos::timer.
-///
-/// @example See example of usages software timers in
-/// <example_paraos_timer.cpp>.
+/// @brief Class that provides software timers. To create a timer, user code
+/// must provide a custom class derived from paraos::timer.
 ///
 class timer {
  public:
-  /// @brief Software timer ctor.
-  /// @param[in] period_ms: Period in microseconds between timer scheduler
-  /// calling overriden by user method run().
-  /// @param[in] start_immediately: If set true, user code don't need call
-  /// start() for start timer. In otherwise, user must call start() for run
+  /// @brief Software timer constructor.
+  /// @param[in] period_ms: Period in milliseconds between calls of the
+  /// user-overridden run() method.
+  /// @param[in] start_immediately: If true, the user code does not need to call
+  /// start() to run the timer. Otherwise, start() must be called to run the
   /// timer.
-  /// @param[in] is_auto_reload: If set true, overriden by user method run()
-  /// will call periodical with period_ms respect. If set false, run() will call
-  /// at ones after period_ms delay. If is_auto_reload == false and user code
-  /// needs call run() again, call start().
-  /// @param[in] name: Human readable string. Useful for debug.
+  /// @param[in] is_auto_reload: If true, the user-overridden run() method is
+  /// called periodically with the given period. If false, run() is called once
+  /// after the period delay. If is_auto_reload == false and run() must be
+  /// called again, call start().
+  /// @param[in] name: Human-readable string. Useful for debugging.
   explicit timer(
       std::size_t period_ms, bool start_immediately = false,
       bool is_auto_reload = true, std::string_view name = "Timer")
@@ -53,15 +51,15 @@ class timer {
 
   virtual ~timer() { stop(); }
 
-  /// @brief Start timer. If is_auto_reload was set in Ctor, then run() method
-  /// will call only once after <period_ms> delay. In other case, run() will
-  /// called periodically with <period_ms> delay respect. For change period
-  /// use change_period().
-  /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @return Return true is timer successfully started, false in otherwise.
+  /// @brief Starts the timer. If is_auto_reload is false, run() is called once
+  /// after <period_ms> delay. Otherwise, run() is called periodically with
+  /// <period_ms> interval. Use change_period() to change the period.
+  /// @param[in] max_block_time: Backward compatibility for the FreeRTOS API.
+  /// Not used on Unix.
+  /// @param[in] is_isr: Backward compatibility for the FreeRTOS API. Not used
+  /// on Unix.
+  /// @return Returns true if the timer was successfully started, false
+  /// otherwise.
   auto start(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
@@ -74,11 +72,13 @@ class timer {
         std::chrono::steady_clock::now() + std::chrono::milliseconds(period_ms_);
 
     if (is_running_) {
+      period_changed_ = true;
       wake_worker();
       return isr_bool{true};
     }
 
     is_running_ = true;
+    period_changed_ = false;
     worker_.emplace([this](const paraos::stop_token& token) -> void {
       timer_loop(token);
     });
@@ -86,16 +86,16 @@ class timer {
     return isr_bool{true};
   }
 
-  /// @brief Change period between periodically call run() if timer mode
-  /// periodical (is_auto_reload == true), or changed delay before scheduler
-  /// call run() after user call start() if one shot timer mode (is_auto_reload
-  /// == false).
-  /// @param[in] period_ms: New value for period update.
-  /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @return Return true if period update successfully, false in otherwise.
+  /// @brief Changes the interval between periodic run() calls when the timer
+  /// is in periodic mode (is_auto_reload == true), or changes the delay before
+  /// run() is called after start() in one-shot mode (is_auto_reload == false).
+  /// @param[in] period_ms: New period value in milliseconds.
+  /// @param[in] max_block_time: Backward compatibility for the FreeRTOS API.
+  /// Not used on Unix.
+  /// @param[in] is_isr: Backward compatibility for the FreeRTOS API. Not used
+  /// on Unix.
+  /// @return Returns true if the period was successfully updated, false
+  /// otherwise.
   auto change_period(
       std::size_t period_ms, paraos::delay_type max_block_time = max_delay,
       bool is_isr = false) -> isr_bool {
@@ -108,19 +108,21 @@ class timer {
     if (is_running_) {
       next_deadline_ = std::chrono::steady_clock::now() +
                        std::chrono::milliseconds(period_ms_);
+      period_changed_ = true;
       wake_worker();
     }
 
     return isr_bool{true};
   }
 
-  /// @brief Stop software timer. After user call stop(), scheduler don't call
-  /// run() until user calls start().
-  /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @return True if timer successfully stopped, false in otherwise.
+  /// @brief Stops the software timer. After stop() is called, run() is not
+  /// called until start() is called again.
+  /// @param[in] max_block_time: Backward compatibility for the FreeRTOS API.
+  /// Not used on Unix.
+  /// @param[in] is_isr: Backward compatibility for the FreeRTOS API. Not used
+  /// on Unix.
+  /// @return Returns true if the timer was successfully stopped, false
+  /// otherwise.
   auto stop(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> isr_bool {
     PARAOS_ATTR_UNUSED_VAR(max_block_time);
@@ -133,33 +135,36 @@ class timer {
       wake_worker();
     }
 
-    worker_ = std::nullopt;
+    if (!is_in_run_.load(std::memory_order_acquire)) {
+      worker_ = std::nullopt;
+    }
 
     return isr_bool{true};
   }
 
-  /// @brief Reset software timer. After reset() called, delay befor next call
-  /// run() method will recalculate relative current moment of the time. If
-  /// timer was stopped, calls run() method will scheduling with <period_ms> and
-  /// <is_auto_reload> respect.
-  /// @param[in] max_block_time: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @param[in] is_isr: Backward comptability for FreeRTOS API. Don't
-  /// used in Unix.
-  /// @return Return true if timer successfully reset, false in otherwise.
+  /// @brief Resets the software timer. After reset(), the delay before the
+  /// next run() call is recalculated relative to the current time. If the timer
+  /// was stopped, run() is scheduled according to <period_ms> and
+  /// <is_auto_reload>.
+  /// @param[in] max_block_time: Backward compatibility for the FreeRTOS API.
+  /// Not used on Unix.
+  /// @param[in] is_isr: Backward compatibility for the FreeRTOS API. Not used
+  /// on Unix.
+  /// @return Returns true if the timer was successfully reset, false
+  /// otherwise.
   auto reset(paraos::delay_type max_block_time = max_delay, bool is_isr = false)
       -> isr_bool {
     return start(max_block_time, is_isr);
   }
 
-  /// @brief Method called periodical in software timer context with respect
-  /// timer creation parameters.
+  /// @brief Method called periodically in the software timer context according
+  /// to the timer creation parameters.
   virtual void run() {
     // User code must override this method in derivate class.
     PARAOS_CHECK_ASSERT(false);
   }
 
-  /// @brief Five rule.
+  /// @brief Rule of five.
   timer(timer&& other) = delete;
   auto operator=(timer&& other) -> timer& = delete;
   auto operator=(const timer& other) -> timer& = delete;
@@ -220,8 +225,11 @@ class timer {
       }
 
       try {
+        is_in_run_.store(true, std::memory_order_release);
         run();
+        is_in_run_.store(false, std::memory_order_release);
       } catch (...) {
+        is_in_run_.store(false, std::memory_order_release);
         const std::scoped_lock lock{mutex_};
         is_running_ = false;
         is_stop_requested_ = true;
@@ -239,7 +247,12 @@ class timer {
       }
 
       const auto after_run = std::chrono::steady_clock::now();
-      next_deadline_ += std::chrono::milliseconds(period_ms);
+      if (period_changed_) {
+        period_changed_ = false;
+        next_deadline_ = after_run + std::chrono::milliseconds(period_ms);
+      } else {
+        next_deadline_ += std::chrono::milliseconds(period_ms);
+      }
       const auto max_deadline = after_run + std::chrono::milliseconds(period_ms);
       if (next_deadline_ < after_run) {
         next_deadline_ = after_run;
@@ -261,26 +274,46 @@ class timer {
   }
 
  private:
-  /// @brief Period between scheduler will call run() method if is_auto_reload_
-  /// == true. In otherwise it's delay befor run() method will called after
-  /// user code call start(). If user set start_immediately == true in ctor,
-  /// period_ms_ provide delay befor run() method will called after software
-  /// timer object will constructed.
+  /// @brief Interval between run() calls when is_auto_reload_ == true.
+  /// Otherwise, it is the delay before run() is called after start(). If
+  /// start_immediately == true was passed to the constructor, period_ms_ is the
+  /// delay before run() is called after the software timer object is
+  /// constructed.
   std::size_t period_ms_;
 
-  /// @brief If set true, run() will periodically calls with period_ms_ respect.
-  /// In otherwise run() will called only once with delay, provided by
-  /// period_ms_ after user call start() (or after software timer object will
-  /// construct if <start_immediately == true>).
+  /// @brief If true, run() is called periodically with period_ms_. Otherwise,
+  /// run() is called once after the delay provided by period_ms_ following
+  /// start() (or after the software timer object is constructed if
+  /// <start_immediately == true>).
   bool is_auto_reload_;
 
+  /// @brief Human-readable timer name.
   std::string_view name_;
 
+  /// @brief Protects timer state shared between the worker thread and user
+  /// calls.
   paraos::mutex mutex_;
+
+  /// @brief Used to wake the worker thread on stop, start, or period change.
   paraos::binary_semaphore wake_sem_{0};
+
+  /// @brief Lazy-created worker thread that drives the timer loop.
   std::optional<paraos::jthread> worker_;
+
+  /// @brief True while the timer is scheduled to run.
   bool is_running_{false};
+
+  /// @brief Set to true to request the worker thread to exit.
   bool is_stop_requested_{false};
+
+  /// @brief Set to true when the period is changed while the timer is running.
+  bool period_changed_{false};
+
+  /// @brief True while run() is executing. Guards against joining the worker
+  /// thread from within run().
+  std::atomic<bool> is_in_run_{false};
+
+  /// @brief Absolute deadline for the next run() call.
   std::chrono::steady_clock::time_point next_deadline_;
 };
 
