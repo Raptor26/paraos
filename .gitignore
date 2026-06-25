@@ -25,3 +25,4 @@ paraos_version.hpp
 compile_commands.json
 
 .pi-subagent-sessions
+.worktrees/
