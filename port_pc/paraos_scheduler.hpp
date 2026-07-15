@@ -32,7 +32,7 @@ struct jthread_context {
   std::condition_variable gate_cv;
   bool gate_open{false};
   bool should_run{false};
-  std::thread::id owner_id{};
+  std::thread::id owner_id;
 };
 
 }  // namespace detail
