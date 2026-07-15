@@ -123,6 +123,23 @@ if(CLANG_TIDY_ENABLE)
   endif()
 endif()
 
+# timer ------------------------------------------------------------------------
+add_executable(test_timer test_timer.cpp)
+target_link_libraries(test_timer PRIVATE paraos::paraos)
+
+target_compile_features(test_timer PRIVATE cxx_std_20 c_std_11)
+target_compile_options(test_timer PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+add_test(NAME test_timer COMMAND test_timer TIMEOUT 20)
+
+if(CLANG_TIDY_ENABLE)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(DO_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    set_target_properties(test_timer PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
+  endif()
+endif()
+
 # GTEST ------------------------------------------------------------------------
 find_package(GTest REQUIRED)
 include(GoogleTest)
